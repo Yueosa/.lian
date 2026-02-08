@@ -1,5 +1,9 @@
 # 恋的 Arch 配置
 
+> 我使用的桌面环境是 `Hyprland` + `wayland` + `kitty` + `zshell`
+
+如果你的环境和我一样, 可以直接抄作业!
+
 ---
 
 ## 说明:
@@ -11,6 +15,12 @@
 这是一个在终端打印输出系统信息的包, 效果如下:
 
 ![fastfetch](./image/fastfetch)
+
+###### 你可以使用 `pacman` 进行安装:
+
+```bash
+sudo pacmna -S fastfetch
+```
 
 我的配置目录如下:
 
@@ -27,5 +37,31 @@
 * 如果你想使用默认的logo, 那么直接删除 `logo/` 目录即可
 * 系统使用时间我在脚本里硬编码了从 `2025-05-12` 日开始计算, 你可以自己更改
 
+#### kanshi
+
+这是一个智能的显示器管理器, 如果你有多个显示器, 用他来管理是个很不错的方案!
+
+###### 使用 `pacman` 进行安装
+
+```bash
+sudo pacman -S kanshi
+```
+
+我推荐你直接在 `~/.config/hypr/hyprland.conf` 中加入 `exec-once = kanshi` 来启动他
+
+我的配置文件只有一个, 内容如下:
+
+```ini
+profile {
+	output eDP-1 enable mode 2560x1440@165 position 0,0
+}
+
+profile {
+	output eDP-1 disable
+	output HDMI-A-1 enable mode 1920x1080@180 position 0,0
+}
+```
+
+我有笔记本显示器 `eDP-1` 和外接显示器 `HDMI-A-1`, 策略是有外接显示器时笔记本就熄屏
 
 
