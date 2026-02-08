@@ -64,4 +64,31 @@ profile {
 
 我有笔记本显示器 `eDP-1` 和外接显示器 `HDMI-A-1`, 策略是有外接显示器时笔记本就熄屏
 
+#### kitty
+
+`kitty` 是一个支持 真彩色, 光标拖尾, 更强控制序列的终端
+
+###### 使用 `pacman` 安装
+
+```bash
+sudo pacman -S kitty
+```
+
+我的配置文件非常简单, 我使用 `kitty-theme` 挑选了自己喜欢的主题, 然后自己配置了一些 字体, 光标拖尾
+
+```
+ kitty
+├── 󱁻 current-theme.conf    # 终端主题
+├── 󱁻 dark-theme.auto.conf
+└── 󱁻 kitty.conf            # 配置文件
+```
+
+如果你想要安装我的字体
+
+```bash
+sudo pacman -S ttf-fira-code
+```
+
+这是一款非常适合编程的字体, 支持连字
+
 
