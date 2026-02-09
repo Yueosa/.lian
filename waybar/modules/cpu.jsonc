@@ -1,0 +1,15 @@
+// ---------------------------------------------------------------- //
+// Module: CPU
+// Description: CPU 使用率监控
+// ---------------------------------------------------------------- //
+{
+    "custom/cpu": {
+        "return-type": "json",
+        "exec": "$HOME/.config/waybar/scripts/waybar_cpu.sh",
+        "interval": 2,
+        "escape": false,
+        "on-click": "kitty -e btop",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

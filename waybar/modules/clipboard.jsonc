@@ -1,0 +1,15 @@
+// ---------------------------------------------------------------- //
+// Module: Clipboard
+// Description: 剪贴板管理器 (Cliphist)
+// ---------------------------------------------------------------- //
+{
+    "custom/clipboard": {
+        "format": "📋",
+        "interval": "once",
+        "on-click": "$HOME/.config/rofi/cliphist_rofi.sh",
+        "on-click-right": "cliphist wipe",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":",
+        "tooltip": false
+    }
+}

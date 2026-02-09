@@ -1,0 +1,16 @@
+// ---------------------------------------------------------------- //
+// Module: Battery
+// Description: 电池状态
+// ---------------------------------------------------------------- //
+{
+    "battery": {
+        "format": "<span color='#F5A9B8'>{icon}</span> {capacity}%",
+        "format-charging": "<span color='#F5A9B8'></span> {capacity}%",
+        "format-plugged": "<span color='#F5A9B8'></span> {capacity}%",
+        "format-icons": ["", "", "", "", ""],
+        "on-click": "/opt/tuxedo-control-center/tuxedo-control-center",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":",
+        "tooltip": false
+    }
+}

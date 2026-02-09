@@ -1,0 +1,13 @@
+// ---------------------------------------------------------------- //
+// Module: Arch Logo
+// Description: 显示一个 Arch Linux 图标
+// ---------------------------------------------------------------- //
+{
+    "custom/arch_logo": {
+        "format": " ",
+        "tooltip": false,
+        "on-click": "xdg-open https://aur.archlinux.org/",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

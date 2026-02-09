@@ -1,0 +1,17 @@
+// ---------------------------------------------------------------- //
+// Module: GPU Info
+// Description: GPU 信息监控 (Waybar 原生不支持，必须是用 custom script)
+// ---------------------------------------------------------------- //
+{
+    "custom/gpuinfo": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_gpu.sh",
+        "return-type": "json",
+        "format": "<span color='#F5A9B8'></span> {}", 
+        "interval": 3,
+        "tooltip": true,
+        "escape": false,
+        "on-click": "kitty --title nvidia-smi -e bash -lc 'while true; do clear; nvidia-smi; sleep 1; done'",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

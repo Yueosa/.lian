@@ -1,0 +1,19 @@
+// ---------------------------------------------------------------- //
+// Module: Updates
+// Description: 系统更新检查 (Pacman/Yay)
+// ---------------------------------------------------------------- //
+{
+    "custom/updates": {
+        "format": "📦 {}",
+        "interval": 300,
+        "exec": "$HOME/.config/waybar/scripts/waybar_updates.sh",
+        "return-type": "json",
+        "escape": false,
+        "exec-if": "exit 0",
+        "on-click": "kitty -e paru -Syu",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":",
+        "signal": 8
+    }
+}
+

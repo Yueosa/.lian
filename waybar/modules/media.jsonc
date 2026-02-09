@@ -1,0 +1,18 @@
+{"custom/media": {
+    "exec": "bash -lc '\"$HOME/.config/waybar/scripts/waybar_media.sh\"'",
+    "return-type": "json",
+    "interval": 1,
+    "format": "{icon} {text} ",
+    "max-length": 200,
+    "format-icons": {
+        "playing": "<span color='#209CE6'></span>",
+        "paused": "<span color='#F5A9B8'>⏸</span>",
+        "stopped": "<span color='#F5A9B8'></span>"
+    },
+        "on-click": "$HOME/.config/waybar/scripts/waybar_media_ctl.sh play-pause",
+    "on-click-right": "$HOME/.config/waybar/scripts/waybar_media_focus.sh",
+        "on-scroll-up": "$HOME/.config/waybar/scripts/waybar_media_ctl.sh previous",
+        "on-scroll-down": "$HOME/.config/waybar/scripts/waybar_media_ctl.sh next",
+    "escape": false 
+}
+}

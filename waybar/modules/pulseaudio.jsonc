@@ -1,0 +1,17 @@
+// ---------------------------------------------------------------- //
+// Module: PulseAudio
+// Description: 音量控制
+// ---------------------------------------------------------------- //
+{
+    "pulseaudio": {
+        "format": "<span color='#F5A9B8'>{icon}</span> {volume}%",
+        "format-muted": "<span color='#F5A9B8'></span> Muted",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol -t 3",
+        "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+        "scroll-step": 2,
+        "tooltip": false
+    }
+}

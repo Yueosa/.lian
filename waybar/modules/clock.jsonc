@@ -1,0 +1,18 @@
+// ---------------------------------------------------------------- //
+// Module: Clock
+// Description: 日期和时间显示
+// ---------------------------------------------------------------- //
+{
+    "custom/clock": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_clock.sh",
+        "return-type": "json",
+        "interval": 1,
+        "signal": 11,
+        "format": "<span color='#F5A9B8'></span> {text}",
+        "tooltip": false,
+        "on-click": "gnome-calendar",
+        "on-click-right": "$HOME/.config/waybar/scripts/waybar_clock_toggle.sh",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

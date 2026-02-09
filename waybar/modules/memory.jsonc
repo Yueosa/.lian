@@ -1,0 +1,16 @@
+// ---------------------------------------------------------------- //
+// Module: Memory
+// Description: 内存使用率监控
+// ---------------------------------------------------------------- //
+{
+    "custom/memory": {
+        "return-type": "json",
+        "exec": "$HOME/.config/waybar/scripts/waybar_memory.sh",
+        "interval": 5,
+        "tooltip": true,
+        "escape": false,
+        "on-click": "kitty -e btop",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

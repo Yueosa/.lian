@@ -1,0 +1,20 @@
+// ---------------------------------------------------------------- //
+// Module: Network
+// Description: 网络连接状态
+// ---------------------------------------------------------------- //
+{
+    "network": {
+        "format-wifi": "<span color='#F5A9B8'></span> {essid}",
+        "format-ethernet": "<span color='#F5A9B8'>󰈀</span> Wired",
+        "format-disconnected": "<span color='#F5A9B8'></span> Disconnected",
+        "tooltip": true,
+        "tooltip-format": "<span color='#F5A9B8'>IF</span> <span color='#209CE6'>{ifname}</span>\n<span color='#F5A9B8'>GW</span> <span color='#209CE6'>{gwaddr}</span>\n<span color='#F5A9B8'>IP</span> <span color='#209CE6'>{ipaddr}</span>\n<span color='#F5A9B8'>D</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthDownBytes}</span>   <span color='#F5A9B8'>U</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthUpBytes}</span>",
+        "tooltip-format-wifi": "<span color='#F5A9B8'></span> <span color='#209CE6'>{essid}</span>  <span color='#F5A9B8'>S</span> <span color='#209CE6'>{signalStrength}%</span>\n<span color='#F5A9B8'>IP</span> <span color='#209CE6'>{ipaddr}</span>\n<span color='#F5A9B8'>GW</span> <span color='#209CE6'>{gwaddr}</span>\n<span color='#F5A9B8'>D</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthDownBytes}</span>   <span color='#F5A9B8'>U</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthUpBytes}</span>",
+        "tooltip-format-ethernet": "<span color='#F5A9B8'>󰈀</span> <span color='#209CE6'>{ifname}</span>\n<span color='#F5A9B8'>IP</span> <span color='#209CE6'>{ipaddr}</span>\n<span color='#F5A9B8'>GW</span> <span color='#209CE6'>{gwaddr}</span>\n<span color='#F5A9B8'>D</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthDownBytes}</span>   <span color='#F5A9B8'>U</span> <span color='#F5A9B8'></span> <span color='#209CE6'>{bandwidthUpBytes}</span>",
+        "tooltip-format-disconnected": "<span color='#F5A9B8'></span> <span color='#209CE6'>Disconnected</span>\n<span color='#F5A9B8'>L</span> <span color='#209CE6'>nmrs</span>   <span color='#F5A9B8'>R</span> <span color='#209CE6'>nmtui</span>",
+        "on-click": "nmrs",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":",
+        "on-click-right": "$HOME/.config/waybar/scripts/waybar_open_nmtui.sh"
+    }
+}

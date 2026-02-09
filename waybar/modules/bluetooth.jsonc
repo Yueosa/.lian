@@ -1,0 +1,17 @@
+// ---------------------------------------------------------------- //
+// Module: Bluetooth
+// Description: 蓝牙状态
+// ---------------------------------------------------------------- //
+{
+    "custom/bluetooth": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_bluetooth.sh",
+        "return-type": "json",
+        "format": "{text}",
+        "tooltip": true,
+        "interval": 2,
+        "escape": false,
+        "on-click": "blueman-manager",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

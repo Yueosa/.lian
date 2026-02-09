@@ -1,0 +1,16 @@
+// ---------------------------------------------------------------- //
+// Module: Current Workspace Indicator
+// Description: 仅显示“当前在哪个工作区”的单字符指示器
+// ---------------------------------------------------------------- //
+{
+    "custom/ws_current": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_ws_current.sh",
+        "return-type": "json",
+        "format": "{text}",
+        "tooltip": true,
+        "interval": 1,
+        "escape": true,
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

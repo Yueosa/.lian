@@ -1,0 +1,17 @@
+// ---------------------------------------------------------------- //
+// Module: Window Title
+// Description: 显示当前活动窗口的标题
+// ---------------------------------------------------------------- //
+{
+    "custom/window": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_window.sh",
+        "return-type": "json",
+        "format": "{text}",
+        "max-length": 50,
+        "interval": 1,
+        "signal": 12,
+        "escape": false,
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}

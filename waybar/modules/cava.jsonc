@@ -1,0 +1,16 @@
+// ---------------------------------------------------------------- //
+// Module: Cava
+// Description: 音频可视化频谱
+// ---------------------------------------------------------------- //
+{
+    "custom/cava": {
+        "exec": "$HOME/.config/waybar/scripts/waybar_cava.sh",
+        "format": "{}",
+        "font": "Bar", // 确保您有包含这些方块字符的字体
+        "tooltip": false,
+        "layer": "below",
+        "output": "all",
+        "on-scroll-up": ":",
+        "on-scroll-down": ":"
+    }
+}
