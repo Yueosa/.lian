@@ -12,13 +12,32 @@
 
 ---
 
-#### 说明:
+#### 说明
 
 这个文档会详细的说明我的每一个目录配置, 你可以直接下载到 `~/.config/` 下使用
 
 我的大部分软件是在 `hyprland.conf` 中配置了 `exec-once` (随 `hyprland` 启动)
 
 还有一小部分 (例如 `sddm` `bluetooth` `polkit` `wpa_supplicant`) 要在用户登录前启动, 所以配置为 `systemd enable`
+
+#### 目录（快速跳转）
+
+| 模块 | 说明 |
+|---|---|
+| [fastfetch](#fastfetch) | 终端系统信息展示与脚本（开机/开终端美化）。 |
+| [fcitx5](#fcitx5) | 输入法框架 + Rime（含取消 Shift 切换中英）。 |
+| [GRUB](#grub) | 引导界面主题配置。 |
+| [sddm](#sddm) | 登录管理器 + astronaut 主题与登录问题修复。 |
+| [zsh](#zsh) | Shell 本体 + starship/zoxide + 常用插件与安装命令。 |
+| [kanshi](#kanshi) | 多显示器自动切换配置（笔记本/外接屏）。 |
+| [kitty](#kitty) | 终端模拟器配置与字体、ssh 兼容说明。 |
+| [rofi](#rofi) | 应用启动器/窗口切换/剪贴板菜单与脚本。 |
+| [swaync](#swaync) | 通知中心配置。 |
+| [hyprlock](#hyprlock) | 锁屏配置与字体依赖。 |
+| [wlogout](#wlogout) | 电源菜单（锁屏/登出/关机/重启）。 |
+| [Hyprland](#hyprland) | 窗口管理器/混成器核心配置说明。 |
+| [nvim](#nvim) | Neovim 配置结构、插件与依赖。 |
+| [waybar](#waybar) | 状态栏配置、模块预览与脚本拆解。 |
 
 ---
 
