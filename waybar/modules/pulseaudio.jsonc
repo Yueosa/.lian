@@ -11,7 +11,7 @@
         },
         "on-click": "pavucontrol -t 3",
         "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
-        "scroll-step": 2,
+        "scroll-step": 1,
         "tooltip": false
     }
 }
