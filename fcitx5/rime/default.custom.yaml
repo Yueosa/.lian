@@ -1,0 +1,10 @@
+patch:
+  __include: rime_ice_suggestion:/
+  ascii_composer:
+    good_old_caps_lock: true
+    switch_key:
+      Caps_Lock: clear
+      Control_L: noop
+      Control_R: noop
+      Shift_L: noop
+      Shift_R: noop
