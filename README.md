@@ -91,7 +91,62 @@ sudo pacman -S ttf-fira-code
 
 这是一款非常适合编程的字体, 支持连字
 
+#### rofi
+
+`rofi` 是一款应用程序启动器, 我用它做了应用启动菜单, 窗口切换菜单, 剪贴板
+
+| 应用启动菜单 | 剪贴板 |
+|-|-|
+| ![rofiapp](./image/rofi1.png) | ![clipboard](./image/rofi3.png) |
+
+###### 使用 `pacman` 安装
+
+```bash
+sudo pacman -S rofi-wayland
+```
+
+##### 我的目录结构如下
+
+```
+ rofi
+├──  clipboard.rasi        # 剪贴板 窗口主题
+├──  cliphist_rofi.sh      # 启动 剪贴板 脚本
+├──  images
+│   └──  pln.jpeg          # logo
+├──  sakurine.rasi         # app, window 窗口主题
+└──  scripts
+    └──  rofi-launcher.sh  # 启动 app, window 窗口脚本
+```
+
+如果你要使用剪贴板脚本的话, 还需要安装以下包:
+
+```bash
+sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrains-mono-nerd xdg-utils
+```
+
+* `cliphist`: 剪贴板历史
+* `wl-clipboard`: 写入剪贴板 (提供 `wl-copy`)
+* `imagemagick`: 提供 `magick/convert` (没装也能用, 只是二进制图片预览可能不生成缩略图)
+* `papirus0icon-theme`: 图标主题
+* `ttf-jetbrains-mono-nerd`: 字体
+* `xdg-utils`: 提供 `xdg-open`
+
+
+
+
 #### nvim
+
+`nvim` 是一款比 `vim` 更强的文本编辑器, 我目前对他进行了 `rust` 和 `markdown` 的定制化
+
+| rust 开发体验 | markdown 书写体验 |
+|-|-|
+| ![rust](./image/nvim1.png) | ![markdown](./image/nvim2.png) |
+
+###### 使用 `pacman` 安装
+
+```bash
+sudo pacman -S nvim
+```
 
 我的 Neovim 配置入口在 `nvim/`，你可以直接把它放到：
 
@@ -101,7 +156,7 @@ cp -r ./nvim ~/.config/nvim
 
 如果你已经有自己的 nvim 配置，也可以只抄 `lua/` 里的模块结构。
 
-###### 目录结构
+##### 目录结构
 
 ```
  nvim
@@ -119,7 +174,7 @@ cp -r ./nvim ~/.config/nvim
 		└──  colors
 ```
 
-###### 插件与依赖
+##### 插件与依赖
 
 我使用 `lazy.nvim` 管理插件，核心插件包括：
 
@@ -133,14 +188,14 @@ cp -r ./nvim ~/.config/nvim
 系统依赖（建议一次装齐）：
 
 ```bash
-sudo pacman -S --needed neovim git curl tar nodejs tree-sitter
+sudo pacman -S --needed neovim git curl tar nodejs tree-sitter tree-sitter-cli
 ```
 
 > 说明：
 > - `nodejs` 用于 GitHub Copilot / Copilot Chat
 > - `tree-sitter`(CLI) 用于 nvim-treesitter 的解析器安装/更新
 
-###### Copilot Chat 使用
+##### Copilot Chat 使用
 
 1) 先在 nvim 里授权（第一次需要）：
 
@@ -152,7 +207,7 @@ sudo pacman -S --needed neovim git curl tar nodejs tree-sitter
 
 - `<leader>ac`：开关 Copilot Chat
 
-###### 常用快捷键（当前配置里显式定义的）
+##### 常用快捷键（当前配置里显式定义的）
 
 > 我把 `<leader>` 设成了空格键（Space）。
 
