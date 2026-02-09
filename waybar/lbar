@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+# --------------------------------------------------------------------
+# 脚本：lbar
+# 用途：Waybar 守护启动脚本（start/stop/status/run）。
+# 设计目标：
+#   - Hyprland 用 exec-once 调一次 start 即可
+#   - Waybar 崩溃时自动拉起
+#   - stop 能彻底停掉（不会被守护进程马上重启）
+# --------------------------------------------------------------------
+
+set -euo pipefail
+
+APP_NAME="lbar"
+
+runtime_dir="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/lbar"
+mkdir -p "$runtime_dir" 2>/dev/null || true
+
+monitor_pid_file="$runtime_dir/waybar-monitor.pid"
+waybar_pid_file="$runtime_dir/waybar.pid"
+log_file="$runtime_dir/waybar.log"
+
+waybar_cmd=(
+  waybar
+  -c "$HOME/.config/waybar/config.jsonc"
+  -s "$HOME/.config/waybar/style.css"
+)
+
+is_pid_alive() {
+  local pid="$1"
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+read_pid() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+  head -n1 "$file" 2>/dev/null | tr -d '[:space:]'
+}
+
+write_pid() {
+  local file="$1" pid="$2"
+  printf '%s\n' "$pid" >"$file" 2>/dev/null || true
+}
+
+cmd_run() {
+  if [[ -f "$monitor_pid_file" ]]; then
+    local old
+    old="$(read_pid "$monitor_pid_file" || true)"
+    if is_pid_alive "$old"; then
+      exit 0
+    fi
+  fi
+
+  write_pid "$monitor_pid_file" "$$"
+
+  cleanup() {
+    rm -f "$monitor_pid_file" "$waybar_pid_file" 2>/dev/null || true
+  }
+  trap cleanup EXIT INT TERM
+
+  while true; do
+    if ! command -v waybar >/dev/null 2>&1; then
+      sleep 2
+      continue
+    fi
+
+    "${waybar_cmd[@]}" >>"$log_file" 2>&1 &
+    waybar_pid=$!
+    write_pid "$waybar_pid_file" "$waybar_pid"
+
+    wait "$waybar_pid" || true
+
+    # 如果监控进程仍在（没有被 stop 掉），就延迟后重启
+    sleep 1
+  done
+}
+
+cmd_start() {
+  local old
+  old="$(read_pid "$monitor_pid_file" || true)"
+  if is_pid_alive "$old"; then
+    exit 0
+  fi
+
+  # 背景启动守护进程
+  ("$0" run >>"$log_file" 2>&1 &)
+}
+
+cmd_stop() {
+  local mpid wpid
+  mpid="$(read_pid "$monitor_pid_file" || true)"
+  wpid="$(read_pid "$waybar_pid_file" || true)"
+
+  # 先杀监控，避免马上重启
+  if is_pid_alive "$mpid"; then
+    kill "$mpid" 2>/dev/null || true
+    sleep 0.2
+  fi
+
+  # 再杀 waybar
+  if is_pid_alive "$wpid"; then
+    kill "$wpid" 2>/dev/null || true
+    sleep 0.2
+  fi
+
+  # 兜底：如果 waybar 仍在，按名字结束
+  pkill -x waybar 2>/dev/null || true
+
+  rm -f "$monitor_pid_file" "$waybar_pid_file" 2>/dev/null || true
+}
+
+cmd_status() {
+  local mpid wpid
+  mpid="$(read_pid "$monitor_pid_file" || true)"
+  wpid="$(read_pid "$waybar_pid_file" || true)"
+
+  if is_pid_alive "$mpid"; then
+    echo "monitor: running (pid=$mpid)"
+  else
+    echo "monitor: stopped"
+  fi
+
+  if is_pid_alive "$wpid"; then
+    echo "waybar:  running (pid=$wpid)"
+  else
+    # 兜底检查
+    if pgrep -x waybar >/dev/null 2>&1; then
+      echo "waybar:  running (pid unknown)"
+    else
+      echo "waybar:  stopped"
+    fi
+  fi
+}
+
+cmd_restart() {
+  cmd_stop || true
+  cmd_start
+}
+
+case "${1:-}" in
+  run) cmd_run ;;
+  start) cmd_start ;;
+  stop) cmd_stop ;;
+  restart) cmd_restart ;;
+  status) cmd_status ;;
+  *)
+    cat <<EOF
+$APP_NAME: Waybar 守护脚本
+
+用法:
+  $APP_NAME start    # 后台启动并监控 Waybar
+  $APP_NAME stop     # 停止监控并结束 Waybar
+  $APP_NAME restart  # 重启
+  $APP_NAME status   # 查看状态
+  $APP_NAME run      # 前台运行监控循环（一般不给你手动用, 嘻嘻）
+EOF
+    exit 2
+    ;;
+esac
