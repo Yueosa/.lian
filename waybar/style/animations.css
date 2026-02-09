@@ -1,0 +1,24 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Animations                                               */
+/* Description: 工作区爱心动画等                                     */
+/* ---------------------------------------------------------------- */
+
+@keyframes color-change {
+    0% {
+        color: @text-color;
+    }
+    50% {
+        color: @mtf-pink;
+    }
+    100% {
+        color: @text-color;
+    }
+}
+
+#workspaces button.active label {
+    animation-name: color-change;
+    animation-duration: 2s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    font-size: 20px;
+}

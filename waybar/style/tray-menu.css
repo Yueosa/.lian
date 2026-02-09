@@ -1,0 +1,31 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Tray Menu                                                */
+/* Description: 托盘右键菜单样式，匹配岛屿设计风格                     */
+/* ---------------------------------------------------------------- */
+
+#tray menu {
+    background-color: @module-bg;
+    border: 2px solid @mtf-pink;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: -2px 4px 0px @island-shadow-color;
+    margin: 5px;
+}
+
+#tray menu menuitem {
+    color: @text-color;
+    border-radius: 8px;
+    padding: 4px 12px;
+    transition: all 0.2s ease;
+}
+
+#tray menu menuitem:hover {
+    background-color: @mtf-pink;
+    color: @mtf-white;
+}
+
+#tray menu separator {
+    background-color: rgba(245, 169, 184, 0.3);
+    margin: 4px 0;
+    min-height: 1px;
+}

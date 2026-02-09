@@ -1,0 +1,20 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Tooltip                                                  */
+/* Description: 鼠标悬浮提示框样式                                    */
+/* ---------------------------------------------------------------- */
+
+tooltip {
+    background: rgba(0, 0, 0, 0);
+    border: none;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+tooltip label {
+    background: @module-bg;
+    border: 2px solid @island-shadow-color;
+    border-radius: 15px;
+    color: @text-color;
+    padding: 10px;
+    margin-top: -5px;
+}

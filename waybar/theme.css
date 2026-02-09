@@ -13,7 +13,6 @@
 @define-color island-shadow-color @mtf-pink;      /* 阴影颜色 */
 
 /* 文字与图标颜色 */
-/* "淡一点的蓝色": 从深蓝(#086BA8)调整为更亮更柔和的蓝 #209CE6 */
 @define-color main-color #209CE6; 
 @define-color text-color @main-color;
 

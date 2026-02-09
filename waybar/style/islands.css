@@ -1,0 +1,75 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Islands (Groups)                                         */
+/* Description: 岛屿布局样式，对应 config.jsonc 的 group/island-*       */
+/* ---------------------------------------------------------------- */
+
+#island-left-1, #island-left-2,
+#island-center-1, #island-center-2,
+#island-right-1, #island-right-2 {
+    background-color: @module-bg;
+    color: @text-color;
+
+    /* 胶囊形状圆角 */
+    border-radius: 15px;
+
+    /* 2px 粉色阴影 (左下方向) - solid shadow */
+    box-shadow: -2px 4px 0px @island-shadow-color;
+
+    /* 岛屿之间的间距 (Config 里已设 spacing，这里是外部 margin) */
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 4px;
+    margin-right: 4px;
+
+    /* 内部模块的边距 */
+    padding-left: 10px;
+    padding-right: 10px;
+
+    /* 强制固定高度，防止内部字体变化撑大盒子导致抖动 */
+    min-height: 28px;
+}
+
+/* 针对最左侧岛屿：增加左边距以防止阴影被切掉 (4px + 2px) */
+#island-left-1 {
+    margin-left: 6px;
+}
+
+/* 中间 Media|Cava：左侧留白别太大 */
+#island-center-2 {
+    padding-left: 6px;
+    padding-right: 8px;
+}
+
+/* Logo 模块独立样式 */
+#custom-arch_logo {
+    color: @main-color;
+    font-size: 15px;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Media & Cava - 视觉重置                                          */
+/* ---------------------------------------------------------------- */
+
+#custom-media, #custom-cava {
+    background-color: transparent;
+    color: @text-color;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 5px;
+}
+
+/* Media: 歌词（主文本）用粉色 */
+#custom-media,
+#custom-media label {
+    color: @mtf-pink;
+}
+
+#custom-media {
+    padding: 0 2px;
+    min-width: 280px;
+}

@@ -1,0 +1,21 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Base                                                     */
+/* Description: 全局重置 + Waybar 容器样式                             */
+/* ---------------------------------------------------------------- */
+
+/* 全局重置 (Reset) */
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font", monospace; /* 强制字体 */
+    font-size: 13px; /* 基础字号 */
+    min-height: 0;
+}
+
+/* 状态栏本体 */
+window#waybar {
+    background: @bar-bg;
+    color: @text-color;
+    transition-property: background-color;
+    transition-duration: .5s;
+}

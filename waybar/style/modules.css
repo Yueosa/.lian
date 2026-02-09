@@ -1,0 +1,125 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Modules                                                  */
+/* Description: 模块内部的通用间距 + 各模块特殊样式                     */
+/* ---------------------------------------------------------------- */
+
+/* 给所有模块加一点默认的左右间距 */
+#workspaces, #window, #clock, #custom-clock, #cpu, #memory, #disk, #custom-gpuinfo,
+#mpris, #custom-cava, #network, #pulseaudio, #battery,
+#bluetooth, #custom-fcitx, #custom-clipboard, #custom-updates, #tray,
+#custom-window, #custom-cpu, #custom-memory, #custom-bluetooth {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+/* 当前工作区“单字符”指示器 */
+#custom-ws_current,
+#custom-ws_current label {
+    background-color: transparent;
+    color: @mtf-pink;
+    font-size: 18px;
+    font-weight: 700;
+    margin-left: 1px;
+    margin-right: 2px;
+    padding: 0 2px;
+    min-width: 20px;
+}
+
+/* Window (custom) - 默认蓝色；快捷键触发时短暂高亮为粉色 */
+#custom-window,
+#custom-window label {
+    color: @text-color;
+    transition: color 3s ease;
+}
+
+#custom-window.flash,
+#custom-window.flash label,
+#custom-window .flash,
+#custom-window label.flash {
+    color: @mtf-pink;
+    transition-duration: 0s;
+}
+
+#custom-window.hot,
+#custom-window.hot label,
+#custom-window .hot,
+#custom-window label.hot {
+    color: @mtf-pink;
+    transition-duration: 0s;
+}
+
+/* 工作区 (Workspaces) 美化 */
+#workspaces button {
+    padding: 0 0;
+    background-color: transparent;
+    color: @mtf-pink;
+    margin: 0 1px;
+    min-width: 20px;
+}
+
+#workspaces button:hover {
+    background: transparent;
+    box-shadow: none;
+    text-shadow: inherit;
+    color: @text-color;
+}
+
+#workspaces button.active {
+    color: @mtf-pink;
+    background-color: transparent;
+    text-shadow: none;
+    padding: 0 0;
+    transition: all 0.3s cubic-bezier(.55,-0.68,.48,1.68);
+}
+
+/* 修复字体大小不生效的问题 */
+#workspaces button.active label {
+    font-size: 20px;
+    color: @mtf-pink;
+    transition: all 0.3s cubic-bezier(.55,-0.68,.48,1.68);
+}
+
+#workspaces button.urgent {
+    background-color: @mtf-pink;
+    color: @mtf-white;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+/* 电池状态颜色 */
+#battery.charging {
+    color: #50FA7B;
+}
+
+#battery.warning:not(.charging) {
+    color: #FFB86C;
+}
+
+#battery.critical:not(.charging) {
+    color: #FF5555;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to {
+        background-color: #ffffff;
+        color: #000000;
+    }
+}
+
+/* 托盘图标间距 */
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: @mtf-pink;
+}
