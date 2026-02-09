@@ -486,19 +486,19 @@ sudo pacman -S waybar
 
 | 模块名称 | 模块预览 |
 |---|---|
-| `左侧岛屿` <br> 工作区 / logo / 窗口 | ![waybarleft](./image/waybarleft1.png) |
-| `焦点窗口信息` | ![window](./image/waybarwindow.png) |
-| `时间显示` | ![clock](./image/waybarclock.jpg) |
-| `显卡监控` | ![gpu](./image/waybargpu.png) |
-| `CPU 监控` | ![cpu](./image/waybarcpu.png) |
-| `内存监控` | ![mem](./image/waybarmem.png) |
-| `媒体信息` <br> `音频流可视化` | ![media](./image/waybarmedia.png) |
-| `右侧岛屿` <br> 网络 / 音量 / 电池 / 蓝牙 …） | ![waybarright](./image/waybarright1.png) |
-| `网络信息` | ![net](./image/waybarnet.png) |
-| `蓝牙信息` | ![bluetooth](./image/waybarblt.png) |
-| `包管理器` | ![update](./image/waybarup.png) |
-| `系统托盘` | ![tray](./image/waybartray.png) |
-| `托盘右键菜单样式` | ![onright](./image/waybaronright.png) |
+| `左侧岛屿` <br> 工作区 / logo / 窗口 | <img src="./image/waybarleft1.png" alt="waybarleft" width="420" /> |
+| `焦点窗口信息` | <img src="./image/waybarwindow.png" alt="window" width="420" /> |
+| `时间显示` | <img src="./image/waybarclock.jpg" alt="clock" width="420" /> |
+| `显卡监控` | <img src="./image/waybargpu.png" alt="gpu" width="420" /> |
+| `CPU 监控` | <img src="./image/waybarcpu.png" alt="cpu" width="420" /> |
+| `内存监控` | <img src="./image/waybarmem.png" alt="mem" width="420" /> |
+| `媒体信息` <br> `音频流可视化` | <img src="./image/waybarmedia.png" alt="media" width="420" /> |
+| `右侧岛屿` <br> 网络 / 音量 / 电池 / 蓝牙 …） | <img src="./image/waybarright1.png" alt="waybarright" width="420" /> |
+| `网络信息` | <img src="./image/waybarnet.png" alt="net" width="420" /> |
+| `蓝牙信息` | <img src="./image/waybarblt.png" alt="bluetooth" width="420" /> |
+| `包管理器` | <img src="./image/waybarup.png" alt="update" width="420" /> |
+| `系统托盘` | <img src="./image/waybartray.png" alt="tray" width="420" /> |
+| `托盘右键菜单样式` | <img src="./image/waybaronright.png" alt="onright" width="420" /> |
 
 
 #### 因为我的配置比较复杂, 所以特意放到最后来说
