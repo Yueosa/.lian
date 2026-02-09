@@ -1,8 +1,14 @@
+<div align="center">
+
 # 恋的 Arch 配置
 
 > 我使用的桌面环境是 `Hyprland` + `wayland` + `kitty` + `zshell`
 
+![Hyprland](./image/hyprland.png)
+
 如果你的环境和我一样, 可以直接抄作业!
+
+</div>
 
 ---
 
@@ -12,7 +18,7 @@
 
 我的大部分软件是在 `hyprland.conf` 中配置了 `exec-once` (随 `hyprland` 启动)
 
-还有一小部分 (例如 `sddm` ``)
+还有一小部分 (例如 `sddm` `bluetooth` `polkit` `wpa_supplicant`) 要在用户登录前启动, 所以配置为 `systemd enable`
 
 ---
 
@@ -101,11 +107,68 @@ sudo systemctl enable sddm
 
 ##### 无法登录问题
 
-如果你也使用 `sddm-astronaut-theme`, 那么可能遇到一个登录问题: **用户名显示全大写, 而实际用户名是大小写结合的**
+如果你也使用 `sddm-astronaut-theme`, 那么可能遇到一个登录问题: **用户名显示全大写, 而实际用户名是包含大小写的**
 
 这个问题在 [issues #58](https://github.com/Keyitdev/sddm-astronaut-theme/issues/58) 中提及, 需要修改对应主题的 `conf` 文件
 
 配置这个字段 `AllowUppercaseLettersInUsernames="false" `
+
+## | zsh
+
+`zsh` 是一款强大的 shell 程序
+
+我的配置主要由三部分组成：
+
+- 一些更顺手的命令行工具（`eza` / `bat` / `dust` / `fastfetch`）
+- 提示符与目录跳转（`starship` / `zoxide`）
+- zsh 插件与补全（`zsh-completions` / `zsh-autosuggestions` / `zsh-syntax-highlighting`）
+
+###### 安装（Arch Linux）
+
+```bash
+sudo pacman -S --needed \
+	zsh \
+	starship zoxide \
+	eza bat dust fastfetch \
+	zsh-completions zsh-autosuggestions zsh-syntax-highlighting
+```
+
+> 说明：
+> - 我在 `.zshrc` 里是从 `/usr/share/zsh/plugins/...` 读取插件的，所以你需要安装上面这三个 `zsh-*` 包。
+> - `fastfetch` 负责我每次打开终端自动展示系统信息（`.zshrc` 最后有一行 `f`）。
+
+##### 启用 zsh（可选）
+
+如果你想把 zsh 设为默认 shell：
+
+```bash
+chsh -s /bin/zsh
+```
+
+##### 配置文件位置
+
+我的 `.zshrc` 里用到的关键点：
+
+- 历史记录：写入到 `~/.config/zsh/zsh_history`，建议先建目录
+
+```bash
+mkdir -p ~/.config/zsh
+```
+
+- 别名：
+	- `ls` → `eza`（带图标、git 状态）
+	- `cat` → `bat` (更好的 cat)
+	- `du` → `dust` (更优雅的查看磁盘占用)
+	- `f` → `fastfetch` (上文有介绍)
+
+- 增强：
+	- `compinit` + `zsh-completions`：补全增强
+	- `zsh-autosuggestions`：自动建议
+	- `zsh-syntax-highlighting`：语法高亮
+
+- 体验：
+	- `starship`：提示符
+	- `zoxide`：目录跳转（我把 `cd` alias 成了 `z`，以及 `cdi` → `zi`）
 
 ## | kanshi
 
@@ -138,6 +201,8 @@ profile {
 
 `kitty` 是一个支持 真彩色, 光标拖尾, 更强控制序列的终端
 
+![kitty](./image/kitty.png)
+
 ###### 使用 `pacman` 安装
 
 ```bash
@@ -161,11 +226,23 @@ sudo pacman -S ttf-fira-code
 
 这是一款非常适合编程的字体, 支持连字
 
+##### 使用 `kitty` 进行 ssh 连接
+
+`kitty` 拥有自己专属的终端类型 `xterm-kitty`
+
+所以如果你直接 ssh 服务器, 大概率会报警 `WARNING: terminal is not fully functional` `'xterm-kitty': unknown terminal type` ...
+
+`kitty` 官方推荐的解决方案是, 将 terminfo 安装到你要 ssh 的远端设备上
+
+```bash
+kitty +kitten ssh 用户@地址
+```
+
 ## | rofi
 
 `rofi` 是一款应用程序启动器, 我用它做了应用启动菜单, 窗口切换菜单, 剪贴板
 
-| 应用启动菜单 | 剪贴板 |
+| 应用菜单 | 剪贴板 |
 |-|-|
 | ![rofiapp](./image/rofi1.png) | ![clipboard](./image/rofi3.png) |
 
@@ -205,9 +282,9 @@ sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrain
 
 `swaync` 是一个通知中心, 他通过监听 `D-Bus` 来获得实时的消息显示
 
-| 通知弹窗 | 通知中心 |
+| 消息通知弹窗 | 通知中心 |
 |-|-|
-| ![swaync](./image/swaync1.png) | ![swayncclient](./image/swaync2.png) |
+| ![swaync1](./image/swaync1.png) <br> ![swaync2](./image/rofi2.png) | ![swayncclient](./image/swaync2.png) |
 
 ###### 使用 `paru` 安装
 
@@ -289,6 +366,8 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk qt5-w
 你可以直接把 配置文件 丢给 AI 问, 如果有一些软件 AI 不认识 (比如 `lianwall`), 那是正常的
 
 因为这些是我自己写的软件, 在我的 [Github](github.com/Yueosa) 主页可以找到
+
+还有一些快捷键绑定的脚本, 他们是来源于 `rofi` `waybar` ...
 
 ## | nvim
 
@@ -373,4 +452,72 @@ sudo pacman -S --needed neovim git curl tar nodejs tree-sitter tree-sitter-cli
 
 其他快捷键（LSP / Git / Copilot Chat 等）不用记：按一下 `Space` 会弹出 which-key 提示。
 
+## | waybar
 
+`waybar` 是专为 wayland 设计的 **高定义, 极强性能, 无限拓展** 的状态栏
+
+###### 使用 `pacman` 安装 - 以及安装我的 `waybar` 配置用到的所有依赖
+
+```bash
+sudo pacman -S waybar
+(补充安装依赖的命令)
+```
+
+##### 效果预览
+
+| 模块名称 | 模块预览 |
+|---|---|
+| `左侧岛屿` <br> 工作区 / logo / 窗口 | ![waybarleft](./image/waybarleft1.png) |
+| `焦点窗口信息` | ![window](./image/waybarwindow.png) |
+| `时间显示` | ![clock](./image/waybarclock.jpg) |
+| `显卡监控` | ![gpu](./image/waybargpu.png) |
+| `CPU 监控` | ![cpu](./image/waybarcpu.png) |
+| `内存监控` | ![mem](./image/waybarmem.png) |
+| `媒体信息` <br> `音频流可视化` | ![media](./image/waybarmedia.png) |
+| `右侧岛屿` <br> 网络 / 音量 / 电池 / 蓝牙 …） | ![waybarright](./image/waybarright1.png) |
+| `网络信息` | ![net](./image/waybarnet.png) |
+| `蓝牙信息` | ![bluetooth](./image/waybarblt.png) |
+| `包管理器` | ![update](./image/waybarup.png) |
+| `系统托盘` | ![tray](./image/waybartray.png) |
+| `托盘右键菜单样式` | ![onright](./image/waybaronright.png) |
+
+
+#### 因为我的配置比较复杂, 所以特意放到最后来说
+
+在这里我会将每一个模块拆解开, 为你介绍他的功能, 依赖, 脚本, 以及脚本的用法
+
+##### 当前工作区显示 ws_current
+
+##### 所有工作区状态 workspaces
+
+##### 图标 arch_logo
+
+##### 当前活动窗口监控 window
+
+##### 时间和日期显示 clock
+
+##### 显卡监控 gpuinfo
+
+##### cpu监控 cpu
+
+##### 内存与swap监控 memory
+
+##### 媒体显示器 media
+
+##### 音频可视化 cava
+
+##### 网络模块 network
+
+##### 音频控制 pulseaudio
+
+##### 电池信息 battery
+
+##### 蓝牙模块 bluetooth
+
+##### 剪贴板 clipboard
+
+##### 系统更新 updates
+
+##### 系统托盘 tray
+
+##### (未启用) backlight
