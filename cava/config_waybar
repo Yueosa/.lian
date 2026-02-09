@@ -1,0 +1,21 @@
+## CAVA 配置（Waybar 专用）
+## 用法：复制到 ~/.config/cava/config_waybar
+## 目标：输出 0-7 的 ASCII 强度，并用分号分隔，供 waybar_cava_proc.py 映射字符条。
+
+[general]
+bars = 14
+framerate = 60
+autosens = 1
+overshoot = 20
+sensitivity = 50
+
+[input]
+method = pulse
+source = auto
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 7
+bar_delimiter = 59
