@@ -12,3 +12,6 @@ fastfetch/logo
 
 # nvim
 lazy-lock.json
+
+# waybar python
+__pycache__
