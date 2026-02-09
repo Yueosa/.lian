@@ -147,6 +147,24 @@ paru -S swaync
 
 我的配置文件非常简单, 直接 `cp` 就可以使用
 
+## | hyprlock
+
+`hyprlock` 是一个简单的锁屏软件
+
+![hyprlock](./image/hyprlock.jpg)
+
+###### 使用 `pacman` 安装
+
+```bash
+sudo pacman -S hyprlock
+```
+
+如果你想要获得和我一样的效果, 还需要安装这个字体:
+
+```bash
+sudo pacman -S ttf-jetbrains-mono-nerd
+```
+
 ## | wlogout
 
 `wlogout` 提供了一个电源管理页面, 我的配置里分别是 `锁屏` `登出` `关机` `重启`
@@ -171,11 +189,42 @@ sudo pacman -S --needed wlogout jq gettext procps-ng
 └──  style.css
 ```
 
+## | Hyprland
+
+本次配置的重头戏之一, `hyprland` 是我心目中最 **linux** 的桌面环境
+
+###### 使用 `pacman` 安装 (可能会漏掉一些包, 请以 hypr.land 为准)
+
+```bash
+sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk qt5-wayland qt6-wayland polkit-gnome
+```
+
+* `hyprland`: 混成器, 充当窗口管理器, 也是显示服务器
+* `xdg-desktop-portal-hyprland`: Hyprland 与 应用 沟通的桥梁
+* `xdg-desktop-portal-gtk`: 提供文件选择对话框
+* `qt5/6-wayland`: 让基于 qt 框架的应用能跑在 wayland 上 
+* `polkit-gnome`: 当你执行需要 sudo 权限的 gui 应用时跳出弹窗
+
+关于 `hyprland` 配置详解, 可以直接 [跳转](./hypr/hyprland.conf) 查看注释, 但这里还是做一个简单介绍
+
+* **修复区:** 这里定义了一些杂项修复
+* **窗口规则:** 定义了窗口弹出时的行为, 例如浮动模式弹出, 弹出时的窗口大小 ...
+* **NVIDIA:** NVIDIA 显卡的修复, 如果你刚开始觉得渲染网页, 调度GPU卡顿是正常的, 几天后还卡顿那就不正常了(
+* **QT变量:** 为了让 QT 高效运行在 wayland 高分屏上的配置
+* **全局变量:** hyprland 的配置文件支持使用变量, 建议把你常用的目录全部定义为变量 (例如截图保存目录, 脚本目录)
+* **自动启动:** 随着 hyprland 一起启动的软件
+* **窗口外观:** 定义窗口的圆角, 边框, 颜色, 动画 ...
+* **快捷键:** 这部分建议直接抄作业
+
+你可以直接把 配置文件 丢给 AI 问, 如果有一些软件 AI 不认识 (比如 `lianwall`), 那是正常的
+
+因为这些是我自己写的软件, 在我的 [Github](github.com/Yueosa) 主页可以找到
+
 ## | nvim
 
 `nvim` 是一款比 `vim` 更强的文本编辑器, 我目前对他进行了 `rust` 和 `markdown` 的定制化
 
-| rust 开发体验 | markdown 书写体验 |
+| rust 开发体验 | markdown 体验 |
 |-|-|
 | ![rust](./image/nvim1.png) | ![markdown](./image/nvim2.png) |
 
