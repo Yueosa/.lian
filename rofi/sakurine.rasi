@@ -1,0 +1,286 @@
+/**
+ * Sakurine's Rofi Theme
+ */
+
+/*****----- Configuration -----*****/
+/* [整体配置]
+ * 程序的"大脑"，整合了全局行为设置和主题样式配置。
+ */
+configuration {
+    /* === 基础功能设置 === */
+    modi:                       "drun,window"; /* 启用的模式列表 */
+    show-icons:                 true; /* 显示应用图标 */
+    icon-theme:                 "Papirus"; /* 图标主题 */
+    
+    /* === 显示文本 === */
+    display-drun:               "󰣆 APP"; /* 应用启动器标签 */
+    display-run:                "󰆍 RUN"; /* 命令运行器标签 */
+    display-filebrowser:        "󰉋 FILE"; /* 文件浏览器标签 */
+    display-window:             "󱂬 WINDOW"; /* 窗口切换器标签 */
+    
+    /* === 列表显示格式 === */
+    drun-display-format:        "{name}"; /* 应用列表只显示名称 */
+    window-format:              "{w} {t}"; /* 窗口列表格式：工作区·类别·标题 */
+    
+    /* === 搜索与匹配 === */
+    case-sensitive:             false; /* 搜索不区分大小写 */
+    matching:                   "fuzzy"; /* 使用模糊匹配算法 */
+    tokenize:                   true; /* 允许分词搜索 */
+    normalize-match:            true; /* 标准化匹配结果 */
+    
+    /* === 应用启动器设置 === */
+    drun-match-fields:          "name,keywords"; /* 搜索匹配的字段 */
+    drun-show-actions:          false; /* 不显示应用的额外动作 */
+    drun-url-launcher:          "xdg-open"; /* URL 启动器 */
+    drun {
+        parse-user:             true; /* 解析用户桌面文件 */
+        parse-system:           true; /* 解析系统桌面文件 */
+    }
+    
+    /* === 命令运行器设置 === */
+    run-command:                "{cmd}"; /* 执行命令的格式 */
+    run-shell-command:          "{terminal} -e {cmd}"; /* 在终端中执行的格式 */
+    
+    /* === 窗口切换器设置 === */
+    window-match-fields:        "title,class,role,name,desktop"; /* 窗口搜索匹配字段 */
+    window-command:             "wmctrl -i -R {window}"; /* 切换窗口的命令 */
+    window-thumbnail:           false; /* 不显示窗口缩略图 */
+    
+    /* === 文件浏览器设置 === */
+    filebrowser {
+        directories-first:      true; /* 文件夹优先显示 */
+        sorting-method:         "name"; /* 按名称排序 */
+    }
+    
+    /* === 历史记录与排序 === */
+    disable-history:            false; /* 启用历史记录 */
+    sorting-method:             "normal"; /* normal 算法排序方式 */
+    max-history-size:           25; /* 最大历史记录数 */
+    
+    /* === 行为设置 === */
+    cycle:                      true; /* 允许列表循环 */
+    scroll-method:              0; /* 滚动方式 */
+    click-to-exit:              true; /* 点击外部关闭窗口 */
+    steal-focus:                false; /* 不强制获取焦点 */
+    
+    /* === 字体与终端 === */
+    font:                       "JetBrains Mono Nerd Font 10"; /* 全局字体 */
+    terminal:                   "kitty"; /* 默认终端 */
+    
+    /* === 图标回退 === */
+    run,drun {
+        fallback-icon:          "application-x-addon"; /* 没有图标时使用的默认图标 */
+    }
+}
+
+/*****----- Global Properties -----*****/
+/* [全局变量]
+ * 程序的"调色盘"，定义所有颜色变量，方便统一修改主题配色。
+ */
+* {
+    /* === MTF 跨性别骄傲旗配色 === */
+    mtf-blue:       #5BCEFAFF; /* 天蓝色 - 代表男性 */
+    mtf-pink:       #F5A9B8FF; /* 粉红色 - 代表女性 */
+    mtf-white:      #FFFFFFFF; /* 纯白色 - 代表非二元/过渡 */
+    
+    /* === UI 调色板 === */
+    background:     rgba(255, 255, 255, 0.9); /* 主背景：奶白色微透明 */
+    background-alt: rgba(91, 206, 250, 0.1);  /* 次级背景：浅蓝色（备用） */
+    foreground:     #5BCEFAFF;                /* 主前景色：天蓝色文字 */
+    selected:       #F5A9B8FF;                /* 选中项背景：粉红色 */
+    active:         #5BCEFAFF;                /* 活动项颜色：天蓝色 */
+    urgent:         #F5A9B8FF;                /* 紧急项颜色：粉红色 */
+}
+
+/*****----- Main Window -----*****/
+/* [主窗口] - window
+ * 程序的"外壳"，定义整个 Rofi 窗口的大小、位置、边框和背景。
+ */
+window {
+    /* 基础属性 */
+    transparency:                "real"; /* 真实透明度 */
+    location:                    center; /* 窗口位置：屏幕居中 */
+    anchor:                      center; /* 锚点：居中 */
+    fullscreen:                  false; /* 不全屏显示 */
+    width:                       900px; /* 窗口宽度 */
+    height:                      500px; /* 窗口高度 */
+    enabled:                     true; /* 启用窗口 */
+    
+    /* 装饰：粉蓝渐变感边框 */
+    border:                      6px; /* 边框宽度 */
+    border-color:                @mtf-blue; /* 边框颜色：天蓝色 */
+    border-radius:               24px; /* 圆角半径 */
+    background-color:            @background; /* 背景颜色：奶白色微透明 */
+    cursor:                      "default"; /* 默认光标样式 */
+}
+
+/*****----- Main Box -----*****/
+/* [主容器] - mainbox
+ * 窗口内的"总布局"，负责把界面分成左右两部分（imagebox 和 listbox）。
+ */
+mainbox {
+    enabled:                     true; /* 启用主容器 */
+    spacing:                     0px; /* 子元素间距为 0（无缝衔接） */
+    background-color:            transparent; /* 背景透明 */
+    orientation:                 horizontal; /* 水平排列（左图右表） */
+    children:                    [ "imagebox", "listbox" ]; /* 子元素：图片区 + 列表区 */
+}
+
+/*****----- Image Box (左侧图片区) -----*****/
+/* [左侧侧边栏] - imagebox
+ * 自定义容器，占据左侧，包含背景图、输入框和模式切换按钮。
+ */
+imagebox {
+    width:                       420px; /* 侧边栏宽度 */
+    padding:                     30px; /* 内边距 */
+    background-color:            transparent; /* 背景透明（显示背景图） */
+    background-image:            url("~/.config/rofi/images/pln.jpeg", both); /* 背景图片路径及自适应模式 */
+    border-radius:               20px 0px 0px 20px; /* 圆角：左上20px 右上0 右下0 左下20px */
+    orientation:                 vertical; /* 垂直排列子元素 */
+    children:                    [ "inputbar", "dummy", "mode-switcher" ]; /* 子元素：输入框→占位符→按钮 */
+}
+
+/*****----- List Box (右侧列表区) -----*****/
+/* [右侧内容栏] - listbox
+ * 自定义容器，占据右侧，专门包裹搜索结果列表。
+ */
+listbox {
+    spacing:                     10px; /* 子元素间距 */
+    padding:                     25px; /* 内边距 */
+    background-color:            rgba(255, 255, 255, 0.6); /* 半透明白色磨砂背景 */
+    border-radius:               0px 20px 20px 0px; /* 圆角：左上0 右上20px 右下20px 左下0 */
+    orientation:                 vertical; /* 垂直排列 */
+    children:                    [ "listview" ]; /* 子元素：列表视图 */
+}
+
+/*****----- Inputbar (漂浮在图片上方) -----*****/
+/* [输入栏] - inputbar
+ * 用户的打字区，包含搜索图标和文本输入框，漂浮在左侧图片上方。
+ */
+inputbar {
+    enabled:                     true; /* 启用输入栏 */
+    spacing:                     10px; /* 图标与输入框间距 */
+    padding:                     15px; /* 内边距 */
+    border:                      2px; /* 边框宽度 */
+    border-color:                @mtf-white; /* 白色边框 */
+    border-radius:               12px; /* 圆角 */
+    background-color:            transparent; /* 背景透明（显示背景图） */
+    text-color:                  @mtf-blue; /* 文字颜色：天蓝色 */
+    children:                    [ "textbox-prompt-colon", "entry" ]; /* 子元素：图标 + 输入框 */
+}
+
+/* [搜索图标] - textbox-prompt-colon */
+textbox-prompt-colon {
+    enabled:                     true; /* 启用图标 */
+    expand:                      false; /* 不自动扩展宽度 */
+    str:                         ""; /* Nerd Font 搜索图标 */
+    background-color:            transparent; /* 背景透明 */
+    text-color:                  inherit; /* 继承父级文字颜色 */
+}
+
+/* [文本输入框] - entry */
+entry {
+    enabled:                     true; /* 启用输入框 */
+    background-color:            inherit; /* 继承背景颜色 */
+    text-color:                  inherit; /* 继承文字颜色 */
+    cursor:                      text; /* 文本光标样式 */
+    placeholder:                 "Search Apps..."; /* 占位符提示文本 */
+    placeholder-color:           inherit; /* 占位符颜色继承 */
+}
+
+/*****----- Listview -----*****/
+/* [结果列表] - listview
+ * 显示搜索到的应用/窗口列表，控制显示行列数、滚动行为。
+ */
+listview {
+    enabled:                     true; /* 启用列表视图 */
+    columns:                     1; /* 单列显示 */
+    lines:                       8; /* 同时显示 8 行 */
+    cycle:                       true; /* 允许循环滚动（到底后回到顶部） */
+    dynamic:                     true; /* 动态调整列表大小 */
+    scrollbar:                   false; /* 隐藏滚动条 */
+    layout:                      vertical; /* 垂直布局 */
+    reverse:                     false; /* 正向排列（不倒序） */
+    fixed-height:                true; /* 固定高度 */
+    fixed-columns:               true; /* 固定列宽 */
+    spacing:                     8px; /* 列表项之间的间距 */
+    background-color:            transparent; /* 背景透明 */
+    text-color:                  @foreground; /* 文字颜色：天蓝色 */
+}
+
+/*****----- Elements -----*****/
+/* [列表项] - element
+ * 列表中的每一个条目，包含图标和文字，支持不同状态样式。
+ */
+element {
+    enabled:                     true; /* 启用列表元素 */
+    spacing:                     12px; /* 图标与文字间距 */
+    padding:                     10px; /* 内边距 */
+    border-radius:               12px; /* 圆角 */
+    background-color:            transparent; /* 背景透明 */
+    text-color:                  @foreground; /* 文字颜色 */
+    cursor:                      pointer; /* 鼠标指针样式 */
+}
+
+/* [正常状态] */
+element normal.normal {
+    background-color:            inherit; /* 背景继承 */
+    text-color:                  inherit; /* 文字颜色继承 */
+}
+
+/* [选中状态] */
+element selected.normal {
+    background-color:            @selected; /* 背景变为粉红色 */
+    text-color:                  @mtf-white; /* 文字变为纯白色 */
+    border:                      0px 0px 0px 6px; /* 左侧增加 6px 边框 */
+    border-color:                @mtf-blue; /* 边框颜色：天蓝色 */
+}
+
+/* [应用图标] - element-icon */
+element-icon {
+    background-color:            transparent; /* 背景透明 */
+    size:                        36px; /* 图标大小：36x36px */
+    cursor:                      inherit; /* 继承光标样式 */
+}
+
+/* [应用名称] - element-text */
+element-text {
+    background-color:            transparent; /* 背景透明 */
+    text-color:                  inherit; /* 文字颜色继承 */
+    cursor:                      inherit; /* 光标样式继承 */
+    vertical-align:              0.5; /* 垂直居中 */
+    horizontal-align:            0.0; /* 水平左对齐 */
+}
+
+/*****----- Mode Switcher (图片底部按钮) -----*****/
+/* [模式切换器] - mode-switcher
+ * 底部的功能按钮栏，包含切换不同模式的按钮（APP/RUN/FILE/WIN）。
+ */
+mode-switcher{
+    enabled:                     true; /* 启用模式切换器 */
+    spacing:                     15px; /* 按钮之间的间距 */
+    background-color:            transparent; /* 背景透明 */
+}
+
+/* [按钮] - button */
+button {
+    padding:                     12px; /* 按钮内边距 */
+    border-radius:               10px; /* 按钮圆角 */
+    background-color:            rgba(255, 255, 255); /* 半透明白色背景 */
+    text-color:                  @mtf-blue; /* 文字颜色：天蓝色 */
+    cursor:                      pointer; /* 鼠标指针样式 */
+}
+
+/* [选中按钮] */
+button selected {
+    background-color:            @mtf-blue; /* 背景变为天蓝色 */
+    text-color:                  @mtf-white; /* 文字变为纯白色 */
+}
+
+/*****----- Dummy (占位符) -----*****/
+/* [占位符] - dummy
+ * 不可见的空白元素，用于填充空间，实现输入框和按钮的垂直对齐。
+ */
+dummy {
+    background-color:            transparent; /* 完全透明 */
+}

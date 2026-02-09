@@ -1,0 +1,148 @@
+/**
+ * Clipboard Rofi Theme
+ * Designed for simplicity and command focus
+ */
+
+/*****----- Configuration -----*****/
+configuration {
+    modi:                       "dmenu";
+    show-icons:                 true;
+    font:                       "JetBrains Mono Nerd Font 11";
+}
+
+/*****----- Global Properties -----*****/
+* {
+    /* Colors from sakurine.rasi */
+    mtf-blue:       #5BCEFAFF;
+    mtf-pink:       #F5A9B8FF;
+    mtf-white:      #FFFFFFFF;
+    
+    background:     rgba(255, 255, 255, 0.95);
+    background-alt: rgba(91, 206, 250, 0.1);
+    foreground:     #5BCEFAFF;
+    selected:       #F5A9B8FF;
+    active:         #5BCEFAFF;
+    urgent:         #F5A9B8FF;
+}
+
+/*****----- Main Window -----*****/
+window {
+    transparency:                "real";
+    location:                    center;
+    anchor:                      center;
+    fullscreen:                  false;
+    width:                       800px;
+    height:                      500px;
+    enabled:                     true;
+    
+    border:                      4px;
+    border-color:                @mtf-blue;
+    border-radius:               16px;
+    background-color:            @background;
+    cursor:                      "default";
+}
+
+/*****----- Main Box -----*****/
+mainbox {
+    enabled:                     true;
+    spacing:                     15px;
+    padding:                     30px;
+    background-color:            transparent;
+    orientation:                 vertical;
+    children:                    [ "inputbar", "listbox" ];
+}
+
+/*****----- Inputbar -----*****/
+inputbar {
+    enabled:                     true;
+    spacing:                     10px;
+    padding:                     12px;
+    border:                      2px;
+    border-color:                @mtf-blue;
+    border-radius:               10px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    children:                    [ "textbox-prompt-colon", "entry" ];
+    /* Removed num-filtered-rows and num-rows to hide counts/ids on the right */
+}
+
+textbox-prompt-colon {
+    enabled:                     true;
+    expand:                      false;
+    str:                         "📋";
+    background-color:            transparent;
+    text-color:                  inherit;
+    padding:                     0 10px 0 0;
+}
+
+entry {
+    enabled:                     true;
+    background-color:            transparent;
+    text-color:                  inherit;
+    cursor:                      text;
+    placeholder:                 "搜索剪贴板…（Alt+BackSpace 清空历史）";
+    placeholder-color:           inherit;
+}
+
+/*****----- List Box & View -----*****/
+listbox {
+    spacing:                     10px;
+    padding:                     0px;
+    background-color:            transparent;
+    orientation:                 vertical;
+    children:                    [ "listview" ];
+}
+
+listview {
+    enabled:                     true;
+    columns:                     1;
+    lines:                       10;
+    cycle:                       true;
+    dynamic:                     true;
+    scrollbar:                   false;
+    layout:                      vertical;
+    reverse:                     false;
+    fixed-height:                false;
+    fixed-columns:               true;
+    spacing:                     5px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      "default";
+}
+
+/*****----- Elements -----*****/
+element {
+    enabled:                     true;
+    spacing:                     10px;
+    padding:                     10px;
+    border-radius:               8px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      pointer;
+    children:                    [ "element-text", "element-icon" ];
+}
+
+element-icon {
+    background-color:            transparent;
+    size:                        72px;
+    cursor:                      inherit;
+}
+
+element normal.normal {
+    background-color:            inherit;
+    text-color:                  inherit;
+}
+
+element selected.normal {
+    background-color:            @selected;
+    text-color:                  @mtf-white;
+}
+
+element-text {
+    background-color:            transparent;
+    text-color:                  inherit;
+    highlight:                   inherit;
+    cursor:                  inherit;
+    vertical-align:              0.5;
+    horizontal-align:            0.0;
+}
