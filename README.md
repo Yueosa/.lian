@@ -6,11 +6,11 @@
 
 ---
 
-## 说明:
+#### 说明:
 
 这个文档会详细的说明我的每一个目录配置, 你可以直接下载到 `~/.config/` 下使用
 
-#### fastfetch
+## | fastfetch
 
 这是一个在终端打印输出系统信息的包, 效果如下:
 
@@ -37,7 +37,7 @@ sudo pacmna -S fastfetch
 * 如果你想使用默认的logo, 那么直接删除 `logo/` 目录即可
 * 系统使用时间我在脚本里硬编码了从 `2025-05-12` 日开始计算, 你可以自己更改
 
-#### kanshi
+## | kanshi
 
 这是一个智能的显示器管理器, 如果你有多个显示器, 用他来管理是个很不错的方案!
 
@@ -64,7 +64,7 @@ profile {
 
 我有笔记本显示器 `eDP-1` 和外接显示器 `HDMI-A-1`, 策略是有外接显示器时笔记本就熄屏
 
-#### kitty
+## | kitty
 
 `kitty` 是一个支持 真彩色, 光标拖尾, 更强控制序列的终端
 
@@ -91,7 +91,7 @@ sudo pacman -S ttf-fira-code
 
 这是一款非常适合编程的字体, 支持连字
 
-#### rofi
+## | rofi
 
 `rofi` 是一款应用程序启动器, 我用它做了应用启动菜单, 窗口切换菜单, 剪贴板
 
@@ -131,7 +131,7 @@ sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrain
 * `ttf-jetbrains-mono-nerd`: 字体
 * `xdg-utils`: 提供 `xdg-open`
 
-#### swaync
+## | swaync
 
 `swaync` 是一个通知中心, 他通过监听 `D-Bus` 来获得实时的消息显示
 
@@ -147,7 +147,7 @@ paru -S swaync
 
 我的配置文件非常简单, 直接 `cp` 就可以使用
 
-#### wlogout
+## | wlogout
 
 `wlogout` 提供了一个电源管理页面, 我的配置里分别是 `锁屏` `登出` `关机` `重启`
 
@@ -171,7 +171,7 @@ sudo pacman -S --needed wlogout jq gettext procps-ng
 └──  style.css
 ```
 
-#### nvim
+## | nvim
 
 `nvim` 是一款比 `vim` 更强的文本编辑器, 我目前对他进行了 `rust` 和 `markdown` 的定制化
 
