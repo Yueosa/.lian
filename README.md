@@ -67,7 +67,13 @@ paru -S rime-ice-git
 
 ![fcitx5-theme-ayaya](./image/fcitx5.png)
 
-## sddm
+## | GRUB
+
+我的 `GRUB` 只做了主题配置, 是用的是 [suiGRUB](https://www.gnome-look.org/p/2219756)
+
+![grub](./image/grub.png)
+
+## | sddm
 
 `sddm` 是一款基于 `QML` 的显示管理器, 我使用他作为我的登录管理器
 
