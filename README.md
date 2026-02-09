@@ -14,7 +14,7 @@
 
 这是一个在终端打印输出系统信息的包, 效果如下:
 
-![fastfetch](./image/fastfetch)
+![fastfetch](./image/fastfetch.png)
 
 ###### 你可以使用 `pacman` 进行安装:
 
