@@ -10,6 +10,12 @@
 
 这个文档会详细的说明我的每一个目录配置, 你可以直接下载到 `~/.config/` 下使用
 
+我的大部分软件是在 `hyprland.conf` 中配置了 `exec-once` (随 `hyprland` 启动)
+
+还有一小部分 (例如 `sddm` ``)
+
+---
+
 ## | fastfetch
 
 这是一个在终端打印输出系统信息的包, 效果如下:
@@ -60,6 +66,40 @@ paru -S rime-ice-git
 我使用的主题是 [ayaya](https://github.com/witt-bit/fcitx5-theme-ayaya), 这里不做详细教学
 
 ![fcitx5-theme-ayaya](./image/fcitx5.png)
+
+## sddm
+
+`sddm` 是一款基于 `QML` 的显示管理器, 我使用他作为我的登录管理器
+
+###### 使用 `pacman` 安装 - 并且设置开机自启
+
+```bash
+sudo pacman -S sddm
+sudo systemctl enable sddm
+```
+
+##### 我使用的主题是 [sddm-astronaut-theme](https://github.com/Keyitdev/sddm-astronaut-theme/), 他是一个 `sddm` 主题库
+
+我使用的是其中的 `hyprland_kath` 主题, 因为嫌其他主题太冗余, 就直接删掉了
+
+![sddm](./image/sddm.png)
+
+你可以直接把我的 `sddm/themes/sddm-astronaut-theme` 复制到 `/usr/sddm/themes` 
+
+然后编辑 `/etc/sddm.conf`, 写入:
+
+```ini
+[Theme]
+    Current=sddm-astronaut-theme
+```
+
+##### 无法登录问题
+
+如果你也使用 `sddm-astronaut-theme`, 那么可能遇到一个登录问题: **用户名显示全大写, 而实际用户名是大小写结合的**
+
+这个问题在 [issues #58](https://github.com/Keyitdev/sddm-astronaut-theme/issues/58) 中提及, 需要修改对应主题的 `conf` 文件
+
+配置这个字段 `AllowUppercaseLettersInUsernames="false" `
 
 ## | kanshi
 
