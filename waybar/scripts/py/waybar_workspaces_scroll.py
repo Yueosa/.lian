@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""Hyprland 工作区滚轮切换逻辑（被 Waybar 调用）。
+
+用途：配合 waybar_workspaces_scroll.sh，根据滚轮方向切换到“下/上一个有窗口的工作区”。
+
+输入（通过环境变量传入）：
+- DIR: up|down|empty
+- ACTIVE_JSON: `hyprctl activeworkspace -j` 的输出
+- WS_JSON: `hyprctl workspaces -j` 的输出
+
+输出：无（仅调用 hyprctl dispatch）。
+
+依赖：hyprctl。
+"""
+
 import json
 import os
 import subprocess
