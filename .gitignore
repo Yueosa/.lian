@@ -15,3 +15,6 @@ lazy-lock.json
 
 # waybar python
 __pycache__
+
+# secrets
+.env
