@@ -91,4 +91,75 @@ sudo pacman -S ttf-fira-code
 
 这是一款非常适合编程的字体, 支持连字
 
+#### nvim
+
+我的 Neovim 配置入口在 `nvim/`，你可以直接把它放到：
+
+```bash
+cp -r ./nvim ~/.config/nvim
+```
+
+如果你已经有自己的 nvim 配置，也可以只抄 `lua/` 里的模块结构。
+
+###### 目录结构
+
+```
+ nvim
+├──  init.lua
+├──  lua
+│   ├──  core
+│   │   ├──  options.lua      # 基础选项（缩进/行号/分屏方向等）
+│   │   ├──  autocmds.lua     # 全局自动命令
+│   │   └──  keymaps.lua      # 全局快捷键（插件内快捷键就近写）
+│   └──  plugins
+│       ├──  init.lua         # lazy.nvim 引导 + 聚合 specs
+│       └──  specs            # 每类插件一个文件（便于维护）
+└──  sakurine                 # 我自己写的主题（colorscheme），不是第三方主题包
+		├──  autoload
+		└──  colors
+```
+
+###### 插件与依赖
+
+我使用 `lazy.nvim` 管理插件，核心插件包括：
+
+- `nvim-tree`：文件树
+- `nvim-cmp` + `LuaSnip`：补全
+- `mason.nvim` / `nvim-lspconfig`：LSP
+- `rustaceanvim`：Rust 开发增强
+- `which-key`：按键提示（记不住快捷键时非常有用）
+- `CopilotChat.nvim`：右侧 Copilot Chat（像 VS Code 那样的聊天窗口）
+
+系统依赖（建议一次装齐）：
+
+```bash
+sudo pacman -S --needed neovim git curl tar nodejs tree-sitter
+```
+
+> 说明：
+> - `nodejs` 用于 GitHub Copilot / Copilot Chat
+> - `tree-sitter`(CLI) 用于 nvim-treesitter 的解析器安装/更新
+
+###### Copilot Chat 使用
+
+1) 先在 nvim 里授权（第一次需要）：
+
+```
+:Copilot auth
+```
+
+2) 打开右侧聊天窗口：
+
+- `<leader>ac`：开关 Copilot Chat
+
+###### 常用快捷键（当前配置里显式定义的）
+
+> 我把 `<leader>` 设成了空格键（Space）。
+
+- `<leader>w`：文件树开关（nvim-tree）
+- `<leader>e`：在「文件树 / 编辑区」之间切换焦点
+- 文件树窗口里按 `v`：竖分屏打开选中的文件
+
+其他快捷键（LSP / Git / Copilot Chat 等）不用记：按一下 `Space` 会弹出 which-key 提示。
+
 
