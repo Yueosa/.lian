@@ -2,7 +2,7 @@
 
 # 恋的 Arch 配置
 
-> 我使用的桌面环境是 `Hyprland` + `wayland` + `kitty` + `zshell`
+> 我使用的桌面环境是 `Hyprland` + `wayland` + `kitty` + `zsh`
 
 ![Hyprland](./image/hyprland.png)
 
@@ -10,11 +10,19 @@
 
 </div>
 
+克隆我的仓库到你的 `$HOME/.lian` 下
+
+```bash
+git clone git@github.com:Yueosa/.lian.git ~/.lian
+```
+
 ---
 
 #### 说明
 
 这个文档会详细的说明我的每一个目录配置, 你可以直接下载到 `~/.config/` 下使用
+
+或者直接将整个仓库 clone 到 `$HOME/.lian`, 然后用我推荐的软链方式部署
 
 我的大部分软件是在 `hyprland.conf` 中配置了 `exec-once` (随 `hyprland` 启动)
 
@@ -31,6 +39,7 @@
 | [zsh](#zsh) | Shell 本体 + starship/zoxide + 常用插件与安装命令。 |
 | [kanshi](#kanshi) | 多显示器自动切换配置（笔记本/外接屏）。 |
 | [kitty](#kitty) | 终端模拟器配置与字体、ssh 兼容说明。 |
+| [GTK](#gtk) | GTK 3/4 主题覆盖（不抄会导致应用窗口样式不一致）。 |
 | [rofi](#rofi) | 应用启动器/窗口切换/剪贴板菜单与脚本。 |
 | [swaync](#swaync) | 通知中心配置。 |
 | [hyprlock](#hyprlock) | 锁屏配置与字体依赖。 |
@@ -50,7 +59,7 @@
 ###### 你可以使用 `pacman` 进行安装:
 
 ```bash
-sudo pacmna -S fastfetch
+sudo pacman -S fastfetch
 ```
 
 我的配置目录如下:
@@ -76,6 +85,19 @@ sudo pacmna -S fastfetch
 sudo pacman -S fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt fcitx5-rime
 paru -S rime-ice-git
 ```
+
+##### 必须的环境变量（systemd `environment.d`）
+
+如果你发现 `fcitx5` 已经启动，但 GTK/Qt/SDL/GLFW 程序里仍然没法正常输入，通常就是缺少输入法环境变量。
+
+我把这组变量放在本仓库的 [environment.d/10-input.conf](environment.d/10-input.conf)，建议你软链回系统目录：
+
+```bash
+mkdir -p ~/.config/environment.d
+ln -sf ~/.lian/environment.d/10-input.conf ~/.config/environment.d/10-input.conf
+```
+
+> 这个目录会在“用户级 systemd”启动时读取，所以你需要**重新登录**（或重启）后环境变量才会生效。
 
 将我的配置文件放入 `~/.local/share/fcitx5/rime/default.custom.yaml`
 
@@ -257,6 +279,25 @@ sudo pacman -S ttf-fira-code
 kitty +kitten ssh 用户@地址
 ```
 
+## | GTK
+
+如果你抄完本仓库后发现 GTK 应用（例如 `gnome-calendar` / `nautilus` / `pavucontrol` 等）窗口配色、字体、光标风格和我的截图不一致，通常就是你本机缺少 `~/.config/gtk-3.0/` 与 `~/.config/gtk-4.0/` 的覆盖配置。
+
+本仓库提供了：
+
+- [gtk-3.0/settings.ini](gtk-3.0/settings.ini) + [gtk-3.0/gtk.css](gtk-3.0/gtk.css)
+- [gtk-4.0/settings.ini](gtk-4.0/settings.ini) + [gtk-4.0/gtk.css](gtk-4.0/gtk.css)
+
+安装方式（会覆盖同名文件，请先备份你自己的配置）：
+
+```bash
+cp -r ./gtk-3.0 ./gtk-4.0 ~/.config/
+```
+
+> 说明：
+> - 我这里 `settings.ini` 里仍然使用 `Adwaita` 作为 GTK 主题/图标主题。
+> - 光标主题我设置成了 `BreezeX-RosePineDawn-Linux`；你如果没装对应光标主题，会回退成系统默认光标。
+
 ## | rofi
 
 `rofi` 是一款应用程序启动器, 我用它做了应用启动菜单, 窗口切换菜单, 剪贴板
@@ -293,7 +334,7 @@ sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrain
 * `cliphist`: 剪贴板历史
 * `wl-clipboard`: 写入剪贴板 (提供 `wl-copy`)
 * `imagemagick`: 提供 `magick/convert` (没装也能用, 只是二进制图片预览可能不生成缩略图)
-* `papirus0icon-theme`: 图标主题
+* `papirus-icon-theme`: 图标主题
 * `ttf-jetbrains-mono-nerd`: 字体
 * `xdg-utils`: 提供 `xdg-open`
 
@@ -384,29 +425,48 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk qt5-w
 
 你可以直接把 配置文件 丢给 AI 问, 如果有一些软件 AI 不认识 (比如 `lianwall`), 那是正常的
 
-因为这些是我自己写的软件, 在我的 [Github](github.com/Yueosa) 主页可以找到
+因为这些是我自己写的软件, 在我的 [Github](https://github.com/Yueosa) 主页可以找到
 
 还有一些快捷键绑定的脚本, 他们是来源于 `rofi` `waybar` ...
 
 #### 配合 `rofi` `waybar` 的快捷键以及功能
 
-你会注意到我在 [hypr/hyprland.conf](hypr/hyprland.conf) 里把 `$script_dir` 指向了 `~/.local/bin`，然后快捷键都去调用这个目录下的脚本。
+你会注意到我在 [hypr/hyprland.conf](hypr/hyprland.conf) 里把 `$script_dir` 指向了 `~/.local/bin`，然后快捷键都去调用这个目录下的脚本
 
-而我的真实脚本/配置源文件在 `~/.lian`（也就是本仓库），并且会软链到 `~/.config/{waybar,rofi,wlogout}`。
+而我的真实脚本/配置源文件在 `~/.lian`（也就是本仓库），并且会软链到 `~/.config/`
 
-为了避免出现“`~/.local/bin` → `~/.config` → `~/.lian`”这种绕来绕去的链路，我建议最终统一成：
+> 说明：我不会建议你“把脚本直接丢进 `~/.local/bin`”。
+>
+> 所以我的策略是, 把 `~/.config/` 下的脚本, 软链接到 `~/.local/bin`, 并且在调用时统一调用路径 `~/.local/bin`
 
-`~/.local/bin/<组>/<脚本>` → `~/.lian/bin/<组>/<脚本>` → `~/.lian` 内真实脚本
+另外我在仓库里也提供了一个 [bin/README.md](bin/README.md)：里面是一些“可选的 wrapper/跳板脚本”，只是为了更方便地创建软链（不是必须，更推荐你直接软链 `~/.config` 下的真实脚本）。
 
-本仓库会提供 `bin/` 下的入口脚本（本质上就是稳定的跳板），你只要做一次软链：
+##### 脚本权限（重要）
+
+如果你运行快捷键后发现命令报错 `permission denied`，基本就是脚本没有可执行权限。你可以先给这些脚本补一次权限：
+
+```bash
+chmod +x \
+	~/.config/rofi/scripts/rofi-launcher.sh \
+	~/.config/rofi/cliphist_rofi.sh \
+	~/.config/wlogout/scripts/*.sh \
+	~/.config/waybar/lbar \
+	~/.config/waybar/scripts/*.sh
+```
+
+> 如果你不是把它们放在 `~/.config`（而是直接从 `~/.lian` 调用），把路径里的 `~/.config` 替换成 `~/.lian` 即可。
 
 ```bash
 mkdir -p ~/.local/bin/{rofi,waybar,wlogout}
-ln -sf ~/.lian/bin/rofi/rofi-launcher ~/.local/bin/rofi/rofi-launcher
-ln -sf ~/.lian/bin/rofi/cliphist ~/.local/bin/rofi/cliphist
-ln -sf ~/.lian/bin/wlogout/wlogout ~/.local/bin/wlogout/wlogout
-ln -sf ~/.lian/bin/waybar/waybar-window ~/.local/bin/waybar/waybar-window
-ln -sf ~/.lian/bin/waybar/waybar-workspaces ~/.local/bin/waybar/waybar-workspaces
+# rofi 相关脚本
+ln -sf ~/.config/rofi/scripts/rofi-launcher.sh ~/.local/bin/rofi/rofi-launcher
+ln -sf ~/.config/rofi/cliphist_rofi.sh ~/.local/bin/rofi/cliphist
+# wlogout 相关脚本
+ln -sf ~/.config/wlogout/scripts/wlogout.sh ~/.local/bin/wlogout/wlogout
+# waybar 相关脚本
+ln -sf ~/.config/waybar/scripts/waybar_window.sh ~/.local/bin/waybar/waybar-window
+ln -sf ~/.config/waybar/scripts/waybar_workspaces_scroll.sh ~/.local/bin/waybar/waybar-workspaces
+ln -sf ~/.config/waybar/lbar ~/.local/bin/waybar/lbar
 ```
 
 对应快捷键（来自 [hypr/hyprland.conf](hypr/hyprland.conf)）：
@@ -509,9 +569,9 @@ sudo pacman -S --needed neovim git curl tar nodejs tree-sitter tree-sitter-cli
 
 ###### 使用 `pacman` 安装 - 以及安装我的 `waybar` 配置用到的所有依赖
 
-我推荐你先阅读后面的各模块说明再来装逐步安装软件包
-
-**一条命令梭哈完的话, 你后续管理/自定义起来会很麻烦**
+> 我推荐你先阅读后面的各模块说明再来装逐步安装软件包
+>
+> **一条命令梭哈完的话, 你后续管理/自定义起来会很麻烦**
 
 ```bash
 sudo pacman -S --needed \
@@ -557,7 +617,22 @@ cp -r ./waybar ~/.config/waybar
 然后在 `hyprland.conf` 里启动：
 
 ```ini
-exec-once = $HOME/.config/waybar/lbar start
+exec-once = $script_dir/waybar/lbar start
+```
+
+`lbar` 是我给 Waybar 写的守护脚本：Waybar 崩了会自动重启。
+
+你本机的 `~/.local/bin` 建议全部保持为“软链目录”，所以我推荐这样链接：
+
+```bash
+mkdir -p ~/.local/bin/waybar
+ln -sf ~/.config/waybar/lbar ~/.local/bin/waybar/lbar
+```
+
+```bash
+$script_dir/waybar/lbar status
+$script_dir/waybar/lbar stop
+$script_dir/waybar/lbar start
 ```
 
 ##### 目录结构
@@ -619,6 +694,26 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 每一个脚本文件开头都有详细的注释 (示例如下), 如果你的脚本不工作, 可以直接模块化测试
 
+**shell 脚本注释示例**
+
+```shell
+# ----------------------------------------------------------------------
+# 脚本：waybar_media.sh
+# 用途：Waybar 自定义媒体/歌词模块入口。
+# 使用位置：
+#   - modules/media.jsonc -> custom/media (return-type=json)
+# 调用：
+#   - python scripts/py/waybar_media.py
+#     - Output: 单行 JSON（text/class/alt/tooltip；text 为歌词或曲目信息）
+# 输出：
+#   - stdout：直接输出 Python 的 JSON
+# 退出码：
+#   - 0：即使缺依赖也返回 JSON（避免 Waybar 判定模块失败）
+# ----------------------------------------------------------------------
+```
+
+**python 脚本注释示例**
+
 ```python
 """Waybar 内存/Swap 模块（输出 JSON）。
 
@@ -635,7 +730,11 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 """
 ```
 
-##### 当前工作区显示 ws_current
+---
+
+## 附录: Waybar 各模块配置详解
+
+##### | 当前工作区显示 ws_current
 
 文件：`modules/ws_current.jsonc`
 
@@ -645,7 +744,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 - 脚本：`scripts/waybar_ws_current.sh` → `scripts/py/waybar_ws_current.py`
 - 刷新：`interval: 1`
 
-##### 所有工作区状态 workspaces
+##### | 所有工作区状态 workspaces
 
 文件：`modules/workspaces.jsonc`
 
@@ -660,12 +759,16 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 | 工作区序号 | 说明 | 默认图标 | 是否默认显示 |
 |-|-|-|-|
-| `1` `2` `3` | 代码区 | 是 |
-| `4` `5` | 游戏区 |
-| `9` | 社交软件 | 
-| `10` | 代理/音乐 |
+| `1` `2` `3` | 代码区 | `󰅩` | `1` 默认显示；`2` `3` 按需出现 |
+| `4` `5` `6` | 游戏区 | `󰓓` | `4` 默认显示；`5` `6` 按需出现 |
+| `7` | 其它/杂项 | `󰏘` | 按需出现 |
+| `8` | 媒体 | `󰭹` | 默认显示 |
+| `9` | 社交/聊天 | `󰭹` | 默认显示 |
+| `10` | 代理/音乐 | `󰓇` | 默认显示 |
 
-##### 图标 arch_logo
+> “是否默认显示”对应 `modules/workspaces.jsonc` 里的 `persistent-workspaces`：被列出来的工作区即使空着也会显示。
+
+##### | 图标 arch_logo
 
 文件：`modules/logo.jsonc`
 
@@ -673,7 +776,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 - 左键：打开 AUR 网站
 
-##### 当前活动窗口监控 window
+##### | 当前活动窗口监控 window
 
 文件：`modules/window.jsonc`
 
@@ -686,7 +789,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 	- `copy-class`：复制窗口 Class（优先 `wl-copy`，没有就用 `xclip`）
 - 依赖：`hyprctl`、`python3`；可选 `libnotify`/`wl-clipboard`
 
-##### 时间和日期显示 clock
+##### | 时间和日期显示 clock
 
 文件：`modules/clock.jsonc`
 
@@ -697,7 +800,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 - 脚本：`scripts/waybar_clock.sh` + `scripts/waybar_clock_toggle.sh` → `scripts/py/waybar_clock.py`
 - 依赖：`python3`；可选 `gnome-calendar`（`sudo pacman -S --needed gnome-calendar`）
 
-##### 显卡监控 gpuinfo
+##### | 显卡监控 gpuinfo
 
 文件：`modules/gpu.jsonc`
 
@@ -709,7 +812,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 	- NVIDIA：`nvidia-utils`（提供 `nvidia-smi`）
 	- 终端：`kitty`
 
-##### cpu监控 cpu
+##### | cpu监控 cpu
 
 文件：`modules/cpu.jsonc`
 
@@ -721,7 +824,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 > 部分 CPU 信息不好拿, 所以只能保证尽量展示, 但作者本人使用环境下并未出错过
 
-##### 内存与swap监控 memory
+##### | 内存与swap监控 memory
 
 文件：`modules/memory.jsonc`
 
@@ -733,7 +836,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 > 内存统计优先使用 PSS 模式, 否则降级为 RSS (这个模式存在统计数值虚高的问题)
 
-##### 媒体显示器 media
+##### | 媒体显示器 media
 
 文件：`modules/media.jsonc`
 
@@ -750,7 +853,7 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 
 > 歌词目录：默认扫 `~/.lyrics/*.lrc`；也支持用环境变量 `WAYBAR_LYRICS_DIRS` 追加目录（冒号分隔）。
 
-##### 音频可视化 cava
+##### | 音频可视化 cava
 
 文件：`modules/cava.jsonc`
 
@@ -770,7 +873,11 @@ Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果�
 > cp ./cava/config_waybar ~/.config/cava/config_waybar
 > ```
 
-##### 网络模块 network
+> 如果你系统里已经有 `~/.config/cava/` 的真实配置，不需要特地 `mv` 过来：
+> - 最简单就是把你现有配置复制/调整成 `config_waybar`（关键是输出要适配本模块）。
+> - 或者用软链把你维护的文件指向 `~/.config/cava/config_waybar`。
+
+##### | 网络模块 network
 
 文件：`modules/network.jsonc`
 
@@ -788,7 +895,7 @@ paru -S --needed nmrs
 
 > 如果你没有 `nmrs`，把 `on-click` 改成 `nmtui` / `nm-connection-editor` 就行。
 
-##### 音频控制 pulseaudio
+##### | 音频控制 pulseaudio
 
 文件：`modules/pulseaudio.jsonc`
 
@@ -799,7 +906,7 @@ paru -S --needed nmrs
 - 滚轮：调音量（步进 1）
 - 依赖：`pavucontrol`、`pactl`（通常来自 `pulseaudio` 或 `pipewire-pulse`）
 
-##### 电池信息 battery
+##### | 电池信息 battery
 
 文件：`modules/battery.jsonc`
 
@@ -809,7 +916,7 @@ paru -S --needed nmrs
 
 > 如果你不是 TUXEDO 设备/没装这个软件，把 `on-click` 改成你自己的电源管理器即可。
 
-##### 蓝牙模块 bluetooth
+##### | 蓝牙模块 bluetooth
 
 文件：`modules/bluetooth.jsonc`
 
@@ -824,7 +931,7 @@ paru -S --needed nmrs
 sudo systemctl enable --now bluetooth
 ```
 
-##### 剪贴板 clipboard
+##### | 剪贴板 clipboard
 
 文件：`modules/clipboard.jsonc`
 
@@ -834,7 +941,7 @@ sudo systemctl enable --now bluetooth
 - 右键：清空历史（`cliphist wipe`）
 - 依赖：`cliphist`、`wl-clipboard`、`rofi-wayland`
 
-##### 系统更新 updates
+##### | 系统更新 updates
 
 文件：`modules/updates.jsonc`
 
@@ -852,9 +959,9 @@ sudo systemctl enable --now bluetooth
 paru -S --needed lian
 ```
 
-> `lian` 是我自己开发的包管理器前端, 对新手非常友好, 你可以在我的 [Github](github.com/Yueosa/lian) 详细了解他
+> `lian` 是我自己开发的包管理器前端, 对新手非常友好, 你可以在我的 [Github](https://github.com/Yueosa/lian) 详细了解他
 
-##### 系统托盘 tray
+##### | 系统托盘 tray
 
 文件：`modules/tray.jsonc`
 
@@ -862,7 +969,7 @@ paru -S --needed lian
 
 - 样式：右键菜单样式在 `style/tray-menu.css`
 
-##### (未启用) backlight
+##### | (未启用) backlight
 
 文件：`modules/backlight.jsonc`
 
