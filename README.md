@@ -37,6 +37,30 @@ sudo pacmna -S fastfetch
 * 如果你想使用默认的logo, 那么直接删除 `logo/` 目录即可
 * 系统使用时间我在脚本里硬编码了从 `2025-05-12` 日开始计算, 你可以自己更改
 
+## | fcitx5
+
+`fcitx5` 是最出名的输入法框架, 我的配置里使用了 `rime` 输入引擎, 以及 `rime-ice` 雾凇拼音输入方案
+
+```bash
+sudo pacman -S fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt fcitx5-rime
+paru -S rime-ice-git
+```
+
+将我的配置文件放入 `~/.local/share/fcitx5/rime/default.custom.yaml`
+
+他只有一个目的: 取消 `rime` 默认的 `Shift` 切换中英文
+
+##### 我推荐你直接使用 `fcitx5` 级别的切换中英, 输入 `fcitx5-configtool` 打开图形化配置页面 (或自己编辑配置文件)
+
+1. 确保 **当前输入法列表** 中包含: `键盘 - 英语 (美国)` 和 `中州韵 (Rime)`
+2. 在 **全局选项** 里, 配置 切换输入法 的快捷键
+
+##### 关于 `fcitx5` 主题
+
+我使用的主题是 [ayaya](https://github.com/witt-bit/fcitx5-theme-ayaya), 这里不做详细教学
+
+![fcitx5-theme-ayaya](./image/fcitx5.png)
+
 ## | kanshi
 
 这是一个智能的显示器管理器, 如果你有多个显示器, 用他来管理是个很不错的方案!
