@@ -147,6 +147,29 @@ paru -S swaync
 
 我的配置文件非常简单, 直接 `cp` 就可以使用
 
+#### wlogout
+
+`wlogout` 提供了一个电源管理页面, 我的配置里分别是 `锁屏` `登出` `关机` `重启`
+
+![wlogout](./image/wlogout.png)
+
+###### 使用 `pacman` 安装
+
+```bash
+sudo pacman -S --needed wlogout jq gettext procps-ng
+```
+
+锁屏功能 依赖 `hyprlock` 运行, 关机功能则依赖于 `hyprland`
+
+```
+ .
+├──  icons                 # 图标
+├── 󰡯 layout                # 布局
+├──  scripts
+│   ├──  logoutlaunch.sh
+│   └──  wlogout.sh
+└──  style.css
+```
 
 #### nvim
 
