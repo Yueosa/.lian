@@ -50,6 +50,7 @@ git clone https://github.com/Yueosa/.lian.git ~/.lian
 │   └── 󰡯 rofi-launcher -> $HOME/.lian/rofi/scripts/rofi-launcher.sh
 ├──  waybar
 │   ├── 󰡯 waybar-window -> $HOME/.lian/waybar/scripts/waybar_window.sh
+│   ├── 󰡯 lbar -> $HOME/.lian/waybar/lbar
 │   └── 󰡯 waybar-workspaces -> $HOME/.lian/waybar/scripts/waybar_workspaces_scroll.sh
 └──  wlogout
 	└── 󰡯 wlogout -> $HOME/.lian/wlogout/scripts/logoutlaunch.sh
