@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+"""Waybar 窗口标题模块（输出 JSON）。
+
+用途：显示当前活动窗口标题，并在 tooltip 展示 PID/Class/CPU/RAM。
+
+输入：
+- 环境变量 ACTIVE_JSON：由 waybar_window.sh 传入（hyprctl activewindow -j）。
+
+输出：
+- stdout 单行 JSON：{"text": "<title>", "tooltip": "..."}
+
+可选行为（环境变量）：
+- WAYBAR_WINDOW_TREE_SUM=1：对窗口进程树汇总 CPU/RAM（默认开启）。
+- WAYBAR_WINDOW_MEM_METRIC=pss|rss：内存统计方式。
+
+依赖：hyprctl、ps、/proc。
+"""
+
 from __future__ import annotations
 
 import json

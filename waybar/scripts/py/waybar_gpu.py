@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""Waybar GPU 模块（NVIDIA）。
+
+用途：读取 nvidia-smi 的 GPU 温度/功耗/显存占用，并输出给 Waybar。
+
+输出：
+- stdout 单行 JSON：{"text": "xx%", "tooltip": "..."}
+    - text 优先显示显存占用百分比；拿不到则显示温度。
+    - tooltip 为多行 Pango 文本。
+
+依赖：
+- nvidia-smi（通常来自 nvidia-utils）。
+- Python 标准库。
+"""
+
 import json
 import re
 import shutil

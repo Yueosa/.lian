@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""Waybar 内存/Swap 模块（输出 JSON）。
+
+用途：显示 RAM 与 Swap 的使用百分比，并在 tooltip 里列出 Top 5 内存占用的“应用组”。
+
+实现要点：
+- 百分比来自 /proc/meminfo。
+- Top 5 优先使用 /proc/<pid>/smaps_rollup 的 PSS（更接近真实占用），拿不到则回退 RSS。
+
+输出：
+- stdout 单行 JSON：{"text": "…", "tooltip": "…"}
+
+依赖：Python 标准库（无需第三方包）。
+"""
+
 import json
 import os
 import re

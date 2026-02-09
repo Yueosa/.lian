@@ -1,4 +1,25 @@
 #!/usr/bin/env python3
+"""Waybar 媒体信息/歌词模块（输出 JSON）。
+
+用途：在状态栏常驻显示当前播放器状态（播放/暂停/停止）与文本（优先歌词，其次曲目/艺术家）。
+
+核心依赖：
+- playerctl：获取播放器列表、播放状态、metadata
+
+可选功能：
+- 歌词：优先匹配 ~/.lyrics 下的 .lrc（也支持通过 WAYBAR_LYRICS_DIRS 追加目录）
+- SPlayer 歌词增强：可读取 SPlayer 的 cache.db（路径可用 WAYBAR_SPLAYER_CACHE_DB 覆盖）
+
+输出：
+- stdout 单行 JSON（Waybar custom/media return-type=json）：
+    - text: 显示文本（可能是歌词行）
+    - alt/class: playing/paused/stopped（与 modules/media.jsonc 的 format-icons 对应）
+    - tooltip: 多行提示（Pango 文本）
+
+注意：
+- 模块启用了 Pango markup（escape=false + format-icons），所以这里会对外部文本做转义避免破坏渲染。
+"""
+
 import json
 import os
 import re

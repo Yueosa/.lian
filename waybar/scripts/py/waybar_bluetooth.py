@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+"""Waybar 蓝牙模块（输出 JSON）。
+
+用途：显示蓝牙开关状态、已连接设备数量；若仅连接 1 个设备且可获取电量，则同时显示电量。
+
+输入：
+- 调用 bluetoothctl：
+    - bluetoothctl show
+    - bluetoothctl devices [Connected]
+    - bluetoothctl info <MAC>
+
+输出：
+- stdout 单行 JSON：{"text": "…", "class": "…", "tooltip": "…"}
+    - text 内含 Pango span（模块 escape=false）。
+
+依赖：bluez（bluetoothctl）。
+"""
+
 from __future__ import annotations
 
 import json

@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+"""Waybar 当前工作区指示器（输出 JSON）。
+
+用途：显示当前位于哪个 Hyprland 工作区，用单字符/圈号表示。
+
+输入：
+- 调用 `hyprctl activeworkspace -j` 获取当前工作区 id/name。
+
+输出：
+- stdout 单行 JSON：
+    - text: 工作区符号（❶..⓿ 或数字）
+    - class: ws-current ws-<id>
+    - tooltip: workspace 信息
+
+依赖：hyprctl。
+"""
+
 
 import json
 import subprocess

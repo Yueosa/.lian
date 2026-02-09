@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+"""窗口信息弹窗/复制工具（非 Waybar 输出）。
+
+用途：配合 waybar_window.sh 的参数模式：
+- show：notify-send 弹出窗口 PID/Class/CPU/RAM 信息
+- copy-class：复制当前窗口 Class 到剪贴板
+
+输入：
+- 环境变量 ACTIVE_JSON：由 waybar_window.sh 传入（hyprctl activewindow -j）
+- 环境变量 MODE：show / copy-class
+
+输出：
+- 默认无 stdout；通过 notify-send 弹窗。
+- 会写入 HOT_FILE 使 Waybar 的 window 模块短暂变粉（hot 状态），并发送 RTMIN+12 刷新。
+
+依赖：
+- notify-send（可选，但建议安装）
+- wl-copy 或 xclip（用于复制）
+- ps、/proc
+"""
+
 from __future__ import annotations
 
 import json

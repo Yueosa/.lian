@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+"""Waybar CPU 模块（输出 JSON）。
+
+用途：输出 CPU 使用率（含每核心/平均频率），并尽可能展示温度与功耗。
+
+数据来源：
+- /proc/stat：计算每核心使用率（使用缓存文件做 delta）
+- /sys/devices/system/cpu：读取频率（可用时）
+- 温度：优先 sensors -j，其次 /sys/class/thermal
+- 功耗：优先 RAPL(/sys/class/powercap)，其次 hwmon，再次 sensors
+
+输出：
+- stdout 单行 JSON：{"text": "…", "tooltip": "…"}
+
+依赖：Python 标准库；可选安装 lm_sensors（提供 sensors）以获得更准确温度/功耗。
+"""
+
 import json
 import math
 import os

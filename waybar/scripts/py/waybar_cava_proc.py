@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+"""cava 输出处理器：数值频谱 -> 方块字符频谱。
+
+用途：从 stdin 读取 cava 的每一行频谱数据，将其映射为字符条形图并输出到 stdout。
+
+输入：
+- stdin：cava 输出（常见为 `0;1;2;...;` 或其它分隔格式）
+
+输出：
+- stdout：每行一串字符（用于 Waybar 的 custom/cava 模块）
+
+行为：
+- 如果长时间静音，会输出空字符串以“隐藏”该模块（可通过 TIMEOUT 控制）。
+- 设置 WAYBAR_CAVA_DEBUG=1 会输出调试信息。
+
+依赖：Python 标准库。
+"""
+
 import sys
 import time
 import os

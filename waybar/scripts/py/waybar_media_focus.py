@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""聚焦当前播放器窗口（右键 media 用）。
+
+用途：根据 playerctl 选择正在播放/暂停的播放器，然后在 Hyprland 中把对应窗口聚焦。
+
+输入：
+- playerctl -l / playerctl status / playerctl metadata title
+- hyprctl clients -j（扫描窗口列表并匹配 class/appid/title）
+
+输出：无 stdout；仅执行 `hyprctl dispatch focuswindow ...`。
+
+依赖：playerctl、hyprctl。
+"""
+
 import json
 import shutil
 import subprocess
