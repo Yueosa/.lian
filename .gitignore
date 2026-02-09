@@ -9,3 +9,6 @@ config.md
 
 # fastfetch logo
 fastfetch/logo
+
+# nvim
+lazy-lock.json
