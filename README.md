@@ -16,6 +16,12 @@
 git clone git@github.com:Yueosa/.lian.git ~/.lian
 ```
 
+如果你没有配置 SSH Key，也可以用 HTTPS：
+
+```bash
+git clone https://github.com/Yueosa/.lian.git ~/.lian
+```
+
 ---
 
 #### 说明
@@ -27,6 +33,48 @@ git clone git@github.com:Yueosa/.lian.git ~/.lian
 我的大部分软件是在 `hyprland.conf` 中配置了 `exec-once` (随 `hyprland` 启动)
 
 还有一小部分 (例如 `sddm` `bluetooth` `polkit` `wpa_supplicant`) 要在用户登录前启动, 所以配置为 `systemd enable`
+
+#### 推荐的软链布局（最佳实践）
+
+我推荐的策略是：**所有配置源文件都维护在 `~/.lian`**，然后：
+
+- `~/.config/<软件>` 软链到 `~/.lian/<软件>`（让应用都按常规从 `~/.config` 读取）
+- `~/.local/bin/<分类>/<命令>` 软链到 `~/.lian/...`（Hyprland 的 `$script_dir` 只负责调用稳定入口）
+
+下面这三段就是我当前机器上最终的软链状态（可以当成目标形态对照）：
+
+```bash
+ ~/.local/bin/
+├──  rofi
+│   ├── 󰡯 cliphist -> $HOME/.lian/rofi/cliphist_rofi.sh
+│   └── 󰡯 rofi-launcher -> $HOME/.lian/rofi/scripts/rofi-launcher.sh
+├──  waybar
+│   ├── 󰡯 waybar-window -> $HOME/.lian/waybar/scripts/waybar_window.sh
+│   └── 󰡯 waybar-workspaces -> $HOME/.lian/waybar/scripts/waybar_workspaces_scroll.sh
+└──  wlogout
+	└── 󰡯 wlogout -> $HOME/.lian/wlogout/scripts/logoutlaunch.sh
+```
+
+```bash
+ ~/.config/
+├──  environment.d -> $HOME/.lian/environment.d
+├──  fastfetch -> $HOME/.lian/fastfetch
+├──  gtk-3.0 -> $HOME/.lian/gtk-3.0
+├──  gtk-4.0 -> $HOME/.lian/gtk-4.0
+├──  hypr -> $HOME/.lian/hypr
+├──  kanshi -> $HOME/.lian/kanshi
+├──  kitty -> $HOME/.lian/kitty
+├──  nvim -> $HOME/.lian/nvim
+├──  rofi -> $HOME/.lian/rofi
+├──  swaync -> $HOME/.lian/swaync
+├──  waybar -> $HOME/.lian/waybar
+└──  wlogout -> $HOME/.lian/wlogout
+```
+
+```bash
+ ~/
+└── 󱆃 .zshrc -> $HOME/.lian/.zshrc
+```
 
 #### 目录（快速跳转）
 
@@ -291,7 +339,8 @@ kitty +kitten ssh 用户@地址
 安装方式（会覆盖同名文件，请先备份你自己的配置）：
 
 ```bash
-cp -r ./gtk-3.0 ./gtk-4.0 ~/.config/
+ln -sf ~/.lian/gtk-3.0 ~/.config/gtk-3.0
+ln -sf ~/.lian/gtk-4.0 ~/.config/gtk-4.0
 ```
 
 > 说明：
@@ -447,26 +496,26 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk qt5-w
 
 ```bash
 chmod +x \
-	~/.config/rofi/scripts/rofi-launcher.sh \
-	~/.config/rofi/cliphist_rofi.sh \
-	~/.config/wlogout/scripts/*.sh \
-	~/.config/waybar/lbar \
-	~/.config/waybar/scripts/*.sh
+	~/.lian/rofi/scripts/rofi-launcher.sh \
+	~/.lian/rofi/cliphist_rofi.sh \
+	~/.lian/wlogout/scripts/*.sh \
+	~/.lian/waybar/lbar \
+	~/.lian/waybar/scripts/*.sh
 ```
 
-> 如果你不是把它们放在 `~/.config`（而是直接从 `~/.lian` 调用），把路径里的 `~/.config` 替换成 `~/.lian` 即可。
+> 因为 `~/.config/*` 只是软链到 `~/.lian/*`，所以给 `~/.lian` 补权限最省事。
 
 ```bash
 mkdir -p ~/.local/bin/{rofi,waybar,wlogout}
 # rofi 相关脚本
-ln -sf ~/.config/rofi/scripts/rofi-launcher.sh ~/.local/bin/rofi/rofi-launcher
-ln -sf ~/.config/rofi/cliphist_rofi.sh ~/.local/bin/rofi/cliphist
+ln -sf ~/.lian/rofi/scripts/rofi-launcher.sh ~/.local/bin/rofi/rofi-launcher
+ln -sf ~/.lian/rofi/cliphist_rofi.sh ~/.local/bin/rofi/cliphist
 # wlogout 相关脚本
-ln -sf ~/.config/wlogout/scripts/wlogout.sh ~/.local/bin/wlogout/wlogout
+ln -sf ~/.lian/wlogout/scripts/logoutlaunch.sh ~/.local/bin/wlogout/wlogout
 # waybar 相关脚本
-ln -sf ~/.config/waybar/scripts/waybar_window.sh ~/.local/bin/waybar/waybar-window
-ln -sf ~/.config/waybar/scripts/waybar_workspaces_scroll.sh ~/.local/bin/waybar/waybar-workspaces
-ln -sf ~/.config/waybar/lbar ~/.local/bin/waybar/lbar
+ln -sf ~/.lian/waybar/scripts/waybar_window.sh ~/.local/bin/waybar/waybar-window
+ln -sf ~/.lian/waybar/scripts/waybar_workspaces_scroll.sh ~/.local/bin/waybar/waybar-workspaces
+ln -sf ~/.lian/waybar/lbar ~/.local/bin/waybar/lbar
 ```
 
 对应快捷键（来自 [hypr/hyprland.conf](hypr/hyprland.conf)）：
