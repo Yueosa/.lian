@@ -1,0 +1,23 @@
+/* MTF Trans Pride 配色主题 */
+@define-color accent_bg #5BCEFA;        /* mtf-blue */
+@define-color accent_color #FFFFFF;     /* mtf-white */
+
+@define-color window_bg_color #FFFFFF;  /* mtf-white */
+@define-color window_fg_color #5BCEFA;  /* mtf-blue */
+@define-color view_bg_color #FFFFFF;    /* mtf-white */
+@define-color view_fg_color #5BCEFA;    /* mtf-blue */
+
+@define-color headerbar_bg_color #F5A9B8; /* mtf-pink */
+@define-color headerbar_fg_color #FFFFFF; /* mtf-white */
+
+@define-color card_bg_color #FFFFFF;    /* mtf-white */
+@define-color dialog_bg_color #FFFFFF;  /* mtf-white */
+@define-color popover_bg_color #FFFFFF; /* mtf-white */
+@define-color sidebar_bg_color #FFFFFF; /* mtf-white */
+
+@define-color selection_bg_color #5BCEFA;  /* mtf-blue - 选中背景 */
+@define-color selection_fg_color #FFFFFF;  /* mtf-white - 选中文字 */
+
+@define-color error_bg_color #F5A9B8;   /* mtf-pink */
+@define-color warning_bg_color #F5A9B8; /* mtf-pink */
+@define-color success_bg_color #5BCEFA; /* mtf-blue */
