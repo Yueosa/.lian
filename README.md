@@ -131,7 +131,21 @@ sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrain
 * `ttf-jetbrains-mono-nerd`: 字体
 * `xdg-utils`: 提供 `xdg-open`
 
+#### swaync
 
+`swaync` 是一个通知中心, 他通过监听 `D-Bus` 来获得实时的消息显示
+
+| 通知弹窗 | 通知中心 |
+|-|-|
+| ![swaync](./image/swaync1.png) | ![swayncclient](./image/swaync2.png) |
+
+###### 使用 `paru` 安装
+
+```bash
+paru -S swaync
+```
+
+我的配置文件非常简单, 直接 `cp` 就可以使用
 
 
 #### nvim
