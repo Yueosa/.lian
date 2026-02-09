@@ -1,0 +1,25 @@
+/* ---------------------------------------------------------------- */
+/* Theme: Sakurine MTF Colors                                        */
+/* Description: 定义全局颜色变量                                        */
+/* ---------------------------------------------------------------- */
+
+/* 基础色板 */
+@define-color mtf-blue #5BCEFA;
+@define-color mtf-pink #F5A9B8;
+@define-color mtf-white #FFFFFF;
+
+/* 岛屿样式 */
+@define-color module-bg rgba(255, 255, 255, 0.9); /* 白色高透背景 */
+@define-color island-shadow-color @mtf-pink;      /* 阴影颜色 */
+
+/* 文字与图标颜色 */
+/* "淡一点的蓝色": 从深蓝(#086BA8)调整为更亮更柔和的蓝 #209CE6 */
+@define-color main-color #209CE6; 
+@define-color text-color @main-color;
+
+/* 状态栏背景: 完全透明 */
+@define-color bar-bg rgba(0, 0, 0, 0);
+
+/* 高亮/激活状态 */
+@define-color active-color @mtf-pink;
+@define-color active-text @mtf-white;

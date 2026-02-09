@@ -1,0 +1,108 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 34,
+    "spacing": 4,
+
+    // 加载模块定义
+    "include": [
+        "~/.config/waybar/modules/ws_current.jsonc",
+        "~/.config/waybar/modules/workspaces.jsonc",
+        "~/.config/waybar/modules/window.jsonc",
+        "~/.config/waybar/modules/clock.jsonc",
+        "~/.config/waybar/modules/cpu.jsonc",
+        "~/.config/waybar/modules/memory.jsonc",
+        "~/.config/waybar/modules/gpu.jsonc",
+        "~/.config/waybar/modules/logo.jsonc",
+        "~/.config/waybar/modules/media.jsonc",
+        "~/.config/waybar/modules/cava.jsonc",
+        "~/.config/waybar/modules/network.jsonc",
+        "~/.config/waybar/modules/pulseaudio.jsonc",
+        "~/.config/waybar/modules/battery.jsonc",
+        "~/.config/waybar/modules/bluetooth.jsonc",
+        "~/.config/waybar/modules/tray.jsonc",
+        "~/.config/waybar/modules/updates.jsonc",
+        "~/.config/waybar/modules/clipboard.jsonc"
+    ],
+
+    // 左侧模块
+    "modules-left": [
+        "group/island-left-1",
+        "group/island-left-2"
+    ],
+
+    // 中间模块
+    "modules-center": [
+        "group/island-center-1",
+        "group/island-center-2"
+    ],
+
+    // 右侧模块
+    "modules-right": [
+        "group/island-right-1",
+        "group/island-right-2"
+    ],
+
+    // ---------------------------------------------------------------- //
+    // Group Definitions (岛屿布局)
+    // ---------------------------------------------------------------- //
+
+    // 左: [工作区 | 窗口标题]
+    "group/island-left-1": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/ws_current",
+            "hyprland/workspaces",
+            "custom/arch_logo",
+            "custom/window"
+        ]
+    },
+
+    // 左: [时钟] (单独一个岛屿?)
+    "group/island-left-2": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/clock"
+        ]
+    },
+
+    // 中: [GPU | CPU | Memory]
+    "group/island-center-1": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/gpuinfo",
+            "custom/cpu",
+            "custom/memory"
+        ]
+    },
+
+    // 中: [Media | Cava]
+    "group/island-center-2": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/media",
+            "custom/cava"
+        ]
+    },
+
+    // 右: [Network | Audio | Battery | Bluetooth | Clipboard | Updates]
+    "group/island-right-1": {
+        "orientation": "horizontal",
+        "modules": [
+            "network",
+            "pulseaudio",
+            "battery",
+            "custom/bluetooth",
+            "custom/clipboard",
+            "custom/updates"
+        ]
+    },
+
+    // 右: [Tray]
+    "group/island-right-2": {
+        "orientation": "horizontal",
+        "modules": [
+            "tray"
+        ]
+    }
+}

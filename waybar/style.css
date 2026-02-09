@@ -1,0 +1,316 @@
+/* ---------------------------------------------------------------- */
+/* Styles: Main Entry                                               */
+/* Description: 主入口文件, 导入所有子样式                                */
+/* ---------------------------------------------------------------- */
+
+/* 导入变量定义 */
+@import "theme.css";
+
+/* 全局重置 (Reset) */
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font", monospace; /* 强制字体 */
+    font-size: 13px; /* 基础字号 */
+    min-height: 0;
+}
+
+/* 状态栏本体 (透明) */
+window#waybar {
+    background: @bar-bg; 
+    color: @text-color;
+    transition-property: background-color;
+    transition-duration: .5s;
+}
+
+/* ---------------------------------------------------------------- */
+/* 岛屿样式 (Islands / Groups) */
+/* 对应 config.jsonc 中的 "group/island-xxx" */
+/* ---------------------------------------------------------------- */
+
+#island-left-1, #island-left-2, 
+#island-center-1, #island-center-2,
+#island-right-1, #island-right-2 {
+    background-color: @module-bg;
+    color: @text-color;
+    
+    /* 胶囊形状圆角 */
+    border-radius: 15px; 
+    
+    /* 2px 粉色阴影 (左下方向) - solid shadow */
+    box-shadow: -2px 4px 0px @island-shadow-color;
+    
+    /* 岛屿之间的间距 (Config里已经设了 spacing, 这里是外部 margin) */
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 4px;
+    margin-right: 4px;
+
+    /* 内部模块的边距 */
+    padding-left: 10px;
+    padding-right: 10px;
+    
+    /* 强制固定高度，防止内部字体变化撑大盒子导致抖动 */
+    min-height: 28px;
+}
+
+/* 针对最左侧岛屿的特殊处理: 增加左边距以防止阴影被切掉 (4px + 2px) */
+#island-left-1 {
+    margin-left: 6px;
+}
+
+/* 中间 Media|Cava：左侧留白别太大 */
+#island-center-2 {
+    padding-left: 6px;
+    padding-right: 8px;
+}
+
+/* Logo 模块独立样式 */
+#custom-arch_logo {
+    color: @main-color;
+    font-size: 15px; 
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Media & Cava - 视觉重置 */
+/* 因 Media 现已常驻 (显示签名)，故直接样式化 Group 容器 (#island-center-3) */
+/* 模块本身不再需要背景 */
+/* ---------------------------------------------------------------- */
+
+#custom-media, #custom-cava {
+    background-color: transparent;
+    color: @text-color;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 5px; /* 减小内边距 */
+}
+
+/* Media: 歌词（主文本）用粉色 */
+#custom-media,
+#custom-media label {
+    color: @mtf-pink;
+}
+
+#custom-media {
+    padding: 0 2px;
+    min-width: 280px;
+}
+
+/* 视觉优化: 如果两个都显示，让它们看起来像连在一起 (可选) */
+/* 目前先保持分离，这样最稳妥 */
+
+/* ---------------------------------------------------------------- */
+/* 模块内部样式 (Modules) */
+/* ---------------------------------------------------------------- */
+
+/* 给所有模块加一点默认的左右间距 */
+/* 注意: 因为模块被包裹在 island 里，这里的 margin 是相对于 island 内部的 */
+#workspaces, #window, #clock, #custom-clock, #cpu, #memory, #disk, #custom-gpuinfo,
+#mpris, #custom-cava, #network, #pulseaudio, #battery,
+#bluetooth, #custom-fcitx, #custom-clipboard, #custom-updates, #tray,
+#custom-window, #custom-cpu, #custom-memory, #custom-bluetooth {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+/* 当前工作区“单字符”指示器 */
+#custom-ws_current,
+#custom-ws_current label {
+    background-color: transparent;
+    color: @mtf-pink;
+    font-size: 18px;
+    font-weight: 700;
+    margin-left: 1px;
+    margin-right: 2px;
+    padding: 0 2px;
+    min-width: 20px; /* 对齐 workspaces button 的宽度，避免抖动 */
+}
+
+/* Window (custom) - 默认蓝色；快捷键触发时短暂高亮为粉色 */
+#custom-window,
+#custom-window label {
+    color: @text-color;
+    transition: color 3s ease;
+}
+
+#custom-window.flash,
+#custom-window.flash label,
+#custom-window .flash,
+#custom-window label.flash {
+    color: @mtf-pink;
+    transition-duration: 0s;
+}
+
+#custom-window.hot,
+#custom-window.hot label,
+#custom-window .hot,
+#custom-window label.hot {
+    color: @mtf-pink;
+    transition-duration: 0s;
+}
+
+/* 工作区 (Workspaces) 特殊美化 */
+#workspaces button {
+    padding: 0 0; /* 移除左右内边距，完全靠 width 控制 */
+    background-color: transparent;
+    color: @mtf-pink;
+    margin: 0 1px;
+    min-width: 20px; /* 关键：固定最小宽度，防止爱心变大时撑开布局导致抖动 */
+}
+
+#workspaces button:hover {
+    background: transparent;
+    box-shadow: none;
+    text-shadow: inherit;
+    color: @text-color;
+}
+
+#workspaces button.active {
+    color: @mtf-pink;
+    background-color: transparent;
+    text-shadow: none;
+    padding: 0 0; 
+    transition: all 0.3s cubic-bezier(.55,-0.68,.48,1.68); 
+}
+
+/* 修复字体大小不生效的问题 */
+#workspaces button.active label {
+    font-size: 20px;
+    color: @mtf-pink;
+    transition: all 0.3s cubic-bezier(.55,-0.68,.48,1.68);
+}
+
+#workspaces button.urgent {
+    background-color: @mtf-pink;
+    color: @mtf-white;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+/* 电池充电动画颜色 */
+#battery.charging {
+    color: #50FA7B; /* 绿色充电中 */
+    /* 或者用 @mtf-blue */
+}
+
+#battery.warning:not(.charging) {
+    color: #FFB86C;
+}
+
+#battery.critical:not(.charging) {
+    color: #FF5555;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to {
+        background-color: #ffffff;
+        color: #000000;
+    }
+}
+
+/* 托盘图标间距 */
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: @mtf-pink;
+}
+
+/* ---------------------------------------------------------------- */
+/* Tooltip Styling                                                  */
+/* Description: 鼠标悬浮提示框样式                                      */
+/* ---------------------------------------------------------------- */
+
+tooltip {
+    background: rgba(0, 0, 0, 0);
+    border: none;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+tooltip label {
+    background: @module-bg;
+    border: 2px solid @island-shadow-color;
+    border-radius: 15px;
+    color: @text-color;
+    padding: 10px;
+    margin-top: -5px; /* 伪装成距离状态栏的间距 */
+}
+
+/* ---------------------------------------------------------------- */
+/* Animation: Heartbeat                                             */
+/* Description: 激活工作区爱心跳动效果                                  */
+/* ---------------------------------------------------------------- */
+
+@keyframes color-change {
+    0% {
+        color: @text-color;
+    }
+    50% {
+        color: @mtf-pink;
+    }
+    100% {
+        color: @text-color;
+    }
+}
+
+#workspaces button.active label {
+    animation-name: color-change;
+    animation-duration: 2s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    font-size: 20px; /* 保持字体大小固定，防止抖动 */
+}
+
+/* ---------------------------------------------------------------- */
+/* Tray Menu Styling (System Tray Right-click)                      */
+/* Description: 托盘右键菜单样式，匹配岛屿设计风格                     */
+/* ---------------------------------------------------------------- */
+
+/* 菜单整体容器 */
+#tray menu {
+    background-color: @module-bg;      /* 使用 theme.css 中的半透白 */
+    border: 2px solid @mtf-pink;       /* 粉色边框 */
+    border-radius: 12px;
+    padding: 6px;
+    /* 模拟岛屿的粉色硬阴影 */
+    box-shadow: -2px 4px 0px @island-shadow-color;
+    margin: 5px; /* 避免菜单紧贴状态栏 */
+}
+
+/* 菜单项 */
+#tray menu menuitem {
+    color: @text-color;                /* 使用主题蓝色文字 */
+    border-radius: 8px;
+    padding: 4px 12px;
+    transition: all 0.2s ease;
+}
+
+/* 菜单项选定/悬停状态 */
+#tray menu menuitem:hover {
+    background-color: @mtf-pink;       /* 悬停变粉色 */
+    color: @mtf-white;                /* 文字变白 */
+}
+
+/* 菜单内的分隔线 */
+#tray menu separator {
+    background-color: rgba(245, 169, 184, 0.3); /* 浅粉色分隔线 */
+    margin: 4px 0;
+    min-height: 1px;
+}
+
