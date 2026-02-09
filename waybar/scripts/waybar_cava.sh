@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 # --------------------------------------------------------------------
-# Script: waybar_cava.sh
-# Purpose: 为 Waybar 提供 cava 频谱字符流（长驻自恢复）。
-# Used by: modules/cava.jsonc -> custom/cava（format: "{}"，非 JSON）
-# Calls:
+# 脚本：waybar_cava.sh
+# 用途：为 Waybar 提供 cava 频谱字符流（长驻自恢复）。
+# 使用位置：modules/cava.jsonc -> custom/cava（format: "{}"，非 JSON）
+# 调用：
 #   - cava: 输出原始数值/分号分隔频谱
 #   - python: scripts/py/waybar_cava_proc.py
 #     Output: 每次输入一行 cava 数据，输出一行「方块字符频谱」到 stdout。
-# Script output: 持续向 stdout 输出频谱行（Waybar 会实时显示）。
-# Script exit: 正常不退出（while true）；Waybar 关闭管道/进程结束即停止。
+# 输出：持续向 stdout 输出频谱行（Waybar 会实时显示）。
+# 退出码：正常不退出（while true）；Waybar 关闭管道/进程结束即停止。
 # --------------------------------------------------------------------
 
 set -u

@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # --------------------------------------------------------------------
-# Script: waybar_updates.sh
-# Purpose: 统计 Arch 官方仓库与 AUR 的可更新数量，并快速返回给 Waybar。
-# Used by: modules/updates.jsonc -> custom/updates (return-type=json)
-# Calls:
+# 脚本：waybar_updates.sh
+# 用途：统计 Arch 官方仓库与 AUR 的可更新数量，并快速返回给 Waybar。
+# 使用位置：modules/updates.jsonc -> custom/updates (return-type=json)
+# 调用：
 #   - checkupdates（官方仓库）
 #   - paru -Qua（AUR）
-# Notes:
+# 备注：
 #   - 使用 timeout + 缓存避免断网/卡住导致 Waybar 杀死模块。
-# Output:
-#   - stdout: 单行 JSON：{"text":"<total>", "tooltip":"...(Pango markup)..."}
-# Script exit: 0。
+# 输出：
+#   - stdout：单行 JSON：{"text":"<total>", "tooltip":"...(Pango markup)..."}
+# 退出码：0。
 # --------------------------------------------------------------------
 
 # 目标：脚本必须“快速返回”，否则 Waybar 可能会在断网/卡住时终止它。

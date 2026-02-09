@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # --------------------------------------------------------------------
-# Script: waybar_media_ctl.sh
-# Purpose: 媒体控制动作（点击/滚轮）——保证“显示哪个 player 就控制哪个”。
-# Used by: modules/media.jsonc 的 on-click / on-scroll-* 
-# Calls:
+# 脚本：waybar_media_ctl.sh
+# 用途：媒体控制动作（点击/滚轮）——保证“显示哪个 player 就控制哪个”。
+# 使用位置：modules/media.jsonc 的 on-click / on-scroll-*
+# 调用：
 #   - playerctl: 默认使用缓存的播放器名
-# Cache:
+# 缓存：
 #   - ${XDG_CACHE_HOME:-~/.cache}/waybar/media_player 由 waybar_media.py 写入
-# Python output: 无（不调用 Python）。
-# Script output: 正常无 stdout；仅在参数错误时输出用法到 stderr。
-# Script exit: 0（动作执行失败也吞掉）；参数错误 exit 2。
+# Python 输出：无（不调用 Python）。
+# 输出：正常无 stdout；仅在参数错误时输出用法到 stderr。
+# 退出码：0（动作执行失败也吞掉）；参数错误 exit 2。
 # --------------------------------------------------------------------
 set -euo pipefail
 
@@ -45,7 +45,7 @@ case "$ACTION" in
     run_playerctl stop || true
     ;;
   *)
-    echo "Usage: $0 {play-pause|next|previous|stop}" >&2
+    echo "用法: $0 {play-pause|next|previous|stop}" >&2
     exit 2
     ;;
 esac

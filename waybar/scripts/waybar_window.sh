@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 # --------------------------------------------------------------------
-# Script: waybar_window.sh
-# Purpose: 
+# 脚本：waybar_window.sh
+# 用途：
 #   1. Waybar 自定义窗口标题模块（无参数时）
 #   2. 快捷键触发的窗口信息弹窗（带参数时）
 # 
-# Usage:
+# 用法：
 #   waybar_window.sh              # Waybar 模块模式（输出 JSON）
 #   waybar_window.sh show         # 弹出通知显示窗口信息
 #   waybar_window.sh copy-class   # 直接复制 Class 到剪贴板
 #
-# Used by: 
+# 使用位置：
 #   - modules/window.jsonc -> custom/window (return-type=json)
 #   - Hyprland bind: SUPER+X
 # --------------------------------------------------------------------

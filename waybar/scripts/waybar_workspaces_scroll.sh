@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 
 # --------------------------------------------------------------------
-# Script: waybar_workspaces_scroll.sh
-# Purpose: 为 hyprland/workspaces 提供“滚轮切工作区”的动作脚本。
-# Used by: modules/workspaces.jsonc 的 on-scroll-up / on-scroll-down
-# Calls:
+# 脚本：waybar_workspaces_scroll.sh
+# 用途：为 hyprland/workspaces 提供“滚轮切工作区”的动作脚本。
+# 使用位置：modules/workspaces.jsonc 的 on-scroll-up / on-scroll-down
+# 调用：
 #   - hyprctl activeworkspace -j / workspaces -j：获取工作区列表
 #   - python: scripts/py/waybar_workspaces_scroll.py
 #     Behavior: 选择下一个/上一个“已有窗口或当前”的 workspace，并 dispatch 切换。
 #               或者切换到数值最小的空工作区 (DIR=empty)。
-# Python output: 无（只做 hyprctl dispatch）。
-# Script output: 无 stdout。
-# Script exit: 0。
+# Python 输出：无（只做 hyprctl dispatch）。
+# 输出：无 stdout。
+# 退出码：0。
 # --------------------------------------------------------------------
-# Scroll through existing Hyprland workspaces (windows>0 plus current active).
-# Usage: waybar_workspaces_scroll.sh [up|down|empty]
-#   up/down: 切换到上/下一个有窗口的工作区
-#   empty:   切换到数值最小的空工作区
+# 滚动切换 Hyprland 工作区（windows>0 的工作区 + 当前工作区）。
+# 用法：waybar_workspaces_scroll.sh [up|down|empty]
+#   up/down：切换到上/下一个有窗口的工作区
+#   empty：  切换到数值最小的空工作区
 
 DIR=${1:-up}
 

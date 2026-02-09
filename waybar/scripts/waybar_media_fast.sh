@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 
 # --------------------------------------------------------------------
-# Script: waybar_media_fast.sh
-# Purpose: 高频刷新包装器：循环运行既有的 media 脚本并连续输出 JSON 行。
-# Used by: 可选（用于想要更顺滑的 media 刷新时）；本仓库当前 custom/media 仍走 waybar_media.sh。
-# Calls:
+# 脚本：waybar_media_fast.sh
+# 用途：高频刷新包装器：循环运行既有的 media 脚本并连续输出 JSON 行。
+# 使用位置：可选（用于想要更顺滑的 media 刷新时）；本仓库当前 custom/media 仍走 waybar_media.sh。
+# 调用：
 #   - TARGET: 默认 ~/.local/bin/sh/waybar/waybar_media.sh（需可执行）
 #     Output: 单行 JSON
-# Python output: 取决于 TARGET（此脚本本身不直接调用 Python）。
-# Script output: 持续输出 JSON 行到 stdout（Waybar 读取到哪行就显示哪行）。
-# Script exit: 正常不退出；Waybar 关闭管道（PIPE）时自动 exit 0。
+# Python 输出：取决于 TARGET（此脚本本身不直接调用 Python）。
+# 输出：持续输出 JSON 行到 stdout（Waybar 读取到哪行就显示哪行）。
+# 退出码：正常不退出；Waybar 关闭管道（PIPE）时自动 exit 0。
 # --------------------------------------------------------------------
 set -u
 
-# Fast-refresh wrapper for Waybar custom/media.
-# It repeatedly runs your existing one-shot script and streams JSON lines.
-# This keeps output/format identical, only refresh rate changes.
+# Waybar custom/media 的“高频刷新包装器”。
+# 它会不断重复运行既有的一次性脚本，并持续输出 JSON 行。
+# 输出格式完全一致，只是刷新频率更高。
 
 TARGET="$HOME/.local/bin/sh/waybar/waybar_media.sh"
 SLEEP_S="${WAYBAR_MEDIA_FAST_SLEEP:-0.2}"
 
-# Exit quietly if Waybar closes the pipe.
+# Waybar 关闭管道（PIPE）时静默退出。
 trap 'exit 0' PIPE
 
 last_good=""

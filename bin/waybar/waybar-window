@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+exec "$HOME/.lian/waybar/scripts/waybar_window.sh" "$@"

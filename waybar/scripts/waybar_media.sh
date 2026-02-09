@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # ----------------------------------------------------------------------
-# Script: waybar_media.sh
-# Purpose: Waybar 自定义媒体/歌词模块入口。
-# Used by:
+# 脚本：waybar_media.sh
+# 用途：Waybar 自定义媒体/歌词模块入口。
+# 使用位置：
 #   - modules/media.jsonc -> custom/media (return-type=json)
-# Calls:
+# 调用：
 #   - python scripts/py/waybar_media.py
 #     - Output: 单行 JSON（text/class/alt/tooltip；text 为歌词或曲目信息）
-# Output:
-#   - stdout: 直接输出 Python 的 JSON
-# Exit:
+# 输出：
+#   - stdout：直接输出 Python 的 JSON
+# 退出码：
 #   - 0：即使缺依赖也返回 JSON（避免 Waybar 判定模块失败）
 # ----------------------------------------------------------------------
 set -euo pipefail
