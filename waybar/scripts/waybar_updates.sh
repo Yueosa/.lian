@@ -50,7 +50,9 @@ if command -v paru >/dev/null 2>&1; then
     AUR_RAW=$(timeout 8s paru -Qua 2>/dev/null)
     AUR_RC=$?
     if [ "$AUR_RC" -eq 0 ]; then
-        AUR=$(printf '%s\n' "$AUR_RAW" | wc -l)
+        # 注意：当 AUR_RAW 为空字符串时，直接 printf 会产生一个空行，wc -l 会误计为 1。
+        # 这里过滤空行，确保 0 更新时输出 0。
+        AUR=$(printf '%s\n' "$AUR_RAW" | sed '/^$/d' | wc -l)
         AUR_STALE=0
     else
         # timeout(124) / 其它错误：用缓存值，避免离线时整块模块消失或不刷新
