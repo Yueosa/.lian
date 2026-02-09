@@ -10,7 +10,7 @@
         "return-type": "json",
         "escape": false,
         "exec-if": "exit 0",
-        "on-click": "kitty -e paru -Syu",
+        "on-click": "kitty -e lian",
         "on-scroll-up": ":",
         "on-scroll-down": ":",
         "signal": 8
