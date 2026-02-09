@@ -6,7 +6,7 @@
 
 ![Hyprland](./image/hyprland.png)
 
-如果你的环境和我一样, 可以直接抄作业!
+如果你的环境和我一样, 可以直接抄作业! **执行任何命令之前, 请确保你了解他在做什么!!!**
 
 </div>
 
@@ -388,6 +388,38 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk qt5-w
 
 还有一些快捷键绑定的脚本, 他们是来源于 `rofi` `waybar` ...
 
+#### 配合 `rofi` `waybar` 的快捷键以及功能
+
+你会注意到我在 [hypr/hyprland.conf](hypr/hyprland.conf) 里把 `$script_dir` 指向了 `~/.local/bin`，然后快捷键都去调用这个目录下的脚本。
+
+而我的真实脚本/配置源文件在 `~/.lian`（也就是本仓库），并且会软链到 `~/.config/{waybar,rofi,wlogout}`。
+
+为了避免出现“`~/.local/bin` → `~/.config` → `~/.lian`”这种绕来绕去的链路，我建议最终统一成：
+
+`~/.local/bin/<组>/<脚本>` → `~/.lian/bin/<组>/<脚本>` → `~/.lian` 内真实脚本
+
+本仓库会提供 `bin/` 下的入口脚本（本质上就是稳定的跳板），你只要做一次软链：
+
+```bash
+mkdir -p ~/.local/bin/{rofi,waybar,wlogout}
+ln -sf ~/.lian/bin/rofi/rofi-launcher ~/.local/bin/rofi/rofi-launcher
+ln -sf ~/.lian/bin/rofi/cliphist ~/.local/bin/rofi/cliphist
+ln -sf ~/.lian/bin/wlogout/wlogout ~/.local/bin/wlogout/wlogout
+ln -sf ~/.lian/bin/waybar/waybar-window ~/.local/bin/waybar/waybar-window
+ln -sf ~/.lian/bin/waybar/waybar-workspaces ~/.local/bin/waybar/waybar-workspaces
+```
+
+对应快捷键（来自 [hypr/hyprland.conf](hypr/hyprland.conf)）：
+
+- `SUPER + A`：rofi drun（`~/.local/bin/rofi/rofi-launcher drun`）
+- `ALT + TAB`：rofi window（`~/.local/bin/rofi/rofi-launcher window`）
+- `SUPER + SPACE`：wlogout（`~/.local/bin/wlogout/wlogout`）
+- `SUPER + Z`：剪贴板 rofi（`~/.local/bin/rofi/cliphist`）
+- `SUPER + X`：弹出当前窗口信息（`~/.local/bin/waybar/waybar-window show`）
+- `SUPER + SHIFT + ←/→/↓`：工作区快速切换（`~/.local/bin/waybar/waybar-workspaces down|up|empty`）
+
+
+
 ## | nvim
 
 `nvim` 是一款比 `vim` 更强的文本编辑器, 我目前对他进行了 `rust` 和 `markdown` 的定制化
@@ -477,10 +509,82 @@ sudo pacman -S --needed neovim git curl tar nodejs tree-sitter tree-sitter-cli
 
 ###### 使用 `pacman` 安装 - 以及安装我的 `waybar` 配置用到的所有依赖
 
+我推荐你先阅读后面的各模块说明再来装逐步安装软件包
+
+**一条命令梭哈完的话, 你后续管理/自定义起来会很麻烦**
+
 ```bash
-sudo pacman -S waybar
-(补充安装依赖的命令)
+sudo pacman -S --needed \
+	waybar \
+	python \
+	playerctl cava \
+	btop \
+	networkmanager \
+	pavucontrol \
+	bluez blueman \
+	wl-clipboard cliphist \
+	pacman-contrib \
+	libnotify
 ```
+
+如果你要启用 AUR 更新统计（`custom/updates` 的 AUR 部分），以及使用 `nmrs` / `lian` 这类 AUR 社区软件，就需要 AUR helper（例如 `paru`）。
+
+```bash
+paru -S --needed nmrs lian
+```
+
+可选依赖（本配置的某些点击动作会用到）：
+
+```bash
+sudo pacman -S --needed gnome-calendar
+```
+
+> 说明：
+> - `pacman-contrib` 提供 `checkupdates`（官方仓库更新统计）。
+> - `playerctl` 用于媒体模块；`cava` 用于音频频谱。
+> - `bluez`/`blueman` 用于蓝牙模块（点击打开 `blueman-manager`）。
+> - `libnotify` 提供 `notify-send`（窗口信息弹窗用，可选但建议装）。
+> - `wl-clipboard` 用于复制（窗口弹窗里“复制 Class”时会用到，可选）。
+
+##### 快速使用
+
+把本仓库的 `waybar/` 复制到你的配置目录：
+
+```bash
+cp -r ./waybar ~/.config/waybar
+```
+
+然后在 `hyprland.conf` 里启动：
+
+```ini
+exec-once = $HOME/.config/waybar/lbar start
+```
+
+##### 目录结构
+
+```
+ waybar
+├──  config.jsonc            # 主配置：组装各模块（include + group/island-*）
+├──  style.css               # 样式入口：只负责 @import（已模块化）
+├──  theme.css               # 主题变量：颜色 @define-color
+├──  style/                  # 模块化样式目录
+├──  modules/                # 每个模块一个 jsonc（更易维护）
+└──  scripts/                # 自定义脚本（sh + py）
+		└──  py
+```
+
+##### 关于 “on-scroll = :” 的细节
+
+Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果你手贱在它上面滚一下，Waybar 可能会直接崩。
+
+所以我在很多模块里都显式写了：
+
+```jsonc
+"on-scroll-up": ":",
+"on-scroll-down": ":"
+```
+
+它的含义就是“啥也不做”，但能避免 Waybar 因为缺少 action 而崩掉。
 
 ##### 效果预览
 
@@ -505,38 +609,261 @@ sudo pacman -S waybar
 
 在这里我会将每一个模块拆解开, 为你介绍他的功能, 依赖, 脚本, 以及脚本的用法
 
+##### 我的 `waybar` 开发规范是
+
+在 `jsonc` 模块文件中调用 `shell` 脚本
+
+当 `shell` 脚本不足以实现功能 (过于臃肿时), 传发到 `py` 脚本
+
+##### 脚本文件阅读说明
+
+每一个脚本文件开头都有详细的注释 (示例如下), 如果你的脚本不工作, 可以直接模块化测试
+
+```python
+"""Waybar 内存/Swap 模块（输出 JSON）。
+
+用途：显示 RAM 与 Swap 的使用百分比，并在 tooltip 里列出 Top 5 内存占用的“应用组”。
+
+实现要点：
+- 百分比来自 /proc/meminfo。
+- Top 5 优先使用 /proc/<pid>/smaps_rollup 的 PSS（更接近真实占用），拿不到则回退 RSS。
+
+输出：
+- stdout 单行 JSON：{"text": "…", "tooltip": "…"}
+
+依赖：Python 标准库（无需第三方包）。
+"""
+```
+
 ##### 当前工作区显示 ws_current
+
+文件：`modules/ws_current.jsonc`
+
+功能：只显示“当前在哪个工作区”的单字符指示器（圈号/数字）。
+
+- 依赖：`hyprctl`、`python3`
+- 脚本：`scripts/waybar_ws_current.sh` → `scripts/py/waybar_ws_current.py`
+- 刷新：`interval: 1`
 
 ##### 所有工作区状态 workspaces
 
+文件：`modules/workspaces.jsonc`
+
+功能：使用 Waybar 的 `hyprland/workspaces` 模块显示所有工作区状态。
+
+- 左键：点击切换工作区（`on-click: activate`）
+- 滚轮：切换到上/下一个“已有窗口或当前”的工作区
+	- 脚本：`scripts/waybar_workspaces_scroll.sh` → `scripts/py/waybar_workspaces_scroll.py`
+- 依赖：`hyprctl`、`python3`
+
+> 我的jsonc配置与python中有如下硬编码配置, 这是我的个人使用习惯, 但你可以直接改源代码
+
+| 工作区序号 | 说明 | 默认图标 | 是否默认显示 |
+|-|-|-|-|
+| `1` `2` `3` | 代码区 | 是 |
+| `4` `5` | 游戏区 |
+| `9` | 社交软件 | 
+| `10` | 代理/音乐 |
+
 ##### 图标 arch_logo
+
+文件：`modules/logo.jsonc`
+
+功能：显示一个 Arch 图标。
+
+- 左键：打开 AUR 网站
 
 ##### 当前活动窗口监控 window
 
+文件：`modules/window.jsonc`
+
+功能：显示当前活动窗口标题，并在 tooltip 展示 PID/Class/CPU/RAM。
+
+- 脚本：`scripts/waybar_window.sh`（Waybar 模式）
+	- 读取 `hyprctl activewindow -j`，交给 `scripts/py/waybar_window.py` 输出 JSON
+- 额外玩法：`scripts/waybar_window.sh show|copy-class`
+	- `show`：用 `notify-send` 弹窗显示窗口信息，并让模块短暂高亮（hot）
+	- `copy-class`：复制窗口 Class（优先 `wl-copy`，没有就用 `xclip`）
+- 依赖：`hyprctl`、`python3`；可选 `libnotify`/`wl-clipboard`
+
 ##### 时间和日期显示 clock
+
+文件：`modules/clock.jsonc`
+
+功能：日期/时间显示（右键切换显示模式）。
+
+- 左键：打开 `gnome-calendar`（Hyprland 里我给它配了浮动窗口规则 `org.gnome.Calendar`）
+- 右键：切换模式（分三档），并用 `pkill -RTMIN+11 waybar` 立即刷新
+- 脚本：`scripts/waybar_clock.sh` + `scripts/waybar_clock_toggle.sh` → `scripts/py/waybar_clock.py`
+- 依赖：`python3`；可选 `gnome-calendar`（`sudo pacman -S --needed gnome-calendar`）
 
 ##### 显卡监控 gpuinfo
 
+文件：`modules/gpu.jsonc`
+
+功能：NVIDIA 显卡监控（优先显示显存占用百分比）。
+
+- 脚本：`scripts/waybar_gpu.sh` → `scripts/py/waybar_gpu.py`
+- 左键：打开 `nvidia-smi` 实时监控（`kitty --title nvidia-smi -e bash -lc '...'`）
+- 依赖：
+	- NVIDIA：`nvidia-utils`（提供 `nvidia-smi`）
+	- 终端：`kitty`
+
 ##### cpu监控 cpu
+
+文件：`modules/cpu.jsonc`
+
+功能：CPU 使用率监控 + tooltip 详细信息（尽量展示温度/功耗/频率等）。
+
+- 脚本：`scripts/waybar_cpu.sh` → `scripts/py/waybar_cpu.py`
+- 左键：打开 `btop`
+- 依赖：`python3`；可选 `lm_sensors`（提供 `sensors`，温度/功耗更准）
+
+> 部分 CPU 信息不好拿, 所以只能保证尽量展示, 但作者本人使用环境下并未出错过
 
 ##### 内存与swap监控 memory
 
+文件：`modules/memory.jsonc`
+
+功能：显示 RAM / Swap 使用率；tooltip 显示 Top 5 内存占用（按“应用组”聚合）。
+
+- 脚本：`scripts/waybar_memory.sh` → `scripts/py/waybar_memory.py`
+- 左键：打开 `btop`
+- 依赖：`python3`
+
+> 内存统计优先使用 PSS 模式, 否则降级为 RSS (这个模式存在统计数值虚高的问题)
+
 ##### 媒体显示器 media
+
+文件：`modules/media.jsonc`
+
+功能：显示当前播放器状态（播放/暂停/停止）与文本（优先歌词）。
+
+- 脚本：
+	- 显示：`scripts/waybar_media.sh` → `scripts/py/waybar_media.py`
+	- 控制：`scripts/waybar_media_ctl.sh`（播放/暂停、上一首、下一首；保证控制“当前显示的 player”）
+- 左键：播放/暂停（调用 `waybar_media_ctl.sh play-pause`）
+- 滚轮：上一首 / 下一首（调用 `waybar_media_ctl.sh previous|next`）
+- 右键：聚焦播放器窗口（Hyprland）
+	- `scripts/waybar_media_focus.sh` → `scripts/py/waybar_media_focus.py`
+- 依赖：`playerctl`、`python3`、（右键聚焦需要 `hyprctl`）
+
+> 歌词目录：默认扫 `~/.lyrics/*.lrc`；也支持用环境变量 `WAYBAR_LYRICS_DIRS` 追加目录（冒号分隔）。
 
 ##### 音频可视化 cava
 
+文件：`modules/cava.jsonc`
+
+功能：音频频谱可视化（静音一段时间后自动隐藏）。
+
+- 脚本：`scripts/waybar_cava.sh`（长驻自恢复）
+	- `cava -p ~/.config/cava/config_waybar` 输出数值频谱
+	- `scripts/py/waybar_cava_proc.py` 把数值映射为字符条
+- 依赖：`cava`、`python3`
+
+> 注意：你需要准备 `~/.config/cava/config_waybar`，否则模块会持续输出空行等待你修复。
+>
+> 本仓库提供了一个最小可用示例：`cava/config_waybar`，你可以这样安装：
+>
+> ```bash
+> mkdir -p ~/.config/cava
+> cp ./cava/config_waybar ~/.config/cava/config_waybar
+> ```
+
 ##### 网络模块 network
+
+文件：`modules/network.jsonc`
+
+功能：Waybar 原生网络模块，显示 Wi-Fi SSID / 有线 / 断开状态。
+
+- 左键：运行 `nmrs`（AUR 社区软件，窗口类名 `org.netrs.ui`）
+- 右键：在终端里打开 `nmtui`（`scripts/waybar_open_nmtui.sh` 会自动找终端）
+- 依赖：`networkmanager`（提供 `nmtui`）
+
+安装 `nmrs`（AUR）：
+
+```bash
+paru -S --needed nmrs
+```
+
+> 如果你没有 `nmrs`，把 `on-click` 改成 `nmtui` / `nm-connection-editor` 就行。
 
 ##### 音频控制 pulseaudio
 
+文件：`modules/pulseaudio.jsonc`
+
+功能：音量显示与控制（Waybar 原生 pulseaudio 模块；PipeWire 也兼容）。
+
+- 左键：打开 `pavucontrol -t 3`
+- 右键：静音切换（`pactl set-sink-mute @DEFAULT_SINK@ toggle`）
+- 滚轮：调音量（步进 1）
+- 依赖：`pavucontrol`、`pactl`（通常来自 `pulseaudio` 或 `pipewire-pulse`）
+
 ##### 电池信息 battery
+
+文件：`modules/battery.jsonc`
+
+功能：电池容量显示。
+
+- 左键：打开 `/opt/tuxedo-control-center/tuxedo-control-center`
+
+> 如果你不是 TUXEDO 设备/没装这个软件，把 `on-click` 改成你自己的电源管理器即可。
 
 ##### 蓝牙模块 bluetooth
 
+文件：`modules/bluetooth.jsonc`
+
+功能：显示蓝牙开关、连接数（以及单设备电量）。
+
+- 左键：打开 `blueman-manager`
+- 依赖：`bluez`（bluetoothctl）、`blueman`（GUI）
+
+蓝牙服务建议开机自启：
+
+```bash
+sudo systemctl enable --now bluetooth
+```
+
 ##### 剪贴板 clipboard
+
+文件：`modules/clipboard.jsonc`
+
+功能：剪贴板菜单入口（本质上是一个按钮）。
+
+- 左键：运行 `~/.config/rofi/cliphist_rofi.sh`
+- 右键：清空历史（`cliphist wipe`）
+- 依赖：`cliphist`、`wl-clipboard`、`rofi-wayland`
 
 ##### 系统更新 updates
 
+文件：`modules/updates.jsonc`
+
+功能：统计官方仓库 + AUR 的可更新数量。
+
+- 脚本：`scripts/waybar_updates.sh`
+	- 官方：`checkupdates` 计数
+	- AUR：`paru -Qua` 计数（带 timeout + cache，避免断网卡死）
+- 左键：`kitty -e lian`
+- 依赖：`pacman-contrib`（checkupdates）、`paru`（AUR 统计）、`kitty`、`lian`
+
+安装 `lian`（AUR）：
+
+```bash
+paru -S --needed lian
+```
+
+> `lian` 是我自己开发的包管理器前端, 对新手非常友好, 你可以在我的 [Github](github.com/Yueosa/lian) 详细了解他
+
 ##### 系统托盘 tray
 
+文件：`modules/tray.jsonc`
+
+功能：系统托盘（后台应用图标）。
+
+- 样式：右键菜单样式在 `style/tray-menu.css`
+
 ##### (未启用) backlight
+
+文件：`modules/backlight.jsonc`
+
+我这份配置里暂时没启用它；如果你是笔记本并且需要亮度条，可以按需启用。
