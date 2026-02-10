@@ -538,6 +538,10 @@ ln -sf ~/.lian/waybar/lbar ~/.local/bin/waybar/lbar
 |-|-|
 | ![rust](./image/nvim1.png) | ![markdown](./image/nvim2.png) |
 
+###### 更新日志:
+
+* `2026-02-10`: 添加 `sql` 语法高亮支持
+
 ###### 使用 `pacman` 安装
 
 ```bash
