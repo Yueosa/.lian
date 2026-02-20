@@ -8,7 +8,7 @@
     border: none;
     border-radius: 0;
     font-family: "JetBrainsMono Nerd Font", monospace; /* 强制字体 */
-    font-size: 13px; /* 基础字号 */
+    font-size: 12px; /* 基础字号，0.9 倍缩放 (原 13px) */
     min-height: 0;
 }
 

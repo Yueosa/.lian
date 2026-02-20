@@ -1,7 +1,7 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 34,
+    "height": 31,
     "spacing": 4,
 
     // 加载模块定义

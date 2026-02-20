@@ -10,7 +10,7 @@
     color: @text-color;
 
     /* 胶囊形状圆角 */
-    border-radius: 15px;
+    border-radius: 14px;
 
     /* 2px 粉色阴影 (左下方向) - solid shadow */
     box-shadow: -2px 4px 0px @island-shadow-color;
@@ -22,28 +22,28 @@
     margin-right: 4px;
 
     /* 内部模块的边距 */
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 9px;
+    padding-right: 9px;
 
     /* 强制固定高度，防止内部字体变化撑大盒子导致抖动 */
-    min-height: 28px;
+    min-height: 25px;
 }
 
 /* 针对最左侧岛屿：增加左边距以防止阴影被切掉 (4px + 2px) */
 #island-left-1 {
-    margin-left: 6px;
+    margin-left: 5px;
 }
 
 /* 中间 Media|Cava：左侧留白别太大 */
 #island-center-2 {
-    padding-left: 6px;
-    padding-right: 8px;
+    padding-left: 5px;
+    padding-right: 7px;
 }
 
 /* Logo 模块独立样式 */
 #custom-arch_logo {
     color: @main-color;
-    font-size: 15px;
+    font-size: 14px;
     padding-left: 5px;
     padding-right: 5px;
     margin-left: 5px;
@@ -71,5 +71,5 @@
 
 #custom-media {
     padding: 0 2px;
-    min-width: 280px;
+    min-width: 252px;
 }
