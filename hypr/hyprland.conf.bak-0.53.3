@@ -1,0 +1,322 @@
+# ========================================
+# 修复
+# 假如你不知道配置放哪里就往这里塞吧 :)
+# ========================================
+# 解决 Xwayland 的同步问题
+cursor {
+    no_hardware_cursors = true
+}
+
+# 禁用 hyprland 默认壁纸
+misc {
+    disable_hyprland_logo = true
+}
+
+
+# ========================================
+# 窗口规则
+# ========================================
+# Rofi
+windowrule = float on, center on, match:class ^(Rofi)$
+
+# gnome-calendar
+windowrule = float on, size 360 600, center on, match:class ^(org.gnome.Calendar)$
+
+# nmrs
+windowrule = float on, size 400 600, center on, match:class ^(org.netrs.ui)$
+
+# pavucontrol
+windowrule = float on, size 600 740, center on, match:class ^(org.pulseaudio.pavucontrol)$
+
+# buleman-manager
+windowrule = float on, size 560 800, center on, match:class ^(blueman-manager)$
+
+# tuxedo-control-center
+windowrule = float on, size 1250 800, center on, match:class ^(tuxedo-control-center)$
+
+# lianwall-gui
+windowrule = float on, size 720 900, center on, match:class ^(lianwall-gui)$
+
+# QQ
+windowrule = tile on, match:class ^(QQ)$, match:title ^(QQ)$
+
+# mihomo-party 自动进入 workspace 10
+windowrule {
+    name = windowrule-1
+    workspace = 10 silent
+    match:class = ^(mihomo-party)$
+}
+
+
+# ========================================
+# NVIDIA 专属环境变量
+# ========================================
+env = LIBVA_DRIVER_NAME,nvidia
+env = XDG_SESSION_TYPE,wayland
+env = GBM_BACKEND,nvidia-drm
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = NVD_BACKEND,direct
+env = WLR_NO_HARDWARE_CURSORS,1
+env = ELECTRON_OZONE_PLATFORM_HINT,auto
+
+
+# ========================================
+# Qt 环境变量
+# ========================================
+# 强制 Qt 使用 wayland
+env = QT_QPA_PLATFORM,wayland;xcb
+# 启用自动缩放适配高分屏
+env = QT_AUTO_SCREEN_SCALE_FACTOR,1
+# 使用 qt6ct统一管理主题
+env = QT_QPA_PLATFORMTHEME,qt6ct
+
+
+# ========================================
+# 鼠标指针相关
+# ========================================
+env = XCURSOR_THEME,BreezeX-RosePineDawn-Linux
+env = XCURSOR_SIZE,24
+
+# 新版 Hyprland 建议加上这个
+env = HYPRCURSOR_THEME,BreezeX-RosePineDawn-Linux
+env = HYPRCURSOR_SIZE,24
+
+
+# ========================================
+# 全局变量定义
+# ========================================
+# 截图保存目录
+$screenshot_dir = $HOME/Pictures/Screenshots
+$area_path = $screenshot_dir/Area_$(date +'%Y%m%d_%H%M%S').png
+$screenshot_path = $screenshot_dir/Screenshot_$(date +'%Y%m%d_%H%M%S').png
+# 脚本目录
+$script_dir = $HOME/.local/bin
+
+
+# ========================================
+# 显示器设置
+# ========================================
+# monitor=,preferred,auto,1
+gpu = auto
+
+
+# ========================================
+# 自动启动程序
+# ========================================
+# 核心环境设置
+exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+exec-once = hyprctl setcursor BreezeX-RosePineDawn-Linux 24
+exec-once = mkdir -p $screenshot_dir
+
+# 系统基础组件
+exec-once = /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+exec-once = fcitx5 -d
+exec-once = kanshi
+
+# 界面组件
+exec-once = swaync
+exec-once = lianwall-gui
+exec-once = sleep 3 && $script_dir/waybar/lbar start
+
+# 工具和应用
+exec-once = wl-paste --watch cliphist store
+exec-once = mihomo-party
+exec-once = /opt/tuxedo-control-center/tuxedo-control-center --tray
+
+
+# ========================================
+# 外观设置
+# ========================================
+general {
+    gaps_in = 6							# 内间距 相邻两个窗口之间的缝隙大小
+    gaps_out = 12						# 外间距 窗口与显示器边缘的距离
+    border_size = 3						# 边框厚度
+    col.active_border = rgba(ffb7c5ee) rgba(87cefaee) rgba(ffffffee) 45deg	# 活动窗口边框颜色
+    col.inactive_border = rgba(87cefa55)			# 非活动窗口
+    layout = dwindle						# 布局模式
+}
+
+decoration {
+    rounding = 12			# 窗口圆角
+
+    # 开启半透明
+    active_opacity = 0.9
+    inactive_opacity = 0.6
+
+    shadow {
+        enabled = true
+        range = 15			# 阴影扩散范围
+	render_power = 3
+        color = rgba(b19cd933)		# 阴影颜色
+    }
+    blur {
+        enabled = true
+        size = 8			# 模糊半径
+        passes = 2			# 模糊次数
+	new_optimizations = true
+    }
+}
+
+animations {				# 动画
+    enabled = yes
+    bezier = fastIn, 0.16, 1, 0.3, 1
+
+    animation = windowsIn, 1, 3, fastIn, slide
+    animation = windowsOut, 1, 2.5, fastIn, slide
+    animation = windowsMove, 1, 2, fastIn
+    animation = workspaces, 1, 4, fastIn, slide
+}
+
+# wlogout 外观
+layerrule {
+    name = layerrule-1
+    blur = on
+    ignore_alpha = 0
+    match:namespace = wlogout
+}
+
+windowrule = opacity 1.0 override, match:class ^(kitty)$
+windowrule = opacity 1.0 override, match:initial_title ^(Fcitx5 Input Window)$
+
+
+# ========================================
+# 光标主题 + 大小
+# ========================================
+cursor = Bibata-Anime 32
+
+
+# ========================================
+# 输入设置
+# ========================================
+input {
+    kb_layout = us
+    follow_mouse = 1
+    touchpad {
+        natural_scroll = false
+    }
+}
+
+
+# ========================================
+# 基础程序定义（快捷键使用）
+# ========================================
+# 终端
+$terminal = kitty
+# 文件管理器
+$fileManager = thunar
+# 浏览器
+$browser = google-chrome-stable
+# rofi 脚本 --- 唤起应用程序
+$menu_app = $script_dir/rofi/rofi-launcher drun
+# rofi 脚本 --- 唤起窗口切换
+$menu_window = $script_dir/rofi/rofi-launcher window 
+# wlogout 脚本 --- 唤起系统菜单
+$sysmenu = $script_dir/wlogout/wlogout
+# swaync 通知中心
+$sclient = swaync-client -t
+# 剪贴板脚本 --- 唤起剪贴板历史
+$clipboard = $script_dir/rofi/cliphist
+# 工作区脚本 --- 快速切换工作区 
+$window = $script_dir/waybar/waybar-workspaces
+
+
+# ========================================
+# 核心快捷键
+# ========================================
+$mainMod = SUPER
+
+# === 杀掉 窗口 ===
+bind = $mainMod, Q, killactive,
+
+# === 切换 窗口模式 ===
+bind = $mainMod, W, togglefloating,
+
+# === 退出 hyprland ===
+bind = $mainMod, M, exit, command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit
+
+
+# === 打开 终端 ===
+bind = $mainMod, T, exec, $terminal
+
+# === 打开 文件管理器 ===
+bind = $mainMod, E, exec, $fileManager
+
+# === 打开 rofi drun ===
+bind = $mainMod, A, exec, $menu_app
+
+# === 打开 rofi window ===
+bind = ALT, TAB, exec, $menu_window
+
+# === 打开 wlogout ===
+bind = $mainMod, SPACE, exec, $sysmenu
+
+# === 打开 剪贴板 ===
+bind = $mainMod, Z, exec, $clipboard
+
+# === 打开通知中心 ===
+bind = ALT, SPACE, exec, $sclient
+
+# === 打开 浏览器 ===
+bind = $mainMod, B, exec, $browser
+
+
+# === 区域截图 ===
+# 复制到剪贴板 + 保存到文件 + 发送到通知
+# 文件名格式：Area_20231024_123456.png
+bind = CTRL_ALT, A, exec, filepath=$area_path && grim -g "$(slurp)" "$filepath" && wl-copy < "$filepath" && notify-send "✂️ 区域截图已保存" "已截取选中区域" -i "$filepath" -a "Grim"
+
+# === 全屏截图 ===
+# 复制到剪贴板 + 保存到文件 + 发送到通知
+# 文件名格式：Screenshot_20231024_123456.png
+bind = CTRL_ALT, Q, exec, filepath=$screenshot_path && grim "$filepath" && wl-copy < "$filepath" && notify-send "📸 全屏截图已保存" "图片已存入剪贴板" -i "$filepath" -a "Grim"
+
+
+# 壁纸管理
+bind = ALT, N, exec, lianwall next
+bind = ALT, S, exec, lianwall switch
+
+# 获取窗口信息
+bind = $mainMod, X, exec, $script_dir/waybar/waybar-window show
+
+# 亮度管理
+bind = $mainMod SHIFT, up, exec, brightnessctl set +5%
+bind = $mainMod SHIFT, down, exec, brightnessctl set 5%-
+
+# 快捷工作区切换
+bind = $mainMod SHIFT, left, exec, $window down
+bind = $mainMod SHIFT, right, exec, $window up
+bind = $mainMod SHIFT, down, exec, $window empty
+
+# 工作区切换
+bind = $mainMod, 1, workspace, 1
+bind = $mainMod, 2, workspace, 2
+bind = $mainMod, 3, workspace, 3
+bind = $mainMod, 4, workspace, 4
+bind = $mainMod, 5, workspace, 5
+bind = $mainMod, 6, workspace, 6
+bind = $mainMod, 7, workspace, 7
+bind = $mainMod, 8, workspace, 8
+bind = $mainMod, 9, workspace, 9
+bind = $mainMod, 0, workspace, 10
+
+# 移动窗口到工作区
+bind = $mainMod SHIFT, 1, movetoworkspace, 1
+bind = $mainMod SHIFT, 2, movetoworkspace, 2
+bind = $mainMod SHIFT, 3, movetoworkspace, 3
+bind = $mainMod SHIFT, 4, movetoworkspace, 4
+bind = $mainMod SHIFT, 5, movetoworkspace, 5
+bind = $mainMod SHIFT, 6, movetoworkspace, 6
+bind = $mainMod SHIFT, 7, movetoworkspace, 7
+bind = $mainMod SHIFT, 8, movetoworkspace, 8
+bind = $mainMod SHIFT, 9, movetoworkspace, 9
+bind = $mainMod SHIFT, 0, movetoworkspace, 10
+
+# 焦点窗口切换
+bind = $mainMod, left, movefocus, l
+bind = $mainMod, right, movefocus, r
+bind = $mainMod, up, movefocus, u
+bind = $mainMod, down, movefocus, d
+
+# 鼠标操作
+bindm = $mainMod, mouse:272, movewindow
+bindm = $mainMod, mouse:273, resizewindow
