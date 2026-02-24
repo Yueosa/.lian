@@ -528,7 +528,35 @@ ln -sf ~/.lian/waybar/lbar ~/.local/bin/waybar/lbar
 - `SUPER + X`：弹出当前窗口信息（`~/.local/bin/waybar/waybar-window show`）
 - `SUPER + SHIFT + ←/→/↓`：工作区快速切换（`~/.local/bin/waybar/waybar-workspaces down|up|empty`）
 
+#### Scrolling 无限平铺布局（hyprland-git / 0.54+）
 
+> **前置条件**：需要 `hyprland-git`（AUR）或正式版 0.54+。  
+> 0.53.x 稳定版不含此功能，升级前建议先做 Timeshift 快照。  
+> 旧版配置备份存放于 [hypr/hyprland.conf.bak-0.53.3](hypr/hyprland.conf.bak-0.53.3)。
+
+Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条**无限水平卷轴**上，屏幕作为视口左右滚动浏览，类似 [niri](https://github.com/YaLTeR/niri) 的体验。
+
+我的策略是**保留 dwindle 为默认布局**，按快捷键随时切换，两种模式自由来回。
+
+##### `scrolling` 块关键配置
+
+| 选项 | 值 | 说明 |
+|---|---|---|
+| `column_width` | `0.4` | 切入 scrolling 时的默认列宽（屏幕 40%） |
+| `follow_focus` | `true` | 焦点切换时视口自动跟随 |
+| `follow_min_visible` | `0.4` | 目标窗口低于 40% 可见时才触发跟随 |
+| `fullscreen_on_one_column` | `true` | 只剩一列时自动全屏 |
+
+##### 快捷键
+
+| 快捷键 | 功能 | 适用布局 |
+|---|---|---|
+| `SUPER + S` | 切换 dwindle ↔ scrolling（带通知） | 两者 |
+| `SUPER + ←/→/↑/↓` | 焦点切换（scrolling 下左右会自动滚动视口） | 两者 |
+| `SUPER + ALT + ←/→` | 把当前窗口移到左/右列 | scrolling |
+| `SUPER + ALT + ↑/↓` | 在同列内上下移窗 | scrolling |
+| `SUPER + 滚轮下/上` | 视口向右/左滚一列 | scrolling |
+| `SUPER + 鼠标右键拖` | 调整列宽 | scrolling |
 
 ## | nvim
 
