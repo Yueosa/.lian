@@ -6,10 +6,16 @@
 /* 给所有模块加一点默认的左右间距 */
 #workspaces, #window, #clock, #custom-clock, #cpu, #memory, #disk, #custom-gpuinfo,
 #mpris, #custom-cava, #network, #pulseaudio, #battery,
-#bluetooth, #custom-fcitx, #custom-clipboard, #custom-updates, #tray,
+#bluetooth, #custom-fcitx, #custom-clipboard, #tray, #custom-updates,
 #custom-window, #custom-cpu, #custom-memory, #custom-bluetooth {
     margin-left: 4px;
     margin-right: 4px;
+}
+
+/* Updates 模块：增加左右 padding 扩大悬停判定区域 */
+#custom-updates {
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 /* 当前工作区”单字符”指示器 */

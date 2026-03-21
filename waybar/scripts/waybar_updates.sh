@@ -49,15 +49,15 @@ if command -v paru >/dev/null 2>&1; then
     # 断网时 paru -Qua 可能长时间阻塞；用 timeout 防止 Waybar 认为脚本“挂死”
     AUR_RAW=$(timeout 8s paru -Qua 2>/dev/null)
     AUR_RC=$?
-    if [ "$AUR_RC" -eq 0 ]; then
-        # 注意：当 AUR_RAW 为空字符串时，直接 printf 会产生一个空行，wc -l 会误计为 1。
-        # 这里过滤空行，确保 0 更新时输出 0。
-        AUR=$(printf '%s\n' "$AUR_RAW" | sed '/^$/d' | wc -l)
-        AUR_STALE=0
-    else
-        # timeout(124) / 其它错误：用缓存值，避免离线时整块模块消失或不刷新
+    if [ "$AUR_RC" -eq 124 ]; then
+        # timeout：用缓存值，避免离线时整块模块消失或不刷新
         AUR=$C_AUR
         AUR_STALE=1
+    else
+        # paru -Qua 没有更新时退出码为 1（非零），不能用 -eq 0 判断
+        # 过滤空行，确保 0 更新时输出 0
+        AUR=$(printf '%s\n' "$AUR_RAW" | sed '/^$/d' | wc -l)
+        AUR_STALE=0
     fi
 else
     AUR=0
