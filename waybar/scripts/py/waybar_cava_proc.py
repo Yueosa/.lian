@@ -30,6 +30,8 @@ last_active = 0.0
 TIMEOUT = 8.0  # 8秒延迟消失
 
 DEBUG = os.environ.get("WAYBAR_CAVA_DEBUG", "").strip() not in ("", "0", "false", "False")
+MAX_FPS = float(os.environ.get("WAYBAR_CAVA_FPS", "20") or "20")
+MIN_INTERVAL = 1.0 / max(MAX_FPS, 1.0)
 
 
 _INT_RE = re.compile(r"\d+")
@@ -59,7 +61,11 @@ def parse_levels(line: str):
 def main() -> int:
     global last_active
 
+    last_emit = 0.0
+    last_text = None
+
     for line in sys.stdin:
+        now = time.time()
         raw = line
         line = line.strip().strip(";")
         if not line:
@@ -70,8 +76,10 @@ def main() -> int:
         # If cava is already outputting bar characters, just pass it through.
         if levels is None:
             out = line
-            if out:
-                last_active = time.time()
+            if out and now - last_emit >= MIN_INTERVAL:
+                last_active = now
+                last_emit = now
+                last_text = out
                 print(out, flush=True)
             elif DEBUG:
                 print("(no data)", flush=True)
@@ -95,16 +103,27 @@ def main() -> int:
             continue
 
         if not is_silent:
-            last_active = time.time()
-            print("".join(output_chars), flush=True)
+            out = "".join(output_chars)
+            last_active = now
+            if now - last_emit >= MIN_INTERVAL:
+                last_emit = now
+                last_text = out
+                print(out, flush=True)
         else:
-            if time.time() - last_active < TIMEOUT:
-                print("".join(output_chars), flush=True)
+            if now - last_active < TIMEOUT:
+                out = "".join(output_chars)
+                if now - last_emit >= MIN_INTERVAL:
+                    last_emit = now
+                    last_text = out
+                    print(out, flush=True)
             else:
                 if DEBUG:
                     print("(silent)", flush=True)
                 else:
-                    print("", flush=True)
+                    if last_text != "" or now - last_emit >= MIN_INTERVAL:
+                        last_emit = now
+                        last_text = ""
+                        print("", flush=True)
 
     return 0
 

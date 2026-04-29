@@ -22,41 +22,68 @@ CACHE_FILE="$CACHE_DIR/updates_counts"
 mkdir -p "$CACHE_DIR" 2>/dev/null || true
 
 read_cache() {
-    if [ -f "$CACHE_FILE" ]; then
+    if [ -r "$CACHE_FILE" ]; then
+        C_LINE=$(cat "$CACHE_FILE" 2>/dev/null || true)
         # shellcheck disable=SC2162
-        read C_OFFICIAL C_AUR C_TS < "$CACHE_FILE" || true
+        read C_OFFICIAL C_AUR C_TS <<EOF || true
+$C_LINE
+EOF
     fi
     C_OFFICIAL=${C_OFFICIAL:-0}
     C_AUR=${C_AUR:-0}
 }
 
 write_cache() {
-    printf '%s %s %s\n' "$1" "$2" "$(date +%s)" > "$CACHE_FILE" 2>/dev/null || true
+    { printf '%s %s %s\n' "$1" "$2" "$(date +%s)" > "$CACHE_FILE"; } 2>/dev/null || true
+}
+
+count_lines() {
+    sed '/^[[:space:]]*$/d' | wc -l | tr -d '[:space:]'
 }
 
 read_cache
 
 # Official
 if command -v checkupdates >/dev/null 2>&1; then
-    # checkupdates 通常不需要网络，但也可能因环境问题卡住；加 timeout 保证快速返回
-    OFFICIAL=$(timeout 8s checkupdates 2>/dev/null | wc -l)
+    # 不要写成 `timeout checkupdates | wc -l`，否则 timeout 的退出码会被 wc 吞掉。
+    OFFICIAL_RAW=$(timeout 12s checkupdates 2>/dev/null)
+    OFFICIAL_RC=$?
+    if [ "$OFFICIAL_RC" -eq 124 ]; then
+        OFFICIAL=$C_OFFICIAL
+        OFFICIAL_STALE=1
+    else
+        OFFICIAL=$(printf '%s\n' "$OFFICIAL_RAW" | count_lines)
+        OFFICIAL_STALE=0
+    fi
+elif command -v pacman >/dev/null 2>&1; then
+    # 兜底：依赖当前 pacman 同步数据库，可能不如 checkupdates 新，但不会把 AUR 算进去。
+    OFFICIAL_RAW=$(timeout 8s pacman -Qu 2>/dev/null)
+    OFFICIAL_RC=$?
+    if [ "$OFFICIAL_RC" -eq 124 ]; then
+        OFFICIAL=$C_OFFICIAL
+        OFFICIAL_STALE=1
+    else
+        OFFICIAL=$(printf '%s\n' "$OFFICIAL_RAW" | count_lines)
+        OFFICIAL_STALE=0
+    fi
 else
     OFFICIAL=0
+    OFFICIAL_STALE=0
 fi
 
 # AUR
 if command -v paru >/dev/null 2>&1; then
-    # 断网时 paru -Qua 可能长时间阻塞；用 timeout 防止 Waybar 认为脚本“挂死”
-    AUR_RAW=$(timeout 8s paru -Qua 2>/dev/null)
+    # 断网时 paru 可能长时间阻塞；用 timeout 防止 Waybar 认为脚本“挂死”
+    AUR_RAW=$(timeout 12s paru -Qua 2>/dev/null)
     AUR_RC=$?
     if [ "$AUR_RC" -eq 124 ]; then
         # timeout：用缓存值，避免离线时整块模块消失或不刷新
         AUR=$C_AUR
         AUR_STALE=1
     else
-        # paru -Qua 没有更新时退出码为 1（非零），不能用 -eq 0 判断
+        # paru 没有更新时可能返回非零，不能用退出码判断数量
         # 过滤空行，确保 0 更新时输出 0
-        AUR=$(printf '%s\n' "$AUR_RAW" | sed '/^$/d' | wc -l)
+        AUR=$(printf '%s\n' "$AUR_RAW" | count_lines)
         AUR_STALE=0
     fi
 else
@@ -66,22 +93,24 @@ fi
 
 TOTAL=$((OFFICIAL + AUR))
 
-# 只要有成功拿到的值，就刷新缓存（AUR 超时则不覆盖缓存）
-if [ "${AUR_STALE:-0}" -eq 0 ]; then
+# 只有两边都成功拿到新值时才刷新缓存，避免某一边超时后把缓存污染成 0。
+if [ "${OFFICIAL_STALE:-0}" -eq 0 ] && [ "${AUR_STALE:-0}" -eq 0 ]; then
     write_cache "$OFFICIAL" "$AUR"
-else
-    write_cache "$OFFICIAL" "$C_AUR"
 fi
 
 # 注意：JSON 字符串里不能出现“真实换行”，必须输出 \n
 if [ "$TOTAL" -gt 0 ]; then
+    if [ "${OFFICIAL_STALE:-0}" -eq 1 ]; then
+        OFFICIAL_LABEL="Official (stale)"
+    else
+        OFFICIAL_LABEL="Official"
+    fi
     if [ "${AUR_STALE:-0}" -eq 1 ]; then
         AUR_LABEL="AUR (stale)"
     else
         AUR_LABEL="AUR"
     fi
-    printf '{"text":"%s","tooltip":"<span color='\''#F5A9B8'\''>Official</span> <span color='\''#209CE6'\''>%s</span>\\n<span color='\''#F5A9B8'\''>%s</span> <span color='\''#209CE6'\''>%s</span>"}\n' "$TOTAL" "$OFFICIAL" "$AUR_LABEL" "$AUR"
+    printf '{"text":"%s","tooltip":"<span color='\''#F5A9B8'\''>%s</span> <span color='\''#209CE6'\''>%s</span>\\n<span color='\''#F5A9B8'\''>%s</span> <span color='\''#209CE6'\''>%s</span>"}\n' "$TOTAL" "$OFFICIAL_LABEL" "$OFFICIAL" "$AUR_LABEL" "$AUR"
 else
     printf '{"text":"","tooltip":""}\n'
 fi
-

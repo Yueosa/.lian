@@ -5,7 +5,7 @@
 {
     "custom/updates": {
         "format": "📦 {}",
-        "interval": 300,
+        "interval": 1800,
         "exec": "$HOME/.config/waybar/scripts/waybar_updates.sh",
         "return-type": "json",
         "escape": false,

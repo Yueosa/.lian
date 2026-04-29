@@ -10,12 +10,15 @@
 #custom-window, #custom-cpu, #custom-memory, #custom-bluetooth {
     margin-left: 4px;
     margin-right: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    min-height: 25px;
 }
 
 /* Updates 模块：增加左右 padding 扩大悬停判定区域 */
 #custom-updates {
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 /* 当前工作区”单字符”指示器 */

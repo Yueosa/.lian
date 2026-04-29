@@ -60,7 +60,8 @@
     box-shadow: none;
     border-radius: 0;
     margin: 0;
-    padding: 0 5px;
+    padding: 0 6px;
+    min-height: 25px;
 }
 
 /* Media: 歌词（主文本）用粉色 */
@@ -70,6 +71,6 @@
 }
 
 #custom-media {
-    padding: 0 2px;
+    padding: 0 6px;
     min-width: 252px;
 }

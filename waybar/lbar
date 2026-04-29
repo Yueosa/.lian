@@ -42,6 +42,30 @@ write_pid() {
   printf '%s\n' "$pid" >"$file" 2>/dev/null || true
 }
 
+find_monitor_pids() {
+  pgrep -f "[l]bar run" 2>/dev/null || true
+}
+
+kill_monitor_pids() {
+  local pid
+  while IFS= read -r pid; do
+    [[ -n "$pid" && "$pid" != "$$" ]] || continue
+    kill "$pid" 2>/dev/null || true
+  done < <(find_monitor_pids)
+
+  sleep 0.2
+
+  while IFS= read -r pid; do
+    [[ -n "$pid" && "$pid" != "$$" ]] || continue
+    kill -KILL "$pid" 2>/dev/null || true
+  done < <(find_monitor_pids)
+}
+
+kill_waybar_cava() {
+  pkill -f "[w]aybar_cava.sh" 2>/dev/null || true
+  pkill -f "[c]ava -p $HOME/.config/cava/config_waybar" 2>/dev/null || true
+}
+
 cmd_run() {
   if [[ -f "$monitor_pid_file" ]]; then
     local old
@@ -56,7 +80,8 @@ cmd_run() {
   cleanup() {
     rm -f "$monitor_pid_file" "$waybar_pid_file" 2>/dev/null || true
   }
-  trap cleanup EXIT INT TERM
+  trap cleanup EXIT
+  trap 'cleanup; exit 0' INT TERM HUP
 
   while true; do
     if ! command -v waybar >/dev/null 2>&1; then
@@ -82,8 +107,18 @@ cmd_start() {
     exit 0
   fi
 
+  old="$(find_monitor_pids | head -n1 || true)"
+  if is_pid_alive "$old"; then
+    write_pid "$monitor_pid_file" "$old"
+    exit 0
+  fi
+
   # 背景启动守护进程
-  ("$0" run >>"$log_file" 2>&1 &)
+  if command -v setsid >/dev/null 2>&1; then
+    setsid -f "$0" run >>"$log_file" 2>&1
+  else
+    nohup "$0" run >>"$log_file" 2>&1 &
+  fi
 }
 
 cmd_stop() {
@@ -95,7 +130,9 @@ cmd_stop() {
   if is_pid_alive "$mpid"; then
     kill "$mpid" 2>/dev/null || true
     sleep 0.2
+    is_pid_alive "$mpid" && kill -KILL "$mpid" 2>/dev/null || true
   fi
+  kill_monitor_pids
 
   # 再杀 waybar
   if is_pid_alive "$wpid"; then
@@ -105,6 +142,7 @@ cmd_stop() {
 
   # 兜底：如果 waybar 仍在，按名字结束
   pkill -x waybar 2>/dev/null || true
+  kill_waybar_cava
 
   rm -f "$monitor_pid_file" "$waybar_pid_file" 2>/dev/null || true
 }

@@ -16,6 +16,16 @@ set -u
 
 config_file="$HOME/.config/cava/config_waybar"
 proc_py="$HOME/.config/waybar/scripts/py/waybar_cava_proc.py"
+cava_pid=""
+proc_pid=""
+
+cleanup() {
+    [ -n "${cava_pid:-}" ] && kill "$cava_pid" 2>/dev/null || true
+    [ -n "${proc_pid:-}" ] && kill "$proc_pid" 2>/dev/null || true
+    wait "$cava_pid" "$proc_pid" 2>/dev/null || true
+}
+
+trap 'cleanup; exit 0' INT TERM HUP PIPE EXIT
 
 if ! command -v python3 >/dev/null 2>&1; then
     exit 0
@@ -41,11 +51,31 @@ fi
 # cava 偶发连不上音频服务会直接退出；这里做自恢复，避免 Waybar 模块永久停止。
 while true; do
     if command -v cava >/dev/null 2>&1; then
+        tmp_fifo="${XDG_RUNTIME_DIR:-/tmp}/waybar-cava.$$"
+        rm -f "$tmp_fifo" 2>/dev/null || true
+        mkfifo "$tmp_fifo" 2>/dev/null || {
+            echo ""
+            sleep 5
+            continue
+        }
+
         if [ -n "${WAYBAR_CAVA_DEBUG:-}" ] && [ "${WAYBAR_CAVA_DEBUG}" != "0" ]; then
-            cava -p "$config_file" | python3 -u "$proc_py" || true
+            python3 -u "$proc_py" < "$tmp_fifo" &
+            proc_pid=$!
+            cava -p "$config_file" > "$tmp_fifo" &
+            cava_pid=$!
         else
-            cava -p "$config_file" 2>/dev/null | python3 -u "$proc_py" 2>/dev/null || true
+            python3 -u "$proc_py" < "$tmp_fifo" 2>/dev/null &
+            proc_pid=$!
+            cava -p "$config_file" > "$tmp_fifo" 2>/dev/null &
+            cava_pid=$!
         fi
+
+        wait "$cava_pid" "$proc_pid" 2>/dev/null || true
+        cleanup
+        cava_pid=""
+        proc_pid=""
+        rm -f "$tmp_fifo" 2>/dev/null || true
     else
         echo ""
         sleep 5
