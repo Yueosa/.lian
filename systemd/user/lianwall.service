@@ -1,0 +1,15 @@
+[Unit]
+Description=Lianwall wallpaper daemon
+PartOf=hyprland-session.target
+After=hyprland-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/lianwall start
+ExecStop=/usr/bin/lianwall stop
+
+[Install]
+WantedBy=hyprland-session.target
+

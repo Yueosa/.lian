@@ -1,0 +1,15 @@
+[Unit]
+Description=Hyprland alive status publisher
+PartOf=hyprland-session.target
+After=hyprland-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=/home/Sakurine/.local/bin/hysp
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=hyprland-session.target
+

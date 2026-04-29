@@ -1,0 +1,16 @@
+[Unit]
+Description=TUXEDO Control Center tray UI
+PartOf=hyprland-session.target
+After=hyprland-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/sleep 15
+ExecStart=/opt/tuxedo-control-center/tuxedo-control-center --tray
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=hyprland-session.target
+

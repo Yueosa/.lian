@@ -1,0 +1,17 @@
+[Unit]
+Description=Lian Waybar monitor
+PartOf=hyprland-session.target
+After=hyprland-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/sleep 3
+ExecStart=/home/Sakurine/.lian/waybar/lbar run
+ExecStop=/home/Sakurine/.lian/waybar/lbar stop
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=hyprland-session.target
+

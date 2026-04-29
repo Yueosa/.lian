@@ -1,0 +1,14 @@
+[Unit]
+Description=Watch Wayland clipboard with cliphist
+PartOf=hyprland-session.target
+After=hyprland-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/wl-paste --watch /usr/bin/cliphist store
+Restart=on-failure
+
+[Install]
+WantedBy=hyprland-session.target
+
