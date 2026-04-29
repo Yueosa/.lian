@@ -30,6 +30,7 @@ import time
 from pathlib import Path
 
 HOT_SECONDS = 10
+CLK_TCK = os.sysconf(os.sysconf_names.get("SC_CLK_TCK", "SC_CLK_TCK"))
 
 CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache")))
 HOT_FILE = CACHE_DIR / "waybar_window_hot_until"
@@ -44,6 +45,34 @@ def run_text(cmd: list[str]) -> str:
         return subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL).strip()
     except Exception:
         return ""
+
+
+def proc_cpu_ticks(pid: int) -> int | None:
+    try:
+        raw = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return None
+
+    rpar = raw.rfind(")")
+    if rpar < 0:
+        return None
+    fields = raw[rpar + 2 :].split()
+    if len(fields) <= 12:
+        return None
+    try:
+        # fields after comm start at stat field 3; utime/stime are fields 14/15.
+        return int(fields[11]) + int(fields[12])
+    except Exception:
+        return None
+
+
+def proc_cpu_sum_ticks(pids: list[int]) -> int:
+    total = 0
+    for pid in pids:
+        ticks = proc_cpu_ticks(pid)
+        if ticks is not None:
+            total += ticks
+    return total
 
 
 def env_truthy(name: str, default: str = "1") -> bool:
@@ -107,6 +136,29 @@ def ps_cpu_sum(pids: list[int]) -> float:
         except Exception:
             pass
     return total
+
+
+def proc_cpu_percent(pids: list[int]) -> float:
+    if not pids:
+        return 0.0
+
+    try:
+        sample_seconds = float(os.environ.get("WAYBAR_WINDOW_CPU_SAMPLE_SECONDS", "0.25") or "0.25")
+    except Exception:
+        sample_seconds = 0.25
+    sample_seconds = max(0.05, min(sample_seconds, 1.0))
+
+    t0 = time.monotonic()
+    c0 = proc_cpu_sum_ticks(pids)
+    time.sleep(sample_seconds)
+    t1 = time.monotonic()
+    c1 = proc_cpu_sum_ticks(pids)
+
+    dt = t1 - t0
+    dc = c1 - c0
+    if dt <= 0 or dc <= 0:
+        return 0.0
+    return max(0.0, (dc / CLK_TCK) / dt * 100.0)
 
 
 def format_cpu(v: float) -> str:
@@ -175,10 +227,10 @@ def get_info(active: dict) -> tuple[str, str]:
     ram = "0B"
     if pid > 0 and tree_mode:
         pids = collect_tree_pids(pid)
-        cpu = format_cpu(ps_cpu_sum(pids))
+        cpu = format_cpu(proc_cpu_percent(pids))
         ram = human_bytes(sum(mem_bytes(p) for p in pids))
     elif pid > 0:
-        cpu = run_text(["ps", "-p", str(pid), "-o", "%cpu="]) or "0"
+        cpu = format_cpu(proc_cpu_percent([pid]))
         ram = human_bytes(mem_bytes(pid))
 
     lines: list[str] = []
