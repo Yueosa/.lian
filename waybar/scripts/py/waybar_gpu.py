@@ -81,6 +81,9 @@ def main() -> int:
         lines.append(field("温度:", f"{temp:.0f}°C"))
     if power is not None:
         lines.append(field("功耗:", f"{power:.1f} W"))
+    if mem_used is not None and mem_total:
+        mem_pct = mem_used / mem_total * 100
+        lines.append(field("显存:", f"{mem_used:.0f} / {mem_total:.0f} MiB ({mem_pct:.0f}%)"))
 
     tooltip = "\n".join(lines)
     print(json.dumps({"text": text, "tooltip": tooltip}, ensure_ascii=False))
