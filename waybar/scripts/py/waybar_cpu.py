@@ -90,7 +90,10 @@ def per_core_usage_percent():
     except Exception:
         prev_cores = None
 
-    STAT_CACHE.write_text(json.dumps({"ts": now, "cores": cur}), encoding="utf-8")
+    try:
+        STAT_CACHE.write_text(json.dumps({"ts": now, "cores": cur}), encoding="utf-8")
+    except Exception:
+        pass
 
     if not prev_cores or len(prev_cores) != len(cur):
         return None
@@ -332,6 +335,9 @@ def main() -> int:
 
     temp_str = f"{temp:.1f}°C" if isinstance(temp, (int, float)) else "N/A"
     tooltip_lines.append(field("CPU温度:", temp_str))
+
+    power_str = f"{_power:.1f} W" if isinstance(_power, (int, float)) else "N/A"
+    tooltip_lines.append(field("CPU功耗:", power_str))
 
     core_grid = format_core_grid(cores)
     if core_grid:
