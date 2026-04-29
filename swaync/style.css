@@ -72,7 +72,7 @@
 }
 
 .control-center .notification-row .notification-background {
-  background: transparent !important;
+  background: transparent;
 }
 
 .control-center .notification-row,
@@ -84,20 +84,20 @@
 .control-center .notification-row.selected,
 .control-center .notification-row > *:selected,
 .control-center .notification-row > *:focus {
-  background-color: transparent !important;
-  background-image: none !important;
+  background-color: transparent;
+  background-image: none;
 }
 
 .control-center .notification-row:selected .notification,
 .control-center .notification-row:focus .notification,
 .control-center .notification-row.selected .notification {
-  border-color: var(--mtf-pink) !important;
-  box-shadow: 0 0 0 3px var(--mtf-pink) !important;
-  background: var(--mtf-white) !important;
+  border-color: var(--mtf-pink);
+  box-shadow: 0 0 0 3px var(--mtf-pink);
+  background: var(--mtf-white);
 }
 
 .control-center-list {
-  background: transparent !important;
+  background: transparent;
 }
 
 .control-center-list > * {
@@ -107,10 +107,10 @@
 /* Hide scrollbars inside control center (prevents double scrollbar visuals). */
 .control-center scrollbar,
 .control-center scrollbar * {
-  background: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
 }
 
 .control-center scrollbar.vertical,
@@ -255,7 +255,7 @@ window#notification-window,
 }
 
 .notification-row .notification-background {
-  background: transparent !important;
+  background: transparent;
 }
 
 .notification-row:selected,
@@ -265,7 +265,7 @@ window#notification-window,
 .notification-row .notification-background:selected,
 .notification-row .notification-background:focus,
 .notification-row .notification-background:active {
-  background: transparent !important;
+  background: transparent;
 }
 
 .notification-row .notification-background .notification {
@@ -305,7 +305,6 @@ window#notification-window,
 }
 
 .time {
-  display: none;
   font-size: 10pt;
   font-weight: bold;
   color: var(--mtf-pink);
@@ -333,8 +332,8 @@ window#notification-window,
 }
 
 .close-button:hover {
-  background-color: var(--mtf-blue) !important;
-  color: var(--mtf-white) !important;
+  background-color: var(--mtf-blue);
+  color: var(--mtf-white);
 }
 
 .notification-group-close-button .close-button {
@@ -356,31 +355,30 @@ window#notification-window,
   box-shadow: none;
   text-shadow: none;
   transition: var(--hover-transition);
-  font-size: var(--font-size-action) !important;
-  font-weight: 800 !important;
-  opacity: 1 !important;
+  font-size: var(--font-size-action);
+  font-weight: 800;
+  opacity: 1;
 }
 
 .notification-action label {
-  font-size: var(--font-size-action) !important;
-  font-weight: 800 !important;
-  color: var(--mtf-blue) !important;
-  opacity: 1 !important;
+  font-size: var(--font-size-action);
+  font-weight: 800;
+  color: var(--mtf-blue);
+  opacity: 1;
 }
 
 .notification-action > button:hover,
 .notification-action button:hover {
-  background-color: var(--mtf-blue) !important;
-  color: var(--mtf-white) !important;
-  opacity: 1 !important;
-  filter: none !important;
-  font-weight: 900 !important;
+  background-color: var(--mtf-blue);
+  color: var(--mtf-white);
+  opacity: 1;
+  font-weight: 900;
 }
 
 .notification-action > button:hover label,
 .notification-action button:hover label {
-  color: var(--mtf-white) !important;
-  font-weight: 900 !important;
+  color: var(--mtf-white);
+  font-weight: 900;
 }
 
 .notification-alt-actions {
@@ -388,10 +386,6 @@ window#notification-window,
 }
 
 .notification-alt-actions flowbox {
-  -GtkFlowBox-min-children-per-line: 2;
-  -GtkFlowBox-max-children-per-line: 2;
-  column-spacing: 10px;
-  row-spacing: 8px;
 }
 
 /* === Groups / Stacks === */
@@ -443,10 +437,6 @@ window#notification-window,
   padding: 0;
   min-width: var(--notification-icon-size);
   min-height: var(--notification-icon-size);
-  max-width: var(--notification-icon-size);
-  max-height: var(--notification-icon-size);
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
 }
 
 .notification-row .image image,
