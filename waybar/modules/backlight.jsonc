@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------- //
 {
     "backlight": {
-        "device": "intel_backlight", // 通常是 intel_backlight，根据硬件可能从 acpi_video0 等变化
+        "device": "nvidia_0",
         "format": "{icon} {percent}%",
         "format-icons": ["", "", "", "", "", "", "", "", ""],
         "on-scroll-up": "brightnessctl set +5%", // 示例命令 & 需安装 brightnessctl
