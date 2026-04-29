@@ -15,6 +15,10 @@ lazy-lock.json
 
 # waybar python
 __pycache__
+waybar/.codex
+
+# local app state
+gtk-3.0/bookmarks
 
 # secrets
 .env
