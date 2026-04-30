@@ -2,7 +2,6 @@
 Description=Lianwall wallpaper daemon
 PartOf=hyprland-session.target
 After=hyprland-session.target
-ConditionEnvironment=WAYLAND_DISPLAY
 
 [Service]
 Type=oneshot
@@ -12,4 +11,3 @@ ExecStop=/usr/bin/lianwall stop
 
 [Install]
 WantedBy=hyprland-session.target
-

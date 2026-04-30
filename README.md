@@ -36,7 +36,12 @@ git clone https://github.com/Yueosa/.lian.git ~/.lian
 
 或者直接将整个仓库 clone 到 `$HOME/.lian`, 然后用我推荐的软链方式部署
 
-我的桌面会话入口仍然在 `hyprland.conf` 中，但常驻组件主要交给 `systemd --user` 管理：`exec-once` 只负责导入环境并启动 `hyprland-session.target`
+我的桌面会话入口在 `hyprland.conf` 的 `exec-once` 中，服务部署策略如下：
+
+- 🖥️ **GUI 前台服务**（fcitx5 / swaync / waybar / tuxedo-tray / kanshi / polkit-agent）：由 `exec-once` 直接拉起，确保 Wayland session 环境变量和 Socket 完整继承
+- ⚙️ **后台常驻服务**（cliphist-watch / hysp / stalk-hypr / lianwall）：由 `hyprland-session.target` 统一管理的 `systemd --user` 服务
+- `exec-once` 中还负责导入环境变量（`dbus-update-activation-environment`）、启动 `hyprland-session.target`
+
 
 还有一小部分 (例如 `sddm` `bluetooth` `polkit` `wpa_supplicant`) 要在用户登录前启动, 所以配置为 `systemd enable`
 

@@ -2,7 +2,6 @@
 Description=Stalk Hyprland private workspace helper
 PartOf=hyprland-session.target
 After=hyprland-session.target
-ConditionEnvironment=WAYLAND_DISPLAY
 
 [Service]
 Type=simple
@@ -12,4 +11,3 @@ Restart=on-failure
 
 [Install]
 WantedBy=hyprland-session.target
-

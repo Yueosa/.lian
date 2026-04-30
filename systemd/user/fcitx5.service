@@ -2,14 +2,11 @@
 Description=Fcitx5 input method
 PartOf=hyprland-session.target
 After=hyprland-session.target
-ConditionEnvironment=WAYLAND_DISPLAY
 
 [Service]
 Type=simple
-ExecStartPre=/usr/bin/sleep 8
-ExecStart=/usr/bin/fcitx5 -D --replace
+ExecStart=/usr/bin/fcitx5 --replace
 Restart=on-failure
 
 [Install]
 WantedBy=hyprland-session.target
-
