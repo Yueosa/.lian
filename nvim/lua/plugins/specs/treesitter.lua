@@ -4,7 +4,12 @@ return {
         lazy = false,
         build = ":TSUpdate",
         config = function()
-            local languages = { "rust", "lua", "vim", "vimdoc", "markdown", "markdown_inline", "sql" }
+            local languages = {
+                "rust", "lua", "vim", "vimdoc", "markdown", "markdown_inline", "sql",
+                "python", "c", "asm", "dart",
+                "html", "css", "javascript", "json", "toml",
+                "vue",
+            }
 
             if vim.fn.executable("tree-sitter") == 0 then
                 vim.notify(
@@ -31,14 +36,14 @@ return {
             end
 
             vim.api.nvim_create_autocmd("FileType", {
-                pattern = { "rust", "lua", "vim", "vimdoc", "markdown", "sql" },
+                pattern = { "rust", "lua", "vim", "vimdoc", "markdown", "python", "c", "asm", "dart", "html", "css", "javascript", "json", "toml", "vue" },
                 callback = function()
                     pcall(vim.treesitter.start)
                 end,
             })
 
             vim.api.nvim_create_autocmd("FileType", {
-                pattern = { "rust", "lua", "vim", "markdown", "sql" },
+                pattern = { "rust", "lua", "vim", "markdown", "python", "c", "dart", "html", "css", "javascript", "json", "toml", "vue" },
                 callback = function()
                     vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
                 end,

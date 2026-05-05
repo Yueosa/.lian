@@ -23,7 +23,7 @@ return {
                                 enable = true,
                             },
                             checkOnSave = true,
-                            check = { command = "clippy" },
+                            check = { command = "check" },
                         },
                     },
                 },
