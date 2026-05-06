@@ -1,0 +1,13 @@
+[Unit]
+Description=Lian: Hyprland event daemon (window/workspace cache for waybar)
+PartOf=hyprland-session.target
+After=hyprland-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.lian/waybar/scripts/py/hypr_event_daemon.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=hyprland-session.target

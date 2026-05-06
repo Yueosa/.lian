@@ -14,26 +14,38 @@
 # 使用位置：
 #   - modules/window.jsonc -> custom/window (return-type=json)
 #   - Hyprland bind: SUPER+X
+#
+# 数据来源：
+#   - 优先读 ${XDG_CACHE_HOME:-~/.cache}/waybar/active_window.json
+#     （由 hypr-event-daemon.service 写入）
+#   - 缓存缺失时回退到 hyprctl activewindow -j
 # --------------------------------------------------------------------
 
 set -u
 
 MODE=${1:-waybar}
 
-if ! command -v hyprctl >/dev/null 2>&1; then
-    if [[ "$MODE" == "waybar" ]]; then
-        printf '{"text":"","tooltip":"","class":"window"}\n'
-    fi
-    exit 0
+CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/waybar/active_window.json"
+ACTIVE_JSON=""
+
+if [ -r "$CACHE_FILE" ]; then
+    ACTIVE_JSON=$(cat "$CACHE_FILE" 2>/dev/null || true)
 fi
 
-ACTIVE_JSON=$(hyprctl activewindow -j 2>/dev/null || true)
+if [ -z "$ACTIVE_JSON" ]; then
+    if ! command -v hyprctl >/dev/null 2>&1; then
+        if [[ "$MODE" == "waybar" ]]; then
+            printf '{"text":"","tooltip":"","class":"window"}\n'
+        fi
+        exit 0
+    fi
+    ACTIVE_JSON=$(hyprctl activewindow -j 2>/dev/null || true)
+fi
+
 export ACTIVE_JSON MODE
 
 if [[ "$MODE" == "waybar" ]]; then
-    # Waybar 模块模式
     python3 "$HOME/.config/waybar/scripts/py/waybar_window.py"
 else
-    # 弹窗模式（show / copy-class）
     python3 "$HOME/.config/waybar/scripts/py/waybar_window_popup.py"
 fi

@@ -8,7 +8,7 @@
         "return-type": "json",
         "format": "{text}",
         "max-length": 50,
-        "interval": 1,
+        "interval": "once",
         "signal": 12,
         "escape": false,
         "on-scroll-up": ":",
