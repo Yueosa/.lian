@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# 用法: wlogout.sh {lock|logout|shutdown|reboot}
-
+# ----------------------------------------------------------------------
+# 脚本：wlogout.sh
+# 用途：wlogout 各按钮被点击后真正执行的动作分发器。
+# 使用位置：wlogout/layout 中各按钮的 "action" 调用。
+# 用法：wlogout.sh {lock|logout|shutdown|reboot}
+#   lock     -> hyprlock
+#   logout   -> hyprctl dispatch exit
+#   shutdown -> systemctl poweroff
+#   reboot   -> systemctl reboot
+# ----------------------------------------------------------------------
 
 ACTION="$1"
 

@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-
+# ----------------------------------------------------------------------
+# 脚本：logoutlaunch.sh
+# 用途：wlogout 的“切换”入口——已开就关，没开就开。
+# 使用位置：~/.local/bin/wlogout/wlogout 软链 → 此脚本
+#         Hyprland 快捷键 SUPER+SPACE
+# 调用：wlogout 本体（带本仓库的 layout / style.css）
+# 依赖：wlogout
+# ----------------------------------------------------------------------
 
 if pgrep -x "wlogout" >/dev/null; then
     pkill -x "wlogout"

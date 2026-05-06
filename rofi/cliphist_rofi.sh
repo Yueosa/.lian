@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# ----------------------------------------------------------------------
+# 脚本：cliphist_rofi.sh
+# 用途：用 rofi 弹出 cliphist 剪贴板历史菜单（含图片缩略图）。
+# 使用位置：~/.local/bin/rofi/cliphist 软链 → 此脚本
+#         Hyprland 快捷键 SUPER+Z 调用 ~/.local/bin/rofi/cliphist
+# 主题：默认 ~/.config/rofi/clipboard.rasi（可用 ROFI_THEME_PATH 覆盖）
+# 缓存：$XDG_CACHE_HOME/cliphist-rofi/ 存图片缩略图
+# 依赖：cliphist, rofi-wayland, wl-clipboard, imagemagick(可选)
+# ----------------------------------------------------------------------
+
 set -euo pipefail
 
 THEME_PATH="${ROFI_THEME_PATH:-$HOME/.config/rofi/clipboard.rasi}"
