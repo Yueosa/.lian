@@ -16,13 +16,18 @@ set -u
 
 config_file="$HOME/.config/cava/config_waybar"
 proc_py="$HOME/.config/waybar/scripts/py/waybar_cava_proc.py"
+gate_py="$HOME/.config/waybar/scripts/py/cava_gate.py"
 cava_pid=""
 proc_pid=""
+gate_pid=""
 
 cleanup() {
+    [ -n "${gate_pid:-}" ] && kill "$gate_pid" 2>/dev/null || true
+    # 守护可能已把 cava STOP 住，必须先 CONT 否则 kill 不被立即处理
+    [ -n "${cava_pid:-}" ] && kill -CONT "$cava_pid" 2>/dev/null || true
     [ -n "${cava_pid:-}" ] && kill "$cava_pid" 2>/dev/null || true
     [ -n "${proc_pid:-}" ] && kill "$proc_pid" 2>/dev/null || true
-    wait "$cava_pid" "$proc_pid" 2>/dev/null || true
+    wait "$cava_pid" "$proc_pid" "$gate_pid" 2>/dev/null || true
 }
 
 trap 'cleanup; exit 0' INT TERM HUP PIPE EXIT
@@ -71,10 +76,17 @@ while true; do
             cava_pid=$!
         fi
 
+        # 启动门控守护：根据是否有 sink-input 在播放，对 cava 进程 STOP/CONT
+        if [ -f "$gate_py" ] && command -v pactl >/dev/null 2>&1; then
+            python3 -u "$gate_py" --pid "$cava_pid" 2>/dev/null &
+            gate_pid=$!
+        fi
+
         wait "$cava_pid" "$proc_pid" 2>/dev/null || true
         cleanup
         cava_pid=""
         proc_pid=""
+        gate_pid=""
         rm -f "$tmp_fifo" 2>/dev/null || true
     else
         echo ""
