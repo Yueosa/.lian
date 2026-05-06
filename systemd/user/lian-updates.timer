@@ -1,0 +1,12 @@
+[Unit]
+Description=Lian: periodic Arch/AUR updates check
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=30min
+RandomizedDelaySec=30s
+Persistent=true
+Unit=lian-updates.service
+
+[Install]
+WantedBy=timers.target

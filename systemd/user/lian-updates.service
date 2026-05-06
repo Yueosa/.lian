@@ -1,0 +1,11 @@
+[Unit]
+Description=Lian: refresh Arch/AUR update counts for waybar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+ExecStart=%h/.lian/waybar/scripts/updates_fetch.sh
