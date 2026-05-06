@@ -1,7 +1,6 @@
 {"custom/media": {
-    "exec": "bash -lc '\"$HOME/.config/waybar/scripts/waybar_media.sh\"'",
+    "exec": "$HOME/.config/waybar/scripts/waybar_media.sh",
     "return-type": "json",
-    "interval": 1,
     "format": "{icon} {text} ",
     "max-length": 200,
     "format-icons": {

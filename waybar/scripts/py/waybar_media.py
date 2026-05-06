@@ -496,27 +496,39 @@ def current_lyric_ttml(ttml: str, pos_ms: int) -> str:
 
 
 def splayer_get_current_lyric(player: str, pos_ms: int) -> str:
-    # 通过 mpris:trackid 获取 SPlayer 的内部歌曲 id，并从 cache.db 读取歌词缓存。
-    trackid = try_sh(["playerctl", "-p", player, "metadata", "mpris:trackid", "-s"])
-    song_id = parse_splayer_track_id(trackid)
-    if not song_id:
-        return ""
+    entries = splayer_get_lyric_entries(player)
+    if entries:
+        return current_lyric(entries, pos_ms)
+    # 退回 ttml（按 pos_ms 直接挑当前段）
+    return _splayer_get_ttml_current(player, pos_ms)
 
+
+def _splayer_open_db():
     db_path = get_splayer_cache_db_path()
     if not db_path:
-        return ""
-
-    # SPlayer 的 LyricManager 缓存 key 规则：${id}.json / ${id}.qrc.json / ${id}.ttml
-    keys = (f"{song_id}.json", f"{song_id}.qrc.json", f"{song_id}.ttml")
-
+        return None
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     except Exception:
-        return ""
+        return None
 
+
+def _splayer_song_id_for(player: str) -> str:
+    trackid = try_sh(["playerctl", "-p", player, "metadata", "mpris:trackid", "-s"])
+    return parse_splayer_track_id(trackid) or ""
+
+
+def splayer_get_lyric_entries(player: str) -> List[Tuple[int, str]]:
+    """从 SPlayer cache.db 读取歌词，返回时间→文本的 entries。"""
+    song_id = _splayer_song_id_for(player)
+    if not song_id:
+        return []
+    conn = _splayer_open_db()
+    if conn is None:
+        return []
     try:
         cur = conn.cursor()
-        for k in keys:
+        for k in (f"{song_id}.json", f"{song_id}.qrc.json"):
             try:
                 row = cur.execute(
                     "SELECT data FROM kv_cache WHERE type = ? AND key = ? LIMIT 1",
@@ -524,32 +536,20 @@ def splayer_get_current_lyric(player: str, pos_ms: int) -> str:
                 ).fetchone()
             except Exception:
                 row = None
-
             if not row or row[0] is None:
                 continue
 
             raw = row[0]
             if isinstance(raw, memoryview):
                 raw = raw.tobytes()
-            if isinstance(raw, bytes):
-                payload = raw.decode("utf-8", errors="ignore")
-            else:
-                payload = str(raw)
+            payload = raw.decode("utf-8", errors="ignore") if isinstance(raw, bytes) else str(raw)
 
-            if k.endswith(".ttml"):
-                line = current_lyric_ttml(payload, pos_ms)
-                if line:
-                    return line
-                continue
-
-            # .json / .qrc.json：通常是 JSON 字符串，里面包含 lrc/lyric 字段
             try:
                 j = json.loads(payload)
             except Exception:
                 j = None
 
             if isinstance(j, dict):
-                # Netease 常见：{ lrc: { lyric: "[00:..]..." }, tlyric: {...} }
                 lrc_text = ""
                 if isinstance(j.get("lrc"), dict) and isinstance(j["lrc"].get("lyric"), str):
                     lrc_text = j["lrc"]["lyric"]
@@ -557,26 +557,57 @@ def splayer_get_current_lyric(player: str, pos_ms: int) -> str:
                     lrc_text = j["lyric"]
                 elif isinstance(j.get("lrc"), str):
                     lrc_text = j["lrc"]
-
                 if lrc_text:
                     lrc_text = normalize_escaped_lyrics_text(lrc_text)
                     entries = parse_best_timed_lyrics(lrc_text)
-                    line = current_lyric(entries, pos_ms).strip() if entries else ""
-                    if line:
-                        return line
+                    if entries:
+                        return entries
 
-            # 兜底：如果 payload 本身就是 LRC 文本
             entries = parse_best_timed_lyrics(payload)
-            line = current_lyric(entries, pos_ms).strip() if entries else ""
-            if line:
-                return line
-
-        return ""
+            if entries:
+                return entries
+        return []
     finally:
         try:
             conn.close()
         except Exception:
             pass
+
+
+def _splayer_get_ttml_current(player: str, pos_ms: int) -> str:
+    """ttml 走老路（按 pos 取当前），切歌就重读，性能可接受。"""
+    song_id = _splayer_song_id_for(player)
+    if not song_id:
+        return ""
+    conn = _splayer_open_db()
+    if conn is None:
+        return ""
+    try:
+        cur = conn.cursor()
+        try:
+            row = cur.execute(
+                "SELECT data FROM kv_cache WHERE type = ? AND key = ? LIMIT 1",
+                ("lyrics", f"{song_id}.ttml"),
+            ).fetchone()
+        except Exception:
+            return ""
+        if not row or row[0] is None:
+            return ""
+        raw = row[0]
+        if isinstance(raw, memoryview):
+            raw = raw.tobytes()
+        payload = raw.decode("utf-8", errors="ignore") if isinstance(raw, bytes) else str(raw)
+        return current_lyric_ttml(payload, pos_ms) or ""
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _splayer_get_current_lyric_legacy(player: str, pos_ms: int) -> str:
+    # 兼容入口：仅在外部直接 import 时使用；模块内部已切到 entries 缓存路径。
+    return splayer_get_current_lyric(player, pos_ms)
 
 
 def current_lyric(entries: List[Tuple[int, str]], pos_ms: int) -> str:
@@ -591,69 +622,25 @@ def current_lyric(entries: List[Tuple[int, str]], pos_ms: int) -> str:
     return last
 
 
-def main() -> int:
-    if not shutil.which("playerctl"):
-        print(
-            json.dumps(
-                {"text": "YeaArch-Sakurine", "class": "stopped", "alt": "stopped", "tooltip": "playerctl not found"},
-                ensure_ascii=False,
-            )
-        )
-        return 0
+# ============================================================
+# 输出与连续模式
+# ============================================================
 
-    player = choose_player()
-    if not player:
-        print(json.dumps({"text": "YeaArch-Sakurine", "class": "stopped", "alt": "stopped", "tooltip": "No player"}, ensure_ascii=False))
-        return 0
+IDLE_OUT = {"text": "YeaArch-Sakurine", "class": "stopped", "alt": "stopped", "tooltip": "Arch Linux"}
 
-    # 让点击/滚轮控制与当前显示保持一致
-    write_selected_player_cache(player)
 
-    status = try_sh(["playerctl", "-p", player, "status", "-s"])
-    if status not in ("Playing", "Paused"):
-        print(
-            json.dumps(
-                {"text": "YeaArch-Sakurine", "class": "stopped", "alt": "stopped", "tooltip": "Arch Linux"},
-                ensure_ascii=False,
-            )
-        )
-        return 0
+def _emit(obj: dict) -> None:
+    print(json.dumps(obj, ensure_ascii=False), flush=True)
 
-    title = try_sh(["playerctl", "-p", player, "metadata", "title", "-s"])
-    artist = try_sh(["playerctl", "-p", player, "metadata", "artist", "-s"])
-    album = try_sh(["playerctl", "-p", player, "metadata", "album", "-s"])
-    url = try_sh(["playerctl", "-p", player, "metadata", "xesam:url", "-s"])
 
+def _build_output(status: str, title: str, artist: str, album: str, lyric_line: str) -> dict:
     full = (title or "Unknown Title").strip()
     if artist.strip():
         full = f"{full} - {artist.strip()}"
-
-    pos_s = try_sh(["playerctl", "-p", player, "position", "-s"])
-    try:
-        pos_ms = int(float(pos_s) * 1000)
-    except Exception:
-        pos_ms = 0
-
-    lyric_line = ""
-    lrc_path = find_lrc_near_media(url)
-    if not lrc_path:
-        lrc_path = find_lrc_in_extra_dirs(title, artist, album)
-    if not lrc_path:
-        lrc_path = find_lrc_path(title, artist, album)
-    if lrc_path:
-        entries = parse_lrc_lines(lrc_path)
-        lyric_line = current_lyric(entries, pos_ms).strip()
-
-    if not lyric_line and is_splayer(player):
-        lyric_line = splayer_get_current_lyric(player, pos_ms).strip()
-
-    # 避免把接口 JSON 或异常超长内容当歌词显示出来
     if looks_like_blob(lyric_line):
         lyric_line = ""
 
-    # The module format includes Pango markup in {icon}; keep {text} safe.
     text = pango_escape(lyric_line if lyric_line else full)
-
     cls = "playing" if status == "Playing" else "paused"
 
     tooltip_lines = [field("歌名:", (title or "").strip() or "Unknown")]
@@ -664,10 +651,158 @@ def main() -> int:
     if lyric_line:
         tooltip_lines.append(field("歌词:", lyric_line))
 
-    tooltip = "\n".join(tooltip_lines)
+    return {"text": text, "class": cls, "alt": cls, "tooltip": "\n".join(tooltip_lines)}
 
-    print(json.dumps({"text": text, "class": cls, "alt": cls, "tooltip": tooltip}, ensure_ascii=False))
-    return 0
+
+def _fetch_meta(player: str):
+    """单次 fork 拿 status + 主要 metadata + trackid。返回 dict 或 None。"""
+    fmt = "{{status}}|{{title}}|{{artist}}|{{album}}|{{xesam:url}}|{{mpris:trackid}}"
+    out = try_sh(["playerctl", "-p", player, "metadata", "--format", fmt])
+    if not out:
+        return None
+    parts = out.split("|")
+    while len(parts) < 6:
+        parts.append("")
+    status, title, artist, album, url, trackid = parts[:6]
+    return {
+        "status": status, "title": title, "artist": artist, "album": album,
+        "url": url, "trackid": trackid,
+    }
+
+
+def _fetch_position_ms(player: str) -> int:
+    s = try_sh(["playerctl", "-p", player, "position", "-s"])
+    try:
+        return int(float(s) * 1000)
+    except Exception:
+        return 0
+
+
+def _build_entries(player: str, title: str, artist: str, album: str, url: str) -> List[Tuple[int, str]]:
+    lrc_path = find_lrc_near_media(url)
+    if not lrc_path:
+        lrc_path = find_lrc_in_extra_dirs(title, artist, album)
+    if not lrc_path:
+        lrc_path = find_lrc_path(title, artist, album)
+    if lrc_path:
+        entries = parse_lrc_lines(lrc_path)
+        if entries:
+            return entries
+    if is_splayer(player):
+        entries = splayer_get_lyric_entries(player)
+        if entries:
+            return entries
+    return []
+
+
+def run_loop() -> int:
+    """常驻模式：~150ms 一次刷新；只有输出变化才打印。
+
+    校准：每秒做一次 playerctl 真值对齐（status+metadata+position 各一 fork）。
+    tick 之间用单调时间外推位置，几乎不消耗 CPU。
+    """
+    tick = float(os.environ.get("WAYBAR_MEDIA_TICK", "0.15") or "0.15")
+    tick = max(0.05, min(tick, 0.5))
+    calibrate_every = float(os.environ.get("WAYBAR_MEDIA_CALIBRATE", "1.0") or "1.0")
+    calibrate_every = max(0.3, min(calibrate_every, 5.0))
+
+    cur_player = ""
+    cur_meta: dict = {}
+    cur_entries: List[Tuple[int, str]] = []
+    cur_entries_key = ""  # (player|trackid|url|title|artist) 用于判断切歌
+    cal_mono = 0.0
+    cal_pos_ms = 0
+    last_payload = None
+    last_calibrate_at = 0.0
+
+    while True:
+        try:
+            now = time.monotonic()
+            need_calibrate = (now - last_calibrate_at) >= calibrate_every
+
+            if need_calibrate:
+                last_calibrate_at = now
+                player = choose_player()
+                if not player:
+                    cur_player = ""
+                    cur_meta = {}
+                    cur_entries = []
+                    cur_entries_key = ""
+                    if last_payload != IDLE_OUT:
+                        _emit(IDLE_OUT)
+                        last_payload = IDLE_OUT
+                    time.sleep(tick)
+                    continue
+
+                if player != cur_player:
+                    write_selected_player_cache(player)
+                    cur_player = player
+
+                meta = _fetch_meta(player)
+                if not meta or meta.get("status") not in ("Playing", "Paused"):
+                    cur_meta = meta or {}
+                    cur_entries = []
+                    cur_entries_key = ""
+                    if last_payload != IDLE_OUT:
+                        _emit(IDLE_OUT)
+                        last_payload = IDLE_OUT
+                    time.sleep(tick)
+                    continue
+
+                cur_meta = meta
+                # 校准位置（拿真值）
+                cal_pos_ms = _fetch_position_ms(player)
+                cal_mono = time.monotonic()
+
+                # 切歌检测：trackid 变 / url 变 / 标题艺术家变
+                key = "|".join([
+                    player, meta.get("trackid", ""), meta.get("url", ""),
+                    meta.get("title", ""), meta.get("artist", ""),
+                ])
+                if key != cur_entries_key:
+                    cur_entries = _build_entries(
+                        player, meta.get("title", ""), meta.get("artist", ""),
+                        meta.get("album", ""), meta.get("url", ""),
+                    )
+                    cur_entries_key = key
+
+            if not cur_meta or cur_meta.get("status") not in ("Playing", "Paused"):
+                time.sleep(tick)
+                continue
+
+            # 外推位置
+            if cur_meta.get("status") == "Playing":
+                pos_ms = cal_pos_ms + int((time.monotonic() - cal_mono) * 1000)
+            else:
+                pos_ms = cal_pos_ms
+
+            lyric_line = current_lyric(cur_entries, pos_ms).strip() if cur_entries else ""
+
+            payload = _build_output(
+                cur_meta.get("status", ""),
+                cur_meta.get("title", ""),
+                cur_meta.get("artist", ""),
+                cur_meta.get("album", ""),
+                lyric_line,
+            )
+
+            if payload != last_payload:
+                _emit(payload)
+                last_payload = payload
+
+            time.sleep(tick)
+        except KeyboardInterrupt:
+            return 0
+        except Exception:
+            # 任意失败都不要让 waybar 看到模块挂掉
+            time.sleep(max(tick, 0.5))
+
+
+def main() -> int:
+    if not shutil.which("playerctl"):
+        _emit({"text": "YeaArch-Sakurine", "class": "stopped", "alt": "stopped", "tooltip": "playerctl not found"})
+        return 0
+    return run_loop()
 
 
 if __name__ == "__main__":

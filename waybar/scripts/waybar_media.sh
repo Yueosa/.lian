@@ -13,16 +13,13 @@
 # 退出码：
 #   - 0：即使缺依赖也返回 JSON（避免 Waybar 判定模块失败）
 # ----------------------------------------------------------------------
-set -euo pipefail
+set -u
 
 has() { command -v "$1" >/dev/null 2>&1; }
-
-PINK="#F5A9B8"
-BLUE="#209CE6"
 
 if ! has playerctl || ! has python3; then
   printf '{"text":"YeaArch-Sakurine","class":"stopped","alt":"stopped","tooltip":"playerctl/python3 not found"}\n'
   exit 0
 fi
 
-python3 "$HOME/.config/waybar/scripts/py/waybar_media.py"
+exec python3 -u "$HOME/.config/waybar/scripts/py/waybar_media.py"
