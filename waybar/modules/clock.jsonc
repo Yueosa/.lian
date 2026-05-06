@@ -10,7 +10,7 @@
         "signal": 11,
         "format": "<span color='#F5A9B8'></span> {text}",
         "tooltip": false,
-        "on-click": "gnome-calendar",
+        "on-click": "gsimplecal",
         "on-click-right": "$HOME/.config/waybar/scripts/waybar_clock_toggle.sh",
         "on-scroll-up": ":",
         "on-scroll-down": ":"
