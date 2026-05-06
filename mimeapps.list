@@ -1,0 +1,17 @@
+[Default Applications]
+text/html=google-chrome.desktop
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
+x-scheme-handler/about=google-chrome.desktop
+x-scheme-handler/unknown=google-chrome.desktop
+x-scheme-handler/clash=mihomo-party.desktop
+x-scheme-handler/mihomo=mihomo-party.desktop
+inode/directory=thunar.desktop
+text/markdown=nvim.desktop
+application/octet-stream=nvim.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+
+[Added Associations]
+application/octet-stream=nvim.desktop;
+text/plain=code.desktop;
+application/x-shellscript=code.desktop;
