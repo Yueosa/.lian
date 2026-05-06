@@ -1,32 +1,51 @@
-# lian tui
-pacman/
+# ============================================================
+# 个人速记 / 笔记 / 工作计划（保留在本地，不入库）
+# ============================================================
 
-# clolr
+# color.conf：我的配色速记，开发/写主题时翻
 color.conf
 
-# config
+# config.md：个人配置笔记（待重写）
 config.md
 
-# fastfetch logo
-fastfetch/logo
+# plan.md：当前阶段的工作计划草稿
+plan.md
 
-# nvim
-lazy-lock.json
+# ============================================================
+# Agent 工作目录 / 隐私文件
+# ============================================================
 
-# waybar python
-__pycache__
-waybar/.codex
-
-# local app state
-gtk-3.0/bookmarks
+# claude code / codex 等 agent 在仓库根或子目录留下的元数据（文件或目录都忽略）
+.claude
+.codex
+**/.codex
+**/.claude
 
 # secrets
 .env
 
-# 本地工作计划
-plan.md
+# ============================================================
+# 个人化资源（其他用户应自行准备）
+# ============================================================
 
-# fcitx5 rime 自动生成的快照/缓存
+# 我机器上的 fastfetch logo 是个人收藏，不公开
+fastfetch/logo
+
+# GTK 书签是本地路径
+gtk-3.0/bookmarks
+
+# ============================================================
+# 由程序运行时生成的缓存 / 状态
+# ============================================================
+
+# Python 字节码
+__pycache__/
+*.pyc
+
+# nvim lazy-lock：每次插件升级都会变，按个人习惯不入库
+lazy-lock.json
+
+# fcitx5 rime 自动生成的快照/缓存，以及个人词库
 fcitx5/rime/*_cleanup_*.txt
 fcitx5/rime/worddb_snapshot_*.txt
 fcitx5/rime/custom_phrase.txt
