@@ -50,7 +50,7 @@ def main() -> int:
         line = subprocess.check_output(
             [
                 "nvidia-smi",
-                "--query-gpu=name,power.draw,temperature.gpu,memory.used,memory.total",
+                "--query-gpu=name,utilization.gpu,power.draw,temperature.gpu,memory.used,memory.total",
                 "--format=csv,noheader,nounits",
             ],
             text=True,
@@ -65,18 +65,23 @@ def main() -> int:
 
     parts = [p.strip() for p in line.split(",")]
     name = parts[0] if len(parts) >= 1 else "Unknown"
-    power = fnum(parts[1]) if len(parts) >= 2 else None
-    temp = fnum(parts[2]) if len(parts) >= 3 else None
-    mem_used = fnum(parts[3]) if len(parts) >= 4 else None
-    mem_total = fnum(parts[4]) if len(parts) >= 5 else None
+    util = fnum(parts[1]) if len(parts) >= 2 else None
+    power = fnum(parts[2]) if len(parts) >= 3 else None
+    temp = fnum(parts[3]) if len(parts) >= 4 else None
+    mem_used = fnum(parts[4]) if len(parts) >= 5 else None
+    mem_total = fnum(parts[5]) if len(parts) >= 6 else None
 
     text = "GPU"
-    if mem_used is not None and mem_total and mem_total > 0:
+    if util is not None:
+        text = f"{util:.0f}%"
+    elif mem_used is not None and mem_total and mem_total > 0:
         text = f"{(mem_used / mem_total * 100):.0f}%"
     elif temp is not None:
         text = f"{temp:.0f}°C"
 
     lines = [field("显卡:", name)]
+    if util is not None:
+        lines.append(field("使用率:", f"{util:.0f}%"))
     if temp is not None:
         lines.append(field("温度:", f"{temp:.0f}°C"))
     if power is not None:

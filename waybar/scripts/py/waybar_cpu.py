@@ -90,13 +90,19 @@ def per_core_usage_percent():
     except Exception:
         prev_cores = None
 
+    # 首次无缓存（或核心数变化）：主动采样建立 baseline，避免首启显示"采样中…"。
+    if not prev_cores or len(prev_cores) != len(cur):
+        prev_cores = cur
+        time.sleep(0.1)
+        cur = read_proc_stat()
+        now = time.time()
+        if not cur or len(cur) != len(prev_cores):
+            return None
+
     try:
         STAT_CACHE.write_text(json.dumps({"ts": now, "cores": cur}), encoding="utf-8")
     except Exception:
         pass
-
-    if not prev_cores or len(prev_cores) != len(cur):
-        return None
 
     usages = []
     for p, c in zip(prev_cores, cur):

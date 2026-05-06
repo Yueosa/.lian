@@ -21,8 +21,7 @@
         "~/.config/waybar/modules/battery.jsonc",
         "~/.config/waybar/modules/bluetooth.jsonc",
         "~/.config/waybar/modules/tray.jsonc",
-        "~/.config/waybar/modules/updates.jsonc",
-        "~/.config/waybar/modules/clipboard.jsonc"
+        "~/.config/waybar/modules/updates.jsonc"
     ],
 
     // 左侧模块
@@ -85,7 +84,7 @@
         ]
     },
 
-    // 右: [Network | Audio | Battery | Bluetooth | Clipboard | Updates]
+    // 右: [Network | Audio | Battery | Bluetooth | Updates]
     "group/island-right-1": {
         "orientation": "horizontal",
         "modules": [
@@ -93,7 +92,6 @@
             "pulseaudio",
             "battery",
             "custom/bluetooth",
-            "custom/clipboard",
             "custom/updates"
         ]
     },

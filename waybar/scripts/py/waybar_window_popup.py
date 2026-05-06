@@ -143,9 +143,9 @@ def proc_cpu_percent(pids: list[int]) -> float:
         return 0.0
 
     try:
-        sample_seconds = float(os.environ.get("WAYBAR_WINDOW_CPU_SAMPLE_SECONDS", "0.25") or "0.25")
+        sample_seconds = float(os.environ.get("WAYBAR_WINDOW_CPU_SAMPLE_SECONDS", "0.5") or "0.5")
     except Exception:
-        sample_seconds = 0.25
+        sample_seconds = 0.5
     sample_seconds = max(0.05, min(sample_seconds, 1.0))
 
     t0 = time.monotonic()

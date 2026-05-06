@@ -23,6 +23,9 @@ gtk-3.0/bookmarks
 # secrets
 .env
 
+# 本地工作计划
+plan.md
+
 # fcitx5 rime 自动生成的快照/缓存
 fcitx5/rime/*_cleanup_*.txt
 fcitx5/rime/worddb_snapshot_*.txt

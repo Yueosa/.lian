@@ -232,9 +232,9 @@ def main() -> int:
     if mt > 0 and mem_pct is not None:
         lines.append(field("RAM已用:", f"{human_bytes(used_b)} / {human_bytes(mt)} ({mem_pct}%)"))
 
-    suffix = "RSS" if any_rss else ""
+    suffix = "PSS, ⚠ 部分 RSS" if any_rss else "PSS"
     lines.append("")
-    lines.append(field("Top 5 内存:", f"PSS > {suffix}"))
+    lines.append(field(f"Top 5 内存 ({suffix}):", ""))
 
     for b, _rpid, _cnt, used_rss, name in rows:
         val = f"{human_bytes(int(b))}" + (" -RSS" if used_rss else "")
