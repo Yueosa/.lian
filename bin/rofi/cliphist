@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-exec "$HOME/.lian/rofi/cliphist_rofi.sh" "$@"
