@@ -6,16 +6,16 @@
 
 
 /* 颜色配置 */
-@define-color bar-bg #FFFFFF;
+@define-color bar-bg ${WLOGOUT_BAR_BG};
 
-@define-color main-bg #FFFFFF;
-@define-color main-fg #101419;
+@define-color main-bg ${WLOGOUT_MAIN_BG};
+@define-color main-fg ${WLOGOUT_MAIN_FG};
 
-@define-color wb-act-bg #5BCEFA;
-@define-color wb-act-fg #FFFFFF;
+@define-color wb-act-bg ${WLOGOUT_ACT_BG};
+@define-color wb-act-fg ${WLOGOUT_ACT_FG};
 
-@define-color wb-hvr-bg #F5A9B8;
-@define-color wb-hvr-fg #36283d;
+@define-color wb-hvr-bg ${WLOGOUT_HVR_BG};
+@define-color wb-hvr-fg ${WLOGOUT_HVR_FG};
 
 
 /* 窗口配置 */
@@ -26,7 +26,7 @@ window {
 
 /* 按钮效果 */
 button {
-    color: ${BtnCol};
+    color: @main-fg;
     background-color: @main-bg;
     outline-style: none;
     border: none;
@@ -44,6 +44,7 @@ button {
 /* 鼠标悬停 */
 button:hover {
     background-color: @wb-act-bg;
+    color: @wb-act-fg;
     background-size: 30%;
 }
 
@@ -51,6 +52,7 @@ button:hover {
 /* 选择器 */
 button:focus {
     background-color: @wb-hvr-bg;
+    color: @wb-hvr-fg;
     background-size: 40%;
     border-radius: ${active_rad}px;
     animation: gradient_f 20s ease-in infinite;
