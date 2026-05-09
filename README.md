@@ -2,6 +2,13 @@
 
 # 恋的 Arch 配置
 
+> ⚠️ **本分支 `legacy/waybar` 已冻结，不再维护** ⚠️
+>
+> 主线（quickshell）已经在 `main` 分支：<https://github.com/Yueosa/.lian/tree/main>
+>
+> 若你来这里只是为了看 waybar / swaync / rofi 的旧配置参考，那就在这里翻看；
+> 否则请去 `main` 分支获取最新桌面栈。
+
 > 我使用的桌面环境是 `Hyprland` + `Wayland` + `kitty` + `zsh`
 
 ![Hyprland](./image/hyprland.png)
