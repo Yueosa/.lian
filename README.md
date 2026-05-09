@@ -2,17 +2,7 @@
 
 # 恋的 Arch 配置
 
-> 🚀 **2026-05 主线已切到 Quickshell**
->
-> Bar / 通知 / 剪贴板 / 启动器 / 灵动岛 / 锁屏 全部由 [`quickshell/`](./quickshell) 单进程接管，
-> 取代旧栈 `waybar` + `swaync` + `rofi`（部分功能）。
-> 主题链路由 `matugen` 驱动 GTK3/4 + qt6ct 自动 palette。
->
-> 旧的 waybar/rofi/swaync 配置已冻结在 [`legacy/waybar`](https://github.com/Yueosa/.lian/tree/legacy/waybar) 分支，本分支不再保留。
->
-> README 的部分章节（waybar/rofi/swaync 安装与配置说明）暂未与新主线同步，待后续单独一轮重写。
-
-> 我使用的桌面环境是 `Hyprland` + `Wayland` + `kitty` + `zsh`
+> 我使用的桌面环境是 `Hyprland` + `Wayland` + `quickshell` + `kitty` + `zsh`
 
 ![Hyprland](./image/hyprland.png)
 
@@ -42,42 +32,21 @@
 > - 整个仓库随时可以 `git diff` / `git log` 看出我做过什么改动。
 > - 换机器只需要一次 `git clone` + 一次软链脚本。
 
-克隆我的仓库到 `$HOME/.lian` 下：
-
-```bash
-git clone git@github.com:Yueosa/.lian.git ~/.lian
-# 或 HTTPS
-git clone https://github.com/Yueosa/.lian.git ~/.lian
-```
-
 我的桌面会话入口在 `hyprland.conf` 的 `exec-once` 中，服务部署策略如下：
 
-- 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party 等）
+- 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party / quickshell / lianwall 等）
   → 由 `exec-once` 直接拉起，确保 `WAYLAND_DISPLAY` / `HYPRLAND_INSTANCE_SIGNATURE` / IM 变量完整继承
-- ⚙️ **跟随会话生命周期的常驻服务**（waybar / swaync / fcitx5 / lianwall / cliphist-watch / hysp / stalk-hypr / tuxedo-tray / hypr-event-daemon）
+- ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist-watch / hysp / stalk-hypr / tuxedo-tray / hypr-event-daemon）
   → 由 `hyprland-session.target` 统一管理的 `systemd --user` 服务（`exec-once` 只 import-environment 和 start 这一个 target）
-- ⏰ **定时采集**（`lian-updates.timer`）
-  → 由 `systemd --user timer` 拉起，写缓存 + 给 waybar 发信号
 - 🔧 还有少部分系统级服务（`sddm` / `bluetooth` / `polkit` / `wpa_supplicant`）需要在用户登录前启动，配置为 `systemctl enable`。
 
 `exec-once` 中也负责导入环境变量到 user systemd（`dbus-update-activation-environment` + `systemctl --user import-environment`）、并启动 `hyprland-session.target`。
 
+> 桌面 Bar / 通知 / 启动器 / 剪贴板 / 灵动岛 / 锁屏 全部由 [`quickshell/`](./quickshell) 单进程接管，详见 [quickshell](#quickshell) 节。
+
 #### 软链布局速查
 
-下面这三段是我当前机器上最终的软链状态，你可以当成目标形态对照：
-
-```bash
- ~/.local/bin/
-├──  rofi
-│   ├── 󰡯 cliphist        -> $HOME/.lian/rofi/cliphist_rofi.sh
-│   └── 󰡯 rofi-launcher   -> $HOME/.lian/rofi/scripts/rofi-launcher.sh
-├──  waybar
-│   ├── 󰡯 waybar-window     -> $HOME/.lian/waybar/scripts/waybar_window.sh
-│   ├── 󰡯 lbar              -> $HOME/.lian/waybar/lbar
-│   └── 󰡯 waybar-workspaces -> $HOME/.lian/waybar/scripts/waybar_workspaces_scroll.sh
-└──  wlogout
-    └── 󰡯 wlogout          -> $HOME/.lian/wlogout/scripts/logoutlaunch.sh
-```
+下面这两段是我当前机器上最终的软链状态，可以当作目标形态对照：
 
 ```bash
  ~/.config/
@@ -91,34 +60,30 @@ git clone https://github.com/Yueosa/.lian.git ~/.lian
 ├──  kanshi                                 -> $HOME/.lian/kanshi
 ├──  kitty                                  -> $HOME/.lian/kitty
 ├──  nvim                                   -> $HOME/.lian/nvim
-├──  rofi                                   -> $HOME/.lian/rofi
-├──  swaync                                 -> $HOME/.lian/swaync
-├──  waybar                                 -> $HOME/.lian/waybar
-├──  wlogout                                -> $HOME/.lian/wlogout
+├──  quickshell                             -> $HOME/.lian/quickshell
 ├──  starship.toml                          -> $HOME/.lian/starship.toml
 ├──  mimeapps.list                          -> $HOME/.lian/mimeapps.list
 ├──  btop/btop.conf                         -> $HOME/.lian/btop/btop.conf
 ├──  cava/config                            -> $HOME/.lian/cava/config
-├──  cava/config_waybar                     -> $HOME/.lian/cava/config_waybar
-└──  qt6ct/qt6ct.conf                       -> $HOME/.lian/qt6ct/qt6ct.conf
+├──  qt6ct/qt6ct.conf                       -> $HOME/.lian/qt6ct/qt6ct.conf
+├──  fcitx5/rime/default.custom.yaml        -> $HOME/.lian/fcitx5/rime/default.custom.yaml
+└──  lianwall/hooks.toml                    -> $HOME/.lian/lianwall/hooks.toml
 ```
 
-> 注：`btop/`、`cava/`、`qt6ct/`、`fontconfig/conf.d/` 这几个目录在 `~/.config/` 下仍是 **真实目录**，只把目录里的 “由我维护的那一两个文件” 软链回仓库。这是因为这些应用还会在同名目录里写 themes / shaders / 字体缓存等运行时数据，整目录软链反而麻烦。
+> 注：`btop/`、`cava/`、`qt6ct/`、`fontconfig/conf.d/`、`fcitx5/rime/`、`lianwall/` 这几个目录在 `~/.config/` 下仍是 **真实目录**，只把目录里 “由我维护的那一两个文件” 软链回仓库。这是因为这些应用会在同名目录里写 themes / shaders / 字体缓存 / matugen 输出 / 运行时数据，整目录软链反而麻烦。
+>
+> 特别地，`qt6ct/colors/MatugenAuto.conf` 由 [matugen](#matugen) 在主题切换时写入，是运行时产物，不入库。
 
 ```bash
  ~/.config/systemd/user/
-├── 󱆃 hyprland-session.target  -> $HOME/.lian/systemd/user/hyprland-session.target
-├── 󱆃 waybar-lbar.service      -> $HOME/.lian/systemd/user/waybar-lbar.service
-├── 󱆃 swaync.service           -> $HOME/.lian/systemd/user/swaync.service
-├── 󱆃 fcitx5.service           -> $HOME/.lian/systemd/user/fcitx5.service
-├── 󱆃 lianwall.service         -> $HOME/.lian/systemd/user/lianwall.service
-├── 󱆃 cliphist-watch.service   -> $HOME/.lian/systemd/user/cliphist-watch.service
-├── 󱆃 stalk-hypr.service       -> $HOME/.lian/systemd/user/stalk-hypr.service
-├── 󱆃 hysp.service             -> $HOME/.lian/systemd/user/hysp.service
-├── 󱆃 tuxedo-tray.service      -> $HOME/.lian/systemd/user/tuxedo-tray.service
-├── 󱆃 hypr-event-daemon.service-> $HOME/.lian/systemd/user/hypr-event-daemon.service
-├── 󱆃 lian-updates.service     -> $HOME/.lian/systemd/user/lian-updates.service
-└── 󱆃 lian-updates.timer       -> $HOME/.lian/systemd/user/lian-updates.timer
+├── 󱆃 hyprland-session.target   -> $HOME/.lian/systemd/user/hyprland-session.target
+├── 󱆃 fcitx5.service            -> $HOME/.lian/systemd/user/fcitx5.service
+├── 󱆃 lianwall.service          -> $HOME/.lian/systemd/user/lianwall.service
+├── 󱆃 cliphist-watch.service    -> $HOME/.lian/systemd/user/cliphist-watch.service
+├── 󱆃 stalk-hypr.service        -> $HOME/.lian/systemd/user/stalk-hypr.service
+├── 󱆃 hysp.service              -> $HOME/.lian/systemd/user/hysp.service
+├── 󱆃 tuxedo-tray.service       -> $HOME/.lian/systemd/user/tuxedo-tray.service
+└── 󱆃 hypr-event-daemon.service -> $HOME/.lian/systemd/user/hypr-event-daemon.service
 ```
 
 > `*.wants/` 目录是 `systemctl --user enable ...` 生成的启用状态，不作为仓库源文件维护。
@@ -140,22 +105,21 @@ git clone https://github.com/Yueosa/.lian.git ~/.lian
 | [starship](#starship) | 提示符配置（`starship.toml`）。 |
 | [kanshi](#kanshi) | 多显示器自动切换（笔记本 / 外接屏）。 |
 | [kitty](#kitty) | 终端模拟器配置与字体、splits 分屏、ssh 兼容说明。 |
-| [gsimplecal](#gsimplecal) | 极简日历弹窗（waybar 时钟左键触发）。 |
-| [GTK](#gtk) | GTK 3/4 主题覆盖。 |
-| [Qt (qt6ct)](#qt6ct) | Qt 应用主题适配。 |
+| [gsimplecal](#gsimplecal) | 极简日历弹窗。 |
+| [GTK](#gtk) | GTK 3/4 主题覆盖（配色由 matugen 动态生成）。 |
+| [Qt (qt6ct)](#qt6ct) | Qt 应用主题适配（palette 由 matugen 写入）。 |
 | [fontconfig](#fontconfig) | 中日韩字体回退顺序覆盖。 |
 | [mimeapps](#mimeapps) | XDG 默认应用关联。 |
 | [git/ignore](#gitignore) | 全局 gitignore（XDG 路径）。 |
 | [btop](#btop) | 终端系统监控配置。 |
-| [cava](#cava) | 音频频谱可视化（主程序 + waybar 嵌入）。 |
-| [rofi](#rofi) | 应用启动器 / 窗口切换 / 剪贴板菜单与脚本。 |
-| [swaync](#swaync) | 通知中心配置。 |
+| [cava](#cava) | 音频频谱可视化（quickshell 媒体卡也读它）。 |
 | [hyprlock](#hyprlock) | 锁屏配置与字体依赖。 |
-| [wlogout](#wlogout) | 电源菜单（锁屏 / 登出 / 关机 / 重启）。 |
 | [Hyprland](#hyprland) | 窗口管理器 / 混成器核心配置说明。 |
 | [systemd/user](#systemduser) | Hyprland 用户会话服务管理。 |
 | [nvim](#nvim) | Neovim 配置结构、插件与依赖。 |
-| [waybar](#waybar) | 状态栏配置、模块预览与脚本拆解。 |
+| [quickshell](#quickshell) | 主线桌面外壳：Bar / 启动器 / 剪贴板 / 灵动岛 / 锁屏 全在这。 |
+| [matugen](#matugen) | 从当前壁纸生成 Material You palette 派发到 GTK / qt6ct / quickshell。 |
+| [lianwall](#lianwall) | 壁纸引擎与 hooks（含主题热更钩子）。 |
 
 ---
 
@@ -532,25 +496,19 @@ ln -sf ~/.lian/btop/btop.conf ~/.config/btop/btop.conf
 
 ## | cava
 
-`cava` 是音频频谱可视化工具。我有两份配置：
-
-- [cava/config](cava/config) —— **主程序配置**（`cava` 命令直接跑时用的）
-- [cava/config_waybar](cava/config_waybar) —— **waybar 嵌入用**（输出 raw 数值给 [waybar/scripts/py/waybar_cava_proc.py](waybar/scripts/py/waybar_cava_proc.py) 转成字符条）
-
-部署（注意：`~/.config/cava/` 下还有 cava 自带的 shaders/themes，不要整目录软链）：
+`cava` 是音频频谱可视化工具。我用它做主程序播放可视化（终端里直接跑），quickshell 媒体卡也会从同一份配置取数据。
 
 ```bash
 sudo pacman -S cava
 mkdir -p ~/.config/cava
-ln -sf ~/.lian/cava/config         ~/.config/cava/config
-ln -sf ~/.lian/cava/config_waybar  ~/.config/cava/config_waybar
+ln -sf ~/.lian/cava/config ~/.config/cava/config
 ```
 
-waybar 模块的实现细节见后文 [cava](#-音频可视化-cava) 一节。
+> `~/.config/cava/` 目录下还有 cava 自带的 shaders/themes，所以只软链 `config`，不要整目录软链。
 
 ## | gsimplecal
 
-`gsimplecal` 是一个极简的 GTK 日历弹窗，无 GNOME 依赖，启动 <50ms。我用它替代了 `gnome-calendar` 作为 waybar 时钟模块的左键动作。
+`gsimplecal` 是一个极简的 GTK 日历弹窗，无 GNOME 依赖，启动 <50ms。我用它做 quickshell 时钟模块的左键弹出动作。
 
 ```bash
 sudo pacman -S gsimplecal
@@ -572,70 +530,6 @@ ln -sf ~/.lian/gsimplecal ~/.config/gsimplecal
 | `firstday` | `1` | 周一作为一周起始 |
 | `border_width` | `0` | 无边框（依赖 Hyprland 窗口圆角） |
 
-> 触发方式：点击 waybar 时钟左键 → `gsimplecal`；再次点击同一位置会关闭（toggle）。
-
-## | rofi
-
-`rofi` 是一款应用程序启动器。我用它做了应用启动菜单、窗口切换菜单、剪贴板菜单。
-
-| 应用菜单 | 剪贴板 |
-|-|-|
-| ![rofiapp](./image/rofi1.png) | ![clipboard](./image/rofi3.png) |
-
-###### 使用 `pacman` 安装
-
-```bash
-sudo pacman -S rofi-wayland
-```
-
-##### 目录结构
-
-```
- rofi
-├──  clipboard.rasi        # 剪贴板 窗口主题
-├──  cliphist_rofi.sh      # 启动 剪贴板 脚本
-├──  images
-│   └──  pln.jpeg          # logo
-├──  sakurine.rasi         # app, window 窗口主题
-└──  scripts
-    └──  rofi-launcher.sh  # 启动 app, window 窗口脚本
-```
-
-如果你要使用剪贴板脚本, 还需要安装：
-
-```bash
-sudo pacman -S cliphist wl-clipboard imagemagick papirus-icon-theme ttf-jetbrains-mono-nerd xdg-utils
-```
-
-* `cliphist`: 剪贴板历史
-* `wl-clipboard`: 写入剪贴板（提供 `wl-copy`）
-* `imagemagick`: 提供 `magick`（没装也能用，二进制图片预览可能不生成缩略图）
-* `papirus-icon-theme`: 图标主题
-* `ttf-jetbrains-mono-nerd`: 字体
-* `xdg-utils`: 提供 `xdg-open`
-
-> 注意：waybar 顶栏 **没有** 剪贴板按钮（我嫌它占位置已经移除）。剪贴板入口完全靠 `Super+Z` 快捷键 + 后台 `cliphist-watch.service`。
-
-## | swaync
-
-`swaync` 是一个通知中心, 通过监听 `D-Bus` 来获得实时的消息显示。
-
-| 消息通知弹窗 | 通知中心 |
-|-|-|
-| ![swaync1](./image/swaync1.png) <br> ![swaync2](./image/rofi2.png) | ![swayncclient](./image/swaync2.png) |
-
-###### 使用 `paru` 安装
-
-```bash
-paru -S swaync
-```
-
-我的配置文件非常简单, 直接软链即可：
-
-```bash
-ln -sf ~/.lian/swaync ~/.config/swaync
-```
-
 ## | hyprlock
 
 `hyprlock` 是一个简单的锁屏软件。
@@ -652,30 +546,6 @@ sudo pacman -S hyprlock
 
 ```bash
 sudo pacman -S ttf-jetbrains-mono-nerd
-```
-
-## | wlogout
-
-`wlogout` 提供了一个电源管理页面, 我的配置里分别是 `锁屏` `登出` `关机` `重启`。
-
-![wlogout](./image/wlogout.png)
-
-###### 使用 `pacman` 安装
-
-```bash
-sudo pacman -S --needed wlogout jq gettext procps-ng
-```
-
-锁屏功能依赖 `hyprlock`, 关机功能依赖 `hyprland`。
-
-```
- wlogout
-├──  icons                 # 图标
-├── 󰡯 layout                # 布局
-├──  scripts
-│   ├──  logoutlaunch.sh   # 已开就关、没开就开（快捷键入口）
-│   └──  wlogout.sh        # 各按钮 action 真正执行的动作
-└──  style.css
 ```
 
 ## | Hyprland
@@ -708,64 +578,27 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 
 你可以直接把配置文件丢给 AI 问，如果有一些软件 AI 不认识（比如 `lianwall` `hysp`），那是正常的——这些是我自己写的软件，在我的 [Github](https://github.com/Yueosa) 主页可以找到。
 
-#### 配合 `rofi` `waybar` 的快捷键以及功能
+#### 桌面快捷键（与 quickshell 协作）
 
-我在 [hypr/hyprland.conf](hypr/hyprland.conf) 里把 `$script_dir` 指向了 `~/.local/bin`，然后所有快捷键都去调用这个目录下的统一入口。
+桌面 Bar / 启动器 / 剪贴板 / 灵动岛 / 通知中心 / 侧边栏全部由 [quickshell](#quickshell) 提供，Hyprland 只负责把按键转成 IPC 调用：
 
-而**真实脚本/配置源文件全部在 `~/.lian`（也就是本仓库）**，并且会软链：
+| 快捷键 | 动作 |
+|---|---|
+| `SUPER + A` | 应用启动器：`qs ipc call launcher toggle` |
+| `ALT  + TAB` | 灵动岛 Hub（Overview）：`qs ipc call island hub` |
+| `SUPER + TAB` | 灵动岛 Switcher（窗口）：`qs ipc call island switcher` |
+| `SUPER + Z` | 剪贴板：`qs ipc call clipboard toggle` |
+| `ALT  + Z` | 侧边栏：`qs ipc call sidebar toggle` |
+| `ALT  + SPACE` | 通知中心：`qs ipc call notif toggle` |
+| `ALT  + N` / `ALT + S` | 壁纸 next / 模式切换：`lianwall next` / `lianwall switch` |
+| `SUPER + SHIFT + ←/→/↓` | 工作区切换：`$window down/up/empty` |
 
-- `~/.config/<软件>` ← `~/.lian/<软件>`
-- `~/.local/bin/<分类>/<命令>` ← `~/.lian/.../*.sh`
-
-> 我**不建议**“把脚本直接丢进 `~/.local/bin`”。
-> 理由是：`~/.local/bin` 应该全是“稳定的二进制 / 命令名”，源码/配置应留在仓库里集中维护。
-
-仓库里 [bin/README.md](bin/README.md) 提供了一份“可选的 wrapper / 跳板脚本”模板，只是为了更方便地创建软链（不是必须，更推荐你直接软链 `~/.lian/.../*.sh` 到 `~/.local/bin/`）。
-
-##### 脚本权限（重要）
-
-如果你运行快捷键后报 `permission denied`，基本就是脚本没有可执行权限：
-
-```bash
-chmod +x \
-    ~/.lian/rofi/scripts/rofi-launcher.sh \
-    ~/.lian/rofi/cliphist_rofi.sh \
-    ~/.lian/wlogout/scripts/*.sh \
-    ~/.lian/waybar/lbar \
-    ~/.lian/waybar/scripts/*.sh
-```
-
-> 因为 `~/.config/*` 只是软链到 `~/.lian/*`，所以给 `~/.lian` 补权限最省事。
-
-##### 创建软链
-
-```bash
-mkdir -p ~/.local/bin/{rofi,waybar,wlogout}
-# rofi
-ln -sf ~/.lian/rofi/scripts/rofi-launcher.sh   ~/.local/bin/rofi/rofi-launcher
-ln -sf ~/.lian/rofi/cliphist_rofi.sh           ~/.local/bin/rofi/cliphist
-# wlogout
-ln -sf ~/.lian/wlogout/scripts/logoutlaunch.sh ~/.local/bin/wlogout/wlogout
-# waybar
-ln -sf ~/.lian/waybar/scripts/waybar_window.sh             ~/.local/bin/waybar/waybar-window
-ln -sf ~/.lian/waybar/scripts/waybar_workspaces_scroll.sh  ~/.local/bin/waybar/waybar-workspaces
-ln -sf ~/.lian/waybar/lbar                                 ~/.local/bin/waybar/lbar
-```
-
-对应快捷键（来自 [hypr/hyprland.conf](hypr/hyprland.conf)）：
-
-- `SUPER + A`：rofi drun（`~/.local/bin/rofi/rofi-launcher drun`）
-- `ALT + TAB`：rofi window（`~/.local/bin/rofi/rofi-launcher window`）
-- `SUPER + SPACE`：wlogout（`~/.local/bin/wlogout/wlogout`）
-- `SUPER + Z`：剪贴板 rofi（`~/.local/bin/rofi/cliphist`）
-- `SUPER + X`：弹出当前窗口信息（`~/.local/bin/waybar/waybar-window show`）—— 见下方 [window](#-当前活动窗口监控-window) 模块
-- `SUPER + SHIFT + ←/→/↓`：工作区快速切换（`~/.local/bin/waybar/waybar-workspaces down|up|empty`）
+完整定义见 [hypr/hyprland.conf](hypr/hyprland.conf)。
 
 #### Scrolling 无限平铺布局（hyprland-git / 0.54+）
 
 > **前置条件**：需要 `hyprland-git`（AUR）或正式版 0.54+。
 > 0.53.x 稳定版不含此功能；升级前建议先做 Timeshift 快照。
-> 旧版配置备份存放于 [hypr/hyprland.conf.bak-0.53.3](hypr/hyprland.conf.bak-0.53.3)。
 
 Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无限水平卷轴** 上，屏幕作为视口左右滚动浏览，类似 [niri](https://github.com/YaLTeR/niri) 的体验。
 
@@ -793,7 +626,7 @@ Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无
 
 ## | systemd/user
 
-我的 Hyprland 会话里有不少需要长期运行的组件：`waybar`、`swaync`、`fcitx5`、`lianwall`、`cliphist`、`hysp`，以及后来加上的 `hypr-event-daemon`、`lian-updates.timer`。
+我的 Hyprland 会话里有不少需要长期运行的组件：`fcitx5`、`lianwall`、`cliphist`、`hysp`、`stalk-hypr`，以及 `hypr-event-daemon`、`tuxedo-tray`。
 
 早期这些东西全写在 `hyprland.conf` 的 `exec-once` 里，配置直观，但排查启动失败、重登后的残留进程、异常退出后的恢复都不太方便。
 
@@ -803,6 +636,8 @@ Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无
 - `exec-once` 只负责导入 Wayland/Hyprland 环境变量，并启动 `hyprland-session.target`
 - 常驻组件放在 [systemd/user](systemd/user) 中，由 `systemd --user` 管理生命周期
 - `~/.config/systemd/user/*.service|*.target` 只作为软链，源文件维护在 `~/.lian`
+
+> Bar / 通知 / 启动器 / 剪贴板 等桌面外壳由 [quickshell](#quickshell) 单进程承担，**不**走 systemd unit。
 
 会话入口在 [hypr/hyprland.conf](hypr/hyprland.conf)：
 
@@ -820,20 +655,16 @@ mkdir -p ~/.config/systemd/user
 
 ln -sf ~/.lian/systemd/user/*.service ~/.config/systemd/user/
 ln -sf ~/.lian/systemd/user/*.target  ~/.config/systemd/user/
-ln -sf ~/.lian/systemd/user/*.timer   ~/.config/systemd/user/
 
 systemctl --user daemon-reload
 systemctl --user enable \
     fcitx5.service \
-    swaync.service \
     lianwall.service \
-    waybar-lbar.service \
     cliphist-watch.service \
     stalk-hypr.service \
     hysp.service \
     tuxedo-tray.service \
-    hypr-event-daemon.service \
-    lian-updates.timer
+    hypr-event-daemon.service
 ```
 
 ##### 各 service 简介
@@ -841,25 +672,21 @@ systemctl --user enable \
 | 单元 | 作用 |
 |---|---|
 | `hyprland-session.target` | 把所有“跟随 Hyprland 会话”的服务挂到这个 target 下，登出时一起停 |
-| `waybar-lbar.service` | 用我写的 `lbar` 守护脚本启动 waybar，崩了自动拉起 |
-| `swaync.service` | 通知中心 |
 | `fcitx5.service` | 输入法 |
 | `lianwall.service` | 我自己写的壁纸守护（在 [Github](https://github.com/Yueosa) 主页可以找到） |
-| `cliphist-watch.service` | 后台监听 `wl-paste`，写入 cliphist 历史 |
+| `cliphist-watch.service` | 后台监听 `wl-paste`，写入 cliphist 历史；quickshell 剪贴板从这里读 |
 | `stalk-hypr.service` | 我自己写的 Hyprland 状态记录器 |
 | `hysp.service` | 我自己写的小工具 |
 | `tuxedo-tray.service` | TUXEDO 笔记本控制中心托盘 |
-| `hypr-event-daemon.service` | **新增**：监听 Hyprland `.socket2.sock` 事件，把 active window/workspace 写到缓存，给 waybar 发信号（替代 1s 轮询） |
-| `lian-updates.timer` + `lian-updates.service` | **新增**：每 30 分钟跑一次 `checkupdates + paru -Qua`，写缓存，给 waybar 发信号 |
+| `hypr-event-daemon.service` | 监听 Hyprland `.socket2.sock` 事件，把 active window/workspace 写到缓存 |
 
 ##### 管理命令
 
 ```bash
 systemctl --user status hyprland-session.target
-systemctl --user status waybar-lbar swaync fcitx5 lianwall hypr-event-daemon
-systemctl --user restart waybar-lbar
-journalctl --user -u swaync -b
-systemctl --user list-timers           # 看 lian-updates 下次什么时候跑
+systemctl --user status fcitx5 lianwall hypr-event-daemon
+systemctl --user restart fcitx5
+journalctl --user -u lianwall -b
 ```
 
 `hyprland-session.target.wants/` 这类目录不需要手动维护；它们是 `systemctl --user enable` 之后生成的本机状态。
@@ -957,396 +784,91 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 忘了的话直接按 `Space` 等 `which-key` 弹出提示即可。
 
-## | waybar
-
-`waybar` 是专为 wayland 设计的 **高定制、强性能、可无限拓展** 的状态栏。这是本配置最复杂的一块。
-
-###### 使用 `pacman` 安装 + 全部依赖
-
-> 我推荐你先阅读后面的各模块说明再来逐步安装。
-> **一条命令梭哈完的话，你后续管理/自定义起来会很麻烦。**
-
-```bash
-sudo pacman -S --needed \
-    waybar \
-    python \
-    playerctl cava \
-    btop \
-    networkmanager \
-    pavucontrol \
-    bluez blueman \
-    wl-clipboard cliphist \
-    pacman-contrib \
-    libnotify
-```
-
-如果你要启用 AUR 更新统计（`custom/updates` 的 AUR 部分），以及使用 `nmrs` / `lian` 这类 AUR 社区软件：
-
-```bash
-paru -S --needed nmrs lian
-```
-
-可选依赖（点击动作会用到）：
-
-```bash
-sudo pacman -S --needed gsimplecal
-```
-
-> - `pacman-contrib` 提供 `checkupdates`（官方仓库更新统计）。
-> - `playerctl` 用于媒体模块；`cava` 用于音频频谱。
-> - `bluez`/`blueman` 用于蓝牙模块。
-> - `libnotify` 提供 `notify-send`（窗口信息弹窗用）。
-> - `wl-clipboard` 用于复制（窗口弹窗里 “复制 Class” 时会用到）。
-
-##### 部署
-
-```bash
-ln -sf ~/.lian/waybar ~/.config/waybar
-```
-
-通过 `systemd --user` 启动：
-
-```bash
-systemctl --user restart waybar-lbar
-```
-
-`lbar` 是我给 waybar 写的守护脚本：waybar 崩了会自动重启。
-
-##### 目录结构
-
-```
- waybar
-├──  config.jsonc            # 主配置：组装各模块（include + group/island-*）
-├──  style.css               # 样式入口：只负责 @import（已模块化）
-├──  theme.css               # 主题变量：颜色 @define-color
-├── 󰡯 lbar                    # waybar 守护脚本：waybar 崩了自动拉起
-├──  style/                  # animations / base / islands / modules / tooltip / tray-menu
-├──  modules/                # 每个模块一个 jsonc：18 个 (workspaces/window/clock/cpu/gpu/...)
-└──  scripts/                # 自定义脚本：sh 入口 + py 主体
-    └──  py                  # cava_gate / hypr_event_daemon / waybar_*.py
-```
-
-##### 关于 “on-scroll = :” 的细节
-
-Waybar 有个很烦的小坑：某些模块没有配置滚轮动作时，如果你手贱在它上面滚一下，Waybar 可能会直接崩。
-
-所以我在很多模块里都显式写了：
-
-```jsonc
-"on-scroll-up": ":",
-"on-scroll-down": ":"
-```
-
-它的含义是 “啥也不做”，但能避免 Waybar 因为缺少 action 而崩掉。
-
-##### 效果预览
-
-> ⚠️ **图片可能略过时**：模块的迭代频率比 README 高。下面给的图只是大概样子，最准的永远是源代码。
-
-<table align="center">
-  <tr>
-    <td align="center"><b>左侧岛屿</b><br><sub>工作区 / logo / 窗口</sub><br><img src="./image/waybarleft1.png" alt="waybarleft" width="380" /></td>
-    <td align="center"><b>焦点窗口信息</b><br><sub>active window</sub><br><img src="./image/waybarwindow.png" alt="window" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>时间显示</b><br><sub>三档显示模式</sub><br><img src="./image/waybarclock.jpg" alt="clock" width="380" /></td>
-    <td align="center"><b>显卡监控</b><br><sub>NVIDIA</sub><br><img src="./image/waybargpu.png" alt="gpu" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>CPU 监控</b><br><sub>使用率 + 温度/功耗</sub><br><img src="./image/waybarcpu.png" alt="cpu" width="380" /></td>
-    <td align="center"><b>内存监控</b><br><sub>RAM/Swap + Top 5 (PSS)</sub><br><img src="./image/waybarmem.png" alt="mem" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>媒体信息 / 音频可视化</b><br><sub>播放器 + 歌词 + cava</sub><br><img src="./image/waybarmedia.png" alt="media" width="380" /></td>
-    <td align="center"><b>右侧岛屿</b><br><sub>网络 / 音量 / 电池 / 蓝牙 ...</sub><br><img src="./image/waybarright1.png" alt="waybarright" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>网络信息</b><br><sub>NetworkManager</sub><br><img src="./image/waybarnet.png" alt="net" width="380" /></td>
-    <td align="center"><b>蓝牙信息</b><br><sub>blueman</sub><br><img src="./image/waybarblt.png" alt="bluetooth" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>包管理器</b><br><sub>checkupdates + paru -Qua</sub><br><img src="./image/waybarup.png" alt="update" width="380" /></td>
-    <td align="center"><b>系统托盘</b><br><sub>tray</sub><br><img src="./image/waybartray.png" alt="tray" width="380" /></td>
-  </tr>
-  <tr>
-    <td align="center" colspan="2"><b>托盘右键菜单样式</b><br><sub>style/tray-menu.css</sub><br><img src="./image/waybaronright.png" alt="onright" width="380" /></td>
-  </tr>
-</table>
-
-#### 因为 waybar 配置比较复杂，所以放到最后详解
-
-##### 我的开发规范
-
-- 在 `jsonc` 模块里调用 `shell` 脚本作为入口
-- 当 `shell` 不足以承载逻辑（过于臃肿）时，由 shell 转发给 `py` 脚本
-
-##### 脚本头注释规范
-
-每一个脚本（sh / py）开头都有详细的注释，写清「用途 / 调用方 / 输出 / 依赖」。如果模块不工作，可以从这一段开始定位：
-
-**shell 脚本注释示例**
-
-```shell
-# ----------------------------------------------------------------------
-# 脚本：waybar_media.sh
-# 用途：Waybar 自定义媒体/歌词模块入口。
-# 使用位置：
-#   - modules/media.jsonc -> custom/media (return-type=json)
-# 调用：
-#   - python scripts/py/waybar_media.py（常驻循环 + 流式输出）
-# 退出码：
-#   - 0：即使缺依赖也返回 JSON（避免 Waybar 判定模块失败）
-# ----------------------------------------------------------------------
-```
-
-**python 脚本注释示例**
-
-```python
-"""Waybar 内存/Swap 模块（输出 JSON）。
-
-用途：显示 RAM 与 Swap 的使用百分比，并在 tooltip 里列出 Top 5 内存占用的应用组。
-
-实现要点：
-- 百分比来自 /proc/meminfo。
-- Top 5 优先使用 /proc/<pid>/smaps_rollup 的 PSS（更接近真实占用），拿不到则回退 RSS。
-
-输出：stdout 单行 JSON：{"text": "…", "tooltip": "…"}
-依赖：Python 标准库（无需第三方包）。
-"""
-```
-
 ---
 
-## 附录: Waybar 各模块配置详解
+## | quickshell
 
-##### | 当前工作区显示 ws_current
+[quickshell](https://quickshell.outfoxxed.me/) 是基于 Qt6/QML 的 Wayland 桌面外壳框架
 
-文件：`modules/ws_current.jsonc`
+- 顶部 Bar / 灵动岛（含 Hub / Switcher / Overview / 媒体 / 天气）
+- 应用启动器、剪贴板、通知中心、侧边栏
+- 锁屏（hyprlock 之外的应用层补充）
+- 与 [matugen](#matugen) 联动，主题色随壁纸切换实时更新
 
-功能：只显示“当前在哪个工作区”的单字符指示器（圈号/数字）。
-
-- **数据源**：`~/.cache/waybar/active_workspace.json`，由 [hypr-event-daemon](systemd/user/hypr-event-daemon.service) 在 Hyprland 工作区切换事件触发时原子写入；缓存缺失时脚本回退到 `hyprctl activeworkspace -j`
-- **触发**：模块 `interval: "once"` + `signal: 13`，daemon 写完缓存后 `pkill -RTMIN+13 waybar`
-- **脚本**：`scripts/py/waybar_ws_current.py`
-- **依赖**：`hyprctl`、`python3`
-
-##### | 所有工作区状态 workspaces
-
-文件：`modules/workspaces.jsonc`
-
-功能：使用 Waybar 原生 `hyprland/workspaces` 模块显示所有工作区状态。
-
-- 左键：点击切换工作区（`on-click: activate`）
-- 滚轮：切换到上/下一个 “已有窗口或当前” 的工作区
-  - 脚本：`scripts/waybar_workspaces_scroll.sh` → `scripts/py/waybar_workspaces_scroll.py`
-- 依赖：`hyprctl`、`python3`
-
-> 我的 jsonc 与 python 中有如下硬编码配置，这是个人使用习惯，可以直接改源代码：
-
-| 工作区序号 | 说明 | 默认图标 | 是否默认显示 |
-|-|-|-|-|
-| `1` `2` `3` | 代码区 | `󰅩` | `1` 默认显示；`2` `3` 按需出现 |
-| `4` `5` `6` | 游戏区 | `󰓓` | `4` 默认显示；`5` `6` 按需出现 |
-| `7` | 其它/杂项 | `󰏘` | 按需出现 |
-| `8` | 媒体 | `󰭹` | 默认显示 |
-| `9` | 社交/聊天 | `󰭹` | 默认显示 |
-| `10` | 代理/音乐 | `󰓇` | 默认显示 |
-
-> 「是否默认显示」对应 `modules/workspaces.jsonc` 里的 `persistent-workspaces`：被列出来的工作区即使空着也会显示。
-
-##### | 图标 arch_logo
-
-文件：`modules/logo.jsonc`
-
-功能：显示一个 Arch 图标。
-
-- 左键：打开 AUR 网站
-
-##### | 当前活动窗口监控 window
-
-文件：`modules/window.jsonc`
-
-功能：显示当前活动窗口标题，tooltip 展示 PID/Class/CPU/RAM。
-
-- **数据源**：`~/.cache/waybar/active_window.json`，由 [hypr-event-daemon](systemd/user/hypr-event-daemon.service) 在窗口切换/标题变更时写入；缓存缺失时回退 `hyprctl activewindow -j`
-- **触发**：模块 `interval: "once"` + `signal: 12`
-- **脚本**：`scripts/waybar_window.sh` → `scripts/py/waybar_window.py`
-- **额外玩法**：`SUPER+X` 触发 `scripts/waybar_window.sh show` —— 用 `notify-send` 弹窗显示窗口的 PID / Class / CPU / RAM（来自 [scripts/py/waybar_window_popup.py](waybar/scripts/py/waybar_window_popup.py)）；同时让模块本身短暂高亮（hot）
-- **额外动作**：`waybar_window.sh copy-class` 复制窗口 Class（优先 `wl-copy`，没有就用 `xclip`）
-- **依赖**：`hyprctl`、`python3`；可选 `libnotify` / `wl-clipboard`
-
-##### | 时间和日期显示 clock
-
-文件：`modules/clock.jsonc`
-
-功能：日期/时间显示（右键切换显示模式）。
-
-- 左键：打开 `gsimplecal`（极简日历弹窗，见 [gsimplecal](#gsimplecal) 章节）
-- 右键：切换显示模式（分三档），并 `pkill -RTMIN+11 waybar` 立即刷新
-- 脚本：`scripts/waybar_clock.sh` + `scripts/waybar_clock_toggle.sh` → `scripts/py/waybar_clock.py`
-- 依赖：`python3`；可选 `gsimplecal`
-
-##### | 显卡监控 gpu
-
-文件：`modules/gpu.jsonc`
-
-功能：NVIDIA 显卡监控。
-
-- **显示优先级**：使用率 > VRAM 占用 > 温度（任何一个超阈就高亮）
-- **采集**：单次 `nvidia-smi --query-gpu=name,utilization.gpu,power.draw,temperature.gpu,memory.used,memory.total ...`
-- 脚本：`scripts/waybar_gpu.sh` → `scripts/py/waybar_gpu.py`
-- 左键：在 `kitty` 里打开 `nvidia-smi` 实时监控
-- 依赖：`nvidia-utils`（提供 `nvidia-smi`）、`kitty`
-
-##### | cpu 监控 cpu
-
-文件：`modules/cpu.jsonc`
-
-功能：CPU 使用率监控 + tooltip 详细信息（尽量展示温度/功耗/频率等）。
-
-- 脚本：`scripts/waybar_cpu.sh` → `scripts/py/waybar_cpu.py`
-- 左键：打开 `btop`
-- 依赖：`python3`；可选 `lm_sensors`（提供 `sensors`，温度/功耗更准）
-
-> 部分 CPU 信息不好拿，所以只能保证尽量展示，但作者本人使用环境下并未出错过。
-
-##### | 内存与 swap 监控 memory
-
-文件：`modules/memory.jsonc`
-
-功能：显示 RAM / Swap 使用率；tooltip 显示 Top 5 内存占用（按“应用组”聚合）。
-
-- 脚本：`scripts/waybar_memory.sh` → `scripts/py/waybar_memory.py`
-- 左键：打开 `btop`
-- 依赖：`python3`
-
-> 内存统计优先使用 PSS（更精确），如果某些进程读不到 smaps_rollup 则部分降级为 RSS（会有“数值虚高”的现象）。tooltip 顶部会标注当前模式：`Top 5 内存 (PSS)` 或 `Top 5 内存 (PSS, ⚠ 部分 RSS)`。
-
-##### | 媒体显示器 media
-
-文件：`modules/media.jsonc`
-
-功能：显示当前播放器状态与文本（**优先歌词**）。
-
-- **运行模式**：常驻循环（无 `interval`，`exec` 直接持续输出）
-  - 每 1 秒做一次 `playerctl` 真值校准（status / metadata / position 各 1 fork）
-  - 每 ~150ms 用单调时间外推位置，计算当前应该显示哪一句歌词
-  - 输出仅在 JSON 变化时才打印 → 实测常驻 CPU ~0.4%
-  - 实现：[scripts/py/waybar_media.py](waybar/scripts/py/waybar_media.py)
-- **歌词来源**：
-  1. `xesam:url` 旁边的同名 `.lrc`
-  2. 环境变量 `WAYBAR_LYRICS_DIRS` 列出的目录（冒号分隔）
-  3. `~/.lyrics/*.lrc`
-  4. 如果是 [SPlayer](https://github.com/imsyy/SPlayer)，直接读它的 `cache.db` 拿带时间戳的歌词
-- **入口脚本**：`scripts/waybar_media.sh` → 上述 py
-- **控制脚本**：`scripts/waybar_media_ctl.sh`（保证“点击控制的就是当前显示的播放器”）
-- **左键**：播放/暂停
-- **滚轮**：上一首 / 下一首
-- **右键**：聚焦播放器窗口（`scripts/waybar_media_focus.sh` → `scripts/py/waybar_media_focus.py`，依赖 `hyprctl`）
-- **依赖**：`playerctl`、`python3`；右键聚焦需要 `hyprctl`
-
-##### | 音频可视化 cava
-
-文件：`modules/cava.jsonc`
-
-功能：音频频谱可视化（**无音频时自动挂起 cava**，省 CPU）。
-
-- **入口**：`scripts/waybar_cava.sh`（长驻自恢复）
-  - `cava -p ~/.config/cava/config_waybar` 输出 raw 数值
-  - `scripts/py/waybar_cava_proc.py` 把数值映射为 8 级方块字符
-- **静音 gate**：[scripts/py/cava_gate.py](waybar/scripts/py/cava_gate.py)
-  - 通过 `pactl subscribe` + 解析 `pactl list sink-inputs` 的 `Corked: no` 检测有没有音频流
-  - 静音 5 秒后给 cava 发 `SIGSTOP` 挂起，恢复时 `SIGCONT`
-  - 退出时先 `SIGCONT` 再 kill，避免遗留 STOPped 进程
-- **依赖**：`cava`、`python3`、`pactl`
-
-> 注意：你需要准备 `~/.config/cava/config_waybar`，否则模块会持续输出空行等待你修复。本仓库已经有一份 [cava/config_waybar](cava/config_waybar)，参考前文 [cava](#-cava) 章节部署。
-
-##### | 网络模块 network
-
-文件：`modules/network.jsonc`
-
-功能：Waybar 原生网络模块，显示 Wi-Fi SSID / 有线 / 断开状态。
-
-- 左键：运行 `nmrs`（AUR，窗口类名 `org.netrs.ui`）
-- 右键：在终端里打开 `nmtui`（`scripts/waybar_open_nmtui.sh` 自动找终端）
-- 依赖：`networkmanager`（提供 `nmtui`）
-
-安装 `nmrs`：
+###### 安装依赖
 
 ```bash
-paru -S --needed nmrs
+paru -S quickshell-git
+sudo pacman -S --needed qt6-base qt6-declarative qt6-wayland qt6-svg
 ```
 
-> 没有 `nmrs` 的话，把 `on-click` 改成 `nmtui` / `nm-connection-editor` 即可。
-
-##### | 音频控制 pulseaudio
-
-文件：`modules/pulseaudio.jsonc`
-
-功能：音量显示与控制（Waybar 原生 pulseaudio 模块；PipeWire 也兼容）。
-
-- 左键：打开 `pavucontrol -t 3`
-- 右键：静音切换（`pactl set-sink-mute @DEFAULT_SINK@ toggle`）
-- 滚轮：调音量（步进 1）
-- 依赖：`pavucontrol`、`pactl`（来自 `pulseaudio` 或 `pipewire-pulse`）
-
-##### | 电池信息 battery
-
-文件：`modules/battery.jsonc`
-
-功能：电池容量显示。
-
-- 左键：打开 `/opt/tuxedo-control-center/tuxedo-control-center`
-
-> 不是 TUXEDO 设备就把 `on-click` 改成你的电源管理器。
-
-##### | 蓝牙模块 bluetooth
-
-文件：`modules/bluetooth.jsonc`
-
-功能：显示蓝牙开关、连接数（以及单设备电量）。
-
-- 左键：打开 `blueman-manager`
-- 依赖：`bluez`（bluetoothctl）、`blueman`（GUI）
-
-蓝牙服务建议开机自启：
+###### 部署
 
 ```bash
-sudo systemctl enable --now bluetooth
+ln -sf ~/.lian/quickshell ~/.config/quickshell
 ```
 
-##### | 系统更新 updates
+###### 启动方式
 
-文件：`modules/updates.jsonc`
+由 `hyprland.conf` 的 `exec-once = qs` 拉起；不走 systemd user unit（quickshell 本身具备崩溃自恢复，且需要直接持有 Wayland 环境变量）。
 
-功能：统计官方仓库 + AUR 的可更新数量。
+###### 与外部脚本/快捷键的契约
 
-- **采集策略（已重构）**：不再由 waybar 实时拉取，改为 [systemd timer](systemd/user/lian-updates.timer) 后台采集
-  - `lian-updates.timer` 每 30 分钟跑一次（开机 1 分钟后首跑）
-  - `lian-updates.service` 调 [scripts/updates_fetch.sh](waybar/scripts/updates_fetch.sh)：跑 `checkupdates` + `paru -Qua`，原子写入 `~/.cache/waybar/updates.json`，最后 `pkill -RTMIN+8 waybar`
-- **模块端**：`scripts/waybar_updates.sh` → `scripts/py/waybar_updates.py` 只读缓存格式化输出
-- **左键**：`kitty -e lian`
-- **依赖**：`pacman-contrib`（checkupdates）、`paru`（AUR 统计）、`kitty`、`lian`
+所有桌面快捷键通过 `qs ipc call <module> <action>` 调用，定义在 [Hyprland](#hyprland) 节的快捷键表里。
 
-安装 `lian`：
+> 实现细节、模块拆分、IPC 协议见 [quickshell/README.md](quickshell/README.md)。
+
+## | matugen
+
+[matugen](https://github.com/InioX/matugen) 是一个 Rust 写的 Material You 配色生成器：输入图片，输出多套模板渲染结果。
+
+我用它把当前壁纸的主色调实时派发到 GTK3 / GTK4 / qt6ct，再由 quickshell 自己读 palette 做内部颜色刷新。
+
+###### 安装
 
 ```bash
-paru -S --needed lian
+paru -S matugen
 ```
 
-> `lian` 是我自己开发的包管理器前端, 对新手非常友好, 你可以在我的 [Github](https://github.com/Yueosa/lian) 详细了解。
+###### 配置
 
-##### | 系统托盘 tray
+[matugen/config.toml](matugen/config.toml) 定义了三套模板：
 
-文件：`modules/tray.jsonc`
+| 模板 | 输入（仓库内模板） | 输出（被消费的位置） |
+|---|---|---|
+| GTK3 | `matugen/templates/gtk-3.0/gtk.css` | `gtk-3.0/gtk.css`（仓库 → 软链 → `~/.config/gtk-3.0/`，被 gitignore） |
+| GTK4 | `matugen/templates/gtk-4.0/gtk.css` | `gtk-4.0/gtk.css`（同上） |
+| qt6ct | `matugen/templates/qt6ct/colors.conf` | `~/.config/qt6ct/colors/MatugenAuto.conf`（运行时产物，不入库） |
 
-功能：系统托盘（后台应用图标）。
+> **被忽略的产物**：`gtk-3.0/gtk.css` 和 `gtk-4.0/gtk.css` 在 [.gitignore](.gitignore) 中精确指定为忽略，避免主题切换的 diff 污染仓库。**模板**（`matugen/templates/...`）正常入库。
 
-- 样式：右键菜单样式在 `style/tray-menu.css`
+###### 触发方式
 
-##### | (未启用) backlight
+由 [lianwall](#lianwall) 的 `quickshell-theme-refresh` hook 在每次壁纸切换后调用 [quickshell/scripts/update_theme_from_wallpaper.sh](quickshell/scripts/update_theme_from_wallpaper.sh)，里面会跑：
 
-文件：`modules/backlight.jsonc`
+```bash
+matugen image "$WALLPAPER" --source-color-index 0 --mode <auto|dark|light> --json hex --old-json-output
+```
 
-我这份配置里暂时没启用它；如果你是笔记本并且需要亮度条，可以按需启用。
+然后把 JSON 喂给 quickshell（quickshell 内部 `Colorscheme.qml` 监听文件变化做热更）。
+
+## | lianwall
+
+`lianwall` 是我自己写的壁纸引擎（守护进程 + CLI），支持视频/图片混合、定时切换、模式切换、VRAM 自适应降级等。详见 [Github](https://github.com/Yueosa)。
+
+仓库里只纳管 [lianwall/hooks.toml](lianwall/hooks.toml) —— 这是 daemon 的 hook 配置，**主题热更链路的关键**：
+
+| hook 名 | 触发 | 作用 |
+|---|---|---|
+| `quickshell-theme-refresh` | `wallpaper_changed` | 调 `update_theme_from_wallpaper.sh` → matugen → 派发到 GTK/qt6ct/quickshell |
+| 通知 / 缓存软链 / btop 弹窗 | 各种 | 见 hooks.toml 内注释 |
+
+###### 部署
+
+```bash
+mkdir -p ~/.config/lianwall
+ln -sf ~/.lian/lianwall/hooks.toml ~/.config/lianwall/hooks.toml
+lianwall hook reload   # 不重启 daemon 重载 hooks
+```
+
+> `~/.config/lianwall/{config.toml, gui.conf}` 暂未纳管（用户私有，按需自己维护）。
