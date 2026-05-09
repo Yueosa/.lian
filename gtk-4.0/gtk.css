@@ -1,23 +1,62 @@
-/* MTF Trans Pride 配色主题 */
-@define-color accent_bg #5BCEFA;        /* mtf-blue */
-@define-color accent_color #FFFFFF;     /* mtf-white */
+/* GTK colors generated with Matugen */
 
-@define-color window_bg_color #FFFFFF;  /* mtf-white */
-@define-color window_fg_color #5BCEFA;  /* mtf-blue */
-@define-color view_bg_color #FFFFFF;    /* mtf-white */
-@define-color view_fg_color #5BCEFA;    /* mtf-blue */
+@media (prefers-color-scheme: light) {
+    @define-color accent_color #8c4a5e;
+    @define-color accent_fg_color #ffffff;
+    @define-color accent_bg_color #8c4a5e;
+    @define-color destructive_bg_color #ffdad6;
+    @define-color destructive_fg_color #410002;
+    @define-color destructive_color #ba1a1a;
 
-@define-color headerbar_bg_color #F5A9B8; /* mtf-pink */
-@define-color headerbar_fg_color #FFFFFF; /* mtf-white */
+    @define-color window_bg_color #fff8f8;
+    @define-color window_fg_color #22191b;
+    @define-color headerbar_bg_color #fbeaec;
+    @define-color headerbar_fg_color #22191b;
+    @define-color card_bg_color #fbeaec;
+    @define-color card_fg_color #22191b;
+    @define-color sidebar_bg_color #fff8f8;
+    @define-color sidebar_fg_color #22191b;
+    @define-color view_bg_color #ffffff;
+    @define-color view_fg_color #22191b;
+    @define-color popover_bg_color #efdfe1;
+    @define-color popover_fg_color #22191b;
+    @define-color dialog_bg_color #f5e4e7;
+    @define-color dialog_fg_color #22191b;
+    @define-color overview_bg_color #ffffff;
+    @define-color overview_fg_color #22191b;
+}
 
-@define-color card_bg_color #FFFFFF;    /* mtf-white */
-@define-color dialog_bg_color #FFFFFF;  /* mtf-white */
-@define-color popover_bg_color #FFFFFF; /* mtf-white */
-@define-color sidebar_bg_color #FFFFFF; /* mtf-white */
+@media (prefers-color-scheme: dark) {
+    @define-color accent_color #ffb1c6;
+    @define-color accent_fg_color #551d31;
+    @define-color accent_bg_color #ffb1c6;
+    @define-color destructive_bg_color #93000a;
+    @define-color destructive_fg_color #ffdad6;
+    @define-color destructive_color #ffb4ab;
 
-@define-color selection_bg_color #5BCEFA;  /* mtf-blue - 选中背景 */
-@define-color selection_fg_color #FFFFFF;  /* mtf-white - 选中文字 */
+    @define-color window_bg_color #191113;
+    @define-color window_fg_color #efdfe1;
+    @define-color headerbar_bg_color #261d1f;
+    @define-color headerbar_fg_color #efdfe1;
+    @define-color card_bg_color #261d1f;
+    @define-color card_fg_color #efdfe1;
+    @define-color sidebar_bg_color #191113;
+    @define-color sidebar_fg_color #efdfe1;
+    @define-color view_bg_color #140c0e;
+    @define-color view_fg_color #efdfe1;
+    @define-color popover_bg_color #3c3234;
+    @define-color popover_fg_color #efdfe1;
+    @define-color dialog_bg_color #31282a;
+    @define-color dialog_fg_color #efdfe1;
+    @define-color overview_bg_color #140c0e;
+    @define-color overview_fg_color #efdfe1;
+}
 
-@define-color error_bg_color #F5A9B8;   /* mtf-pink */
-@define-color warning_bg_color #F5A9B8; /* mtf-pink */
-@define-color success_bg_color #5BCEFA; /* mtf-blue */
+* {
+  caret-color: @accent_color;
+}
+
+window {
+  background: @window_bg_color;
+  color: @window_fg_color;
+}

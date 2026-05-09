@@ -1,0 +1,14 @@
+[config]
+version_check = false
+
+[templates.gtk3]
+input_path = '~/.lian/matugen/templates/gtk-3.0/gtk.css'
+output_path = '~/.lian/gtk-3.0/gtk.css'
+
+[templates.gtk4]
+input_path = '~/.lian/matugen/templates/gtk-4.0/gtk.css'
+output_path = '~/.lian/gtk-4.0/gtk.css'
+
+[templates.qt6ct]
+input_path = '~/.lian/matugen/templates/qt6ct/colors.conf'
+output_path = '~/.config/qt6ct/colors/MatugenAuto.conf'
