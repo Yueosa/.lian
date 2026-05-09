@@ -4,6 +4,8 @@
 
 > 我使用的桌面环境是 `Hyprland` + `Wayland` + `quickshell` + `kitty` + `zsh`
 
+哎呀, 我自己都懒得更新README了...叫AI帮忙写了一版出来, 如果你对配置有疑问就直接来加联系方式问我吧! 我会一步一步带着你做的!
+
 ![Hyprland](./image/hyprland.png)
 
 **执行任何命令之前, 请确保你了解他在做什么!!!**
