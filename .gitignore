@@ -55,3 +55,7 @@ lazy-lock.json
 fcitx5/rime/*_cleanup_*.txt
 fcitx5/rime/worddb_snapshot_*.txt
 fcitx5/rime/custom_phrase.txt
+
+# 动态切换主题（matugen 在运行时写出的成品，模板在 matugen/templates/ 下不受影响）
+/gtk-3.0/gtk.css
+/gtk-4.0/gtk.css
