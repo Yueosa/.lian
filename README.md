@@ -2,6 +2,16 @@
 
 # 恋的 Arch 配置
 
+> 🚀 **2026-05 主线已切到 Quickshell**
+>
+> Bar / 通知 / 剪贴板 / 启动器 / 灵动岛 / 锁屏 全部由 [`quickshell/`](./quickshell) 单进程接管，
+> 取代旧栈 `waybar` + `swaync` + `rofi`（部分功能）。
+> 主题链路由 `matugen` 驱动 GTK3/4 + qt6ct 自动 palette。
+>
+> 旧的 waybar/rofi/swaync 配置已冻结在 [`legacy/waybar`](https://github.com/Yueosa/.lian/tree/legacy/waybar) 分支，本分支不再保留。
+>
+> README 的部分章节（waybar/rofi/swaync 安装与配置说明）暂未与新主线同步，待后续单独一轮重写。
+
 > 我使用的桌面环境是 `Hyprland` + `Wayland` + `kitty` + `zsh`
 
 ![Hyprland](./image/hyprland.png)
