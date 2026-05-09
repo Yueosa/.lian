@@ -1,0 +1,57 @@
+import QtQuick
+import qs.config
+
+Rectangle {
+    id: root
+    property real uiScale: 1.0
+
+    property string icon: ""
+    property string title: ""
+    property color iconColor: Colorscheme.on_surface
+    property color titleColor: Colorscheme.on_surface
+    property int headerLeftMargin: Math.round(18 * uiScale)
+    property int headerTopMargin: Math.round(16 * uiScale)
+    property int headerSpacing: Math.round(6 * uiScale)
+    default property alias content: contentLayer.data
+
+    radius: Math.round(34 * uiScale)
+    color: Qt.rgba(Colorscheme.surface_container_high.r, Colorscheme.surface_container_high.g, Colorscheme.surface_container_high.b, 0.93)
+    border.width: 1
+    border.color: Qt.rgba(Colorscheme.outline_variant.r, Colorscheme.outline_variant.g, Colorscheme.outline_variant.b, 0.26)
+    clip: true
+
+    Item {
+        id: contentLayer
+        anchors.fill: parent
+    }
+
+    Row {
+        id: headerRow
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: root.headerLeftMargin
+        anchors.topMargin: root.headerTopMargin
+        spacing: root.headerSpacing
+        visible: root.icon.length > 0 || root.title.length > 0
+        z: 2
+
+        Text {
+            visible: root.icon.length > 0
+            text: root.icon
+            color: root.iconColor
+            font.family: "Material Symbols Outlined"
+            font.pixelSize: Math.round(18 * root.uiScale)
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Text {
+            visible: root.title.length > 0
+            text: root.title
+            color: root.titleColor
+            font.family: "LXGW WenKai GB"
+            font.pixelSize: Math.round(13 * root.uiScale)
+            font.bold: true
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+}
