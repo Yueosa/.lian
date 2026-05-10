@@ -138,7 +138,8 @@ resolve_mode() {
       printf '%s\n' "${forced}"
       ;;
     auto)
-      # AUTO 真正跟随壁纸亮度：浅壁纸出 light variant，深壁纸出 dark variant。
+      # AUTO 独立模式：壁纸亮就 light variant，壁纸暗就 dark variant。
+      # QML 端 AUTO 直接走 cache，与 LIGHT/DARK 三套方案完全解耦。
       detect_mode "$1"
       ;;
   esac
@@ -180,15 +181,6 @@ case "${MODE}" in
   *) MODE="dark" ;;
 esac
 
-# 永远独立计算一份「壁纸亮度自动判定」结果，与 MODE 解耦。
-# AUTO 模式下两者相等；强制 LIGHT/DARK 时仍记录壁纸真实亮度，
-# 供 QML 在切回 AUTO 时直接拿来选基线 palette，避免「上一次模式残留」。
-AUTO_MODE="$(detect_mode "${SOURCE_IMAGE}" 2>/dev/null || echo dark)"
-case "${AUTO_MODE}" in
-  light|dark) ;;
-  *) AUTO_MODE="dark" ;;
-esac
-
 # 确保 matugen 模板目标目录存在（如 qt6ct/colors）。
 mkdir -p "${HOME}/.config/qt6ct/colors"
 
@@ -207,8 +199,8 @@ if command -v matugen >/dev/null 2>&1; then
   fi
   if matugen "${matugen_args[@]}" > "${tmp_json}" 2>/dev/null; then
     if jq -e '.colors' "${tmp_json}" >/dev/null 2>&1; then
-      jq --arg mode "${MODE}" --arg auto "${AUTO_MODE}" \
-        '(.colors | with_entries(.value = (.value[$mode] // .value.default // .value.dark // .value.light // .value))) + {"_mode": $mode, "_mode_auto": $auto}' \
+      jq --arg mode "${MODE}" \
+        '(.colors | with_entries(.value = (.value[$mode] // .value.default // .value.dark // .value.light // .value))) + {"_mode": $mode}' \
         "${tmp_json}" > "${OUT_JSON}"
       sync_gtk_color_scheme "${MODE}"
       nudge_qt6ct
@@ -219,9 +211,9 @@ fi
 
 avg_hex="$(extract_average_hex "${SOURCE_IMAGE}" || true)"
 if [[ -n "${avg_hex}" ]]; then
-  printf '{"source_color":"%s","primary":"%s","_mode":"%s","_mode_auto":"%s"}\n' "${avg_hex}" "${avg_hex}" "${MODE}" "${AUTO_MODE}" > "${OUT_JSON}"
+  printf '{"source_color":"%s","primary":"%s","_mode":"%s"}\n' "${avg_hex}" "${avg_hex}" "${MODE}" > "${OUT_JSON}"
 else
-  printf '{"_mode":"%s","_mode_auto":"%s"}\n' "${MODE}" "${AUTO_MODE}" > "${OUT_JSON}"
+  printf '{"_mode":"%s"}\n' "${MODE}" > "${OUT_JSON}"
 fi
 
 sync_gtk_color_scheme "${MODE}"

@@ -24,52 +24,35 @@ Singleton {
     property int _animStep: 0
     readonly property int _animSteps: 14
     property bool _readingThemeMode: false
-    readonly property bool shouldUseGeneratedPalette: matugenMode.toLowerCase() === "auto"
-    readonly property bool hasGeneratedSourceColor: {
-        const raw = generatedColors["source_color"] || generatedColors["primary"];
-        return !!raw;
+
+    // 主题是否已就绪。false 期间上层 UI 应该隐藏，避免闪现 dark 占位。
+    //   LIGHT / DARK：_modeLoaded 后即就绪
+    //   AUTO：必须等到 cache 写入 _mode 才算就绪
+    readonly property bool ready: {
+        if (!_modeLoaded)
+            return false;
+        const mode = matugenMode.toLowerCase();
+        if (mode === "light" || mode === "dark")
+            return true;
+        return generatedMode !== "";
     }
 
-    // matugen / 亮度脚本写入 _mode 字段：cache 色值实际是哪个 variant 生成的。
+    // matugen / 亮度脚本写入的 _mode 字段：cache 色值实际是哪个 variant 生成的。
+    // AUTO 模式下该值 == 壁纸亮度判定结果；LIGHT/DARK 模式根本不看 cache。
     readonly property string generatedMode: {
         const v = (generatedColors["_mode"] || "").toString().toLowerCase();
         return (v === "light" || v === "dark") ? v : "";
     }
 
-    // _mode_auto 是脚本始终独立计算的「壁纸亮度判定」结果，
-    // 不受用户当前强制模式干扰。AUTO 模式下用它决定基线 palette。
-    readonly property string generatedAutoMode: {
-        const v = (generatedColors["_mode_auto"] || "").toString().toLowerCase();
-        return (v === "light" || v === "dark") ? v : "";
-    }
-
-    // 当前模式下，cache 色值「应该」是哪个 variant：
-    //   LIGHT / DARK 强制：不叠加 matugen，留空让覆盖被禁用，基线永远纯净
-    //   AUTO：跟壁纸亮度判定（_mode_auto），覆盖只在 cache 已与之一致时才发生
-    readonly property string expectedGeneratedMode: {
-        const mode = matugenMode.toLowerCase();
-        if (mode === "auto")
-            return generatedAutoMode;  // 空字符串表示尚未判定，会跳过覆盖
-        return "";  // light / dark 不使用 matugen 叠加
-    }
-
-    // cache 色值是否与 AUTO 当前期望一致。
-    // 不一致时（典型：刚切到 auto，脚本还没异步以新亮度重写 cache）禁止覆盖基线，
-    // 等 colorFile.onLoaded 在新 cache 写出后会自动 apply 一次。
-    readonly property bool generatedColorsAreCurrent: {
-        if (!hasGeneratedSourceColor)
-            return false;
-        const expect = expectedGeneratedMode;
-        if (expect === "")
-            return false;
-        return generatedMode === expect;
-    }
-
+    // 对外暴露「当前实际呈现的明暗」：
+    //   LIGHT → light
+    //   DARK  → dark
+    //   AUTO  → 跟 cache._mode（壁纸亮度）；cache 未就绪时默认 dark
     readonly property string effectiveMatugenMode: {
         const mode = matugenMode.toLowerCase();
-        if (mode === "light" || mode === "dark" || mode === "auto")
+        if (mode === "light" || mode === "dark")
             return mode;
-        return "dark";
+        return generatedMode || "light";
     }
 
     // Light: 粉蓝白；Dark: 黑莓系粉蓝白。
@@ -179,60 +162,6 @@ Singleton {
         tertiary_fixed_dim: "#c3c3eb"
     })
 
-    // Auto: 独立基线，不复用 light/dark；壁纸色只在 auto 模式下叠加到这一套。
-    readonly property var autoPalette: ({
-        background: "#16171f",
-        error: "#ffb4ab",
-        error_container: "#8f2d31",
-        inverse_on_surface: "#2a2936",
-        inverse_primary: "#8a6f8f",
-        inverse_surface: "#ece6f0",
-        on_background: "#ece6f0",
-        on_error: "#690005",
-        on_error_container: "#ffdad6",
-        on_primary: "#1d1122",
-        on_primary_container: "#f8d8ff",
-        on_primary_fixed: "#140818",
-        on_primary_fixed_variant: "#51385a",
-        on_secondary: "#1f1b2a",
-        on_secondary_container: "#e5def5",
-        on_secondary_fixed: "#171320",
-        on_secondary_fixed_variant: "#4c475c",
-        on_surface: "#ece6f0",
-        on_surface_variant: "#c8bfd3",
-        on_tertiary: "#291a1e",
-        on_tertiary_container: "#ffd9e1",
-        on_tertiary_fixed: "#1d0f13",
-        on_tertiary_fixed_variant: "#5b3e45",
-        outline: "#968ca2",
-        outline_variant: "#4a4355",
-        primary: "#ddbce4",
-        primary_container: "#51385a",
-        primary_fixed: "#f8d8ff",
-        primary_fixed_dim: "#ddbce4",
-        scrim: "#000000",
-        secondary: "#c9c2d8",
-        secondary_container: "#4c475c",
-        secondary_fixed: "#e5def5",
-        secondary_fixed_dim: "#c9c2d8",
-        shadow: "#000000",
-        source_color: "#b79cc1",
-        surface: "#16171f",
-        surface_bright: "#3d3c49",
-        surface_container: "#1f2029",
-        surface_container_high: "#2a2a34",
-        surface_container_highest: "#34343f",
-        surface_container_low: "#1b1b24",
-        surface_container_lowest: "#111119",
-        surface_dim: "#16171f",
-        surface_tint: "#ddbce4",
-        surface_variant: "#4a4355",
-        tertiary: "#efb8c5",
-        tertiary_container: "#5b3e45",
-        tertiary_fixed: "#ffd9e1",
-        tertiary_fixed_dim: "#efb8c5"
-    })
-
     // 兼容层：保留旧字段，避免一次性修改所有组件。
     readonly property color background: m3colors.m3background
     readonly property color error: m3colors.m3error
@@ -318,17 +247,16 @@ Singleton {
     }
 
     function applyPresetColors(mode) {
-        // 三个模式：
-        //   LIGHT → lightPalette（固定，不叠加 matugen）
-        //   DARK  → darkPalette （固定，不叠加 matugen）
-        //   AUTO  → 跟壁纸亮度：浅壁纸用 lightPalette，深壁纸用 autoPalette；
-        //           叠加 matugen 由 applyTheme 中的 generatedColorsAreCurrent 守门，
-        //           cache 与当前期望 variant 不一致时只显示纯基线，避免串色闪烁。
+        // 三套方案完全解耦：
+        //   LIGHT → lightPalette（固定，不跳 cache）
+        //   DARK  → darkPalette （固定，不跳 cache）
+        //   AUTO  → 以 cache._mode 选一份 light/dark 作为 fallback 基线，
+        //           后续 applyTheme 会再用 cache 覆盖（仅 AUTO 模式）。
         let palette = darkPalette;
         if (mode === "light")
             palette = lightPalette;
         else if (mode === "auto")
-            palette = (generatedAutoMode === "light") ? lightPalette : autoPalette;
+            palette = (generatedMode === "light") ? lightPalette : darkPalette;
         const target = {};
         for (const key in palette) {
             const m3name = snakeToM3(key);
@@ -345,67 +273,6 @@ Singleton {
                 target[m3name] = Qt.color(generatedColors[key]);
         }
         return target;
-    }
-
-    function tintThemeForAutoFallback(target) {
-        const raw = generatedColors["source_color"] || generatedColors["primary"];
-        if (!raw)
-            return target;
-
-        let generatedCount = 0;
-        for (const key in generatedColors) {
-            const m3name = snakeToM3(key);
-            if (m3name in m3colors)
-                generatedCount += 1;
-        }
-        const sparse = generatedCount < 8;
-
-        const src = Qt.color(raw);
-        const toned = {};
-        for (const key in target) {
-            const value = target[key];
-            if (!value) continue;
-
-            // 永远不动 on_*/inverseOn 等前景色，避免对比度被破坏。
-            if (key.indexOf("m3on") === 0 || key === "m3inverseOnSurface") {
-                toned[key] = value;
-                continue;
-            }
-
-            // matugen 输出完整时，仅给 surface/background 家族补一层壁纸染色——
-            // matugen 的 surface 默认偏中性灰，不补染就出现「容器永远不变」的现象。
-            const isSurfaceFamily = key.indexOf("surface") >= 0
-                || key === "m3background"
-                || key === "m3scrim"
-                || key === "m3surfaceTint";
-            if (!sparse && !isSurfaceFamily) {
-                toned[key] = value;
-                continue;
-            }
-
-            let w;
-            if (sparse) {
-                // 稀疏 cache：所有角色都需要染色。
-                if (key === "m3primary" || key === "m3secondary" || key === "m3tertiary") w = 0.42;
-                else if (key.indexOf("Container") >= 0 || key.indexOf("Fixed") >= 0) w = 0.28;
-                else if (isSurfaceFamily) w = 0.14;
-                else if (key === "m3outline" || key === "m3outlineVariant" || key === "m3shadow") w = 0.20;
-                else w = 0.10;
-            } else {
-                // 完整 cache：只给 surface 家族叠一层柔和染色。
-                if (key === "m3background" || key === "m3surface" || key === "m3surfaceDim") w = 0.10;
-                else if (key === "m3surfaceContainerLowest" || key === "m3surfaceContainerLow") w = 0.12;
-                else if (key === "m3surfaceContainer") w = 0.14;
-                else if (key === "m3surfaceContainerHigh") w = 0.17;
-                else if (key === "m3surfaceContainerHighest" || key === "m3surfaceBright") w = 0.20;
-                else if (key === "m3surfaceVariant") w = 0.18;
-                else if (key === "m3surfaceTint") w = 0.50;
-                else w = 0.12; // scrim 等
-            }
-
-            toned[key] = mixColor(value, src, w);
-        }
-        return toned;
     }
 
     function mixColor(a, b, t) {
@@ -443,19 +310,27 @@ Singleton {
     }
 
     function applyTheme(animated = true) {
-        let targetTheme = applyPresetColors(matugenMode.toLowerCase());
-        // 仅当 cache 色值的 _mode 与当前应呈现的 mode 一致时，才用 cache 覆盖基线。
-        // 这样避免 dark→auto 浅壁纸时，cache 还是 dark variant 把基线染暗的闪烁；
-        // 等异步脚本以新模式重写 cache 后，colorFile.onLoaded 会自动再 apply 一次。
-        if (shouldUseGeneratedPalette && generatedColorsAreCurrent) {
+        // 未就绪不动 m3colors，让上层 UI 隐藏期间保持默认（透明黑），
+        // 避免 AUTO 初始闪现 dark 占位主题。
+        if (!ready)
+            return;
+
+        const mode = matugenMode.toLowerCase();
+        let targetTheme = applyPresetColors(mode);
+        // AUTO 独立走 cache：LIGHT/DARK 完全不查 cache，避免三套方案耦合。
+        if (mode === "auto" && generatedMode !== "")
             targetTheme = applyGeneratedColors(targetTheme);
-            targetTheme = tintThemeForAutoFallback(targetTheme);
-        }
 
         if (animated)
             animateTheme(targetTheme);
         else
             commitTheme(targetTheme);
+    }
+
+    // 就绪后自动 apply 一次（首次不动画，干净出现）。
+    onReadyChanged: {
+        if (ready)
+            applyTheme(false);
     }
 
     function normalizeMode(mode) {
@@ -500,7 +375,7 @@ Singleton {
         readThemeMode.running = true;
         refreshThemeFromCurrentWallpaper.running = true;
         pollCurrentWallpaper.running = true;
-        applyTheme(false);
+        // 不主动调 applyTheme：ready 跳变时 onReadyChanged 会负责首次提交。
     }
 
     Timer {
@@ -552,56 +427,58 @@ Singleton {
     }
 
     m3colors: QtObject {
-        property color m3background
-        property color m3error
-        property color m3errorContainer
-        property color m3inverseOnSurface
-        property color m3inversePrimary
-        property color m3inverseSurface
-        property color m3onBackground
-        property color m3onError
-        property color m3onErrorContainer
-        property color m3onPrimary
-        property color m3onPrimaryContainer
-        property color m3onPrimaryFixed
-        property color m3onPrimaryFixedVariant
-        property color m3onSecondary
-        property color m3onSecondaryContainer
-        property color m3onSecondaryFixed
-        property color m3onSecondaryFixedVariant
-        property color m3onSurface
-        property color m3onSurfaceVariant
-        property color m3onTertiary
-        property color m3onTertiaryContainer
-        property color m3onTertiaryFixed
-        property color m3onTertiaryFixedVariant
-        property color m3outline
-        property color m3outlineVariant
-        property color m3primary
-        property color m3primaryContainer
-        property color m3primaryFixed
-        property color m3primaryFixedDim
-        property color m3scrim
-        property color m3secondary
-        property color m3secondaryContainer
-        property color m3secondaryFixed
-        property color m3secondaryFixedDim
-        property color m3shadow
-        property color m3sourceColor
-        property color m3surface
-        property color m3surfaceBright
-        property color m3surfaceContainer
-        property color m3surfaceContainerHigh
-        property color m3surfaceContainerHighest
-        property color m3surfaceContainerLow
-        property color m3surfaceContainerLowest
-        property color m3surfaceDim
-        property color m3surfaceTint
-        property color m3surfaceVariant
-        property color m3tertiary
-        property color m3tertiaryContainer
-        property color m3tertiaryFixed
-        property color m3tertiaryFixedDim
+        // 默认全透明：ready 之前 applyTheme 不会跑，UI 用透明色渲染等于不可见，
+        // 避免 AUTO 启动瞬间闪现 dark 占位色。
+        property color m3background: "transparent"
+        property color m3error: "transparent"
+        property color m3errorContainer: "transparent"
+        property color m3inverseOnSurface: "transparent"
+        property color m3inversePrimary: "transparent"
+        property color m3inverseSurface: "transparent"
+        property color m3onBackground: "transparent"
+        property color m3onError: "transparent"
+        property color m3onErrorContainer: "transparent"
+        property color m3onPrimary: "transparent"
+        property color m3onPrimaryContainer: "transparent"
+        property color m3onPrimaryFixed: "transparent"
+        property color m3onPrimaryFixedVariant: "transparent"
+        property color m3onSecondary: "transparent"
+        property color m3onSecondaryContainer: "transparent"
+        property color m3onSecondaryFixed: "transparent"
+        property color m3onSecondaryFixedVariant: "transparent"
+        property color m3onSurface: "transparent"
+        property color m3onSurfaceVariant: "transparent"
+        property color m3onTertiary: "transparent"
+        property color m3onTertiaryContainer: "transparent"
+        property color m3onTertiaryFixed: "transparent"
+        property color m3onTertiaryFixedVariant: "transparent"
+        property color m3outline: "transparent"
+        property color m3outlineVariant: "transparent"
+        property color m3primary: "transparent"
+        property color m3primaryContainer: "transparent"
+        property color m3primaryFixed: "transparent"
+        property color m3primaryFixedDim: "transparent"
+        property color m3scrim: "transparent"
+        property color m3secondary: "transparent"
+        property color m3secondaryContainer: "transparent"
+        property color m3secondaryFixed: "transparent"
+        property color m3secondaryFixedDim: "transparent"
+        property color m3shadow: "transparent"
+        property color m3sourceColor: "transparent"
+        property color m3surface: "transparent"
+        property color m3surfaceBright: "transparent"
+        property color m3surfaceContainer: "transparent"
+        property color m3surfaceContainerHigh: "transparent"
+        property color m3surfaceContainerHighest: "transparent"
+        property color m3surfaceContainerLow: "transparent"
+        property color m3surfaceContainerLowest: "transparent"
+        property color m3surfaceDim: "transparent"
+        property color m3surfaceTint: "transparent"
+        property color m3surfaceVariant: "transparent"
+        property color m3tertiary: "transparent"
+        property color m3tertiaryContainer: "transparent"
+        property color m3tertiaryFixed: "transparent"
+        property color m3tertiaryFixedDim: "transparent"
     }
 
     colors: QtObject {
