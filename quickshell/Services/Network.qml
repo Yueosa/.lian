@@ -421,13 +421,12 @@ Singleton {
         }
     }
 
-    Process {
-        id: monitorProcess
+    Timer {
+        id: refreshTimer
+        interval: 5000
+        repeat: true
         running: true
-        command: ["nmcli", "monitor"]
-        stdout: SplitParser {
-            onRead: root.refresh()
-        }
+        onTriggered: root.refresh()
     }
 
     Component.onCompleted: root.refresh()
