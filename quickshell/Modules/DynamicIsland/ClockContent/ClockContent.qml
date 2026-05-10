@@ -4,6 +4,8 @@ import qs.config
 Item {
     id: root
     property var player 
+    readonly property int digitFontSize: Sizes.font.h1
+    readonly property int digitCellHeight: Math.max(24, Math.round(digitFontSize * 1.15))
 
     property string dateStr: ""
     
@@ -43,7 +45,7 @@ Item {
         property real digitOffset: 0
         
         width: digitText.implicitWidth
-        height: 24  // 严格限制高度，形成视口
+        height: root.digitCellHeight  // 与数字行高保持一致，避免字体切换后裁切
         clip: true  // 开启裁切，隐藏不在视口内的数字
         
         rotation: digitRotation
@@ -55,14 +57,14 @@ Item {
             // 一次性渲染 0-9，通过改变 y 坐标来实现滚动
             text: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
             color: digitContainer.digitColor
-            font.family: Sizes.fontFamily
-            font.pixelSize: Sizes.font.h1
+            font.family: Sizes.fontFamilyMono
+            font.pixelSize: root.digitFontSize
             font.weight: Font.Black
-            lineHeight: 24 // 必须与视口 height 相同
+            lineHeight: root.digitCellHeight
             lineHeightMode: Text.FixedHeight
             
             // 计算 y 轴偏移量
-            y: -digitContainer.targetDigit * 24
+            y: -digitContainer.targetDigit * root.digitCellHeight
 
             // 弹性动画，带来带有惯性回弹的机械翻页感
             Behavior on y {

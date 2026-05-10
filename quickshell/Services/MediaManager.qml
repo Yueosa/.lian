@@ -53,6 +53,7 @@ Item {
         if (lower.includes("chrome") || lower.includes("chromium")) return "Browser";
         if (lower.includes("firefox")) return "Firefox";
         if (lower.includes("spotify")) return "Spotify";
+        if (lower.includes("splayer")) return "SPlayer";
         if (lower.includes("vlc")) return "VLC";
         if (lower.includes("edge")) return "Edge";
         if (lower.includes("mpv")) return "mpv";
@@ -88,6 +89,7 @@ Item {
         }
         // 白名单：常见音乐播放器
         if (id === "spotify"
+            || id === "splayer"
             || id.includes("music") || id.includes("audio")
             || id.includes("cmus") || id.includes("audacious")
             || id.includes("rhythmbox") || id.includes("clementine")

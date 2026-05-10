@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
@@ -163,13 +164,49 @@ Item {
 
     // —— 主体：工作区横向滚动，每个工作区是一列纵向堆叠的窗口 ——
     Flickable {
+        id: hFlick
         anchors.fill: parent
         anchors.margins: 12
         contentWidth: groupsRow.implicitWidth
         contentHeight: height
         clip: true
         flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
         visible: groups.length > 0
+
+        ScrollBar.horizontal: ScrollBar {
+            policy: hFlick.contentWidth > hFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+            height: 6
+        }
+
+        // 鼠标滚轮映射到水平滚动
+        WheelHandler {
+            target: null
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: (event) => {
+                var dx = event.angleDelta.x !== 0 ? event.angleDelta.x : event.angleDelta.y;
+                var step = dx / 120 * 80;
+                var nx = hFlick.contentX - step;
+                var maxX = Math.max(0, hFlick.contentWidth - hFlick.width);
+                hFlick.contentX = Math.max(0, Math.min(maxX, nx));
+            }
+        }
+
+        // 焦点列变化 → 滚到可见
+        Connections {
+            target: root
+            function onFocusGroupChanged() { Qt.callLater(hFlick._ensureFocusVisible) }
+        }
+        function _ensureFocusVisible() {
+            var g = root.focusGroup;
+            if (g < 0 || g >= groupsRow.children.length) return;
+            var col = groupsRow.children[g];
+            if (!col) return;
+            var x0 = col.x;
+            var x1 = col.x + col.width;
+            if (x0 < contentX) contentX = Math.max(0, x0 - 12);
+            else if (x1 > contentX + width) contentX = Math.min(contentWidth - width, x1 - width + 12);
+        }
 
         RowLayout {
             id: groupsRow

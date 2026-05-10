@@ -14,6 +14,7 @@ Item {
     property bool active: false
     property var lyricsModel: []
     property int currentLineIndex: 0
+    property bool lastFetchSuccessful: false
     
     readonly property string trackTitle: player ? player.trackTitle : ""
     readonly property string trackArtist: player ? player.trackArtist : ""
@@ -26,16 +27,24 @@ Item {
     
     property string currentLoadedTitle: ""
 
+    function isFallbackLyrics(list) {
+        if (!list || list.length <= 0) return true
+        if (list.length !== 1) return false
+        const line = list[0]
+        if (!line || !line.text) return true
+        return line.text === "暂无歌词" || line.text === "歌词错误"
+    }
+
     // ============================================================
     // 【动态自适应宽度引擎】
     // ============================================================
-    property int defaultTextWidth: 170
+    property int defaultTextWidth: Sizes.lyricsCapsule.defaultTextWidth
     property int currentTextWidth: defaultTextWidth 
 
-    readonly property int horizontalPadding: 15
-    readonly property int coverWidth: 26
-    readonly property int spectrumWidth: 21
-    readonly property int sectionGap: 12
+    readonly property int horizontalPadding: Sizes.lyricsCapsule.horizontalPadding
+    readonly property int coverWidth: Sizes.lyricsCapsule.coverWidth
+    readonly property int spectrumWidth: Sizes.lyricsCapsule.spectrumWidth
+    readonly property int sectionGap: Sizes.lyricsCapsule.sectionGap
     readonly property int fixedChromeWidth: (horizontalPadding * 2) + coverWidth + spectrumWidth + (sectionGap * 2)
 
     // 左右区域固定预留，歌词仅吃中间剩余宽度
@@ -58,19 +67,33 @@ Item {
             onRead: data => {
                 try {
                     var json = JSON.parse(data)
-                    if (json.length > 0) { 
-                        root.lyricsModel = json; root.currentLineIndex = 0;
+                    if (json.length > 0 && !root.isFallbackLyrics(json)) {
+                        root.lyricsModel = json
+                        root.currentLineIndex = 0
                         root.currentLoadedTitle = root.trackTitle
-                    } else { 
-                        root.lyricsModel = [{time: 0, text: "暂无歌词"}] 
+                        root.lastFetchSuccessful = true
+                    } else {
+                        root.lyricsModel = [{time: 0, text: "暂无歌词"}]
+                        root.currentLineIndex = 0
+                        root.lastFetchSuccessful = false
                     }
-                } catch (e) { root.lyricsModel = [{time: 0, text: "歌词错误"}] }
+                } catch (e) {
+                    root.lyricsModel = [{time: 0, text: "歌词错误"}]
+                    root.currentLineIndex = 0
+                    root.lastFetchSuccessful = false
+                }
             }
         }
     }
 
     onTrackTitleChanged: triggerReload()
-    onActiveChanged: { if (active && root.trackTitle !== root.currentLoadedTitle) triggerReload() }
+    onTrackArtistChanged: triggerReload()
+    onTrackUrlChanged: triggerReload()
+    onActiveChanged: {
+        if (active && (root.trackTitle !== root.currentLoadedTitle || !root.lastFetchSuccessful)) {
+            triggerReload()
+        }
+    }
     onIsMusicChanged: triggerReload()
 
     function triggerReload() {
@@ -79,8 +102,10 @@ Item {
         debounceTimer.restart()
     }
 
-    Timer { 
-        id: debounceTimer; interval: 300; repeat: false; 
+    Timer {
+        id: debounceTimer
+        interval: Sizes.lyricsCapsule.reloadDebounceMs
+        repeat: false
         onTriggered: {
             if (!root.isMusic) {
                 // 非音乐：直接把标题作为单行展示，跳过歌词抓取
@@ -89,10 +114,13 @@ Item {
                     : []
                 root.currentLineIndex = 0
                 root.currentLoadedTitle = root.trackTitle
+                root.lastFetchSuccessful = true
                 return
             }
             if (root.trackTitle !== "") { 
-                root.lyricsModel = []; root.currentLineIndex = 0; 
+                root.lyricsModel = [{time: 0, text: "🎵 正在搜寻歌词..."}]
+                root.currentLineIndex = 0
+                root.lastFetchSuccessful = false
                 lyricsFetcher.running = true 
             }
         }
@@ -114,7 +142,7 @@ Item {
 
     // 轮询（正常播放时逐行推进）
     Timer {
-        interval: 100
+        interval: Sizes.lyricsCapsule.syncPollMs
         running: root.active && root.lyricsModel.length > 1 && root.player
         repeat: true
         onTriggered: root.syncLyrics()
@@ -162,12 +190,12 @@ Item {
             anchors.rightMargin: root.horizontalPadding
             anchors.verticalCenter: parent.verticalCenter
             width: root.spectrumWidth
-            height: 16
+            height: Sizes.lyricsCapsule.spectrumHeight
 
             property var smoothValues: [0, 0, 0, 0, 0, 0]
 
             Timer {
-                interval: 16 
+                interval: Sizes.lyricsCapsule.spectrumTickMs
                 running: root.active && CavaService.cavaAvailable
                 repeat: true
                 onTriggered: {
@@ -272,7 +300,7 @@ Item {
                 delegate: Item {
                     id: delegateItem
                     width: ListView.view.width
-                    height: 42
+                    height: Sizes.lyricsCapsule.lyricRowHeight
                     clip: true
                     property bool isCurrent: ListView.isCurrentItem
                     property real scrollDistance: Math.max(0, lyricText.implicitWidth - delegateItem.width)
@@ -289,7 +317,9 @@ Item {
                     }
 
                     Timer {
-                        id: marqueeDelay; interval: 800; repeat: false
+                        id: marqueeDelay
+                        interval: Sizes.lyricsCapsule.marqueeDelayMs
+                        repeat: false
                         onTriggered: {
                             if (delegateItem.isCurrent && delegateItem.scrollDistance > 0)
                                 scrollAnim.restart()
