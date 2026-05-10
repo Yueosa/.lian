@@ -76,6 +76,13 @@ public:
     Q_INVOKABLE void setManualLocation(double latitude, double longitude, const QString &name);
     Q_INVOKABLE void clearManualLocation();
     Q_INVOKABLE QVariantMap current() const;
+    Q_INVOKABLE QVariantMap makeQuadraticSamples(double startX,
+                                                 double startY,
+                                                 double controlX,
+                                                 double controlY,
+                                                 double endX,
+                                                 double endY,
+                                                 int steps = 20) const;
 
 signals:
     void dataChanged();

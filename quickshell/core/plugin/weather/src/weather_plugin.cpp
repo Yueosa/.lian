@@ -1,5 +1,8 @@
 #include "weather_plugin.h"
 
+#include <cmath>
+#include <QtGlobal>
+
 WeatherPlugin::WeatherPlugin(QObject *parent)
     : QObject(parent),
       m_backend(this),
@@ -49,6 +52,51 @@ void WeatherPlugin::refresh() { m_backend.refresh(); }
 void WeatherPlugin::setManualLocation(double latitude, double longitude, const QString &name) { m_backend.setManualLocation(latitude, longitude, name); }
 void WeatherPlugin::clearManualLocation() { m_backend.clearManualLocation(); }
 QVariantMap WeatherPlugin::current() const { return m_backend.snapshot().current; }
+QVariantMap WeatherPlugin::makeQuadraticSamples(double startX,
+                                                double startY,
+                                                double controlX,
+                                                double controlY,
+                                                double endX,
+                                                double endY,
+                                                int steps) const {
+    const int safeSteps = qMax(1, steps);
+    QVariantList points;
+    points.reserve(safeSteps + 1);
+
+    QVariantMap first;
+    first.insert(QStringLiteral("x"), startX);
+    first.insert(QStringLiteral("y"), startY);
+    first.insert(QStringLiteral("len"), 0.0);
+    points.push_back(first);
+
+    double prevX = startX;
+    double prevY = startY;
+    double totalLength = 0.0;
+
+    for (int i = 1; i <= safeSteps; ++i) {
+        const double t = static_cast<double>(i) / safeSteps;
+        const double inv = 1.0 - t;
+        const double x = inv * inv * startX + 2.0 * inv * t * controlX + t * t * endX;
+        const double y = inv * inv * startY + 2.0 * inv * t * controlY + t * t * endY;
+        const double dx = x - prevX;
+        const double dy = y - prevY;
+        totalLength += std::sqrt(dx * dx + dy * dy);
+
+        QVariantMap point;
+        point.insert(QStringLiteral("x"), x);
+        point.insert(QStringLiteral("y"), y);
+        point.insert(QStringLiteral("len"), totalLength);
+        points.push_back(point);
+
+        prevX = x;
+        prevY = y;
+    }
+
+    QVariantMap result;
+    result.insert(QStringLiteral("points"), points);
+    result.insert(QStringLiteral("totalLength"), totalLength);
+    return result;
+}
 
 QVariant WeatherPlugin::currentValue(const QString &key, const QVariant &fallback) const {
     return m_backend.snapshot().current.value(key, fallback);
