@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 WeatherInsightCard {
     id: root
@@ -16,10 +17,6 @@ WeatherInsightCard {
     title: ""
     color: Qt.rgba(0.10, 0.12, 0.13, 0.985)
     border.width: 0
-
-    function validNumber(value) {
-        return value !== undefined && value !== null && !isNaN(value)
-    }
 
     function pollenDefinitions() {
         return [
@@ -59,7 +56,7 @@ WeatherInsightCard {
     }
 
     function pollenIndex(value, thresholds) {
-        if (!validNumber(value))
+        if (!WeatherJS.validNumber(value))
             return null
         let level = -1
         for (let i = 0; i < thresholds.length; ++i) {
@@ -90,7 +87,7 @@ WeatherInsightCard {
         for (let i = 0; i < defs.length; ++i) {
             const def = defs[i]
             const value = pollenMap ? pollenMap[def.key] : undefined
-            if (!validNumber(value))
+            if (!WeatherJS.validNumber(value))
                 continue
             hasAnyValue = true
             const index = pollenIndex(value, def.thresholds)

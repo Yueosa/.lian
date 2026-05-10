@@ -32,23 +32,6 @@ Rectangle {
         return (v === undefined || v === null || isNaN(v)) ? fallback : Number(v)
     }
 
-    function fmtTemp(value) {
-        return value !== undefined && value !== null && !isNaN(value) ? Math.round(value) + "°" : "--"
-    }
-
-    function fmtPercent(value) {
-        return value !== undefined && value !== null && !isNaN(value) ? Math.round(value) + "%" : "--"
-    }
-
-    function dayLabel(index, epoch) {
-        if (index === 0) return "昨天"
-        if (index === 1) return "今天"
-        if (index === 2) return "明天"
-        if (!epoch) return "--"
-        const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-        return week[new Date(epoch * 1000).getDay()]
-    }
-
     function dateLabel(epoch) {
         return epoch ? Qt.formatDateTime(new Date(epoch * 1000), "M/d") : "--"
     }
@@ -286,7 +269,7 @@ Rectangle {
                                     : Colorscheme.primary
                                 ctx.font = "bold 11px \"JetBrainsMono Nerd Font\""
                                 ctx.textAlign = "center"
-                                ctx.fillText(root.fmtPercent(popValue), x, trendContent.rainLabelY)
+                                ctx.fillText(WeatherJS.fmtPercent(popValue), x, trendContent.rainLabelY)
                             }
 
                             drawSeries(ctx, dayValues, minTemp, maxTemp, Colorscheme.primary, 4)
@@ -361,7 +344,7 @@ Rectangle {
 
                                 Text {
                                     width: parent.width
-                                    text: root.dayLabel(index, dayItem.time)
+                                    text: WeatherJS.dayLabelCN(index, dayItem.time)
                                     color: Colorscheme.on_surface
                                     font.family: Sizes.fontFamily
                                     font.pixelSize: Math.round(16 * root.uiScale)
@@ -394,7 +377,7 @@ Rectangle {
                             Text {
                                 width: parent.width
                                 y: trendContent.highTempTextY
-                                text: root.fmtTemp(root.valueAt(dayPart, "temperatureC", root.valueAt(dayItem, "temperatureMaxC", NaN)))
+                                text: WeatherJS.fmtTemp(root.valueAt(dayPart, "temperatureC", root.valueAt(dayItem, "temperatureMaxC", NaN)))
                                 color: Colorscheme.on_surface
                                 font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.hero
@@ -405,7 +388,7 @@ Rectangle {
                             Text {
                                 width: parent.width
                                 y: trendContent.lowTempTextY
-                                text: root.fmtTemp(root.valueAt(nightPart, "temperatureC", root.valueAt(dayItem, "temperatureMinC", NaN)))
+                                text: WeatherJS.fmtTemp(root.valueAt(nightPart, "temperatureC", root.valueAt(dayItem, "temperatureMinC", NaN)))
                                 color: Colorscheme.on_surface_variant
                                 font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.xxl

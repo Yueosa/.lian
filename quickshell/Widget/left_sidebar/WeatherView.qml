@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import qs.config
 import qs.Widget.common
+import "../../JS/weather.js" as WeatherJS
 import Clavis.Weather 1.0
 
 Item {
@@ -78,35 +79,6 @@ Item {
         }
     }
 
-    function validNumber(value) {
-        return value !== undefined && value !== null && !isNaN(value)
-    }
-
-    function fmtTemp(value) {
-        return validNumber(value) ? Math.round(value) + "°" : "--"
-    }
-
-    function fmtTempPlain(value) {
-        return validNumber(value) ? Math.round(value).toString() : "--"
-    }
-
-    function fmtTime(epoch) {
-        if (!epoch) return "--"
-        return Qt.formatDateTime(new Date(epoch * 1000), "hh:mm")
-    }
-
-    function fmtSpeed(ms) {
-        return validNumber(ms) ? ms.toFixed(1) + " m/s" : "--"
-    }
-
-    function fmtPercent(value) {
-        return validNumber(value) ? Math.round(value) + "%" : "--"
-    }
-
-    function fmtDistance(meters) {
-        return validNumber(meters) ? (meters / 1000).toFixed(1) + " km" : "--"
-    }
-
     function currentHour() {
         return new Date(root.currentEpoch * 1000).getHours()
     }
@@ -122,53 +94,6 @@ Item {
         return "待更新"
     }
 
-    function dayLabel(index, epoch) {
-        if (index === 0) return "Today"
-        if (index === 1) return "Tomorrow"
-        return epoch ? Qt.formatDateTime(new Date(epoch * 1000), "ddd") : "--"
-    }
-
-    function uvLevel(value) {
-        if (!validNumber(value)) return "--"
-        if (value < 3) return "低"
-        if (value < 6) return "中"
-        if (value < 8) return "高"
-        if (value < 11) return "很高"
-        return "极高"
-    }
-
-    function uvIndexBucket(value) {
-        if (!validNumber(value)) return -1
-        if (value < 3) return 0
-        if (value < 6) return 1
-        if (value < 8) return 2
-        if (value < 11) return 3
-        return 4
-    }
-
-    function windAccent(ms) {
-        if (!validNumber(ms)) return "#4d8d7b"
-        if (ms < 4) return "#72d572"
-        if (ms < 6) return "#ffca28"
-        if (ms < 8) return "#ffa726"
-        if (ms < 10) return "#e52f35"
-        if (ms < 12) return "#99004c"
-        return "#7e0023"
-    }
-
-    function directionLabel(degree) {
-        if (!validNumber(degree)) return "--"
-        const normalized = ((degree % 360) + 360) % 360
-        if (normalized < 22.5 || normalized >= 337.5) return "N"
-        if (normalized < 67.5) return "NE"
-        if (normalized < 112.5) return "E"
-        if (normalized < 157.5) return "SE"
-        if (normalized < 202.5) return "S"
-        if (normalized < 247.5) return "SW"
-        if (normalized < 292.5) return "W"
-        return "NW"
-    }
-
     function activeHalfDay() {
         const day = today()
         const hour = currentHour()
@@ -179,17 +104,17 @@ Item {
 
     function precipitationValueText() {
         const half = activeHalfDay()
-        const snow = validNumber(half.snowCm) ? half.snowCm : 0
-        const rain = validNumber(half.rainMm) ? half.rainMm : 0
-        const total = validNumber(half.precipitationMm) ? half.precipitationMm : NaN
+        const snow = WeatherJS.validNumber(half.snowCm) ? half.snowCm : 0
+        const rain = WeatherJS.validNumber(half.rainMm) ? half.rainMm : 0
+        const total = WeatherJS.validNumber(half.precipitationMm) ? half.precipitationMm : NaN
         if (snow > 0 && rain <= 0) return snow.toFixed(1) + " cm"
-        return validNumber(total) ? total.toFixed(1) + " mm" : "--"
+        return WeatherJS.validNumber(total) ? total.toFixed(1) + " mm" : "--"
     }
 
     function precipitationDescriptionText() {
         const half = activeHalfDay()
-        const snow = validNumber(half.snowCm) ? half.snowCm : 0
-        const rain = validNumber(half.rainMm) ? half.rainMm : 0
+        const snow = WeatherJS.validNumber(half.snowCm) ? half.snowCm : 0
+        const rain = WeatherJS.validNumber(half.rainMm) ? half.rainMm : 0
         const hour = currentHour()
         const isDay = hour >= 5 && hour < 17
         if (snow > 0 && rain <= 0) return isDay ? "白天降雪总量" : "夜间降雪总量"
@@ -198,80 +123,18 @@ Item {
         return isDay ? "白天总降水" : "夜间总降水"
     }
 
-    function humidityWaveAccent() {
-        return "#625985"
-    }
-
-    function visibilityDescription(meters) {
-        if (!validNumber(meters)) return "--"
-        const km = meters / 1000
-        if (km >= 16) return "Crystal clear"
-        if (km >= 10) return "Clear"
-        if (km >= 6) return "Good"
-        if (km >= 3) return "Hazy"
-        if (km >= 1) return "Low"
-        return "Dense"
-    }
-
-    function aqiThresholds() {
-        return [0, 20, 50, 100, 150, 250]
-    }
-
-    function pollutantIndex(value, thresholds) {
-        if (!validNumber(value)) return NaN
-        let level = -1
-        for (let i = 0; i < thresholds.length; ++i) {
-            if (value >= thresholds[i]) level = i
-        }
-        if (level < 0) return NaN
-        const aqi = aqiThresholds()
-        if (level < thresholds.length - 1) {
-            const bpLo = thresholds[level]
-            const bpHi = thresholds[level + 1]
-            const inLo = aqi[level]
-            const inHi = aqi[level + 1]
-            return Math.round(((inHi - inLo) / (bpHi - bpLo)) * (value - bpLo) + inLo)
-        }
-        return Math.round((value * aqi[aqi.length - 1]) / thresholds[thresholds.length - 1])
-    }
-
-    function aqiLevelIndex(value) {
-        if (!validNumber(value)) return -1
-        const thresholds = aqiThresholds()
-        let level = 0
-        for (let i = 0; i < thresholds.length; ++i) {
-            if (value >= thresholds[i]) level = i
-        }
-        return Math.min(level, 5)
-    }
-
-    function aqiPalette(level) {
-        const colors = ["#00e59b", "#ffc302", "#ff712b", "#f62a55", "#c72eaa", "#9930ff"]
-        return colors[Math.max(0, Math.min(colors.length - 1, level))]
-    }
-
-    function aqiLevelName(level) {
-        const names = ["优", "良", "差", "不健康", "很不健康", "危险"]
-        if (level < 0 || level >= names.length) return "--"
-        return names[level]
-    }
-
     function aqiSummary() {
         const air = WeatherPlugin.currentAirQuality || ({})
         const values = [
-            pollutantIndex(air.ozone, [0, 50, 100, 160, 240, 480]),
-            pollutantIndex(air.nitrogenDioxide, [0, 10, 25, 200, 400, 1000]),
-            pollutantIndex(air.pm10, [0, 15, 45, 80, 160, 400]),
-            pollutantIndex(air.pm25, [0, 5, 15, 30, 60, 150])
+            WeatherJS.pollutantIndex(air.ozone, [0, 50, 100, 160, 240, 480]),
+            WeatherJS.pollutantIndex(air.nitrogenDioxide, [0, 10, 25, 200, 400, 1000]),
+            WeatherJS.pollutantIndex(air.pm10, [0, 15, 45, 80, 160, 400]),
+            WeatherJS.pollutantIndex(air.pm25, [0, 5, 15, 30, 60, 150])
         ].filter(validNumber)
         if (values.length === 0) return ({ value: NaN, level: "--", color: "#00e59b" })
         const value = Math.max.apply(Math, values)
-        const level = aqiLevelIndex(value)
-        return ({ value: value, level: aqiLevelName(level), color: aqiPalette(level) })
-    }
-
-    function pressureValueText(value) {
-        return validNumber(value) ? Number(value).toLocaleString(Qt.locale(), "f", 1) : "--"
+        const level = WeatherJS.aqiLevelIndex(value)
+        return ({ value: value, level: WeatherJS.aqiLevelName(level), color: WeatherJS.aqiPalette(level) })
     }
 
     function today() {
@@ -521,7 +384,7 @@ Item {
                                 id: tempText
                                 anchors.left: parent.left
                                 anchors.bottom: parent.bottom
-                                text: fmtTempPlain(WeatherPlugin.currentTemperatureC)
+                                text: WeatherJS.fmtTempPlain(WeatherPlugin.currentTemperatureC)
                                 color: Colorscheme.on_surface
                                 font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.jumbo
@@ -543,7 +406,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            text: "体感温度: " + fmtTemp(WeatherPlugin.currentFeelsLikeC)
+                            text: "体感温度: " + WeatherJS.fmtTemp(WeatherPlugin.currentFeelsLikeC)
                             color: Colorscheme.on_surface
                             font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.xxl
@@ -553,8 +416,8 @@ Item {
 
                         Text {
                             width: parent.width
-                            text: "最高 " + fmtTemp(today().temperatureMaxC)
-                                  + " · 最低 " + fmtTemp(today().temperatureMinC)
+                            text: "最高 " + WeatherJS.fmtTemp(today().temperatureMaxC)
+                                  + " · 最低 " + WeatherJS.fmtTemp(today().temperatureMinC)
                             color: Colorscheme.on_surface
                             font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.xxl
@@ -597,9 +460,9 @@ Item {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         directionDegrees: WeatherPlugin.currentWindDirection
-                        valueText: fmtSpeed(WeatherPlugin.currentWindSpeedMs)
-                        detailText: "阵风 " + fmtSpeed(WeatherPlugin.currentWindGustsMs) + " · " + directionLabel(WeatherPlugin.currentWindDirection)
-                        accent: windAccent(WeatherPlugin.currentWindSpeedMs)
+                        valueText: WeatherJS.fmtSpeed(WeatherPlugin.currentWindSpeedMs)
+                        detailText: "阵风 " + WeatherJS.fmtSpeed(WeatherPlugin.currentWindGustsMs) + " · " + WeatherJS.directionLabel(WeatherPlugin.currentWindDirection)
+                        accent: WeatherJS.windAccent(WeatherPlugin.currentWindSpeedMs)
                     }
                 }
 
@@ -630,17 +493,17 @@ Item {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         humidityValue: WeatherPlugin.currentRelativeHumidity
-                        humidityText: fmtPercent(WeatherPlugin.currentRelativeHumidity)
-                        dewPointText: fmtTemp(WeatherPlugin.currentDewPointC)
-                        accent: humidityWaveAccent()
+                        humidityText: WeatherJS.fmtPercent(WeatherPlugin.currentRelativeHumidity)
+                        dewPointText: WeatherJS.fmtTemp(WeatherPlugin.currentDewPointC)
+                        accent: WeatherJS.humidityWaveAccent()
                     }
 
                     WeatherUvCard {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         value: WeatherPlugin.currentUvIndex
-                        level: uvLevel(WeatherPlugin.currentUvIndex)
-                        activeIndex: uvIndexBucket(WeatherPlugin.currentUvIndex)
+                        level: WeatherJS.uvLevel(WeatherPlugin.currentUvIndex)
+                        activeIndex: WeatherJS.uvIndexBucket(WeatherPlugin.currentUvIndex)
                     }
                 }
 
@@ -658,7 +521,7 @@ Item {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         pressureValue: WeatherPlugin.currentPressureHpa
-                        valueText: pressureValueText(WeatherPlugin.currentPressureHpa)
+                        valueText: WeatherJS.pressureValueText(WeatherPlugin.currentPressureHpa)
                         unitText: "hPa"
                     }
                 }
@@ -671,8 +534,8 @@ Item {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         moon: false
-                        riseText: fmtTime(today().sunrise)
-                        setText: fmtTime(today().sunset)
+                        riseText: WeatherJS.fmtTime(today().sunrise)
+                        setText: WeatherJS.fmtTime(today().sunset)
                         riseEpoch: today().sunrise || 0
                         setEpoch: today().sunset || 0
                         currentEpoch: root.currentEpoch
@@ -682,8 +545,8 @@ Item {
                         Layout.preferredWidth: (parent.width - parent.spacing) / 2
                         Layout.preferredHeight: Layout.preferredWidth
                         moon: true
-                        riseText: fmtTime(today().moonrise)
-                        setText: fmtTime(today().moonset)
+                        riseText: WeatherJS.fmtTime(today().moonrise)
+                        setText: WeatherJS.fmtTime(today().moonset)
                         riseEpoch: today().moonrise || 0
                         setEpoch: today().moonset || 0
                         currentEpoch: root.currentEpoch

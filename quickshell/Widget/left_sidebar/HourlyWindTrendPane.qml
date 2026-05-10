@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 Rectangle {
     id: root
@@ -22,23 +23,19 @@ Rectangle {
     color: Qt.rgba(Colorscheme.surface_container_high.r, Colorscheme.surface_container_high.g, Colorscheme.surface_container_high.b, 0.42)
     clip: true
 
-    function validNumber(value) {
-        return value !== undefined && value !== null && !isNaN(value)
-    }
-
     function hourLabel(epoch) {
         return epoch ? Qt.formatDateTime(new Date(epoch * 1000), "hh:00") : "--"
     }
 
     function formatSpeedValue(value) {
-        if (!validNumber(value)) return "--"
+        if (!WeatherJS.validNumber(value)) return "--"
         const rounded = Math.round(value * 10) / 10
         if (Math.abs(rounded - Math.round(rounded)) < 0.05) return Math.round(rounded).toString()
         return rounded.toFixed(1)
     }
 
     function beaufortLevel(speedMs) {
-        if (!validNumber(speedMs) || speedMs < 0.3) return 0
+        if (!WeatherJS.validNumber(speedMs) || speedMs < 0.3) return 0
         if (speedMs < 1.6) return 1
         if (speedMs < 3.4) return 2
         if (speedMs < 5.5) return 3
@@ -64,7 +61,7 @@ Rectangle {
     }
 
     function chartUpperBound(highest) {
-        if (!validNumber(highest) || highest <= 0) return 5
+        if (!WeatherJS.validNumber(highest) || highest <= 0) return 5
         if (highest <= 5) return 5
         if (highest <= 8) return 8
         if (highest <= 12) return 12
@@ -73,7 +70,7 @@ Rectangle {
     }
 
     function yForValue(value) {
-        if (!validNumber(value) || chartMax <= 0) return chartBottom
+        if (!WeatherJS.validNumber(value) || chartMax <= 0) return chartBottom
         const clamped = Math.max(0, Math.min(chartMax, value))
         return chartBottom - clamped / chartMax * (chartBottom - chartTop)
     }
@@ -87,7 +84,7 @@ Rectangle {
             const item = sourceModel.get(i) || ({})
             const speed = Number(item.windSpeedMs)
             const direction = Number(item.windDirection)
-            if (validNumber(speed)) {
+            if (WeatherJS.validNumber(speed)) {
                 highest = Math.max(highest, speed)
                 validCount += 1
             }
@@ -165,7 +162,7 @@ Rectangle {
                     }
 
                     WindDirectionGlyph {
-                        visible: root.validNumber(modelData.direction)
+                        visible: WeatherJS.validNumber(modelData.direction)
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: root.arrowY
                         width: 40
@@ -175,7 +172,7 @@ Rectangle {
                     }
 
                     Rectangle {
-                        visible: root.validNumber(modelData.speed) && modelData.speed > 0
+                        visible: WeatherJS.validNumber(modelData.speed) && modelData.speed > 0
                         width: parent.barWidth
                         height: Math.max(10, root.chartBottom - parent.barTop)
                         x: (parent.width - width) / 2
@@ -185,7 +182,7 @@ Rectangle {
                     }
 
                     Text {
-                        visible: root.validNumber(modelData.speed) && modelData.speed > 0
+                        visible: WeatherJS.validNumber(modelData.speed) && modelData.speed > 0
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: parent.barTop - 22
                         text: modelData.speedText

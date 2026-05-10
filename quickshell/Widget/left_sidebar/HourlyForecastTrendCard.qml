@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 Rectangle {
     id: root
@@ -29,10 +30,6 @@ Rectangle {
     function valueAt(map, key, fallback) {
         const v = map ? map[key] : undefined
         return (v === undefined || v === null || isNaN(v)) ? fallback : Number(v)
-    }
-
-    function fmtTemp(value) {
-        return value !== undefined && value !== null && !isNaN(value) ? Math.round(value) + "°" : "--"
     }
 
     function hourLabel(epoch) {
@@ -194,7 +191,7 @@ Rectangle {
                             ctx.font = "bold 13px \"JetBrainsMono Nerd Font\""
                             ctx.textAlign = "center"
                             for (let n = 0; n < count; ++n) {
-                                ctx.fillText(root.fmtTemp(values[n]), pointX(n), yAt(values[n], minTemp, maxTemp) - 10)
+                                ctx.fillText(WeatherJS.fmtTemp(values[n]), pointX(n), yAt(values[n], minTemp, maxTemp) - 10)
                             }
                         }
                     }

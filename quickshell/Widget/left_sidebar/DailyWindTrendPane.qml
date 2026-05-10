@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 Rectangle {
     id: root
@@ -24,32 +25,19 @@ Rectangle {
     color: Qt.rgba(Colorscheme.surface_container_high.r, Colorscheme.surface_container_high.g, Colorscheme.surface_container_high.b, 0.42)
     clip: true
 
-    function dayLabel(index, epoch) {
-        if (index === 0) return "昨天"
-        if (index === 1) return "今天"
-        if (index === 2) return "明天"
-        if (!epoch) return "--"
-        const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-        return week[new Date(epoch * 1000).getDay()]
-    }
-
     function dateLabel(epoch) {
         return epoch ? Qt.formatDateTime(new Date(epoch * 1000), "M/d") : "--"
     }
 
-    function validNumber(value) {
-        return value !== undefined && value !== null && !isNaN(value)
-    }
-
     function formatSpeedValue(value) {
-        if (!validNumber(value)) return "--"
+        if (!WeatherJS.validNumber(value)) return "--"
         const rounded = Math.round(value * 10) / 10
         if (Math.abs(rounded - Math.round(rounded)) < 0.05) return Math.round(rounded).toString()
         return rounded.toFixed(1)
     }
 
     function beaufortLevel(speedMs) {
-        if (!validNumber(speedMs) || speedMs < 0.3) return 0
+        if (!WeatherJS.validNumber(speedMs) || speedMs < 0.3) return 0
         if (speedMs < 1.6) return 1
         if (speedMs < 3.4) return 2
         if (speedMs < 5.5) return 3
@@ -75,7 +63,7 @@ Rectangle {
     }
 
     function chartUpperBound(highest) {
-        if (!validNumber(highest) || highest <= 0) return 5
+        if (!WeatherJS.validNumber(highest) || highest <= 0) return 5
         if (highest <= 5) return 5
         if (highest <= 8) return 8
         if (highest <= 12) return 12
@@ -94,17 +82,17 @@ Rectangle {
             const nightPart = dayItem.night || ({})
             const daySpeed = Number(dayPart.windSpeedMs)
             const nightSpeed = Number(nightPart.windSpeedMs)
-            if (validNumber(daySpeed)) {
+            if (WeatherJS.validNumber(daySpeed)) {
                 highest = Math.max(highest, daySpeed)
                 validCount += 1
             }
-            if (validNumber(nightSpeed)) {
+            if (WeatherJS.validNumber(nightSpeed)) {
                 highest = Math.max(highest, nightSpeed)
                 validCount += 1
             }
             list.push({
                 time: dayItem.time || 0,
-                dayText: dayLabel(i, dayItem.time || 0),
+                dayText: WeatherJS.dayLabelCN(i, dayItem.time || 0),
                 dateText: dateLabel(dayItem.time || 0),
                 daySpeed: daySpeed,
                 nightSpeed: nightSpeed,
@@ -123,7 +111,7 @@ Rectangle {
     }
 
     function barHeight(speed) {
-        if (!validNumber(speed) || speed <= 0 || chartMax <= 0) return 0
+        if (!WeatherJS.validNumber(speed) || speed <= 0 || chartMax <= 0) return 0
         return Math.max(10, Math.min(barHalfRange, barHalfRange * speed / chartMax))
     }
 
@@ -207,7 +195,7 @@ Rectangle {
                     }
 
                     WindDirectionGlyph {
-                        visible: root.validNumber(modelData.dayDirection)
+                        visible: WeatherJS.validNumber(modelData.dayDirection)
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: root.dayArrowY
                         width: 44
@@ -217,7 +205,7 @@ Rectangle {
                     }
 
                     Text {
-                        visible: root.validNumber(modelData.daySpeed) && modelData.daySpeed > 0
+                        visible: WeatherJS.validNumber(modelData.daySpeed) && modelData.daySpeed > 0
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: root.topBarBaseY - parent.dayBarHeight - 28
                         text: modelData.dayTextValue
@@ -247,7 +235,7 @@ Rectangle {
                     }
 
                     Text {
-                        visible: root.validNumber(modelData.nightSpeed) && modelData.nightSpeed > 0
+                        visible: WeatherJS.validNumber(modelData.nightSpeed) && modelData.nightSpeed > 0
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: root.bottomBarBaseY + parent.nightBarHeight + 8
                         text: modelData.nightTextValue
@@ -257,7 +245,7 @@ Rectangle {
                     }
 
                     WindDirectionGlyph {
-                        visible: root.validNumber(modelData.nightDirection)
+                        visible: WeatherJS.validNumber(modelData.nightDirection)
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: root.nightArrowY
                         width: 44

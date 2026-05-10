@@ -91,3 +91,105 @@ function getWeatherDesc(code) {
     };
     return mapping[code] || "Cloudy";
 }
+
+// ============================================================
+// 通用纯函数: 数值校验 / 格式化 / UV / 风 / 方位 / AQI / 能见度
+// 多个 *TrendCard / *TrendPane / WeatherView 共用, 集中在此, 禁止再就地复制
+// ============================================================
+
+function validNumber(v) { return v !== undefined && v !== null && !isNaN(v); }
+
+function fmtTemp(v)        { return validNumber(v) ? Math.round(v) + "°"               : "--"; }
+function fmtTempPlain(v)   { return validNumber(v) ? Math.round(v).toString()          : "--"; }
+function fmtSpeed(ms)      { return validNumber(ms) ? ms.toFixed(1) + " m/s"           : "--"; }
+function fmtPercent(v)     { return validNumber(v) ? Math.round(v) + "%"               : "--"; }
+function fmtDistance(m)    { return validNumber(m) ? (m / 1000).toFixed(1) + " km"     : "--"; }
+function fmtTime(epoch)    { return epoch ? Qt.formatDateTime(new Date(epoch*1000), "hh:mm") : "--"; }
+
+function dayLabel(index, epoch) {
+    if (index === 0) return "Today";
+    if (index === 1) return "Tomorrow";
+    return epoch ? Qt.formatDateTime(new Date(epoch*1000), "ddd") : "--";
+}
+
+function uvLevel(v) {
+    if (!validNumber(v)) return "--";
+    if (v < 3) return "低"; if (v < 6) return "中"; if (v < 8) return "高";
+    if (v < 11) return "很高"; return "极高";
+}
+function uvIndexBucket(v) {
+    if (!validNumber(v)) return -1;
+    if (v < 3) return 0; if (v < 6) return 1; if (v < 8) return 2;
+    if (v < 11) return 3; return 4;
+}
+
+function windAccent(ms) {
+    if (!validNumber(ms)) return "#4d8d7b";
+    if (ms < 4)  return "#72d572"; if (ms < 6)  return "#ffca28";
+    if (ms < 8)  return "#ffa726"; if (ms < 10) return "#e52f35";
+    if (ms < 12) return "#99004c"; return "#7e0023";
+}
+
+function directionLabel(deg) {
+    if (!validNumber(deg)) return "--";
+    var n = ((deg % 360) + 360) % 360;
+    if (n < 22.5 || n >= 337.5) return "N";
+    if (n < 67.5)  return "NE"; if (n < 112.5) return "E";
+    if (n < 157.5) return "SE"; if (n < 202.5) return "S";
+    if (n < 247.5) return "SW"; if (n < 292.5) return "W";
+    return "NW";
+}
+
+function visibilityDescription(meters) {
+    if (!validNumber(meters)) return "--";
+    var km = meters / 1000;
+    if (km >= 16) return "Crystal clear"; if (km >= 10) return "Clear";
+    if (km >= 6)  return "Good";          if (km >= 3)  return "Hazy";
+    if (km >= 1)  return "Low";           return "Dense";
+}
+
+function pressureValueText(v) {
+    return validNumber(v) ? Number(v).toLocaleString(Qt.locale(), "f", 1) : "--";
+}
+
+function humidityWaveAccent() { return "#625985"; }
+
+// AQI: thresholds 是该污染物各级浓度上限 (ug/m3 或 ppm), aqi 数组是统一刻度
+var AQI_INDEX_BREAKPOINTS = [0, 20, 50, 100, 150, 250];
+function aqiThresholds() { return AQI_INDEX_BREAKPOINTS; }
+
+function pollutantIndex(value, thresholds) {
+    if (!validNumber(value)) return NaN;
+    var level = -1;
+    for (var i = 0; i < thresholds.length; ++i)
+        if (value >= thresholds[i]) level = i;
+    if (level < 0) return NaN;
+    var aqi = AQI_INDEX_BREAKPOINTS;
+    if (level < thresholds.length - 1) {
+        var bpLo = thresholds[level], bpHi = thresholds[level + 1];
+        var inLo = aqi[level],        inHi = aqi[level + 1];
+        return Math.round(((inHi - inLo) / (bpHi - bpLo)) * (value - bpLo) + inLo);
+    }
+    return Math.round((value * aqi[aqi.length - 1]) / thresholds[thresholds.length - 1]);
+}
+
+function aqiLevelIndex(v) {
+    if (!validNumber(v)) return -1;
+    var t = AQI_INDEX_BREAKPOINTS, lvl = 0;
+    for (var i = 0; i < t.length; ++i) if (v >= t[i]) lvl = i;
+    return Math.min(lvl, 5);
+}
+
+var AQI_PALETTE = ["#00e59b", "#ffc302", "#ff712b", "#f62a55", "#c72eaa", "#9930ff"];
+var AQI_NAMES   = ["优", "良", "差", "不健康", "很不健康", "危险"];
+function aqiPalette(level) { return AQI_PALETTE[Math.max(0, Math.min(AQI_PALETTE.length - 1, level))]; }
+function aqiLevelName(level) { return (level < 0 || level >= AQI_NAMES.length) ? "--" : AQI_NAMES[level]; }
+
+// 中文版日历标签 (DailyAirQuality / DailyWind / DailyForecast 趋势卡共用)
+var WEEK_CN = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+function dayLabelCN(index, epoch) {
+    if (index === 0) return "昨天";
+    if (index === 1) return "今天";
+    if (index === 2) return "明天";
+    return epoch ? WEEK_CN[new Date(epoch * 1000).getDay()] : "--";
+}

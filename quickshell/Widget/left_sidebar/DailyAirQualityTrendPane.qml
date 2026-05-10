@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 Rectangle {
     id: root
@@ -23,54 +24,13 @@ Rectangle {
     color: Qt.rgba(Colorscheme.surface_container_high.r, Colorscheme.surface_container_high.g, Colorscheme.surface_container_high.b, 0.42)
     clip: true
 
-    function aqiThresholds() {
-        return [0, 20, 50, 100, 150, 250]
-    }
-
-    function aqiLevelIndex(aqi) {
-        if (aqi === undefined || aqi === null || isNaN(aqi)) return -1
-        const thresholds = aqiThresholds()
-        for (let i = thresholds.length - 1; i >= 0; --i) {
-            if (aqi >= thresholds[i]) return i
-        }
-        return -1
-    }
-
-    function aqiLevelName(level) {
-        const names = ["优", "良", "差", "不健康", "很不健康", "危险"]
-        return level >= 0 && level < names.length ? names[level] : "--"
-    }
-
-    function aqiPalette(level) {
-        const colors = ["#00e59b", "#ffc302", "#ff712b", "#f62a55", "#c72eaa", "#9930ff"]
-        return colors[Math.max(0, Math.min(colors.length - 1, level >= 0 ? level : 0))]
-    }
-
-    function pollutantIndex(value, thresholds) {
-        if (value === undefined || value === null || isNaN(value)) return NaN
-        const aqi = aqiThresholds()
-        for (let level = thresholds.length - 1; level >= 0; --level) {
-            if (value >= thresholds[level]) {
-                if (level < thresholds.length - 1) {
-                    const bpLo = thresholds[level]
-                    const bpHi = thresholds[level + 1]
-                    const inLo = aqi[level]
-                    const inHi = aqi[level + 1]
-                    return Math.round((inHi - inLo) / (bpHi - bpLo) * (value - bpLo) + inLo)
-                }
-                return Math.round(value * aqi[aqi.length - 1] / thresholds[thresholds.length - 1])
-            }
-        }
-        return NaN
-    }
-
     function dailyAqiValue(air) {
         if (!air) return NaN
         const values = [
-            pollutantIndex(air.ozone, [0, 50, 100, 160, 240, 480]),
-            pollutantIndex(air.nitrogenDioxide, [0, 10, 25, 200, 400, 1000]),
-            pollutantIndex(air.pm10, [0, 15, 45, 80, 160, 400]),
-            pollutantIndex(air.pm25, [0, 5, 15, 30, 60, 150])
+            WeatherJS.pollutantIndex(air.ozone, [0, 50, 100, 160, 240, 480]),
+            WeatherJS.pollutantIndex(air.nitrogenDioxide, [0, 10, 25, 200, 400, 1000]),
+            WeatherJS.pollutantIndex(air.pm10, [0, 15, 45, 80, 160, 400]),
+            WeatherJS.pollutantIndex(air.pm25, [0, 5, 15, 30, 60, 150])
         ].filter(function(v) { return !isNaN(v) })
         if (values.length === 0) return NaN
         return Math.max.apply(Math, values)
@@ -112,7 +72,7 @@ Rectangle {
         for (let i = 0; i < count; ++i) {
             const day = sourceModel.get(i) || ({})
             const aqi = dailyAqiValue(day.airQuality || ({}))
-            const level = aqiLevelIndex(aqi)
+            const level = WeatherJS.aqiLevelIndex(aqi)
             if (!isNaN(aqi)) {
                 highest = Math.max(highest, aqi)
                 validCount += 1
@@ -123,8 +83,8 @@ Rectangle {
                 dateText: dateLabel(day.time || 0),
                 aqi: aqi,
                 aqiText: !isNaN(aqi) ? Math.round(aqi).toString() : "--",
-                levelText: aqiLevelName(level),
-                color: aqiPalette(level),
+                levelText: WeatherJS.aqiLevelName(level),
+                color: WeatherJS.aqiPalette(level),
                 emphasized: i !== 0
             })
         }
@@ -133,11 +93,11 @@ Rectangle {
         hasData = validCount > 0
 
         const lines = [
-            { value: 20, label: aqiLevelName(1) },
-            { value: 100, label: aqiLevelName(3) }
+            { value: 20, label: WeatherJS.aqiLevelName(1) },
+            { value: 100, label: WeatherJS.aqiLevelName(3) }
         ]
         if (chartMax >= 250) {
-            lines.push({ value: 250, label: aqiLevelName(5) })
+            lines.push({ value: 250, label: WeatherJS.aqiLevelName(5) })
         }
         keyLines = lines
     }
