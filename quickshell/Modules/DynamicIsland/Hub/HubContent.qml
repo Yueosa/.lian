@@ -8,21 +8,30 @@ import qs.Modules.DynamicIsland.Media
 import qs.Modules.DynamicIsland.WeatherContent
 import qs.Modules.DynamicIsland.SwitcherContent
 
-Item {
+FocusScope {
     id: root
     signal closeRequested()
     
     property var player: null
     property int currentIndex: 0
     
-    Shortcut {
-        sequence: "Tab"
-        onActivated: root.currentIndex = (root.currentIndex + 1) % 4
+    focus: visible
+    Keys.priority: Keys.BeforeItem
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Tab) {
+            root.currentIndex = (root.currentIndex + 1) % 4
+            event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_Backtab) {
+            root.currentIndex = (root.currentIndex + 3) % 4
+            event.accepted = true
+        }
     }
 
-    Shortcut {
-        sequence: "Shift+Tab"
-        onActivated: root.currentIndex = (root.currentIndex + 3) % 4
+    onVisibleChanged: {
+        if (visible)
+            root.forceActiveFocus()
     }
     
     // 4 Tab 布局：Overview / Media / Weather / Switcher
@@ -111,8 +120,10 @@ Item {
         OverviewContent {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.currentIndex === 0
-            opacity: visible ? 1 : 0
+            visible: true
+            enabled: root.currentIndex === 0
+            z: enabled ? 1 : 0
+            opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }
             onCloseRequested: root.closeRequested()
         }
@@ -121,23 +132,29 @@ Item {
             player: root.player
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.currentIndex === 1
-            opacity: visible ? 1 : 0
+            visible: true
+            enabled: root.currentIndex === 1
+            z: enabled ? 1 : 0
+            opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }
         }
 
         WeatherContent {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.currentIndex === 2
-            opacity: visible ? 1 : 0
+            visible: true
+            enabled: root.currentIndex === 2
+            z: enabled ? 1 : 0
+            opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }
         }
 
         SwitcherContent {
             anchors.fill: parent
-            visible: root.currentIndex === 3
-            opacity: visible ? 1 : 0
+            visible: true
+            enabled: root.currentIndex === 3
+            z: enabled ? 1 : 0
+            opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }
             onCloseRequested: root.closeRequested()
         }

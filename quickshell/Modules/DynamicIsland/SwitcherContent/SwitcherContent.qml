@@ -47,7 +47,7 @@ Item {
     }
 
     onGroupsChanged: clampFocus()
-    onVisibleChanged: if (visible) {
+    onEnabledChanged: if (enabled) {
         // 默认定位到当前活动窗口；找不到则退回当前活动工作区第一个
         const active = Hyprland.activeToplevel
         const focusedWs = Hyprland.focusedWorkspace
@@ -117,7 +117,7 @@ Item {
     Item {
         id: focusGrabber
         anchors.fill: parent
-        focus: root.visible
+        focus: root.enabled
         Keys.onLeftPressed: (event) => {
             root.focusGroup = Math.max(0, root.focusGroup - 1)
             root.clampFocus()
@@ -143,15 +143,15 @@ Item {
     }
 
     // —— 全局快捷键兑底（Hub 子项 focus 链不可靠时也能工作）——
-    Shortcut { sequence: "Left";   enabled: root.visible && !focusGrabber.activeFocus; onActivated: { root.focusGroup = Math.max(0, root.focusGroup - 1); root.clampFocus() } }
-    Shortcut { sequence: "Right";  enabled: root.visible && !focusGrabber.activeFocus; onActivated: { root.focusGroup = Math.min(root.groups.length - 1, root.focusGroup + 1); root.clampFocus() } }
-    Shortcut { sequence: "Up";     enabled: root.visible && !focusGrabber.activeFocus; onActivated: { root.focusItem = Math.max(0, root.focusItem - 1) } }
-    Shortcut { sequence: "Down";   enabled: root.visible && !focusGrabber.activeFocus; onActivated: {
+    Shortcut { sequence: "Left";   enabled: root.enabled && !focusGrabber.activeFocus; onActivated: { root.focusGroup = Math.max(0, root.focusGroup - 1); root.clampFocus() } }
+    Shortcut { sequence: "Right";  enabled: root.enabled && !focusGrabber.activeFocus; onActivated: { root.focusGroup = Math.min(root.groups.length - 1, root.focusGroup + 1); root.clampFocus() } }
+    Shortcut { sequence: "Up";     enabled: root.enabled && !focusGrabber.activeFocus; onActivated: { root.focusItem = Math.max(0, root.focusItem - 1) } }
+    Shortcut { sequence: "Down";   enabled: root.enabled && !focusGrabber.activeFocus; onActivated: {
         const rows = (root.groups[root.focusGroup] && root.groups[root.focusGroup].wins.length) || 0
         root.focusItem = Math.min(rows - 1, root.focusItem + 1)
     } }
-    Shortcut { sequences: ["Return", "Enter"]; enabled: root.visible && !focusGrabber.activeFocus; onActivated: root.activateFocused() }
-    Shortcut { sequence: "Escape"; enabled: root.visible && !focusGrabber.activeFocus; onActivated: root.closeRequested() }
+    Shortcut { sequences: ["Return", "Enter"]; enabled: root.enabled && !focusGrabber.activeFocus; onActivated: root.activateFocused() }
+    Shortcut { sequence: "Escape"; enabled: root.enabled && !focusGrabber.activeFocus; onActivated: root.closeRequested() }
 
     // —— 空态 ——
     Text {
