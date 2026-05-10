@@ -1,5 +1,4 @@
 import QtQuick
-import Clavis.Weather 1.0
 
 Item {
     id: root
@@ -671,9 +670,9 @@ Item {
         const splashBounce = weatherType === "storm" ? 120 : 100
         const splashDistance = 80
         const randomX = (Math.random() * splashDistance) - (splashDistance / 2)
-        const curve = WeatherPlugin.makeQuadraticSamples(0, 0,
-                                                         randomX, -(Math.random() * splashBounce),
-                                                         randomX * 2, splashDistance, 20)
+        const curve = makeQuadraticSamples(0, 0,
+                                           randomX, -(Math.random() * splashBounce),
+                                           randomX * 2, splashDistance)
         splashes.push({
             x: x,
             y: Math.max(0, Math.min(height, rainBounceY)),
@@ -716,6 +715,37 @@ Item {
             splash.age += dt
             if (splash.age >= splash.duration)
                 splashes.splice(i, 1)
+        }
+    }
+
+    function quadraticPoint(startX, startY, controlX, controlY, endX, endY, t) {
+        const inverse = 1 - t
+        return {
+            x: inverse * inverse * startX + 2 * inverse * t * controlX + t * t * endX,
+            y: inverse * inverse * startY + 2 * inverse * t * controlY + t * t * endY
+        }
+    }
+
+    function makeQuadraticSamples(startX, startY, controlX, controlY, endX, endY) {
+        const steps = 20
+        const points = [{ x: startX, y: startY, len: 0 }]
+        let previous = { x: startX, y: startY }
+        let totalLength = 0
+        for (let i = 1; i <= steps; ++i) {
+            const point = quadraticPoint(startX, startY, controlX, controlY, endX, endY, i / steps)
+            const dx = point.x - previous.x
+            const dy = point.y - previous.y
+            totalLength += Math.sqrt(dx * dx + dy * dy)
+            points.push({
+                x: point.x,
+                y: point.y,
+                len: totalLength
+            })
+            previous = point
+        }
+        return {
+            points: points,
+            totalLength: totalLength
         }
     }
 
