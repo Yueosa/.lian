@@ -59,8 +59,8 @@ Item {
     }
 
     // 调色板按 (visualWeatherType, night) 缓存为 binding, 仅在依赖变化时重算;
-    // 调用方按 property 访问 (root.palette.top), 不再每帧 new 9 字段对象。
-    readonly property var palette: _computePalette(visualWeatherType() + (night ? "_night" : "_day"))
+    // 调用方按 property 访问 (root.weatherPalette.top), 不再每帧 new 9 字段对象。
+    readonly property var weatherPalette: _computePalette(visualWeatherType() + (night ? "_night" : "_day"))
 
     function _computePalette(key) {
         switch (key) {
@@ -1004,9 +1004,9 @@ Item {
         opacity: Math.max(0.46, 0.96 - root.scrollProgress * 0.28)
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: root.palette.top }
-            GradientStop { position: 0.54; color: root.palette.mid }
-            GradientStop { position: 1.0; color: root.palette.bottom }
+            GradientStop { position: 0.0; color: root.weatherPalette.top }
+            GradientStop { position: 0.54; color: root.weatherPalette.mid }
+            GradientStop { position: 1.0; color: root.weatherPalette.bottom }
         }
     }
 
@@ -1015,8 +1015,8 @@ Item {
         opacity: Math.max(0, 0.20 - root.scrollProgress * 0.08)
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: root.alphaColor(root.palette.glow, 0.18) }
-            GradientStop { position: 0.44; color: root.alphaColor(root.palette.glow, 0.04) }
+            GradientStop { position: 0.0; color: root.alphaColor(root.weatherPalette.glow, 0.18) }
+            GradientStop { position: 0.44; color: root.alphaColor(root.weatherPalette.glow, 0.04) }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -1041,7 +1041,7 @@ Item {
         onPaint: {
             const ctx = getContext("2d")
             const fade = Math.max(0, 1 - root.scrollProgress)
-            const colors = root.palette
+            const colors = root.weatherPalette
 
             ctx.clearRect(0, 0, width, height)
 
