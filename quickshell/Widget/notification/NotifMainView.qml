@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import qs.config
 import qs.Widget.common
 import QtQuick.Controls
+import Clavis.Notif
 
 Item {
     id: root
@@ -17,21 +18,22 @@ Item {
     readonly property int totalHeight: notifRepeater.count === 0 ? 120 : (notifRepeater.count * itemHeight + innerPadding * 2)
 
     // 数据驱动逻辑：过滤出有通知的 App ID
+    property var _appCountsTrigger: NotificationStore.appCounts
     property var filteredAppIds: {
+        var counts = NotificationStore.appCounts;
         var ids = [];
-        for (var appId in WidgetState.notifAppCounts) {
-            if (WidgetState.notifAppCounts[appId] > 0) ids.push(appId);
+        for (var appId in counts) {
+            if (counts[appId] > 0) ids.push(appId);
         }
         // 按照最新消息到达的时间戳进行降序排列 (最新的排最前)
         ids.sort(function(a, b) {
-            var timeA = (WidgetState.notifMessages[a] && WidgetState.notifMessages[a].length > 0) ? (WidgetState.notifMessages[a][0].timestamp || 0) : 0;
-            var timeB = (WidgetState.notifMessages[b] && WidgetState.notifMessages[b].length > 0) ? (WidgetState.notifMessages[b][0].timestamp || 0) : 0;
-            return timeB - timeA; 
+            return NotificationStore.lastTimestampForApp(b) - NotificationStore.lastTimestampForApp(a);
         });
         return ids;
     }
 
     function update() { notifRepeater.model = filteredAppIds; }
+    Connections { target: NotificationStore; function onDataChanged() { root.update(); } }
     function getAppIconSource(appId) { return appId === "system" ? "" : "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/apps/" + appId + ".svg"; }
     function getAppName(appId) { var names = { "system": "系统消息", "qq": "QQ", "wechat": "微信", "telegram": "Telegram", "discord": "Discord" }; return names[appId] || "未知应用"; }
     function getAppBrandColor(appId) {
@@ -106,7 +108,7 @@ Item {
                             Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                             width: countText.implicitWidth + 24; height: 28; radius: Sizes.rounding.chip; color: brandColor
                             Text {
-                                id: countText; anchors.centerIn: parent; text: WidgetState.notifAppCounts[modelData] + " 条消息"
+                                id: countText; anchors.centerIn: parent; text: (NotificationStore.appCounts[modelData] || 0) + " 条消息"
                                 font.pixelSize: Sizes.font.md; font.bold: true; color: modelData === "system" ? Colorscheme.on_primary : Colorscheme.on_surface
                             }
                         }

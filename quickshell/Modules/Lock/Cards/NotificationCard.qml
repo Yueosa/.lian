@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import qs.config 
+import qs.config
+import Clavis.Notif 
 
 Rectangle {
     id: root
@@ -33,7 +34,7 @@ Rectangle {
             
             // 计数器
             Rectangle {
-                visible: NotificationStore.model.count > 0
+                visible: NotificationStore.recentModel.count > 0
                 width: countText.contentWidth + 12
                 height: 18
                 radius: 9
@@ -41,7 +42,7 @@ Rectangle {
                 Text {
                     id: countText
                     anchors.centerIn: parent
-                    text: NotificationStore.model.count
+                    text: NotificationStore.recentModel.count
                     color: Colorscheme.on_primary_container
                     font.family: Sizes.fontFamilyMono
                     font.pixelSize: Sizes.font.xs
@@ -54,7 +55,7 @@ Rectangle {
             // 清除按钮
             Text {
                 text: "Clear All"
-                visible: NotificationStore.model.count > 0
+                visible: NotificationStore.recentModel.count > 0
                 color: Colorscheme.primary
                 font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.sm
@@ -63,7 +64,7 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: NotificationStore.clear()
+                    onClicked: NotificationStore.clearAll()
                 }
             }
         }
@@ -81,12 +82,12 @@ Rectangle {
             clip: true
             spacing: Sizes.spacing.md
             
-            model: NotificationStore.model
+            model: NotificationStore.recentModel
 
             // 空状态提示
             Text {
                 anchors.centerIn: parent
-                visible: NotificationStore.model.count === 0
+                visible: NotificationStore.recentModel.count === 0
                 text: "No new notifications"
                 color: Colorscheme.on_surface_variant
                 font.family: Sizes.fontFamily
@@ -187,7 +188,7 @@ Rectangle {
                         font.pixelSize: Sizes.font.xxl
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: NotificationStore.remove(index)
+                            onClicked: NotificationStore.dismissByRowId(model.dbId)
                         }
                     }
                 }

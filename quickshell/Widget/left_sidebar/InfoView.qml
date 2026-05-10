@@ -5,6 +5,7 @@ import Quickshell
 import qs.config
 import qs.Widget.common
 import qs.Modules.DynamicIsland.OverviewContent
+import Clavis.Notif
 import "../notification"
 
 Item {
@@ -243,11 +244,7 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            WidgetState.notifAppCounts = {};
-                            WidgetState.notifMessages = {};
-                            WidgetState.notifDataChanged();
-                        }
+                        onClicked: NotificationStore.clearAll()
                     }
                 }
             }

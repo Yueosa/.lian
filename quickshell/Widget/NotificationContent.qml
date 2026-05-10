@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import qs.config
 import qs.Widget.common
 import qs.Modules.DynamicIsland.OverviewContent
+import Clavis.Notif
 import "./notification" 
 
 Item {
@@ -12,13 +13,13 @@ Item {
     readonly property int activeViewHeight: currentViewItem ? currentViewItem.totalHeight : 80
     readonly property int totalHeight: activeViewHeight + 40 + theme.padding * 2
     
-    property var allMessages: WidgetState.getAllMessages()
+    property var allMessages: NotificationStore.allMessages()
     property bool hasMessages: allMessages.length > 0
 
     Connections { 
-        target: WidgetState;
-        function onNotifDataChanged() { 
-            root.allMessages = WidgetState.getAllMessages();
+        target: NotificationStore;
+        function onDataChanged() { 
+            root.allMessages = NotificationStore.allMessages();
             mainView.update(); detailView.update();
             allView.update(); 
         } 
@@ -107,12 +108,7 @@ Item {
                     anchors.fill: parent; hoverEnabled: true
                     cursorShape: root.hasMessages ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onClicked: {
-                        if (root.hasMessages) {
-                            var msgs = WidgetState.getAllMessages();
-                            for (var i = 0; i < msgs.length; i++) {
-                                WidgetState.dismissMessage(msgs[i].appId, msgs[i].id);
-                            }
-                        }
+                        if (root.hasMessages) NotificationStore.clearAll();
                     }
                 }
             }

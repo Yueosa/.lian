@@ -4,14 +4,16 @@ import Quickshell
 import QtQuick.Layouts
 import qs.config
 import qs.Widget.common
+import Clavis.Notif
 import "../../JS/TimeUtils.js" as TimeUtils
 
 Item {
     id: root
     Theme { id: theme }
 
-    property var allMessages: WidgetState.getAllMessages()
-    function update() { allMessages = WidgetState.getAllMessages(); }
+    property var allMessages: NotificationStore.allMessages()
+    function update() { allMessages = NotificationStore.allMessages(); }
+    Connections { target: NotificationStore; function onDataChanged() { root.update(); } }
 
     // 【核心同步 1】：统一高度计算公式
     readonly property int totalHeight: notifList.contentHeight > 0 ? notifList.contentHeight + 40 : 120
@@ -86,7 +88,7 @@ Item {
                         MouseArea { 
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor; hoverEnabled: true
                             onEntered: parent.opacity = 1; onExited: parent.opacity = 0.6
-                            onClicked: WidgetState.dismissMessage(modelData.appId, modelData.id) 
+                            onClicked: NotificationStore.dismiss(modelData.id) 
                         }
                     }
                 }
@@ -102,7 +104,7 @@ Item {
             
             DragHandler {
                 id: dragHandler; target: parent; xAxis.enabled: true; yAxis.enabled: false
-                onActiveChanged: { if (!active) { if (Math.abs(parent.x) > 60) { WidgetState.dismissMessage(modelData.appId, modelData.id) } else { snapBackAnimation.start() } } }
+                onActiveChanged: { if (!active) { if (Math.abs(parent.x) > 60) { NotificationStore.dismiss(modelData.id) } else { snapBackAnimation.start() } } }
             }
             x: dragHandler.active ? dragHandler.translation.x : 0
             NumberAnimation on x { id: snapBackAnimation; to: 0; duration: 250; running: false; easing.type: Easing.OutQuint }

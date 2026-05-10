@@ -4,6 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import qs.config
 import qs.Widget.common
+import Clavis.Notif
 import "../../JS/TimeUtils.js" as TimeUtils
 
 Item {
@@ -32,15 +33,17 @@ Item {
     }
 
     function update() { 
-        var msgs = WidgetState.notifMessages[root.appId];
-        filteredMessages = msgs ? msgs : []; 
+        filteredMessages = root.appId ? NotificationStore.messagesForApp(root.appId) : [];
     }
+    Connections { target: NotificationStore; function onDataChanged() { root.update(); } }
 
     // 筛选出其他有消息的应用，用于生成悬浮菜单
+    property var _appCountsTrigger: NotificationStore.appCounts
     property var otherApps: {
+        var counts = NotificationStore.appCounts;
         var ids = [];
-        for (var id in WidgetState.notifAppCounts) {
-            if (WidgetState.notifAppCounts[id] > 0 && id !== root.appId) {
+        for (var id in counts) {
+            if (counts[id] > 0 && id !== root.appId) {
                 ids.push(id);
             }
         }
@@ -218,7 +221,7 @@ Item {
                             
                             Rectangle {
                                 width: 18; height: 18; radius: Sizes.rounding.md; color: theme.primary
-                                Text { anchors.centerIn: parent; text: WidgetState.notifAppCounts[modelData]; font.pixelSize: Sizes.font.xs; font.bold: true; color: Colorscheme.on_primary }
+                                Text { anchors.centerIn: parent; text: NotificationStore.appCounts[modelData] || 0; font.pixelSize: Sizes.font.xs; font.bold: true; color: Colorscheme.on_primary }
                             }
                         }
                         MouseArea {
@@ -319,5 +322,5 @@ Item {
         }
     }
 
-    function dismissMessage(messageId) { WidgetState.dismissMessage(appId, messageId); }
+    function dismissMessage(messageId) { NotificationStore.dismiss(messageId); }
 }
