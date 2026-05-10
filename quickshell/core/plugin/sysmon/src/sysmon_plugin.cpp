@@ -1,6 +1,8 @@
 #include "sysmon_plugin.h"
 #include "sysmon_backend.h"
 
+#include <QtGlobal>
+
 SysmonPlugin::SysmonPlugin(QObject *parent) 
     : QObject(parent),
     m_cpuUsage(0), m_ramUsage(0), m_ramUsedGB(0), m_ramTotalGB(0),
@@ -50,6 +52,43 @@ double SysmonPlugin::netDownBps() const { return m_netDownBps; }
 double SysmonPlugin::netUpBps() const { return m_netUpBps; }
 ProcessModel* SysmonPlugin::processes() const { return m_processModel; }
 QVariantMap SysmonPlugin::getProcessDetails(int pid) const { return SysmonBackend::instance().getProcessDetails(pid); }
+QVariantList SysmonPlugin::buildChartPoints(const QVariantList &values,
+                                            double maxValue,
+                                            double chartWidth,
+                                            double chartHeight,
+                                            double slideProgress) const {
+    QVariantList out;
+    const int n = values.size();
+    if (n < 2 || chartWidth <= 0 || chartHeight <= 0) {
+        return out;
+    }
+
+    const double maxV = qMax(0.0001, maxValue);
+    const double padX = 2.0;
+    const double padY = 4.0;
+    const double baseY = chartHeight - padY;
+    const double usableW = qMax(1.0, chartWidth - padX * 2.0);
+    const double usableH = qMax(1.0, chartHeight - padY * 2.0);
+    const double seg = qMax(1, n - 1);
+    const double prog = qBound(0.0, slideProgress, 1.0);
+
+    out.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        const double t = (static_cast<double>(i) + 1.0 - prog) / seg;
+        double v = qMax(0.0, values.at(i).toDouble());
+        if (i == n - 1 && n >= 2) {
+            const double prev = qMax(0.0, values.at(n - 2).toDouble());
+            v = prev + (v - prev) * prog;
+        }
+
+        QVariantMap point;
+        point.insert(QStringLiteral("x"), padX + usableW * t);
+        point.insert(QStringLiteral("y"), baseY - (v / maxV) * usableH);
+        out.push_back(point);
+    }
+
+    return out;
+}
 
 // Medium
 double SysmonPlugin::coreTemp() const { return m_coreTemp; }

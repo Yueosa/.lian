@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QVariantList>
 #include <QtQml/qqmlregistration.h>
 #include "process_model.h"
 
@@ -48,6 +49,11 @@ public:
     explicit SysmonPlugin(QObject *parent = nullptr);
     ~SysmonPlugin() override = default;
     Q_INVOKABLE QVariantMap getProcessDetails(int pid) const;
+    Q_INVOKABLE QVariantList buildChartPoints(const QVariantList &values,
+                                              double maxValue,
+                                              double chartWidth,
+                                              double chartHeight,
+                                              double slideProgress) const;
 
     // Fast
     double cpuUsage() const;

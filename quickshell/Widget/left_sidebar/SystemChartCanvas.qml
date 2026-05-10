@@ -1,4 +1,5 @@
 import QtQuick
+import Clavis.Sysmon 1.0
 
 // ============================================================
 // SystemView 折线图: 网络/RAM/Load 三标签页, 平滑 Catmull-Rom 曲线 + 滑入动画
@@ -61,24 +62,11 @@ Canvas {
     // 构建平滑路径: 把 N 个采样点做带滑动偏移的 Catmull-Rom -> Cubic Bezier
     function _buildPath(ctx, points, maxValue) {
         if (!points || points.length < 2 || width <= 0 || height <= 0) return null
-        const maxV = Math.max(0.0001, maxValue)
-        const padX = 2, padY = 4
-        const baseY  = height - padY
-        const usableW = Math.max(1, width  - padX * 2)
-        const usableH = Math.max(1, height - padY * 2)
-        const N = points.length, seg = Math.max(1, N - 1)
-        const prog = Math.max(0, Math.min(1, slideProgress))
+        const pts = SysmonPlugin.buildChartPoints(points, maxValue, width, height, slideProgress)
+        if (!pts || pts.length < 2) return null
 
-        const pts = new Array(N)
-        for (let i = 0; i < N; ++i) {
-            const t = (i + 1 - prog) / seg
-            let v = Math.max(0, Number(points[i] || 0))
-            if (i === N - 1 && N >= 2) {
-                const prev = Math.max(0, Number(points[N - 2] || 0))
-                v = prev + (v - prev) * prog
-            }
-            pts[i] = { x: padX + usableW * t, y: baseY - (v / maxV) * usableH }
-        }
+        const N = pts.length
+        const baseY = height - 4
         ctx.beginPath()
         ctx.moveTo(pts[0].x, pts[0].y)
         for (let i = 0; i < N - 1; ++i) {
