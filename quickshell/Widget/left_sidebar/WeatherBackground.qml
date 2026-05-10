@@ -58,8 +58,12 @@ Item {
         return strength >= 8.0 && (weatherType === "clear" || weatherType === "partly" || weatherType === "overcast")
     }
 
-    function palette() {
-        switch (visualWeatherType() + (night ? "_night" : "_day")) {
+    // 调色板按 (visualWeatherType, night) 缓存为 binding, 仅在依赖变化时重算;
+    // 调用方按 property 访问 (root.palette.top), 不再每帧 new 9 字段对象。
+    readonly property var palette: _computePalette(visualWeatherType() + (night ? "_night" : "_day"))
+
+    function _computePalette(key) {
+        switch (key) {
         case "clear_day":
             return {
                 top: "#7fc5e5",
@@ -1001,9 +1005,9 @@ Item {
         opacity: Math.max(0.46, 0.96 - root.scrollProgress * 0.28)
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: root.palette().top }
-            GradientStop { position: 0.54; color: root.palette().mid }
-            GradientStop { position: 1.0; color: root.palette().bottom }
+            GradientStop { position: 0.0; color: root.palette.top }
+            GradientStop { position: 0.54; color: root.palette.mid }
+            GradientStop { position: 1.0; color: root.palette.bottom }
         }
     }
 
@@ -1012,8 +1016,8 @@ Item {
         opacity: Math.max(0, 0.20 - root.scrollProgress * 0.08)
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: root.alphaColor(root.palette().glow, 0.18) }
-            GradientStop { position: 0.44; color: root.alphaColor(root.palette().glow, 0.04) }
+            GradientStop { position: 0.0; color: root.alphaColor(root.palette.glow, 0.18) }
+            GradientStop { position: 0.44; color: root.alphaColor(root.palette.glow, 0.04) }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -1038,7 +1042,7 @@ Item {
         onPaint: {
             const ctx = getContext("2d")
             const fade = Math.max(0, 1 - root.scrollProgress)
-            const colors = root.palette()
+            const colors = root.palette
 
             ctx.clearRect(0, 0, width, height)
 
@@ -1165,25 +1169,19 @@ Item {
             const stepScale = dt / root.frameBaseDt
             lastTickMs = now
             const base = root.driftBaseSpeed()
-            const nextBands = []
-            for (let i = 0; i < root.cloudBands.length; ++i) {
-                const band = root.cloudBands[i]
-                let wrappedOffset = band.offset
-                if (base > 0) {
-                    const nextOffset = band.offset + base * band.speed * stepScale
-                    wrappedOffset = nextOffset
-                    if (wrappedOffset > root.width)
-                        wrappedOffset = wrappedOffset - root.width
+            // 原地推进 cloudBands.offset, 避免每帧重建数组+对象
+            // (canvas.requestPaint() 在末尾显式触发, 不依赖 property 通知)
+            if (base > 0) {
+                const bands = root.cloudBands
+                const bandsLen = bands.length
+                const w = root.width
+                for (let i = 0; i < bandsLen; ++i) {
+                    const band = bands[i]
+                    let nextOffset = band.offset + base * band.speed * stepScale
+                    if (nextOffset > w) nextOffset -= w
+                    band.offset = nextOffset
                 }
-                nextBands.push({
-                    offset: wrappedOffset,
-                    height: band.height,
-                    arch: band.arch,
-                    speed: band.speed,
-                    toneIndex: band.toneIndex
-                })
             }
-            root.cloudBands = nextBands
             if (root.isRainScene()) {
                 root.updateRain(dt)
                 root.updateSplashes(dt)
