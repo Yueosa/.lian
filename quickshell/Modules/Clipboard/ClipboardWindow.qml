@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
-import Quickshell.Io
 import Quickshell.Wayland
+import Clavis.Clipboard
 import qs.config
 
 PanelWindow {
@@ -24,52 +24,23 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    property var entries: []
+    // 后端模型：最新 50 条（搜索时为过滤后的结果）
+    readonly property var entries: ClipboardStore.recentEntries
     property var rows: []
     property int selectedGlobalIndex: 0
-    property string jsonBuffer: ""
     property bool expandedTextMode: false
-    property bool loading: false
     property int rowRenderLimit: 0
     property string searchQuery: ""
 
-    // 过滤后的条目：文本按 text / preview / full_text 子串匹配，
-    // 图片按 label 匹配；空查询直接透传。case-insensitive。
-    readonly property var filteredEntries: {
-        const q = searchQuery.trim().toLowerCase();
-        if (q.length === 0) return entries;
-        const out = [];
-        for (let i = 0; i < entries.length; i++) {
-            const it = entries[i];
-            let hay = "";
-            if (it.kind === "image") {
-                hay = (it.label || "") + " " + (it.mime || "");
-            } else if (it.kind === "unknown") {
-                hay = (it.preview || "");
-            } else {
-                hay = (it.full_text || "") + " " + (it.text || "") + " " + (it.preview || "");
-            }
-            if (hay.toLowerCase().indexOf(q) !== -1) out.push(it);
-        }
-        return out;
-    }
     property int imageColumns: {
         const usable = Math.max(360, windowCard.width - 80);
         const targetCell = 180;
         return Math.max(2, Math.min(6, Math.floor((usable + 12) / (targetCell + 12))));
     }
 
-    function openWindow() {
-        visible = true;
-    }
-
-    function closeWindow() {
-        visible = false;
-    }
-
-    function toggleWindow() {
-        visible = !visible;
-    }
+    function openWindow()  { visible = true; }
+    function closeWindow() { visible = false; }
+    function toggleWindow(){ visible = !visible; }
 
     function totalItems() {
         let count = 0;
@@ -95,10 +66,7 @@ PanelWindow {
 
     function clampSelected() {
         const total = totalItems();
-        if (total <= 0) {
-            selectedGlobalIndex = 0;
-            return;
-        }
+        if (total <= 0) { selectedGlobalIndex = 0; return; }
         selectedGlobalIndex = Math.max(0, Math.min(selectedGlobalIndex, total - 1));
     }
 
@@ -124,10 +92,10 @@ PanelWindow {
         selectedGlobalIndex = globalIndexFor(targetRow, targetCol);
     }
 
+    // 把模型按 image / text / unknown 分行；image 行按列数切块
     function rebuildRows() {
         const nextRows = [];
         let pendingImages = [];
-        const source = filteredEntries;
 
         function flushImages() {
             if (pendingImages.length > 0) {
@@ -139,16 +107,17 @@ PanelWindow {
             }
         }
 
-        for (let i = 0; i < source.length; i++) {
-            const item = source[i];
-            if (item.kind === "image") {
-                pendingImages.push(item);
-            } else if (item.kind === "unknown") {
+        const total = entries.count();
+        for (let i = 0; i < total; i++) {
+            const it = entries.get(i);
+            if (it.kind === "image") {
+                pendingImages.push(it);
+            } else if (it.kind === "unknown") {
                 flushImages();
-                nextRows.push({ type: "unknown", items: [item] });
+                nextRows.push({ type: "unknown", items: [it] });
             } else {
                 flushImages();
-                nextRows.push({ type: "text", items: [item] });
+                nextRows.push({ type: "text", items: [it] });
             }
         }
         flushImages();
@@ -157,9 +126,7 @@ PanelWindow {
         if (rowRenderLimit <= 0 || rowRenderLimit > rows.length) {
             rowRenderLimit = Math.min(rows.length, 24);
         }
-        if (rowRenderLimit < rows.length && !lazyRowsTimer.running) {
-            lazyRowsTimer.start();
-        }
+        if (rowRenderLimit < rows.length && !lazyRowsTimer.running) lazyRowsTimer.start();
         clampSelected();
     }
 
@@ -180,14 +147,14 @@ PanelWindow {
     }
 
     function selectedIsText() {
-        const item = selectedItem();
-        return !!item && item.kind === "text";
+        const it = selectedItem();
+        return !!it && it.kind === "text";
     }
 
     function selectedExpandedText() {
-        const item = selectedItem();
-        if (!item) return "";
-        return item.full_text || item.text || item.preview || "";
+        const it = selectedItem();
+        if (!it) return "";
+        return it.preview || "";
     }
 
     function toggleExpandedText() {
@@ -209,78 +176,26 @@ PanelWindow {
     }
 
     function clearClipboardHistory() {
-        Quickshell.execDetached(["bash", "-lc", "cliphist wipe >/dev/null 2>&1"]);
-        entries = [];
-        rows = [];
+        ClipboardStore.clearAll();
         selectedGlobalIndex = 0;
         expandedTextMode = false;
     }
 
     function applySelectedItem() {
-        if (rows.length === 0) return;
-        const pos = locateGlobalIndex(selectedGlobalIndex);
-        const item = rows[pos.row].items[pos.col];
-        if (!item || !item.raw_b64) return;
-
-        const safeB64 = item.raw_b64.replace(/'/g, "'\\''");
-        // 使用脚本提供的「剪贴板原始 mime」（paste_mime）回填 wl-copy。
-        // 关键区分：
-        //   - 真二进制图片：paste_mime = image/png 等 → wl-copy --type image/png
-        //   - QQ 等 HTML 富文本图片：paste_mime = text/html → 必须以 HTML 回填
-        //     若误用 image/png 回填，QQ 会把 HTML 字节当作文件流，识别为「发送文件」
-        //   - 纯文本：paste_mime = text/plain
-        // -n 抑制 wl-copy 在 text 模式下额外追加换行
-        let wlcopy = "wl-copy -n";
-        const pasteMime = item.paste_mime || item.mime || "";
-        const safeMime = String(pasteMime).replace(/[^A-Za-z0-9/.+-]/g, "");
-        if (safeMime.length > 0) wlcopy = "wl-copy -n --type " + safeMime;
-        let cmd = "printf '%s' '" + safeB64 + "' | base64 -d | cliphist decode | " + wlcopy;
-
-        // HTML 图片条目优先使用脚本提供的单行 paste_html，避免多行 html/body 包装带来的前导空行。
-        if (safeMime === "text/html" && item.paste_html) {
-            const safeHtml = String(item.paste_html).replace(/'/g, "'\\''");
-            cmd = "printf '%s' '" + safeHtml + "' | " + wlcopy;
-        }
-        Quickshell.execDetached(["bash", "-lc", cmd]);
+        const it = selectedItem();
+        if (!it) return;
+        ClipboardStore.pasteEntry(it.entryId);
         expandedTextMode = false;
         root.closeWindow();
     }
 
-
-    function refresh() {
-        entries = [];
-        rows = [];
-        rowRenderLimit = 0;
-        jsonBuffer = "";
-        loading = true;
-        loadProcess.running = false;
-        loadProcess.running = true;
-    }
-
-    function appendChunk(chunk) {
-        const text = (chunk === undefined || chunk === null) ? "" : String(chunk);
-        if (text.length === 0) return false;
-
-        let changed = false;
-        const parts = text.split('\n');
-        for (let i = 0; i < parts.length; i++) {
-            const line = parts[i].trim();
-            if (line.length === 0) continue;
-            try {
-                const obj = JSON.parse(line);
-                root.entries.push(obj);
-                changed = true;
-            } catch (e) {
-                // Keep unparsed fragments as fallback for onExited.
-                root.jsonBuffer += line;
-            }
-        }
-
-        return changed;
-    }
-
     function scheduleRebuildRows() {
         if (!rebuildTimer.running) rebuildTimer.start();
+    }
+
+    Connections {
+        target: ClipboardStore
+        function onEntriesChanged() { root.scheduleRebuildRows(); }
     }
 
     Timer {
@@ -295,38 +210,17 @@ PanelWindow {
         interval: 8
         repeat: true
         onTriggered: {
-            if (root.rowRenderLimit >= root.rows.length) {
-                stop();
-                return;
-            }
+            if (root.rowRenderLimit >= root.rows.length) { stop(); return; }
             root.rowRenderLimit = Math.min(root.rows.length, root.rowRenderLimit + 24);
         }
     }
 
-    readonly property string clipboardDumpScriptPath: Qt.resolvedUrl("../../scripts/clipboard_dump.py").toString().replace("file://", "")
-
-    Process {
-        id: loadProcess
-        command: ["python3", root.clipboardDumpScriptPath, "--limit", "100"]
-        running: false
-        stdout: SplitParser {
-            onRead: data => {
-                const changed = root.appendChunk(data);
-                if (changed) root.scheduleRebuildRows();
-            }
-        }
-        onExited: {
-            root.appendChunk(root.jsonBuffer);
-            rebuildTimer.stop();
-            root.rebuildRows();
-            root.jsonBuffer = "";
-            root.loading = false;
-        }
-    }
     onVisibleChanged: {
         if (visible) {
             searchQuery = "";
-            refresh();
+            ClipboardStore.searchKeyword = "";
+            ClipboardStore.refresh();
+            scheduleRebuildRows();
             selectedGlobalIndex = 0;
             expandedTextMode = false;
             searchField.forceActiveFocus();
@@ -334,21 +228,17 @@ PanelWindow {
     }
 
     onSearchQueryChanged: {
+        ClipboardStore.searchKeyword = searchQuery;
         selectedGlobalIndex = 0;
         expandedTextMode = false;
-        scheduleRebuildRows();
     }
 
     onSelectedGlobalIndexChanged: {
-        if (expandedTextMode && !selectedIsText()) {
-            expandedTextMode = false;
-        }
-        Qt.callLater(ensureSelectedVisible)
+        if (expandedTextMode && !selectedIsText()) expandedTextMode = false;
+        Qt.callLater(ensureSelectedVisible);
     }
     onRowsChanged: {
-        if (expandedTextMode && !selectedIsText()) {
-            expandedTextMode = false;
-        }
+        if (expandedTextMode && !selectedIsText()) expandedTextMode = false;
     }
     onImageColumnsChanged: rebuildRows()
 
@@ -370,22 +260,13 @@ PanelWindow {
         focus: true
 
         Keys.onEscapePressed: event => {
-            if (expandedTextMode) {
-                expandedTextMode = false;
-                event.accepted = true;
-                return;
-            }
-            if (root.searchQuery.length > 0) {
-                root.searchQuery = "";
-                event.accepted = true;
-                return;
-            }
+            if (expandedTextMode) { expandedTextMode = false; event.accepted = true; return; }
+            if (root.searchQuery.length > 0) { root.searchQuery = ""; event.accepted = true; return; }
             root.closeWindow();
             event.accepted = true;
         }
 
         Keys.onPressed: event => {
-            // Ctrl+Backspace = 清空历史（会被 TextField 默认捕获，故在 windowCard 之外的截断）
             if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Backspace || event.key === Qt.Key_K)) {
                 root.clearClipboardHistory();
                 event.accepted = true;
@@ -453,26 +334,13 @@ PanelWindow {
                                 event.accepted = true;
                             }
                             Keys.onLeftPressed: event => {
-                                // 仅在搜索框为空时把左右键当做图片网格导航；否则给 TextField 做光标移动
-                                if (text.length === 0) {
-                                    root.moveHorizontal(-1);
-                                    event.accepted = true;
-                                }
+                                if (text.length === 0) { root.moveHorizontal(-1); event.accepted = true; }
                             }
                             Keys.onRightPressed: event => {
-                                if (text.length === 0) {
-                                    root.moveHorizontal(1);
-                                    event.accepted = true;
-                                }
+                                if (text.length === 0) { root.moveHorizontal(1); event.accepted = true; }
                             }
-                            Keys.onReturnPressed: event => {
-                                root.applySelectedItem();
-                                event.accepted = true;
-                            }
-                            Keys.onEnterPressed: event => {
-                                root.applySelectedItem();
-                                event.accepted = true;
-                            }
+                            Keys.onReturnPressed: event => { root.applySelectedItem(); event.accepted = true; }
+                            Keys.onEnterPressed:  event => { root.applySelectedItem(); event.accepted = true; }
                             Keys.onPressed: event => {
                                 if ((event.modifiers & Qt.ControlModifier)
                                     && (event.key === Qt.Key_Backspace || event.key === Qt.Key_K)) {
@@ -571,7 +439,7 @@ PanelWindow {
                 ListView {
                     id: rowsList
                     anchors.fill: parent
-                    visible: root.rows.length > 0 || root.loading
+                    visible: root.rows.length > 0
                     clip: true
                     spacing: 14
                     boundsBehavior: Flickable.StopAtBounds
@@ -615,7 +483,6 @@ PanelWindow {
                             }
                         }
 
-                        // 未知 / 二进制条目：占位条，仍可选中复制原始内容，但不渲染乱码
                         Rectangle {
                             visible: modelData.type === "unknown"
                             anchors.fill: parent
@@ -688,11 +555,13 @@ PanelWindow {
                                     Image {
                                         anchors.fill: parent
                                         anchors.margins: 4
-                                        source: modelData.thumb || ""
+                                        source: modelData.thumbUrl || ""
                                         fillMode: Image.PreserveAspectCrop
                                         smooth: true
                                         cache: true
                                         asynchronous: true
+                                        sourceSize.width: imageRow.cellWidth * 2
+                                        sourceSize.height: imageRow.cellHeight * 2
                                     }
 
                                     MouseArea {
@@ -710,28 +579,7 @@ PanelWindow {
 
                 Item {
                     anchors.fill: parent
-                    visible: root.loading && root.rows.length === 0
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 10
-
-                        BusyIndicator {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            running: true
-                        }
-
-                        Text {
-                            text: "正在加载剪贴板历史..."
-                            font.pixelSize: Sizes.font.lg
-                            color: Colorscheme.on_surface_variant
-                        }
-                    }
-                }
-
-                Item {
-                    anchors.fill: parent
-                    visible: root.rows.length === 0 && !root.loading
+                    visible: root.rows.length === 0
 
                     Column {
                         anchors.centerIn: parent
