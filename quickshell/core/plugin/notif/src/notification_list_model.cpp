@@ -70,12 +70,16 @@ QVariantMap NotificationListModel::get(int row) const {
 }
 
 void NotificationListModel::setEntries(const QVector<NotificationRecord>& v) {
+    const int oldCount = m_data.size();
     beginResetModel();
     m_data = v;
     endResetModel();
+    if (m_data.size() != oldCount)
+        emit countChanged();
 }
 
 void NotificationListModel::prepend(const NotificationRecord& r, int cap) {
+    const int oldCount = m_data.size();
     beginInsertRows({}, 0, 0);
     m_data.prepend(r);
     endInsertRows();
@@ -85,14 +89,19 @@ void NotificationListModel::prepend(const NotificationRecord& r, int cap) {
         m_data.removeAt(last);
         endRemoveRows();
     }
+    if (m_data.size() != oldCount)
+        emit countChanged();
 }
 
 void NotificationListModel::removeByNotifId(qint64 notifId) {
+    const int oldCount = m_data.size();
     for (int i = 0; i < m_data.size(); ++i) {
         if (m_data.at(i).notifId == notifId) {
             beginRemoveRows({}, i, i);
             m_data.removeAt(i);
             endRemoveRows();
+            if (m_data.size() != oldCount)
+                emit countChanged();
             return;
         }
     }
@@ -103,6 +112,7 @@ void NotificationListModel::clearAll() {
     beginResetModel();
     m_data.clear();
     endResetModel();
+    emit countChanged();
 }
 
 } // namespace clavis::services

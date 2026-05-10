@@ -11,6 +11,7 @@ namespace clavis::services {
 
 class NotificationListModel : public QAbstractListModel {
     Q_OBJECT
+    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 public:
     enum Roles {
         DbIdRole = Qt::UserRole + 1,
@@ -40,6 +41,9 @@ public:
     void prepend(const clavis::store::NotificationRecord& r, int cap);
     void removeByNotifId(qint64 notifId);
     void clearAll();
+
+signals:
+    void countChanged();
 
 private:
     QVector<clavis::store::NotificationRecord> m_data;
