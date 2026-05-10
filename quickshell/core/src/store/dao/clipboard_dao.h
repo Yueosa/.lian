@@ -44,8 +44,6 @@ public:
 
     // 标记最近使用（用于排序提示，目前未参与排序，预留）
     bool touch(qint64 id);
-
-    int totalCount() const;
 };
 
 } // namespace clavis::store

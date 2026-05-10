@@ -69,8 +69,6 @@ ClipboardStore::ClipboardStore(QObject* parent)
 
     // 初始装载（可能为空）
     reload();
-    m_ready = true;
-    emit readyChanged();
 }
 
 ClipboardStore::~ClipboardStore() {
@@ -94,13 +92,7 @@ void ClipboardStore::onWatcherUpdated() { reload(); }
 void ClipboardStore::reload() {
     if (!m_dao || !m_model) return;
     m_model->setEntries(m_dao->recent(kRecentLimit, m_search));
-    int n = m_dao->totalCount();
-    if (n != m_total) {
-        m_total = n;
-        emit entriesChanged();
-    } else {
-        emit entriesChanged();
-    }
+    emit entriesChanged();
 }
 
 void ClipboardStore::refresh() {
@@ -139,16 +131,6 @@ void ClipboardStore::pasteEntry(qint64 id) {
     QProcess::startDetached(QStringLiteral("bash"),
                             { QStringLiteral("-lc"), cmd });
     m_dao->touch(id);
-}
-
-void ClipboardStore::removeEntry(qint64 id) {
-    if (!m_dao) return;
-    // 让 cliphist 也忘掉
-    QProcess::startDetached(QStringLiteral("bash"),
-        { QStringLiteral("-lc"),
-          QStringLiteral("printf '%1\\n' | cliphist delete >/dev/null 2>&1").arg(id) });
-    m_dao->remove(id);
-    reload();
 }
 
 void ClipboardStore::clearAll() {

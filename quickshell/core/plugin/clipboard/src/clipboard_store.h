@@ -25,8 +25,6 @@ class ClipboardStore : public QObject {
 
     Q_PROPERTY(ClipboardListModel* recentEntries READ recentEntries CONSTANT)
     Q_PROPERTY(QString searchKeyword READ searchKeyword WRITE setSearchKeyword NOTIFY searchKeywordChanged)
-    Q_PROPERTY(int totalCount READ totalCount NOTIFY entriesChanged)
-    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
 
 public:
     explicit ClipboardStore(QObject* parent = nullptr);
@@ -35,18 +33,14 @@ public:
     ClipboardListModel* recentEntries() const { return m_model; }
     QString searchKeyword() const { return m_search; }
     void setSearchKeyword(const QString& s);
-    int totalCount() const { return m_total; }
-    bool ready() const { return m_ready; }
 
     Q_INVOKABLE void pasteEntry(qint64 id);
-    Q_INVOKABLE void removeEntry(qint64 id);
     Q_INVOKABLE void clearAll();
     Q_INVOKABLE void refresh();
 
 signals:
     void entriesChanged();
     void searchKeywordChanged();
-    void readyChanged();
 
 private slots:
     void onWatcherUpdated();
@@ -62,8 +56,6 @@ private:
     QThread*                      m_worker = nullptr;
     QString                       m_cacheDir;
     QString                       m_search;
-    int                           m_total = 0;
-    bool                          m_ready = false;
 };
 
 } // namespace clavis::services

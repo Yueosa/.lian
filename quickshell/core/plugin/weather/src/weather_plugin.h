@@ -13,14 +13,11 @@ class WeatherPlugin : public QObject {
 
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(bool hasValidData READ hasValidData NOTIFY dataChanged)
-    Q_PROPERTY(bool hasManualLocation READ hasManualLocation NOTIFY dataChanged)
     Q_PROPERTY(QString status READ status NOTIFY dataChanged)
-    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY dataChanged)
     Q_PROPERTY(QString locationName READ locationName NOTIFY dataChanged)
     Q_PROPERTY(double latitude READ latitude NOTIFY dataChanged)
     Q_PROPERTY(double longitude READ longitude NOTIFY dataChanged)
     Q_PROPERTY(QString lastUpdated READ lastUpdated NOTIFY dataChanged)
-    Q_PROPERTY(QString nextRefreshAt READ nextRefreshAt NOTIFY dataChanged)
 
     Q_PROPERTY(double currentTemperatureC READ currentTemperatureC NOTIFY dataChanged)
     Q_PROPERTY(double currentFeelsLikeC READ currentFeelsLikeC NOTIFY dataChanged)
@@ -48,14 +45,11 @@ public:
 
     bool loading() const;
     bool hasValidData() const;
-    bool hasManualLocation() const;
     QString status() const;
-    QString errorMessage() const;
     QString locationName() const;
     double latitude() const;
     double longitude() const;
     QString lastUpdated() const;
-    QString nextRefreshAt() const;
 
     double currentTemperatureC() const;
     double currentFeelsLikeC() const;

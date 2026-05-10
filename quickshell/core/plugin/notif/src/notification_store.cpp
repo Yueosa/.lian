@@ -52,8 +52,6 @@ NotificationStore::NotificationStore(QObject* parent) : QObject(parent) {
     m_popup  = new NotificationListModel(this);
 
     reloadRecent();
-    m_ready = true;
-    emit readyChanged();
 }
 
 NotificationStore::~NotificationStore() {
@@ -80,10 +78,6 @@ QVariantMap NotificationStore::appCounts() const {
         out[it.key()] = it.value();
     }
     return out;
-}
-
-int NotificationStore::totalCount() const {
-    return m_dao ? m_dao->activeTotal() : 0;
 }
 
 QString NotificationStore::mapAppId(const QString& desktopEntry,
@@ -157,7 +151,6 @@ qint64 NotificationStore::ingest(const QVariantMap& n, bool showPopup) {
     m_recent->prepend(r, kHistoryLimit);
     if (showPopup) {
         m_popup->prepend(r, kPopupLimit);
-        emit popupAdded(notifId);
     }
     emit dataChanged();
     return notifId;
@@ -177,12 +170,6 @@ void NotificationStore::dismissByRowId(qint64 dbId) {
     reloadRecent();
 }
 
-void NotificationStore::clearApp(const QString& appId) {
-    if (!m_dao || appId.isEmpty()) return;
-    if (!m_dao->clear(appId)) return;
-    reloadRecent();
-}
-
 void NotificationStore::clearAll() {
     if (!m_dao) return;
     if (!m_dao->clear()) return;
@@ -193,10 +180,6 @@ void NotificationStore::clearAll() {
 void NotificationStore::removePopup(qint64 notifId) {
     if (!m_popup) return;
     m_popup->removeByNotifId(notifId);
-}
-
-void NotificationStore::clearPopups() {
-    if (m_popup) m_popup->clearAll();
 }
 
 QVariantList NotificationStore::messagesForApp(const QString& appId, int limit) const {

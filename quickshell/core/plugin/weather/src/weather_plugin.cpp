@@ -18,14 +18,11 @@ WeatherPlugin::WeatherPlugin(QObject *parent)
 
 bool WeatherPlugin::loading() const { return m_backend.loading(); }
 bool WeatherPlugin::hasValidData() const { return m_backend.snapshot().valid; }
-bool WeatherPlugin::hasManualLocation() const { return m_backend.hasManualLocation(); }
 QString WeatherPlugin::status() const { return m_backend.snapshot().status; }
-QString WeatherPlugin::errorMessage() const { return m_backend.snapshot().errorMessage; }
 QString WeatherPlugin::locationName() const { return m_backend.snapshot().locationName; }
 double WeatherPlugin::latitude() const { return m_backend.snapshot().latitude; }
 double WeatherPlugin::longitude() const { return m_backend.snapshot().longitude; }
 QString WeatherPlugin::lastUpdated() const { return m_backend.snapshot().lastUpdated.toString(Qt::ISODate); }
-QString WeatherPlugin::nextRefreshAt() const { return m_backend.snapshot().nextRefreshAt.toString(Qt::ISODate); }
 
 double WeatherPlugin::currentTemperatureC() const { return currentValue("temperatureC", 0.0).toDouble(); }
 double WeatherPlugin::currentFeelsLikeC() const { return currentValue("feelsLikeC", currentTemperatureC()).toDouble(); }

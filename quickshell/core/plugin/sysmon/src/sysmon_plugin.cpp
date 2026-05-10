@@ -8,7 +8,7 @@ SysmonPlugin::SysmonPlugin(QObject *parent)
       m_coreTemp(0), m_gpuTemp(0), m_gpuUsage(0),
       m_load1(0), m_load5(0), m_load15(0), m_cpuFreqGHz(0),
       m_taskRunning(0), m_taskTotal(0),
-      m_fanRpm(0), m_batteryPercent(0), m_batteryHealth(100), m_batteryPowerW(0),
+      m_batteryPercent(0), m_batteryHealth(100), m_batteryPowerW(0),
       m_diskUsage(0), m_diskUsedGB(0), m_diskTotalGB(0),
       m_processModel(new ProcessModel(this))
 {
@@ -57,12 +57,10 @@ double SysmonPlugin::load15() const { return m_load15; }
 double SysmonPlugin::cpuFreqGHz() const { return m_cpuFreqGHz; }
 
 // Slow
-int SysmonPlugin::fanRpm() const { return m_fanRpm; }
 double SysmonPlugin::batteryPercent() const { return m_batteryPercent; }
 QString SysmonPlugin::batteryStatus() const { return m_batteryStatus; }
 int SysmonPlugin::batteryHealth() const { return m_batteryHealth; }
 double SysmonPlugin::batteryPowerW() const { return m_batteryPowerW; }
-bool SysmonPlugin::hasBattery() const { return SysmonBackend::instance().hasBattery(); }
 
 // Glacial
 double SysmonPlugin::diskUsage() const { return m_diskUsage; }
@@ -111,7 +109,6 @@ void SysmonPlugin::onSlowTick() {
     auto &be = SysmonBackend::instance();
     be.updateSlow();
     
-    m_fanRpm         = be.getFanRpm();
     m_batteryPercent = be.getBatteryPercent();
     m_batteryStatus  = be.getBatteryStatus();
     m_batteryHealth  = be.getBatteryHealth();

@@ -27,8 +27,6 @@ class NotificationStore : public QObject {
     Q_PROPERTY(NotificationListModel* recentModel READ recentModel CONSTANT)
     Q_PROPERTY(NotificationListModel* popupModel  READ popupModel  CONSTANT)
     Q_PROPERTY(QVariantMap appCounts  READ appCounts  NOTIFY dataChanged)
-    Q_PROPERTY(int totalCount         READ totalCount NOTIFY dataChanged)
-    Q_PROPERTY(bool ready             READ ready      NOTIFY readyChanged)
 
 public:
     explicit NotificationStore(QObject* parent = nullptr);
@@ -37,8 +35,6 @@ public:
     NotificationListModel* recentModel() const { return m_recent; }
     NotificationListModel* popupModel()  const { return m_popup;  }
     QVariantMap appCounts() const;
-    int totalCount() const;
-    bool ready() const { return m_ready; }
 
     // 入库；n 来自 QML NotificationServer。showPopup 控制是否进 popupModel（DnD 关闭时为 true）。
     Q_INVOKABLE qint64 ingest(const QVariantMap& n, bool showPopup);
@@ -47,14 +43,11 @@ public:
     Q_INVOKABLE void dismiss(qint64 notifId);
     // dismiss：按 DB row id
     Q_INVOKABLE void dismissByRowId(qint64 dbId);
-    // 单 app 全部 dismiss
-    Q_INVOKABLE void clearApp(const QString& appId);
     // 全部 dismiss
     Q_INVOKABLE void clearAll();
 
     // popup 模型操作（不影响历史）
     Q_INVOKABLE void removePopup(qint64 notifId);
-    Q_INVOKABLE void clearPopups();
 
     // 给 NotifMainView / NotifDetailView 用：返回某 app 最近活动通知数组
     Q_INVOKABLE QVariantList messagesForApp(const QString& appId, int limit = 50) const;
@@ -65,8 +58,6 @@ public:
 
 signals:
     void dataChanged();        // 历史数据有变更（ingest/dismiss/clear）
-    void readyChanged();
-    void popupAdded(qint64 notifId);
 
 private:
     void reloadRecent();
@@ -83,7 +74,6 @@ private:
     clavis::store::NotificationDao* m_dao = nullptr;
     NotificationListModel*          m_recent = nullptr;
     NotificationListModel*          m_popup  = nullptr;
-    bool m_ready = false;
     QString m_homeDir;
 };
 

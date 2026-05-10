@@ -187,17 +187,4 @@ bool ClipboardDao::touch(qint64 id) {
     return rc == SQLITE_DONE;
 }
 
-int ClipboardDao::totalCount() const {
-    auto* db = Database::instance().openReader();
-    if (!db) return 0;
-    sqlite3_stmt* st = nullptr;
-    int n = 0;
-    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM clipboard_entries;", -1, &st, nullptr) == SQLITE_OK) {
-        if (sqlite3_step(st) == SQLITE_ROW) n = sqlite3_column_int(st, 0);
-    }
-    sqlite3_finalize(st);
-    if (db != Database::instance().writer()) sqlite3_close(db);
-    return n;
-}
-
 } // namespace clavis::store

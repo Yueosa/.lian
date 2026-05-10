@@ -29,12 +29,10 @@ class SysmonPlugin : public QObject {
     Q_PROPERTY(double cpuFreqGHz READ cpuFreqGHz NOTIFY mediumDataChanged)
     
     // === 慢速组 (5s) ===
-    Q_PROPERTY(int fanRpm READ fanRpm NOTIFY slowDataChanged)
     Q_PROPERTY(double batteryPercent READ batteryPercent NOTIFY slowDataChanged)
     Q_PROPERTY(QString batteryStatus READ batteryStatus NOTIFY slowDataChanged)
     Q_PROPERTY(int batteryHealth READ batteryHealth NOTIFY slowDataChanged)
     Q_PROPERTY(double batteryPowerW READ batteryPowerW NOTIFY slowDataChanged)
-    Q_PROPERTY(bool hasBattery READ hasBattery CONSTANT)
     
     // === 超慢组 (30s) ===
     Q_PROPERTY(double diskUsage READ diskUsage NOTIFY glacialDataChanged)
@@ -67,12 +65,10 @@ public:
     double cpuFreqGHz() const;
     
     // Slow
-    int fanRpm() const;
     double batteryPercent() const;
     QString batteryStatus() const;
     int batteryHealth() const;
     double batteryPowerW() const;
-    bool hasBattery() const;
     
     // Glacial
     double diskUsage() const;
@@ -120,7 +116,6 @@ private:
     int m_taskTotal;
     
     // Slow cache
-    int m_fanRpm;
     double m_batteryPercent;
     QString m_batteryStatus;
     int m_batteryHealth;
