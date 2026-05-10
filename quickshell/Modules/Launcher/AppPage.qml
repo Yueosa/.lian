@@ -13,6 +13,7 @@ Item {
     signal requestCloseLauncher()
 
     property var filteredAppsModel: []
+    property var cachedDefaultModel: []
     property var usageCounts: ({})
     readonly property string usageFile: Quickshell.env("HOME") + "/.cache/quickshell/launcher_usage.json"
     readonly property string legacyUsageFile: Quickshell.env("HOME") + "/.cache/quickshell_lian_usage.json"
@@ -74,8 +75,22 @@ Item {
     function incrementCurrentIndex() { appsList.incrementCurrentIndex() }
     function forceSearchFocus() { searchInput.forceActiveFocus() }
 
+    function rebuildDefaultModel() {
+        if (DesktopEntries.applications.values.length === 0) {
+            cachedDefaultModel = []
+            return
+        }
+        cachedDefaultModel = AppManager.updateFilter("", DesktopEntries, root.usageCounts)
+    }
+
     function search(text) {
-        filteredAppsModel = AppManager.updateFilter(text, DesktopEntries, root.usageCounts)
+        if ((text || "") === "") {
+            if (cachedDefaultModel.length === 0)
+                rebuildDefaultModel()
+            filteredAppsModel = cachedDefaultModel.slice(0)
+        } else {
+            filteredAppsModel = AppManager.updateFilter(text, DesktopEntries, root.usageCounts)
+        }
         appsList.currentIndex = 0
     }
 
@@ -90,7 +105,7 @@ Item {
         onTriggered: {
             // 直接去底层看一眼，有数据了吗？
             if (DesktopEntries.applications.values.length > 0) {
-                // 有数据了！立刻执行搜索并渲染
+                root.rebuildDefaultModel()
                 root.search(searchInput.text)
                 // 任务完成，当场自毁。
                 running = false 
@@ -98,12 +113,33 @@ Item {
         }
     }
 
+    Timer {
+        id: deferredOpenSearch
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (!root.visible)
+                return
+            root.search(searchInput.text)
+        }
+    }
+
     onVisibleChanged: {
         if (visible) {
-            searchInput.text = ""
-            search("")
+            if (searchInput.text !== "")
+                searchInput.text = ""
+            else if (cachedDefaultModel.length > 0)
+                filteredAppsModel = cachedDefaultModel.slice(0)
+            appsList.currentIndex = 0
             searchInput.forceActiveFocus()
+            deferredOpenSearch.restart()
         }
+    }
+
+    onUsageCountsChanged: {
+        rebuildDefaultModel()
+        if (visible && searchInput.text === "")
+            filteredAppsModel = cachedDefaultModel.slice(0)
     }
 
     function highlightText(fullText, query) {
@@ -297,6 +333,13 @@ Item {
             }
         }
     }   // ListView
+
+        Text {
+            Layout.alignment: Qt.AlignRight
+            text: "Up/Down 选择 · Enter 打开"
+            font.pixelSize: Sizes.font.sm
+            color: Colorscheme.on_surface_variant
+        }
 
     }   // ColumnLayout
 
