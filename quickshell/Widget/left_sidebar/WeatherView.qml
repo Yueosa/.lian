@@ -130,7 +130,7 @@ Item {
             WeatherJS.pollutantIndex(air.nitrogenDioxide, [0, 10, 25, 200, 400, 1000]),
             WeatherJS.pollutantIndex(air.pm10, [0, 15, 45, 80, 160, 400]),
             WeatherJS.pollutantIndex(air.pm25, [0, 5, 15, 30, 60, 150])
-        ].filter(validNumber)
+        ].filter(WeatherJS.validNumber)
         if (values.length === 0) return ({ value: NaN, level: "--", color: "#00e59b" })
         const value = Math.max.apply(Math, values)
         const level = WeatherJS.aqiLevelIndex(value)

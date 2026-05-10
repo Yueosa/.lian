@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Clavis.Weather 1.0
 import qs.config
+import "../../JS/weather.js" as WeatherJS
 
 Rectangle {
     id: root
