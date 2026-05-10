@@ -17,7 +17,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "qs-notification-corner"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WidgetState.notifOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     exclusiveZone: 0
 
@@ -138,42 +138,66 @@ PanelWindow {
         }
     }
 
-    Item {
+    FocusScope {
+        id: notifFocusScope
         anchors.fill: parent
+        focus: WidgetState.notifOpen
+
+        Keys.priority: Keys.AfterItem
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                WidgetState.notifOpen = false
+                WidgetState.notifPinned = false
+                event.accepted = true
+            }
+        }
+
+        Connections {
+            target: WidgetState
+            function onNotifOpenChanged() {
+                if (WidgetState.notifOpen) {
+                    Qt.callLater(() => notifFocusScope.forceActiveFocus())
+                }
+            }
+        }
 
         Item {
-            width: qsShadow.width
-            height: qsShadow.height
-            x: qsShadow.x
-            y: qsShadow.y
-            clip: true 
+            anchors.fill: parent
 
-            HoverHandler {
-                onHoveredChanged: {
-                    WidgetState.notifIsHovered = hovered;
-                    if (hovered) {
-                        panelCloseTimer.stop();
-                    } else {
-                        if (!WidgetState.notifPinned) {
-                            panelCloseTimer.start();
+            Item {
+                width: qsShadow.width
+                height: qsShadow.height
+                x: qsShadow.x
+                y: qsShadow.y
+                clip: true 
+
+                HoverHandler {
+                    onHoveredChanged: {
+                        WidgetState.notifIsHovered = hovered;
+                        if (hovered) {
+                            panelCloseTimer.stop();
+                        } else {
+                            if (!WidgetState.notifPinned) {
+                                panelCloseTimer.start();
+                            }
                         }
                     }
                 }
-            }
 
-            Timer {
-                id: panelCloseTimer
-                interval: 1000 
-                onTriggered: {
-                    if (!WidgetState.notifIsHovered && !WidgetState.notifPinned) {
-                        WidgetState.notifOpen = false;
+                Timer {
+                    id: panelCloseTimer
+                    interval: 1000 
+                    onTriggered: {
+                        if (!WidgetState.notifIsHovered && !WidgetState.notifPinned) {
+                            WidgetState.notifOpen = false;
+                        }
                     }
                 }
-            }
 
-            NotificationContent { 
-                id: notifContent
-                anchors.fill: parent 
+                NotificationContent { 
+                    id: notifContent
+                    anchors.fill: parent 
+                }
             }
         }
     }

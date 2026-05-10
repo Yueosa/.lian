@@ -6,57 +6,47 @@ import qs.Widget.common
 Item {
     id: root
 
-    Item {
+    Loader {
+        id: contentLoader
         anchors.fill: parent
-        
-        NetworkContent { 
-            anchors.fill: parent 
-            
-            // ============================================================
-            // 【核心修复】：将动画控制权收回到 QuickSettings 层
-            // ============================================================
-            opacity: WidgetState.qsView === "network" ? 1.0 : 0.0
-            scale: WidgetState.qsView === "network" ? 1.0 : 0.95
-            visible: opacity > 0
-            
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 } }
+        sourceComponent: WidgetState.qsView === "audio"
+            ? audioContentComponent
+            : (WidgetState.qsView === "bluetooth"
+                ? bluetoothContentComponent
+                : (WidgetState.qsView === "updates"
+                    ? updatesContentComponent
+                    : networkContentComponent))
+    }
+
+    Component {
+        id: networkContentComponent
+
+        NetworkContent {
+            anchors.fill: parent
         }
+    }
+
+    Component {
+        id: audioContentComponent
 
         AudioContent {
             anchors.fill: parent
-
-            // ============================================================
-            // 【核心修复】：在这里独立控制混音器面板的显隐动画
-            // ============================================================
-            opacity: WidgetState.qsView === "audio" ? 1.0 : 0.0
-            scale: WidgetState.qsView === "audio" ? 1.0 : 0.95
-            visible: opacity > 0
-
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 } }
         }
+    }
+
+    Component {
+        id: bluetoothContentComponent
 
         BluetoothContent {
             anchors.fill: parent
-
-            opacity: WidgetState.qsView === "bluetooth" ? 1.0 : 0.0
-            scale: WidgetState.qsView === "bluetooth" ? 1.0 : 0.95
-            visible: opacity > 0
-
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 } }
         }
+    }
+
+    Component {
+        id: updatesContentComponent
 
         UpdatesContent {
             anchors.fill: parent
-
-            opacity: WidgetState.qsView === "updates" ? 1.0 : 0.0
-            scale: WidgetState.qsView === "updates" ? 1.0 : 0.95
-            visible: opacity > 0
-
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 } }
         }
     }
 }

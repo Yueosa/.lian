@@ -19,7 +19,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "qs-unified-sidebar"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WidgetState.qsOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     exclusiveZone: 0
 
@@ -91,8 +91,33 @@ PanelWindow {
         }
     }
 
-    Item {
+    FocusScope {
+        id: sidebarFocusScope
         anchors.fill: parent
+        focus: WidgetState.qsOpen
+
+        Keys.priority: Keys.AfterItem
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                WidgetState.qsOpen = false
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_Tab) {
+                WidgetState.cycleQuickSettings((event.modifiers & Qt.ShiftModifier) ? -1 : 1)
+                event.accepted = true
+            }
+        }
+
+        Connections {
+            target: WidgetState
+            function onQsOpenChanged() {
+                if (WidgetState.qsOpen) {
+                    Qt.callLater(() => sidebarFocusScope.forceActiveFocus())
+                }
+            }
+        }
 
         Item {
             width: qsShadow.width; height: qsShadow.height
