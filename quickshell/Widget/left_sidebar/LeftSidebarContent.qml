@@ -24,6 +24,7 @@ Item {
             Repeater {
                 // 【核心修改】：将 label 替换为纯英文/缩写
                 model: [
+                    { id: "lianclaw", icon: "spa", label: "LianClaw" },
                     { id: "sys", icon: "memory", label: "System" },
                     { id: "weather", icon: "cloud", label: "Weather" }
                 ]
@@ -54,7 +55,7 @@ Item {
                         
                         Text {
                             text: modelData.label
-                            font.family: "LXGW WenKai GB"
+                            font.family: "Noto Sans CJK SC"
                             font.bold: tabBtn.isActive
                             font.pixelSize: Sizes.font.md 
                             color: tabBtn.contentColor
@@ -100,15 +101,40 @@ Item {
             color: "transparent"
             radius: theme.radius
 
-            SystemView {
+            Loader {
+                id: contentLoader
                 anchors.fill: parent
-                visible: WidgetState.leftSidebarView === "sys"
+                active: true
+                sourceComponent: {
+                    if (WidgetState.leftSidebarView === "weather") return weatherViewComponent;
+                    if (WidgetState.leftSidebarView === "lianclaw") return lianclawViewComponent;
+                    return systemViewComponent;
+                }
             }
+        }
+    }
 
-            WeatherView {
-                anchors.fill: parent
-                visible: WidgetState.leftSidebarView === "weather"
-            }
+    Component {
+        id: systemViewComponent
+
+        SystemView {
+            anchors.fill: parent
+        }
+    }
+
+    Component {
+        id: weatherViewComponent
+
+        WeatherView {
+            anchors.fill: parent
+        }
+    }
+
+    Component {
+        id: lianclawViewComponent
+
+        LianClawView {
+            anchors.fill: parent
         }
     }
 }

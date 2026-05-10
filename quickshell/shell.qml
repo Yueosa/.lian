@@ -4,10 +4,10 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io  
 import QtQuick        
+import qs.Services
 import qs.config
 import qs.Modules.Bar
 import qs.Modules.Launcher 
-import qs.Modules.Clipboard
 import qs.Modules.DynamicIsland
 // 【新增】：引入你重构后的 Widget 文件夹
 import qs.Widget
@@ -16,6 +16,8 @@ import "./Widget/left_sidebar"
 import "./Modules/HotCorner"
 
 ShellRoot {
+    readonly property var notificationManagerSingleton: NotificationManager
+
     Bar {}
     
     DynamicIsland {}
@@ -59,14 +61,28 @@ ShellRoot {
     IpcHandler { target: "lock"; function open() { if (!lockLoader.active) { lockLoader.active = true; return "LOCKED" } return "ALREADY_LOCKED" } }
 
     // ================= 启动器 (Launcher) =================
-    LauncherWindow { id: rofiLauncher }
-    ClipboardWindow { id: clipboardWindow }
+    UnifiedLauncherWindow { id: launcherWindow }
     IpcHandler {
         target: "launcher"
 
         function toggle() {
-            rofiLauncher.toggleWindow()
+            launcherWindow.toggleTab("apps")
             return "LAUNCHER_TOGGLED"
+        }
+
+        function open(view: string) {
+            launcherWindow.openTab(view)
+            return "LAUNCHER_OPENED"
+        }
+
+        function next() {
+            launcherWindow.cycleTab(1)
+            return "LAUNCHER_NEXT"
+        }
+
+        function prev() {
+            launcherWindow.cycleTab(-1)
+            return "LAUNCHER_PREV"
         }
     }
 
@@ -74,18 +90,37 @@ ShellRoot {
         target: "clipboard"
 
         function toggle() {
-            clipboardWindow.toggleWindow()
+            launcherWindow.toggleTab("clipboard")
             return "CLIPBOARD_TOGGLED"
         }
 
         function open() {
-            clipboardWindow.openWindow()
+            launcherWindow.openTab("clipboard")
             return "CLIPBOARD_OPENED"
         }
 
         function close() {
-            clipboardWindow.closeWindow()
+            launcherWindow.closeWindow()
             return "CLIPBOARD_CLOSED"
+        }
+    }
+
+    IpcHandler {
+        target: "emoji"
+
+        function toggle() {
+            launcherWindow.toggleTab("emoji")
+            return "EMOJI_TOGGLED"
+        }
+
+        function open() {
+            launcherWindow.openTab("emoji")
+            return "EMOJI_OPENED"
+        }
+
+        function close() {
+            launcherWindow.closeWindow()
+            return "EMOJI_CLOSED"
         }
     }
 
@@ -104,15 +139,47 @@ ShellRoot {
         target: "sidebar"
 
         function toggle() {
-            WidgetState.leftSidebarOpen = !WidgetState.leftSidebarOpen
+            WidgetState.toggleLeftSidebar()
             return "SIDEBAR_TOGGLED"
         }
 
         function open(view: string) {
-            const valid = ["sys", "weather"];
-            WidgetState.leftSidebarView = valid.indexOf(view) !== -1 ? view : "sys";
-            WidgetState.leftSidebarOpen = true;
+            WidgetState.openLeftSidebar(view)
             return "SIDEBAR_OPENED";
+        }
+
+        function next() {
+            WidgetState.cycleLeftSidebar(1)
+            return "SIDEBAR_NEXT"
+        }
+
+        function prev() {
+            WidgetState.cycleLeftSidebar(-1)
+            return "SIDEBAR_PREV"
+        }
+    }
+
+    IpcHandler {
+        target: "rightbar"
+
+        function toggle() {
+            WidgetState.toggleQuickSettings()
+            return "RIGHTBAR_TOGGLED"
+        }
+
+        function open(view: string) {
+            WidgetState.openQuickSettings(view)
+            return "RIGHTBAR_OPENED"
+        }
+
+        function next() {
+            WidgetState.cycleQuickSettings(1)
+            return "RIGHTBAR_NEXT"
+        }
+
+        function prev() {
+            WidgetState.cycleQuickSettings(-1)
+            return "RIGHTBAR_PREV"
         }
     }
 }

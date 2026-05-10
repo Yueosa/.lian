@@ -20,7 +20,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "qs-unified-left-sidebar"
-    WlrLayershell.keyboardFocus: WidgetState.leftSidebarOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WidgetState.leftSidebarOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     exclusiveZone: 0
 
@@ -128,21 +128,50 @@ PanelWindow {
         }
     }
 
-    Item {
+    FocusScope {
+        id: sidebarFocusScope
         anchors.fill: parent
+        focus: WidgetState.leftSidebarOpen
+
+        Keys.priority: Keys.AfterItem
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                WidgetState.leftSidebarOpen = false
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_Tab) {
+                WidgetState.cycleLeftSidebar((event.modifiers & Qt.ShiftModifier) ? -1 : 1)
+                event.accepted = true
+            }
+        }
+
+        Connections {
+            target: WidgetState
+            function onLeftSidebarOpenChanged() {
+                if (WidgetState.leftSidebarOpen) {
+                    Qt.callLater(() => sidebarFocusScope.forceActiveFocus())
+                }
+            }
+        }
 
         Item {
-            width: root.sidebarWidth
-            height: root.qsTargetHeight
-            // 【修正】：内容挂载区也必须使用绝对屏幕坐标
-            x: animController.slideOffset + root.gap 
-            y: 66
-            clip: true 
+            anchors.fill: parent
 
-            Loader {
-                anchors.fill: parent
-                active: root.contentActive
-                sourceComponent: leftSidebarContentComponent
+            Item {
+                width: root.sidebarWidth
+                height: root.qsTargetHeight
+                // 【修正】：内容挂载区也必须使用绝对屏幕坐标
+                x: animController.slideOffset + root.gap 
+                y: 66
+                clip: true 
+
+                Loader {
+                    anchors.fill: parent
+                    active: root.contentActive
+                    sourceComponent: leftSidebarContentComponent
+                }
             }
         }
     }

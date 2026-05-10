@@ -4,9 +4,9 @@ import QtQuick
 
 Singleton {
     // ================= 原有配置 (保持不变) =================
-    readonly property string fontFamily: "LXGW WenKai GB"
-    readonly property string fontFamilyMono: "JetBrainsMono Nerd Font" // 建议终端字体单独定义
-    readonly property string fontIcon: "LXGW WenKai GB"
+    readonly property string fontFamily: "Noto Sans CJK SC"
+    readonly property string fontFamilyMono: "JetBrainsMono Nerd Font"
+    readonly property string fontIcon: "Material Symbols Outlined"
     readonly property real cornerRadius: 10
     readonly property real barHeight: 36
     readonly property real islandScale: 0.92
@@ -169,6 +169,21 @@ Singleton {
         readonly property int rowHeight: 44
         readonly property int iconBoxSize: 36
         readonly property int controlChipHeight: 36
+    }
+
+    // ================= 灵动岛歌词胶囊 =================
+    readonly property QtObject lyricsCapsule: QtObject {
+        readonly property int defaultTextWidth: 170
+        readonly property int horizontalPadding: 15
+        readonly property int coverWidth: 26
+        readonly property int spectrumWidth: 21
+        readonly property int sectionGap: 12
+        readonly property int spectrumHeight: 16
+        readonly property int lyricRowHeight: 42
+        readonly property int reloadDebounceMs: 300
+        readonly property int syncPollMs: 100
+        readonly property int spectrumTickMs: 16
+        readonly property int marqueeDelayMs: 800
     }
 
     // ================= 通知 =================
