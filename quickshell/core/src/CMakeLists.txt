@@ -59,6 +59,8 @@ target_sources(ClavisStore PRIVATE
     store/database.cpp
     store/dao/clipboard_dao.h
     store/dao/clipboard_dao.cpp
+    store/dao/notification_dao.h
+    store/dao/notification_dao.cpp
     util/image_detect.h
     util/image_detect.cpp
     ipc/cliphist_watcher.h
