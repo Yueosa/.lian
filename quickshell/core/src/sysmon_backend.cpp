@@ -49,6 +49,10 @@ std::vector<ProcessInfo> SysmonBackend::getTopProcesses(int limit) const {
     return m_cpuProvider.getTopProcesses(limit); 
 }
 
+QVariantMap SysmonBackend::getProcessDetails(int pid) const {
+    return m_cpuProvider.getProcessDetails(pid);
+}
+
 double SysmonBackend::getRamUsagePercent() const { 
     return m_ramProvider.getMemUsagePercent(); 
 }
@@ -59,6 +63,14 @@ double SysmonBackend::getRamUsedGB() const {
 
 double SysmonBackend::getRamTotalGB() const {
     return static_cast<double>(m_ramProvider.getTotalMemKB()) / (1024.0 * 1024.0);
+}
+
+double SysmonBackend::getSwapUsedGB() const {
+    return m_ramProvider.getSwapUsedGB();
+}
+
+double SysmonBackend::getSwapTotalGB() const {
+    return m_ramProvider.getSwapTotalGB();
 }
 
 double SysmonBackend::getDiskUsagePercent() const { 

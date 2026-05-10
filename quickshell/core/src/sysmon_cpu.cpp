@@ -1,6 +1,8 @@
 #include "sysmon_cpu.h"
 #include <QFile>
+#include <QFileInfo>
 #include <QTextStream>
+#include <QVariantMap>
 #include <QStringList>
 #include <filesystem>
 #include <algorithm>
@@ -29,6 +31,116 @@ std::vector<ProcessInfo> SysmonCpu::getTopProcesses(int limit) const {
         result.resize(limit);
     }
     return result;
+}
+
+QVariantMap SysmonCpu::getProcessDetails(int pid) const {
+    QVariantMap detail;
+    detail["pid"] = pid;
+    detail["available"] = false;
+    detail["exactMemory"] = false;
+    detail["permissionDenied"] = false;
+    detail["error"] = "";
+    detail["name"] = "";
+    detail["state"] = "";
+    detail["threads"] = 0;
+    detail["cmdline"] = "";
+    detail["exePath"] = "";
+    detail["rssKB"] = static_cast<qulonglong>(0);
+    detail["pssKB"] = static_cast<qulonglong>(0);
+    detail["ussKB"] = static_cast<qulonglong>(0);
+    detail["privateDirtyKB"] = static_cast<qulonglong>(0);
+    detail["privateCleanKB"] = static_cast<qulonglong>(0);
+    detail["sharedCleanKB"] = static_cast<qulonglong>(0);
+    detail["sharedDirtyKB"] = static_cast<qulonglong>(0);
+    detail["anonymousKB"] = static_cast<qulonglong>(0);
+    detail["swapKB"] = static_cast<qulonglong>(0);
+
+    if (pid <= 0) {
+        detail["error"] = "invalid pid";
+        return detail;
+    }
+
+    QFile statusFile(QString("/proc/%1/status").arg(pid));
+    if (statusFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QStringList lines = QString::fromUtf8(statusFile.readAll()).split('\n');
+        for (const QString &line : lines) {
+            if (line.startsWith("Name:")) {
+                detail["name"] = line.section(':', 1).trimmed();
+            } else if (line.startsWith("State:")) {
+                detail["state"] = line.section(':', 1).trimmed();
+            } else if (line.startsWith("Threads:")) {
+                detail["threads"] = line.section(':', 1).trimmed().toInt();
+            } else if (line.startsWith("VmRSS:")) {
+                const qulonglong vmRssKB = line.section(':', 1).trimmed().section(' ', 0, 0).toULongLong();
+                detail["rssKB"] = vmRssKB;
+            }
+        }
+    } else if (!QFileInfo::exists(QString("/proc/%1").arg(pid))) {
+        detail["error"] = "process exited";
+        return detail;
+    }
+
+    QFile cmdlineFile(QString("/proc/%1/cmdline").arg(pid));
+    if (cmdlineFile.open(QIODevice::ReadOnly)) {
+        QByteArray raw = cmdlineFile.readAll();
+        raw.replace('\0', ' ');
+        detail["cmdline"] = QString::fromUtf8(raw).trimmed();
+    }
+
+    const QString exeLinkPath = QString("/proc/%1/exe").arg(pid);
+    const QFileInfo exeInfo(exeLinkPath);
+    if (exeInfo.exists() || exeInfo.isSymLink()) {
+        detail["exePath"] = exeInfo.symLinkTarget();
+    }
+
+    QFile rollupFile(QString("/proc/%1/smaps_rollup").arg(pid));
+    if (!rollupFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        detail["permissionDenied"] = true;
+        detail["error"] = "smaps_rollup unavailable or permission denied";
+        detail["available"] = !detail["name"].toString().isEmpty() || !detail["cmdline"].toString().isEmpty();
+        return detail;
+    }
+
+    const QStringList rollupLines = QString::fromUtf8(rollupFile.readAll()).split('\n');
+    qulonglong privateCleanKB = 0;
+    qulonglong privateDirtyKB = 0;
+    qulonglong sharedCleanKB = 0;
+    qulonglong sharedDirtyKB = 0;
+
+    for (const QString &line : rollupLines) {
+        auto valueOf = [&line]() -> qulonglong {
+            return line.section(':', 1).trimmed().section(' ', 0, 0).toULongLong();
+        };
+
+        if (line.startsWith("Rss:")) {
+            detail["rssKB"] = valueOf();
+        } else if (line.startsWith("Pss:")) {
+            detail["pssKB"] = valueOf();
+        } else if (line.startsWith("Private_Clean:")) {
+            privateCleanKB = valueOf();
+            detail["privateCleanKB"] = privateCleanKB;
+        } else if (line.startsWith("Private_Dirty:")) {
+            privateDirtyKB = valueOf();
+            detail["privateDirtyKB"] = privateDirtyKB;
+        } else if (line.startsWith("Shared_Clean:")) {
+            sharedCleanKB = valueOf();
+            detail["sharedCleanKB"] = sharedCleanKB;
+        } else if (line.startsWith("Shared_Dirty:")) {
+            sharedDirtyKB = valueOf();
+            detail["sharedDirtyKB"] = sharedDirtyKB;
+        } else if (line.startsWith("Anonymous:")) {
+            detail["anonymousKB"] = valueOf();
+        } else if (line.startsWith("Swap:")) {
+            detail["swapKB"] = valueOf();
+        }
+    }
+
+    detail["ussKB"] = privateCleanKB + privateDirtyKB;
+    detail["exactMemory"] = true;
+    detail["available"] = true;
+    detail["permissionDenied"] = false;
+    detail["error"] = "";
+    return detail;
 }
 
 CpuTimes SysmonCpu::readCpuTimes() const {

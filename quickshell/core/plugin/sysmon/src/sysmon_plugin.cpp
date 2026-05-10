@@ -3,7 +3,8 @@
 
 SysmonPlugin::SysmonPlugin(QObject *parent) 
     : QObject(parent),
-      m_cpuUsage(0), m_ramUsage(0), m_ramUsedGB(0), m_ramTotalGB(0),
+    m_cpuUsage(0), m_ramUsage(0), m_ramUsedGB(0), m_ramTotalGB(0),
+    m_swapUsedGB(0), m_swapTotalGB(0),
       m_netDownBps(0), m_netUpBps(0),
       m_coreTemp(0), m_gpuTemp(0), m_gpuUsage(0),
       m_load1(0), m_load5(0), m_load15(0), m_cpuFreqGHz(0),
@@ -43,9 +44,12 @@ double SysmonPlugin::cpuUsage() const { return m_cpuUsage; }
 double SysmonPlugin::ramUsage() const { return m_ramUsage; }
 double SysmonPlugin::ramUsedGB() const { return m_ramUsedGB; }
 double SysmonPlugin::ramTotalGB() const { return m_ramTotalGB; }
+double SysmonPlugin::swapUsedGB() const { return m_swapUsedGB; }
+double SysmonPlugin::swapTotalGB() const { return m_swapTotalGB; }
 double SysmonPlugin::netDownBps() const { return m_netDownBps; }
 double SysmonPlugin::netUpBps() const { return m_netUpBps; }
 ProcessModel* SysmonPlugin::processes() const { return m_processModel; }
+QVariantMap SysmonPlugin::getProcessDetails(int pid) const { return SysmonBackend::instance().getProcessDetails(pid); }
 
 // Medium
 double SysmonPlugin::coreTemp() const { return m_coreTemp; }
@@ -80,6 +84,8 @@ void SysmonPlugin::onFastTick() {
     m_ramUsage   = be.getRamUsagePercent();
     m_ramUsedGB  = be.getRamUsedGB();
     m_ramTotalGB = be.getRamTotalGB();
+    m_swapUsedGB = be.getSwapUsedGB();
+    m_swapTotalGB = be.getSwapTotalGB();
     m_netDownBps = be.getNetDownBps();
     m_netUpBps   = be.getNetUpBps();
     

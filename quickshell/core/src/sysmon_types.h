@@ -7,6 +7,6 @@ struct ProcessInfo {
     QString name;
     QString cmdline;   // 完整命令行路径 (来自 /proc/{pid}/cmdline)
     double cpuPercent;
-    unsigned long long memoryKB;
-    double memoryPercent;
+    unsigned long long memoryKB; // RSS from /proc/<pid>/statm, not USS/PSS
+    double memoryPercent;        // RSS as a percentage of total system RAM
 };

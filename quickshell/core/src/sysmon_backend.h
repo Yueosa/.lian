@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QVariantMap>
 #include <vector>
 #include "sysmon_types.h"
 #include "sysmon_cpu.h"
@@ -29,9 +30,12 @@ public:
     // --- Existing ---
     double getGlobalCpuUsage() const;
     std::vector<ProcessInfo> getTopProcesses(int limit = 10) const;
+    QVariantMap getProcessDetails(int pid) const;
     double getRamUsagePercent() const;
     double getRamUsedGB() const;
     double getRamTotalGB() const;
+    double getSwapUsedGB() const;
+    double getSwapTotalGB() const;
     double getDiskUsagePercent() const;
     double getDiskUsedGB() const;
     double getDiskTotalGB() const;

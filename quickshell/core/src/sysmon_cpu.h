@@ -1,4 +1,5 @@
 #pragma once
+#include <QVariantMap>
 #include <vector>
 #include <map>
 #include "sysmon_types.h"
@@ -29,6 +30,7 @@ public:
     
     double getGlobalCpuUsage() const;
     std::vector<ProcessInfo> getTopProcesses(int limit = 10) const;
+    QVariantMap getProcessDetails(int pid) const;
 
 private:
     CpuTimes m_previousCpuTimes;

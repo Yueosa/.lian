@@ -15,6 +15,8 @@ class SysmonPlugin : public QObject {
     Q_PROPERTY(double ramUsage READ ramUsage NOTIFY fastDataChanged)
     Q_PROPERTY(double ramUsedGB READ ramUsedGB NOTIFY fastDataChanged)
     Q_PROPERTY(double ramTotalGB READ ramTotalGB NOTIFY fastDataChanged)
+    Q_PROPERTY(double swapUsedGB READ swapUsedGB NOTIFY fastDataChanged)
+    Q_PROPERTY(double swapTotalGB READ swapTotalGB NOTIFY fastDataChanged)
     Q_PROPERTY(double netDownBps READ netDownBps NOTIFY fastDataChanged)
     Q_PROPERTY(double netUpBps READ netUpBps NOTIFY fastDataChanged)
     Q_PROPERTY(ProcessModel* processes READ processes CONSTANT)
@@ -45,12 +47,15 @@ class SysmonPlugin : public QObject {
 public:
     explicit SysmonPlugin(QObject *parent = nullptr);
     ~SysmonPlugin() override = default;
+    Q_INVOKABLE QVariantMap getProcessDetails(int pid) const;
 
     // Fast
     double cpuUsage() const;
     double ramUsage() const;
     double ramUsedGB() const;
     double ramTotalGB() const;
+    double swapUsedGB() const;
+    double swapTotalGB() const;
     double netDownBps() const;
     double netUpBps() const;
     ProcessModel* processes() const;
@@ -101,6 +106,8 @@ private:
     double m_ramUsage;
     double m_ramUsedGB;
     double m_ramTotalGB;
+    double m_swapUsedGB;
+    double m_swapTotalGB;
     double m_netDownBps;
     double m_netUpBps;
     
