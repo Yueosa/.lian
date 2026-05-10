@@ -28,6 +28,7 @@ Item {
 
     property bool _expanded: false
     property bool _layoutQueued: false
+    property bool _finalRenderQueued: false
 
     readonly property bool isUser:     kind === "user"
     readonly property bool isReply:    kind === "reply"
@@ -41,21 +42,36 @@ Item {
 
     Component.onCompleted: {
         if (isTool || isThinking || isAction) _expanded = live;
-        if (!_streamingPlain) _rebuild();
+        if (!_streamingPlain) _queueFinalRender();
     }
     onLiveChanged: {
         if (isTool || isThinking || isAction) _expanded = live;
         // 流式结束（live: true→false）才重新切段
-        if (!_streamingPlain) {
-            _rebuild();
-            _scheduleLayout();
-        }
+        if (!live) _queueFinalRender();
+    }
+    onFrozenChanged: {
+        if (frozen && !live) _queueFinalRender();
     }
     onTextChanged: {
         // 流式期间不重建 segs（避免 Repeater 销毁/重建 delegate 导致卡死）
         if (_streamingPlain) return;
-        _rebuild();
-        _scheduleLayout();
+        _queueFinalRender();
+    }
+    onWidthChanged: {
+        if (!_streamingPlain) _queueFinalRender();
+    }
+
+    function _queueFinalRender() {
+        if (_streamingPlain || _finalRenderQueued)
+            return;
+        _finalRenderQueued = true;
+        Qt.callLater(function() {
+            _finalRenderQueued = false;
+            if (_streamingPlain)
+                return;
+            _rebuild();
+            _scheduleLayout();
+        });
     }
 
     function _scheduleLayout() {
@@ -132,12 +148,73 @@ Item {
     }
 
     function _splitImages(s, out) {
-        // 支持 ![](url)、![](<url>)、![](url "title")
-        var re = /!\[([^\]]*)\]\(\s*<?([^>)\s]+)>?(?:\s+"[^"]*")?\s*\)/g;
-        var li = 0, m;
-        while ((m = re.exec(s)) !== null) {
-            if (m.index > li) out.push({ t: "text", s: s.substring(li, m.index) });
-            var raw = m[2];
+        // 稳健解析 ![alt](...)：支持 <url>、带 title、以及 URL 中出现括号。
+        var i = 0;
+        var li = 0;
+        while (i < s.length) {
+            var bang = s.indexOf("![", i);
+            if (bang < 0)
+                break;
+
+            var altEnd = s.indexOf("]", bang + 2);
+            if (altEnd < 0) {
+                i = bang + 2;
+                continue;
+            }
+
+            var p = altEnd + 1;
+            while (p < s.length && /\s/.test(s.charAt(p)))
+                p += 1;
+            if (p >= s.length || s.charAt(p) !== "(") {
+                i = altEnd + 1;
+                continue;
+            }
+
+            var start = p + 1;
+            var depth = 1;
+            p = start;
+            while (p < s.length && depth > 0) {
+                var ch = s.charAt(p);
+                if (ch === "\\") {
+                    p += 2;
+                    continue;
+                }
+                if (ch === "(") depth += 1;
+                else if (ch === ")") depth -= 1;
+                p += 1;
+            }
+            if (depth !== 0) {
+                i = altEnd + 1;
+                continue;
+            }
+
+            if (bang > li)
+                out.push({ t: "text", s: s.substring(li, bang) });
+
+            var alt = s.substring(bang + 2, altEnd);
+            var inner = s.substring(start, p - 1).trim();
+            var raw = inner;
+            if (inner.length > 0 && inner.charAt(0) === "<") {
+                var gt = inner.indexOf(">");
+                if (gt > 1)
+                    raw = inner.substring(1, gt);
+            } else {
+                // 末尾 title 仅在存在空格+引号时剥离，避免把普通 URL 匹配成空串。
+                var titleMatch = inner.match(/^(.*)\s+"[^"]*"\s*$/);
+                raw = (titleMatch ? titleMatch[1] : inner).trim();
+            }
+
+            if (raw.length > 1 && ((raw.charAt(0) === '"' && raw.charAt(raw.length - 1) === '"') || (raw.charAt(0) === "'" && raw.charAt(raw.length - 1) === "'")))
+                raw = raw.substring(1, raw.length - 1);
+
+            // 解析失败时保留原 markdown 文本，避免整段被吞掉导致“消息不渲染”。
+            if (!raw || raw.length === 0) {
+                out.push({ t: "text", s: s.substring(bang, p) });
+                li = p;
+                i = p;
+                continue;
+            }
+
             var path = _resolveLocalPath(raw);
             var url = raw;
             if (path && LianClawClient.serverReady) {
@@ -145,14 +222,18 @@ Item {
                 var u = LianClawClient.imageProxyUrl(path, thumb);
                 if (u) url = u;
             }
-            out.push({ t: "img", alt: m[1], url: url });
-            li = re.lastIndex;
+            out.push({ t: "img", alt: alt, url: url });
+
+            li = p;
+            i = p;
         }
-        if (li < s.length) out.push({ t: "text", s: s.substring(li) });
+
+        if (li < s.length)
+            out.push({ t: "text", s: s.substring(li) });
     }
 
     function _rebuild() {
-        if (!isReply && !isTool && !isError && !isAction && !isThinking) {
+        if (!isUser && !isReply && !isTool && !isError && !isAction && !isThinking) {
             _segs = [{ t: "text", s: text || "" }];
             return;
         }
@@ -298,9 +379,11 @@ Item {
                 color: cell.bubbleFg
                 wrapMode: Text.Wrap
                 elide: Text.ElideNone
-                textFormat: (!cell.live && cell._usesMarkdown(cell.text))
+                textFormat: (!cell.live
+                             && cell._usesMarkdown(cell.text)
+                             && !/!\[[^\]]*\]\(/.test(cell.text || "")
                             ? Text.MarkdownText
-                            : Text.PlainText
+                            : Text.PlainText)
                 font.family: cell.bodyFamily
                 font.italic: cell.isThinking
                 font.pixelSize: cell.isThinking ? Sizes.font.xsm
@@ -325,7 +408,7 @@ Item {
                         id: segItem
                         width: cell.bodyW
                         implicitHeight: {
-                            if (modelData.t === "img")  return imgEl.height;
+                            if (modelData.t === "img")  return imgWrap.height;
                             if (modelData.t === "code") return codeBox.implicitHeight;
                             return txtEl.implicitHeight;
                         }
@@ -390,19 +473,43 @@ Item {
                             }
                         }
 
-                        Image {
-                            id: imgEl
+                        Rectangle {
+                            id: imgWrap
                             visible: modelData.t === "img"
                             width: parent.width
-                            fillMode: Image.PreserveAspectFit
-                            source: modelData.url || ""
-                            asynchronous: true
-                            cache: true
-                            sourceSize.width: Math.max(128, Math.floor(cell.bodyW * 2))
-                            height: status === Image.Ready
-                                    ? Math.min(implicitHeight, 480)
-                                    : (status === Image.Loading ? 80 : 24)
-                            onStatusChanged: cell._scheduleLayout()
+                            radius: Sizes.rounding.medium
+                            color: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.04)
+                            border.width: 1
+                            border.color: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.08)
+                            clip: true
+                            readonly property real minH: 96
+                            readonly property real maxH: Math.max(220, Math.floor(cell.bodyW * 1.25))
+                            readonly property real readyH: {
+                                const sw = imgEl.implicitWidth;
+                                const sh = imgEl.implicitHeight;
+                                if (imgEl.status !== Image.Ready || sw <= 0 || sh <= 0)
+                                    return minH;
+                                const innerW = Math.max(1, width - 12);
+                                const scaled = innerW * sh / sw + 12;
+                                return Math.max(minH, Math.min(maxH, scaled));
+                            }
+                            height: imgEl.status === Image.Ready
+                                    ? readyH
+                                    : (imgEl.status === Image.Loading ? 80 : 56)
+
+                            Image {
+                                id: imgEl
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                fillMode: Image.PreserveAspectFit
+                                source: modelData.url || ""
+                                asynchronous: true
+                                cache: true
+                                sourceSize.width: Math.max(128, Math.floor(cell.bodyW * 2))
+                                onStatusChanged: cell._scheduleLayout()
+                                onImplicitWidthChanged: cell._scheduleLayout()
+                                onImplicitHeightChanged: cell._scheduleLayout()
+                            }
 
                             Rectangle {
                                 anchors.centerIn: parent
