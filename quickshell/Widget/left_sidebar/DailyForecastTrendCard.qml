@@ -81,7 +81,7 @@ Rectangle {
                 Text {
                     text: "每日预报"
                     color: Colorscheme.on_surface
-                    font.family: "LXGW WenKai GB"
+                    font.family: "Noto Sans CJK SC"
                     font.bold: true
                     font.pixelSize: Math.round(22 * root.uiScale)
                     Layout.alignment: Qt.AlignVCenter
@@ -363,7 +363,7 @@ Rectangle {
                                     width: parent.width
                                     text: root.dayLabel(index, dayItem.time)
                                     color: Colorscheme.on_surface
-                                    font.family: "LXGW WenKai GB"
+                                    font.family: "Noto Sans CJK SC"
                                     font.pixelSize: Math.round(16 * root.uiScale)
                                     font.bold: index === 1
                                     horizontalAlignment: Text.AlignHCenter
@@ -522,7 +522,7 @@ Rectangle {
             id: textItem
             anchors.centerIn: parent
             text: parent.textStr
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Sizes.font.lg
             font.bold: parent.isActive
             color: parent.isActive ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant

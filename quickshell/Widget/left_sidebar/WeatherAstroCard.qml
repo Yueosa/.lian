@@ -139,7 +139,7 @@ Rectangle {
         Text {
             text: root.moon ? "月亮" : "太阳"
             color: root.titleInk
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Sizes.font.xxl
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -370,7 +370,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: root.phaseText(root.phaseAngle)
             color: Qt.rgba(0.82, 0.80, 0.87, 0.88)
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Sizes.font.xsm
         }
     }

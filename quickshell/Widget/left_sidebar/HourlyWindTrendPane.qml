@@ -229,7 +229,7 @@ Rectangle {
         visible: !root.hasData
         text: "风况数据暂不可用"
         color: Colorscheme.on_surface_variant
-        font.family: "LXGW WenKai GB"
+        font.family: "Noto Sans CJK SC"
         font.pixelSize: Sizes.font.xl
     }
 }

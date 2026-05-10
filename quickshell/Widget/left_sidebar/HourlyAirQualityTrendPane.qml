@@ -195,7 +195,7 @@ Rectangle {
                 anchors.bottomMargin: 5
                 text: modelData.label
                 color: Qt.rgba(Colorscheme.on_surface_variant.r, Colorscheme.on_surface_variant.g, Colorscheme.on_surface_variant.b, 0.72)
-                font.family: "LXGW WenKai GB"
+                font.family: "Noto Sans CJK SC"
                 font.pixelSize: Sizes.font.sm
             }
         }
@@ -297,7 +297,7 @@ Rectangle {
         visible: !root.hasData
         text: "空气质量数据暂不可用"
         color: Colorscheme.on_surface_variant
-        font.family: "LXGW WenKai GB"
+        font.family: "Noto Sans CJK SC"
         font.pixelSize: Sizes.font.xl
     }
 }

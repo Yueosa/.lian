@@ -376,7 +376,7 @@ Item {
                         Text {
                             text: WeatherPlugin.locationName || "Weather"
                             color: root.headerInk
-                            font.family: "LXGW WenKai GB"
+                            font.family: "Noto Sans CJK SC"
                             font.pixelSize: Sizes.font.hero
                             font.bold: true
                             elide: Text.ElideRight
@@ -504,7 +504,7 @@ Item {
                             width: parent.width
                             text: WeatherPlugin.currentWeatherText || "Unknown"
                             color: Colorscheme.on_surface
-                            font.family: "LXGW WenKai GB"
+                            font.family: "Noto Sans CJK SC"
                             font.pixelSize: Sizes.font.h2b
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
@@ -545,7 +545,7 @@ Item {
                             width: parent.width
                             text: "体感温度: " + fmtTemp(WeatherPlugin.currentFeelsLikeC)
                             color: Colorscheme.on_surface
-                            font.family: "LXGW WenKai GB"
+                            font.family: "Noto Sans CJK SC"
                             font.pixelSize: Sizes.font.xxl
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -556,7 +556,7 @@ Item {
                             text: "最高 " + fmtTemp(today().temperatureMaxC)
                                   + " · 最低 " + fmtTemp(today().temperatureMinC)
                             color: Colorscheme.on_surface
-                            font.family: "LXGW WenKai GB"
+                            font.family: "Noto Sans CJK SC"
                             font.pixelSize: Sizes.font.xxl
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -735,7 +735,7 @@ Item {
 
                 Text {
                     text: "设置天气位置"
-                    font.family: "LXGW WenKai GB"
+                    font.family: "Noto Sans CJK SC"
                     font.pixelSize: Sizes.font.xxl
                     font.bold: true
                     color: Colorscheme.on_surface
@@ -743,7 +743,7 @@ Item {
 
                 Text {
                     text: "国家/城市通过联网查询，选择结果后立即切换。"
-                    font.family: "LXGW WenKai GB"
+                    font.family: "Noto Sans CJK SC"
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.on_surface_variant
                     wrapMode: Text.WordWrap
@@ -805,7 +805,7 @@ Item {
                 Text {
                     visible: root.geocodeError.length > 0
                     text: root.geocodeError
-                    font.family: "LXGW WenKai GB"
+                    font.family: "Noto Sans CJK SC"
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.error
                     wrapMode: Text.WordWrap
@@ -839,7 +839,7 @@ Item {
                             Text {
                                 text: modelData.label || ""
                                 color: Colorscheme.on_surface
-                                font.family: "LXGW WenKai GB"
+                                font.family: "Noto Sans CJK SC"
                                 font.pixelSize: Sizes.font.md
                                 elide: Text.ElideRight
                             }
@@ -877,7 +877,7 @@ Item {
 
                     Text {
                         text: "最近使用"
-                        font.family: "LXGW WenKai GB"
+                        font.family: "Noto Sans CJK SC"
                         font.pixelSize: Sizes.font.sm
                         color: Colorscheme.on_surface_variant
                     }
@@ -907,7 +907,7 @@ Item {
                                     id: chipLabel
                                     anchors.centerIn: parent
                                     text: modelData.label || ""
-                                    font.family: "LXGW WenKai GB"
+                                    font.family: "Noto Sans CJK SC"
                                     font.pixelSize: Sizes.font.sm
                                     color: Colorscheme.primary
                                     elide: Text.ElideRight
@@ -958,7 +958,7 @@ Item {
         font {
             pixelSize: 14
             hintingPreference: Font.PreferFullHinting
-            family: "LXGW WenKai GB"
+            family: "Noto Sans CJK SC"
         }
 
         cursorDelegate: Rectangle {
@@ -1019,7 +1019,7 @@ Item {
             font.pixelSize: Sizes.font.sm
             font.bold: true
             color: Colorscheme.primary
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
 
             Behavior on color { ColorAnimation { duration: 140 } }
         }
@@ -1063,7 +1063,7 @@ Item {
             Text {
                 text: card.title
                 color: Colorscheme.on_surface
-                font.family: "LXGW WenKai GB"
+                font.family: "Noto Sans CJK SC"
                 font.bold: true
                 font.pixelSize: Sizes.font.body
                 anchors.verticalCenter: parent.verticalCenter

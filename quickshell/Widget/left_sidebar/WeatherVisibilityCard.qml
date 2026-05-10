@@ -88,7 +88,7 @@ Item {
         Text {
             text: "能见度"
             color: "#f2edf7"
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Sizes.font.hero
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -113,7 +113,7 @@ Item {
         Text {
             text: root.valueUnitText()
             color: "#f2edf7"
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Math.round(root.width * 0.12)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -128,7 +128,7 @@ Item {
         width: parent.width * 0.36
         text: root.descriptionText()
         color: "#f2edf7"
-        font.family: "LXGW WenKai GB"
+        font.family: "Noto Sans CJK SC"
         font.pixelSize: Sizes.font.h1
         font.bold: true
         horizontalAlignment: Text.AlignHCenter

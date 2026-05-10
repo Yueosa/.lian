@@ -25,22 +25,8 @@ Item {
         return kb + " KB"
     }
 
-    property string swapText: "-- / -- MB"
-
-    Process {
-        id: swapProc
-        command: ["sh", "-c", "awk '/SwapTotal/{t=$2} /SwapFree/{f=$2} END{printf \"%.2f / %.2f GiB\", (t-f)/1048576, t/1048576}' /proc/meminfo"]
-        stdout: SplitParser {
-            onRead: (data) => { if (data.trim() !== "") root.swapText = data.trim() }
-        }
-    }
-
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: swapProc.running = true
+    function formatGiB(value) {
+        return Number(value || 0).toFixed(2) + " GiB"
     }
 
     function pickReadableColor(base, fallback) {
@@ -304,12 +290,12 @@ Item {
             anchors.centerIn: parent
             Text { 
                 text: Math.round(gauge.mainValue) + gauge.mainSuffix
-                font.pixelSize: Sizes.font.h6; font.family: "JetBrainsMono Nerd Font"; color: Colorscheme.on_surface 
+                font.pixelSize: Sizes.font.h6; font.family: Sizes.fontFamilyMono; color: Colorscheme.on_surface 
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             Text { 
                 text: gauge.titleText 
-                font.pixelSize: Sizes.font.lg; font.family: "LXGW WenKai GB"; color: Colorscheme.on_surface_variant 
+                font.pixelSize: Sizes.font.lg; font.family: Sizes.fontFamily; color: Colorscheme.on_surface_variant 
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
@@ -324,12 +310,12 @@ Item {
                 anchors.centerIn: parent
                 Text { 
                     text: Math.round(gauge.secondaryValue) + gauge.secondarySuffix
-                    font.pixelSize: Sizes.font.body; font.family: "JetBrainsMono Nerd Font"; color: Colorscheme.on_surface; font.bold: true 
+                    font.pixelSize: Sizes.font.body; font.family: Sizes.fontFamilyMono; color: Colorscheme.on_surface; font.bold: true 
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
                 Text { 
                     text: gauge.gapTitleText
-                    font.pixelSize: Sizes.font.xsm; font.family: "LXGW WenKai GB"; color: Colorscheme.on_surface_variant 
+                    font.pixelSize: Sizes.font.xsm; font.family: Sizes.fontFamily; color: Colorscheme.on_surface_variant 
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
@@ -443,7 +429,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: parent.textStr
-                        font.family: "LXGW WenKai GB"
+                        font.family: Sizes.fontFamily
                         font.pixelSize: Sizes.font.md
                         font.bold: parent.isActive
                         color: parent.isActive ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant
@@ -593,12 +579,12 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Sizes.spacing.s
-                        Text { text: "download"; font.family: "Material Symbols Outlined"; color: root.netDownColor; font.pixelSize: Sizes.font.xl }
+                        Text { text: "download"; font.family: Sizes.fontIcon; color: root.netDownColor; font.pixelSize: Sizes.font.xl }
                         Text {
                             Layout.fillWidth: true
                             text: formatBytes(SysmonPlugin.netDownBps)
                             color: root.netDownColor
-                            font.family: "JetBrainsMono Nerd Font"
+                            font.family: Sizes.fontFamilyMono
                             font.pixelSize: Sizes.font.lg
                             font.bold: true
                             elide: Text.ElideRight
@@ -608,12 +594,12 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Sizes.spacing.s
-                        Text { text: "upload"; font.family: "Material Symbols Outlined"; color: root.netUpColor; font.pixelSize: Sizes.font.xl }
+                        Text { text: "upload"; font.family: Sizes.fontIcon; color: root.netUpColor; font.pixelSize: Sizes.font.xl }
                         Text {
                             Layout.fillWidth: true
                             text: formatBytes(SysmonPlugin.netUpBps)
                             color: root.netUpColor
-                            font.family: "JetBrainsMono Nerd Font"
+                            font.family: Sizes.fontFamilyMono
                             font.pixelSize: Sizes.font.lg
                             font.bold: true
                             elide: Text.ElideRight
@@ -623,12 +609,12 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Sizes.spacing.s
-                        Text { text: "memory"; font.family: "Material Symbols Outlined"; color: root.ramLineColor; font.pixelSize: Sizes.font.xl }
+                        Text { text: "memory"; font.family: Sizes.fontIcon; color: root.ramLineColor; font.pixelSize: Sizes.font.xl }
                         Text {
                             Layout.fillWidth: true
                             text: SysmonPlugin.ramUsedGB.toFixed(1) + "/" + SysmonPlugin.ramTotalGB.toFixed(1) + " GiB"
                             color: Colorscheme.on_surface
-                            font.family: "JetBrainsMono Nerd Font"
+                            font.family: Sizes.fontFamilyMono
                             font.pixelSize: Sizes.font.lg
                             font.bold: true
                             elide: Text.ElideRight
@@ -638,10 +624,10 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Sizes.spacing.s
-                        Text { text: "speed"; font.family: "Material Symbols Outlined"; color: root.load1Color; font.pixelSize: Sizes.font.xl }
-                        Text { text: SysmonPlugin.load1.toFixed(2); color: root.load1Color; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: Sizes.font.lg; font.bold: true; elide: Text.ElideRight }
-                        Text { text: SysmonPlugin.load5.toFixed(2); color: root.load5Color; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: Sizes.font.md }
-                        Text { text: SysmonPlugin.load15.toFixed(2); color: root.load15Color; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: Sizes.font.md }
+                        Text { text: "speed"; font.family: Sizes.fontIcon; color: root.load1Color; font.pixelSize: Sizes.font.xl }
+                        Text { text: SysmonPlugin.load1.toFixed(2); color: root.load1Color; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.lg; font.bold: true; elide: Text.ElideRight }
+                        Text { text: SysmonPlugin.load5.toFixed(2); color: root.load5Color; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md }
+                        Text { text: SysmonPlugin.load15.toFixed(2); color: root.load15Color; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md }
                     }
                 }
             }
@@ -662,25 +648,37 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: rowContent.height
                     
-                    Row {
+                    RowLayout {
                         id: rowContent
-                        anchors.left: parent.left // 改为向左对齐，使得视觉更整齐
+                        anchors.left: parent.left
+                        anchors.right: parent.right
                         spacing: Sizes.spacing.sm
                         
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.iconTxt; font.family: "Material Symbols Outlined"; color: parent.parent.acc; font.pixelSize: Sizes.font.xl }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.title + ":"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: "LXGW WenKai GB" }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.iconTxt; font.family: Sizes.fontIcon; color: parent.parent.acc; font.pixelSize: Sizes.font.xl }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: parent.parent.title + ":"
+                            color: Colorscheme.on_surface_variant
+                            font.pixelSize: Sizes.font.md
+                            font.family: Sizes.fontFamily
+                            elide: Text.ElideRight
+                        }
                         Text { 
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.parent.val
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            horizontalAlignment: Text.AlignRight
                             color: Colorscheme.on_surface
                             font.pixelSize: Sizes.font.lg
                             font.bold: true
-                            font.family: "JetBrainsMono Nerd Font" 
+                            font.family: Sizes.fontFamilyMono
+                            elide: Text.ElideRight
                         }
                     }
                 }
                 
-                GridCard { iconTxt: "swap_horiz"; title: "Swap"; val: root.swapText; acc: Colorscheme.primary }
+                GridCard { iconTxt: "swap_horiz"; title: "Swap"; val: formatGiB(SysmonPlugin.swapUsedGB) + " / " + formatGiB(SysmonPlugin.swapTotalGB); acc: Colorscheme.primary }
                 GridCard { iconTxt: "memory"; title: "CPU0 Freq"; val: SysmonPlugin.cpuFreqGHz.toFixed(2) + " GHz"; acc: Colorscheme.secondary_container }
                 GridCard { iconTxt: "account_tree"; title: "Tasks"; val: SysmonPlugin.taskRunning + " / " + SysmonPlugin.taskTotal; acc: Colorscheme.tertiary }
                 GridCard { iconTxt: "schedule"; title: "Uptime"; val: SysmonPlugin.uptime; acc: Colorscheme.secondary }
@@ -723,11 +721,12 @@ Item {
                         Rectangle {
                             width: 50; height: 50; radius: Sizes.rounding.chip 
                             color: Qt.rgba(rootCard.accColor.r, rootCard.accColor.g, rootCard.accColor.b, 0.15)
-                            Text { anchors.centerIn: parent; text: "hard_drive_2"; font.family: "Material Symbols Outlined"; color: rootCard.accColor; font.pixelSize: Sizes.font.h2b }
+                            Text { anchors.centerIn: parent; text: "hard_drive_2"; font.family: Sizes.fontIcon; color: rootCard.accColor; font.pixelSize: Sizes.font.h2b }
                         }
                         
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             spacing: Sizes.spacing.s
                             
                             RowLayout {
@@ -735,7 +734,7 @@ Item {
                                     spacing: Sizes.spacing.s
                                     Text {
                                         text: "storage"
-                                        font.family: "Material Symbols Outlined"
+                                        font.family: Sizes.fontIcon
                                         color: Colorscheme.on_surface
                                         font.pixelSize: Sizes.font.body
                                         anchors.verticalCenter: parent.verticalCenter
@@ -745,17 +744,30 @@ Item {
                                         color: Colorscheme.on_surface
                                         font.pixelSize: Sizes.font.body
                                         font.bold: true
-                                        font.family: "LXGW WenKai GB"
+                                        font.family: Sizes.fontFamily
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                 }
                                 Item { Layout.fillWidth: true }
-                                Text { text: rootCard.val; color: rootCard.accColor; font.pixelSize: Sizes.font.xxl; font.bold:true; font.family: "JetBrainsMono Nerd Font" }
+                                Text {
+                                    text: rootCard.val
+                                    color: rootCard.accColor
+                                    font.pixelSize: Sizes.font.xxl
+                                    font.bold:true
+                                    font.family: Sizes.fontFamilyMono
+                                    elide: Text.ElideRight
+                                }
                             }
                             RowLayout {
-                                Text { text: "Used Space:"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: "LXGW WenKai GB" }
+                                Text { text: "Used Space:"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamily }
                                 Item { Layout.fillWidth: true }
-                                Text { text: rootCard.usageTxt; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: "JetBrainsMono Nerd Font" }
+                                Text {
+                                    text: rootCard.usageTxt
+                                    color: Colorscheme.on_surface_variant
+                                    font.pixelSize: Sizes.font.md
+                                    font.family: Sizes.fontFamilyMono
+                                    elide: Text.ElideRight
+                                }
                             }
                         }
                     }
@@ -796,30 +808,52 @@ Item {
                         Rectangle {
                             width: 50; height: 50; radius: Sizes.rounding.chip
                             color: Qt.rgba(batCard.accColor.r, batCard.accColor.g, batCard.accColor.b, 0.15)
-                            Text { anchors.centerIn: parent; text: "battery_charging_full"; font.family: "Material Symbols Outlined"; color: batCard.accColor; font.pixelSize: Sizes.font.h2b }
+                            Text { anchors.centerIn: parent; text: "battery_charging_full"; font.family: Sizes.fontIcon; color: batCard.accColor; font.pixelSize: Sizes.font.h2b }
                         }
                         
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             spacing: Sizes.spacing.s
                             
                             RowLayout {
                                 // “System Battery” 被替换为根据健康度染色的硬核纯数字百分比，并且大幅增加了字号
-                                Text { text: batCard.healthNum + "%"; color: batCard.healthColor; font.pixelSize: Sizes.font.display; font.bold: true; font.family: "JetBrainsMono Nerd Font" }
+                                Text {
+                                    text: batCard.healthNum + "%"
+                                    color: batCard.healthColor
+                                    font.pixelSize: Sizes.font.display
+                                    font.bold: true
+                                    font.family: Sizes.fontFamilyMono
+                                    elide: Text.ElideRight
+                                }
                                 Item { Layout.fillWidth: true }
-                                Text { text: batCard.val; color: batCard.accColor; font.pixelSize: Sizes.font.xxl; font.bold:true; font.family: "JetBrainsMono Nerd Font" }
+                                Text {
+                                    text: batCard.val
+                                    color: batCard.accColor
+                                    font.pixelSize: Sizes.font.xxl
+                                    font.bold:true
+                                    font.family: Sizes.fontFamilyMono
+                                    elide: Text.ElideRight
+                                }
                             }
                             RowLayout {
                                 Text { 
                                     text: batCard.statusTxt
                                     color: batCard.statusTxt === "Charging" ? batCard.accColor : Colorscheme.on_surface_variant
                                     font.pixelSize: Sizes.font.md
-                                    font.family: "LXGW WenKai GB"
+                                    font.family: Sizes.fontFamily
                                     font.bold: batCard.statusTxt === "Charging"
+                                    elide: Text.ElideRight
                                 }
                                 Item { Layout.fillWidth: true }
                                 // 右下部分移除冗余文字，单独留存瓦数功率
-                                Text { text: batCard.powerTxt; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: "JetBrainsMono Nerd Font" }
+                                Text {
+                                    text: batCard.powerTxt
+                                    color: Colorscheme.on_surface_variant
+                                    font.pixelSize: Sizes.font.md
+                                    font.family: Sizes.fontFamilyMono
+                                    elide: Text.ElideRight
+                                }
                             }
                         }
                     }
@@ -839,10 +873,20 @@ Item {
                 
                 // 右键菜单打开时暂停刷新
                 property bool procMenuOpen: false
+                property int expandedPid: -1
+                property int detailLoadingPid: -1
+                property var procDetailsCache: ({})
+
+                Timer {
+                    interval: 3000
+                    running: procSection.expandedPid > 0 && !procSection.procMenuOpen
+                    repeat: true
+                    onTriggered: procSection.requestDetail(procSection.expandedPid, true)
+                }
                 
                 // 分类/排序/搜索状态
                 property int procTabIdx: 0    // 0=全部, 1=用户, 2=系统
-                property int sortCol: 0       // 0=CPU, 1=内存, 2=PID
+                property int sortCol: 0       // 0=CPU, 1=RSS, 2=PID
                 property bool sortAsc: false
                 property string searchText: ""
                 
@@ -906,8 +950,59 @@ Item {
                         && a.cmdline === b.cmdline
                 }
 
+                function detailForPid(pid) {
+                    if (!pid) return null
+                    return procDetailsCache[String(pid)] || null
+                }
+
+                function storeDetail(pid, detail) {
+                    const next = Object.assign({}, procDetailsCache)
+                    next[String(pid)] = detail
+                    procDetailsCache = next
+                }
+
+                function requestDetail(pid, forceRefresh) {
+                    if (!pid) return
+                    if (detailLoadingPid === pid) return
+                    const cached = detailForPid(pid)
+                    if (cached && !forceRefresh)
+                        return
+
+                    detailLoadingPid = pid
+                    const detail = SysmonPlugin.getProcessDetails(pid)
+                    storeDetail(pid, detail)
+                    if (detailLoadingPid === pid)
+                        detailLoadingPid = -1
+                }
+
+                function toggleExpanded(pid) {
+                    if (!pid) return
+                    if (expandedPid === pid) {
+                        expandedPid = -1
+                        detailLoadingPid = -1
+                        return
+                    }
+
+                    expandedPid = pid
+                    requestDetail(pid, true)
+                }
+
                 function syncProcessListModel(items) {
                     const next = items || []
+
+                    if (expandedPid > 0) {
+                        let stillVisible = false
+                        for (let i = 0; i < next.length; ++i) {
+                            if (next[i] && next[i].pid === expandedPid) {
+                                stillVisible = true
+                                break
+                            }
+                        }
+                        if (!stillVisible) {
+                            expandedPid = -1
+                            detailLoadingPid = -1
+                        }
+                    }
 
                     while (processListModel.count > next.length)
                         processListModel.remove(processListModel.count - 1, 1)
@@ -966,8 +1061,8 @@ Item {
                     Layout.fillWidth: true
                     spacing: Sizes.spacing.sm
                     
-                    Text { text: "leaderboard"; font.family: "Material Symbols Outlined"; color: Colorscheme.primary; font.pixelSize: Sizes.font.h1 }
-                    Text { text: "进程"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.xl; font.bold: true; font.family: "LXGW WenKai GB" }
+                    Text { text: "leaderboard"; font.family: Sizes.fontIcon; color: Colorscheme.primary; font.pixelSize: Sizes.font.h1 }
+                    Text { text: "进程"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.xl; font.bold: true; font.family: Sizes.fontFamily }
                     
                     Item { Layout.preferredWidth: 8 }
                     
@@ -1012,7 +1107,7 @@ Item {
                             Text {
                                 anchors.centerIn: parent
                                 text: parent.textStr
-                                font.family: "LXGW WenKai GB"
+                                font.family: Sizes.fontFamily
                                 font.pixelSize: Sizes.font.sm
                                 font.bold: parent.isActive
                                 color: parent.isActive ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant
@@ -1050,13 +1145,13 @@ Item {
                         
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10; spacing: Sizes.spacing.s
-                            Text { text: "search"; font.family: "Material Symbols Outlined"; color: Colorscheme.primary; font.pixelSize: Sizes.font.xl }
+                            Text { text: "search"; font.family: Sizes.fontIcon; color: Colorscheme.primary; font.pixelSize: Sizes.font.xl }
                             TextField {
                                 id: searchInput
                                 Layout.fillWidth: true
                                 color: Colorscheme.on_surface
                                 font.pixelSize: Sizes.font.sm
-                                font.family: "LXGW WenKai GB"
+                                font.family: Sizes.fontFamily
                                 placeholderText: ""
                                 background: Item {}
                                 padding: 0
@@ -1087,7 +1182,7 @@ Item {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Sizes.spacing.sm
-                            Text { text: "  名称"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: "LXGW WenKai GB"; Layout.fillWidth: true }
+                            Text { text: "  名称"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamily; Layout.fillWidth: true }
                             
                             component SortHeader: Rectangle {
                                 property string title
@@ -1107,12 +1202,12 @@ Item {
                                         text: parent.parent.title
                                         color: parent.parent.isActive ? Colorscheme.primary : Colorscheme.on_surface_variant
                                         font.pixelSize: Sizes.font.md
-                                        font.family: "LXGW WenKai GB"
+                                        font.family: Sizes.fontFamily
                                         font.bold: parent.parent.isActive 
                                     }
                                     Text { 
                                         text: procSection.sortAsc ? "arrow_upward" : "arrow_downward"
-                                        font.family: "Material Symbols Outlined"
+                                        font.family: Sizes.fontIcon
                                         color: Colorscheme.primary
                                         font.pixelSize: Sizes.font.lg
                                         visible: parent.parent.isActive
@@ -1135,7 +1230,7 @@ Item {
                             }
                             
                             SortHeader { title: "CPU"; colIdx: 0 }
-                            SortHeader { title: "内存"; colIdx: 1 }
+                            SortHeader { title: "RSS"; colIdx: 1 }
                             SortHeader { title: "PID"; colIdx: 2 }
                         }
                         
@@ -1154,64 +1249,207 @@ Item {
                             
                             delegate: Rectangle {
                                 id: procDelegate
-                                width: processList.width; height: 42
+                                width: processList.width
+                                implicitHeight: 42 + (expanded ? detailCard.implicitHeight + 8 : 0)
+                                height: implicitHeight
                                 radius: Sizes.rounding.small
                                 
                                 // ListModel 中角色作为直接属性暴露，需手动组装
                                 property var proc: ({pid: pid, name: name, cpuPercent: cpuPercent, memKB: memKB, uid: uid, cmdline: cmdline})
                                 
+                                readonly property bool expanded: proc && proc.pid === procSection.expandedPid
+                                readonly property var detail: proc ? procSection.detailForPid(proc.pid) : null
+                                readonly property bool loadingDetail: proc && proc.pid === procSection.detailLoadingPid
                                 property bool cpuHigh: (proc && proc.cpuPercent ? proc.cpuPercent : 0) > 5.0
                                 property bool ramHigh: (proc && proc.memKB ? proc.memKB : 0) > 1048576
                                 property bool hovered: procMouse.containsMouse
                                 
                                 // 悬浮时使用半透明主题色填充
-                                color: hovered ? Qt.rgba(Colorscheme.primary.r, Colorscheme.primary.g, Colorscheme.primary.b, 0.12) : "transparent"
+                                color: expanded
+                                    ? Qt.rgba(Colorscheme.primary.r, Colorscheme.primary.g, Colorscheme.primary.b, 0.14)
+                                    : (hovered ? Qt.rgba(Colorscheme.primary.r, Colorscheme.primary.g, Colorscheme.primary.b, 0.12) : "transparent")
                                 
+                                Behavior on implicitHeight { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                 Behavior on color { ColorAnimation { duration: 120 } }
                                 
-                                RowLayout {
-                                    anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 12; spacing: Sizes.spacing.md
-                                    
-                                    Text { 
-                                        text: proc && proc.name ? proc.name : ""
-                                        color: Colorscheme.on_surface; font.pixelSize: Sizes.font.lg
-                                        font.family: "JetBrainsMono Nerd Font"
-                                        Layout.fillWidth: true; elide: Text.ElideRight 
-                                    }
-                                    
-                                    // CPU Pill
-                                    Rectangle {
-                                        Layout.preferredWidth: 80; height: 26; radius: Sizes.rounding.normalPlus
-                                        color: cpuHigh 
-                                            ? Qt.rgba(Colorscheme.error.r, Colorscheme.error.g, Colorscheme.error.b, 0.15) 
-                                            : Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.06)
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: expanded ? 8 : 0
+
+                                    RowLayout {
+                                        width: parent.width
+                                        height: 42
+                                        spacing: Sizes.spacing.md
+
+                                        Text {
+                                            text: expanded ? "expand_less" : "chevron_right"
+                                            font.family: Sizes.fontIcon
+                                            color: expanded ? Colorscheme.primary : Colorscheme.on_surface_variant
+                                            font.pixelSize: Sizes.font.xl
+                                        }
+
                                         Text { 
-                                            anchors.centerIn: parent
-                                            text: (proc && proc.cpuPercent ? proc.cpuPercent : 0).toFixed(1) + "%"
-                                            color: cpuHigh ? Colorscheme.error : Colorscheme.on_surface_variant
-                                            font.pixelSize: Sizes.font.md; font.family: "JetBrainsMono Nerd Font"; font.bold: true 
+                                            text: proc && proc.name ? proc.name : ""
+                                            color: Colorscheme.on_surface; font.pixelSize: Sizes.font.lg
+                                            font.family: Sizes.fontFamilyMono
+                                            Layout.fillWidth: true
+                                            Layout.minimumWidth: 0
+                                            elide: Text.ElideRight
+                                        }
+
+                                        Rectangle {
+                                            Layout.preferredWidth: 80; height: 26; radius: Sizes.rounding.normalPlus
+                                            color: cpuHigh 
+                                                ? Qt.rgba(Colorscheme.error.r, Colorscheme.error.g, Colorscheme.error.b, 0.15) 
+                                                : Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.06)
+                                            Text { 
+                                                anchors.centerIn: parent
+                                                text: (proc && proc.cpuPercent ? proc.cpuPercent : 0).toFixed(1) + "%"
+                                                color: cpuHigh ? Colorscheme.error : Colorscheme.on_surface_variant
+                                                font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamilyMono; font.bold: true 
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            Layout.preferredWidth: 100; height: 26; radius: Sizes.rounding.normalPlus
+                                            color: ramHigh 
+                                                ? Qt.rgba(Colorscheme.error.r, Colorscheme.error.g, Colorscheme.error.b, 0.15) 
+                                                : Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.06)
+                                            Text { 
+                                                anchors.centerIn: parent
+                                                text: formatMemKB(proc && proc.memKB ? proc.memKB : 0)
+                                                color: ramHigh ? Colorscheme.error : Colorscheme.on_surface_variant
+                                                font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamilyMono; font.bold: true 
+                                            }
+                                        }
+
+                                        Text { 
+                                            text: proc && proc.pid ? proc.pid : ""
+                                            color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.lg
+                                            font.family: Sizes.fontFamilyMono
+                                            Layout.preferredWidth: 70; horizontalAlignment: Text.AlignHCenter 
                                         }
                                     }
-                                    
-                                    // RAM Pill
+
                                     Rectangle {
-                                        Layout.preferredWidth: 100; height: 26; radius: Sizes.rounding.normalPlus
-                                        color: ramHigh 
-                                            ? Qt.rgba(Colorscheme.error.r, Colorscheme.error.g, Colorscheme.error.b, 0.15) 
-                                            : Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.06)
-                                        Text { 
-                                            anchors.centerIn: parent
-                                            text: formatMemKB(proc && proc.memKB ? proc.memKB : 0)
-                                            color: ramHigh ? Colorscheme.error : Colorscheme.on_surface_variant
-                                            font.pixelSize: Sizes.font.md; font.family: "JetBrainsMono Nerd Font"; font.bold: true 
+                                        id: detailCard
+                                        width: parent.width
+                                        implicitHeight: detailColumn.implicitHeight + 14
+                                        height: expanded ? implicitHeight : 0
+                                        visible: expanded || height > 0
+                                        radius: Sizes.rounding.normal
+                                        clip: true
+                                        color: Qt.rgba(Colorscheme.surface_container_highest.r, Colorscheme.surface_container_highest.g, Colorscheme.surface_container_highest.b, 0.82)
+
+                                        Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                                        Column {
+                                            id: detailColumn
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            anchors.margins: 10
+                                            spacing: 8
+
+                                            Text {
+                                                width: parent.width
+                                                visible: loadingDetail
+                                                text: "正在读取 smaps_rollup..."
+                                                color: Colorscheme.on_surface_variant
+                                                font.pixelSize: Sizes.font.sm
+                                                font.family: Sizes.fontFamily
+                                            }
+
+                                            component DetailChip: Rectangle {
+                                                property string title: ""
+                                                property string value: ""
+
+                                                color: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.05)
+                                                radius: Sizes.rounding.normalPlus
+                                                implicitWidth: chipRow.implicitWidth + 16
+                                                implicitHeight: chipRow.implicitHeight + 8
+
+                                                Row {
+                                                    id: chipRow
+                                                    anchors.centerIn: parent
+                                                    spacing: 6
+
+                                                    Text {
+                                                        text: parent.parent.title
+                                                        color: Colorscheme.on_surface_variant
+                                                        font.pixelSize: Sizes.font.xsm
+                                                        font.family: Sizes.fontFamily
+                                                    }
+                                                    Text {
+                                                        text: parent.parent.value
+                                                        color: Colorscheme.on_surface
+                                                        font.pixelSize: Sizes.font.sm
+                                                        font.bold: true
+                                                        font.family: Sizes.fontFamilyMono
+                                                    }
+                                                }
+                                            }
+
+                                            Flow {
+                                                width: parent.width
+                                                visible: !loadingDetail && !!detail
+                                                spacing: Sizes.spacing.sm
+
+                                                DetailChip { title: "PSS"; value: formatMemKB(detail && detail.pssKB ? detail.pssKB : 0) }
+                                                DetailChip { title: "USS"; value: formatMemKB(detail && detail.ussKB ? detail.ussKB : 0) }
+                                                DetailChip { title: "RSS"; value: formatMemKB(detail && detail.rssKB ? detail.rssKB : (proc && proc.memKB ? proc.memKB : 0)) }
+                                                DetailChip { title: "Threads"; value: String(detail && detail.threads ? detail.threads : 0) }
+                                            }
+
+                                            Text {
+                                                width: parent.width
+                                                visible: !loadingDetail && !!detail
+                                                text: detail && detail.exactMemory
+                                                    ? "真值来自 smaps_rollup，USS = Private_Clean + Private_Dirty"
+                                                    : (detail && detail.permissionDenied
+                                                        ? "无权限读取 smaps_rollup；这里只能显示基础信息，不能给出该进程的 PSS/USS 真值"
+                                                        : "该进程详情暂不可用")
+                                                color: detail && detail.exactMemory ? Colorscheme.secondary : Colorscheme.error
+                                                font.pixelSize: Sizes.font.xsm
+                                                font.family: Sizes.fontFamily
+                                                wrapMode: Text.Wrap
+                                            }
+
+                                            Flow {
+                                                width: parent.width
+                                                visible: !loadingDetail && !!detail && detail.exactMemory
+                                                spacing: Sizes.spacing.sm
+
+                                                DetailChip { title: "Private"; value: formatMemKB((detail && detail.privateCleanKB ? detail.privateCleanKB : 0) + (detail && detail.privateDirtyKB ? detail.privateDirtyKB : 0)) }
+                                                DetailChip { title: "Shared"; value: formatMemKB((detail && detail.sharedCleanKB ? detail.sharedCleanKB : 0) + (detail && detail.sharedDirtyKB ? detail.sharedDirtyKB : 0)) }
+                                                DetailChip { title: "Anon"; value: formatMemKB(detail && detail.anonymousKB ? detail.anonymousKB : 0) }
+                                                DetailChip { title: "Swap"; value: formatMemKB(detail && detail.swapKB ? detail.swapKB : 0) }
+                                            }
+
+                                            Text {
+                                                width: parent.width
+                                                visible: !loadingDetail && !!detail && !!detail.state
+                                                text: "状态: " + detail.state + "    EXE: " + (detail.exePath || "--")
+                                                color: Colorscheme.on_surface_variant
+                                                font.pixelSize: Sizes.font.xsm
+                                                font.family: Sizes.fontFamilyMono
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                width: parent.width
+                                                visible: !loadingDetail && ((detail && detail.cmdline) || (proc && proc.cmdline))
+                                                text: detail && detail.cmdline ? detail.cmdline : (proc && proc.cmdline ? proc.cmdline : "")
+                                                color: Colorscheme.on_surface_variant
+                                                font.pixelSize: Sizes.font.xsm
+                                                font.family: Sizes.fontFamilyMono
+                                                wrapMode: Text.WrapAnywhere
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
                                         }
-                                    }
-                                    
-                                    Text { 
-                                        text: proc && proc.pid ? proc.pid : ""
-                                        color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.lg
-                                        font.family: "JetBrainsMono Nerd Font"
-                                        Layout.preferredWidth: 70; horizontalAlignment: Text.AlignHCenter 
                                     }
                                 }
                                 
@@ -1219,11 +1457,13 @@ Item {
                                     id: procMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    acceptedButtons: Qt.RightButton
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     onClicked: (mouse) => {
                                         if (mouse.button === Qt.RightButton) {
                                             procSection.procMenuOpen = true
                                             procMenu.popup()
+                                        } else if (mouse.button === Qt.LeftButton) {
+                                            procSection.toggleExpanded(proc.pid)
                                         }
                                     }
                                 }
@@ -1244,8 +1484,8 @@ Item {
                                         property string iconTxt
                                         contentItem: RowLayout {
                                             spacing: Sizes.spacing.md
-                                            Text { text: mItem.iconTxt; font.family: "Material Symbols Outlined"; color: mItem.enabled ? Colorscheme.on_surface_variant : Colorscheme.outline; font.pixelSize: Sizes.font.xl }
-                                            Text { text: mItem.text; color: mItem.enabled ? Colorscheme.on_surface : Colorscheme.outline; font.pixelSize: Sizes.font.md; font.family: "LXGW WenKai GB" }
+                                            Text { text: mItem.iconTxt; font.family: Sizes.fontIcon; color: mItem.enabled ? Colorscheme.on_surface_variant : Colorscheme.outline; font.pixelSize: Sizes.font.xl }
+                                            Text { text: mItem.text; color: mItem.enabled ? Colorscheme.on_surface : Colorscheme.outline; font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamily }
                                             Item { Layout.fillWidth: true }
                                         }
                                     }

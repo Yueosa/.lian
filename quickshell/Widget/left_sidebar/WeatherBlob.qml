@@ -95,7 +95,7 @@ Item {
         Text {
             text: root.title
             color: "#f2edf7"
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.bold: true
             font.pixelSize: Math.round(15 * root.uiScale)
             anchors.verticalCenter: parent.verticalCenter
@@ -119,7 +119,7 @@ Item {
         width: parent.width * 0.40
         text: root.level
         color: "#f2edf7"
-        font.family: "LXGW WenKai GB"
+        font.family: "Noto Sans CJK SC"
         font.pixelSize: Math.round(16 * root.uiScale)
         font.bold: true
         horizontalAlignment: Text.AlignHCenter

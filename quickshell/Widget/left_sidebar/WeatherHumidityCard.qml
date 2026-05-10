@@ -74,7 +74,7 @@ WeatherInsightCard {
         Text {
             text: "相对湿度"
             color: "#f2edf7"
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Math.round(18 * root.uiScale)
             font.bold: true
         }
@@ -143,7 +143,7 @@ WeatherInsightCard {
         Text {
             text: "露点"
             color: "#f5f2f7"
-            font.family: "LXGW WenKai GB"
+            font.family: "Noto Sans CJK SC"
             font.pixelSize: Math.round(18 * root.uiScale)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter

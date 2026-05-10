@@ -41,7 +41,7 @@ Rectangle {
             Text {
                 text: root.label
                 color: Colorscheme.on_surface_variant
-                font.family: "LXGW WenKai GB"
+                font.family: "Noto Sans CJK SC"
                 font.pixelSize: Sizes.font.xsm
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -61,7 +61,7 @@ Rectangle {
                 text: root.detail
                 visible: root.detail.length > 0
                 color: Colorscheme.outline
-                font.family: "LXGW WenKai GB"
+                font.family: "Noto Sans CJK SC"
                 font.pixelSize: Sizes.font.xs
                 elide: Text.ElideRight
                 Layout.fillWidth: true
