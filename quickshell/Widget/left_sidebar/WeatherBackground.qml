@@ -492,12 +492,15 @@ Item {
             return
         }
 
-        let next = meteors.slice(0, meteorSlotCount())
-        while (next.length < meteorSlotCount())
-            next.push(makeMeteorState(meteorRespawnDelay(true)))
+        // 原地维护 meteors: pop 多余 / push 缺口 / 按需重建到位, 避免每帧 slice
+        const target = meteorSlotCount()
+        while (meteors.length > target)
+            meteors.pop()
+        while (meteors.length < target)
+            meteors.push(makeMeteorState(meteorRespawnDelay(true)))
 
-        for (let i = 0; i < next.length; ++i) {
-            const meteor = next[i]
+        for (let i = 0; i < target; ++i) {
+            const meteor = meteors[i]
             if (!meteor.active) {
                 meteor.delay -= dt
                 if (meteor.delay <= 0) {
@@ -506,14 +509,10 @@ Item {
                 }
                 continue
             }
-
             meteor.progress += dt * meteor.travel * 1.85
-            if (meteor.progress >= meteor.travel) {
-                next[i] = makeMeteorState(meteorRespawnDelay(false))
-            }
+            if (meteor.progress >= meteor.travel)
+                meteors[i] = makeMeteorState(meteorRespawnDelay(false))
         }
-
-        meteors = next
     }
 
     function isRainScene() {
@@ -564,12 +563,12 @@ Item {
             points.push({ x: x, y: y })
         }
 
-        lightningStrikes = lightningStrikes.concat([{
+        lightningStrikes.push({
             points: points,
             age: 0,
             duration: 1.0,
             strokeWidth: 2.8 + Math.random() * 1.2
-        }])
+        })
     }
 
     function updateLightning(dt) {
