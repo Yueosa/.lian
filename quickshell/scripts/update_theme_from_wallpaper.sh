@@ -3,6 +3,7 @@ set -euo pipefail
 
 WALLPAPER_PATH="${1:-}"
 FORCED_MODE="${2:-auto}"
+REQUEST_SEQ="${3:-0}"
 OUT_JSON="${HOME}/.cache/quickshell_colors.json"
 THUMB_DIR_PRIMARY="${HOME}/.cache/Lian/LianWall/thumbnails"
 THUMB_DIR_FALLBACK="${HOME}/.cache/lianwall/thumbnails"
@@ -191,6 +192,18 @@ nudge_qt6ct() {
   [[ -f "${conf}" ]] && touch "${conf}" || true
 }
 
+if [[ "$(normalize_mode "${FORCED_MODE}")" == "auto" && -f "${OUT_JSON}" ]]; then
+  if jq -e --arg path "${SOURCE_IMAGE}" '."__qs_request_mode" == "auto" and ."__qs_wallpaper_path" == $path' "${OUT_JSON}" >/dev/null 2>&1; then
+    jq --arg request_mode "auto" --argjson request_seq "${REQUEST_SEQ:-0}" --arg wallpaper_path "${SOURCE_IMAGE}" \
+      '. + {"__qs_request_mode": $request_mode, "__qs_request_seq": $request_seq, "__qs_wallpaper_path": $wallpaper_path}' \
+      "${OUT_JSON}" > "${OUT_JSON}.tmp"
+    mv "${OUT_JSON}.tmp" "${OUT_JSON}"
+    sync_gtk_color_scheme "${MODE}"
+    nudge_qt6ct
+    exit 0
+  fi
+fi
+
 if command -v matugen >/dev/null 2>&1; then
   tmp_json="${TMP_DIR}/matugen-colors.json"
   matugen_args=(image "${SOURCE_IMAGE}" --source-color-index 0 --mode "${MODE}" --json hex --old-json-output)
@@ -199,8 +212,10 @@ if command -v matugen >/dev/null 2>&1; then
   fi
   if matugen "${matugen_args[@]}" > "${tmp_json}" 2>/dev/null; then
     if jq -e '.colors' "${tmp_json}" >/dev/null 2>&1; then
-      jq --arg mode "${MODE}" \
-        '(.colors | with_entries(.value = (.value[$mode] // .value.default // .value.dark // .value.light // .value))) + {"_mode": $mode}' \
+      jq --arg mode "${MODE}" --arg request_mode "$(normalize_mode "${FORCED_MODE}")" --argjson request_seq "${REQUEST_SEQ:-0}" \
+        --arg wallpaper_path "${SOURCE_IMAGE}" \
+        '(.colors | with_entries(.value = (.value[$mode] // .value.default // .value.dark // .value.light // .value)))
+         + {"__qs_request_mode": $request_mode, "__qs_request_seq": $request_seq, "__qs_wallpaper_path": $wallpaper_path}' \
         "${tmp_json}" > "${OUT_JSON}"
       sync_gtk_color_scheme "${MODE}"
       nudge_qt6ct
@@ -211,9 +226,15 @@ fi
 
 avg_hex="$(extract_average_hex "${SOURCE_IMAGE}" || true)"
 if [[ -n "${avg_hex}" ]]; then
-  printf '{"source_color":"%s","primary":"%s","_mode":"%s"}\n' "${avg_hex}" "${avg_hex}" "${MODE}" > "${OUT_JSON}"
+  printf '{"source_color":"%s","primary":"%s","__qs_request_mode":"%s","__qs_request_seq":%s}\n' \
+    "${avg_hex}" "${avg_hex}" "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" > "${OUT_JSON}"
+  jq --arg wallpaper_path "${SOURCE_IMAGE}" '. + {"__qs_wallpaper_path": $wallpaper_path}' "${OUT_JSON}" > "${OUT_JSON}.tmp"
+  mv "${OUT_JSON}.tmp" "${OUT_JSON}"
 else
-  printf '{"_mode":"%s"}\n' "${MODE}" > "${OUT_JSON}"
+  printf '{"__qs_request_mode":"%s","__qs_request_seq":%s}\n' \
+    "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" > "${OUT_JSON}"
+  jq --arg wallpaper_path "${SOURCE_IMAGE}" '. + {"__qs_wallpaper_path": $wallpaper_path}' "${OUT_JSON}" > "${OUT_JSON}.tmp"
+  mv "${OUT_JSON}.tmp" "${OUT_JSON}"
 fi
 
 sync_gtk_color_scheme "${MODE}"

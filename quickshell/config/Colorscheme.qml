@@ -24,36 +24,28 @@ Singleton {
     property int _animStep: 0
     readonly property int _animSteps: 14
     property bool _readingThemeMode: false
+    property int _themeRequestSeq: 0
+    property bool _hasCommittedTheme: false
+    property var _lastAutoColors: ({})
+    property string _lastAutoWallpaperPath: ""
 
     // 主题是否已就绪。false 期间上层 UI 应该隐藏，避免闪现 dark 占位。
     //   LIGHT / DARK：_modeLoaded 后即就绪
-    //   AUTO：必须等到 cache 写入 _mode 才算就绪
+    //   AUTO：必须等到当前请求对应的 matugen 色值落盘
     readonly property bool ready: {
         if (!_modeLoaded)
             return false;
         const mode = matugenMode.toLowerCase();
         if (mode === "light" || mode === "dark")
             return true;
-        return generatedMode !== "";
+        return generatedRequestMode === "auto"
+            && generatedRequestSeq === _themeRequestSeq
+            && Object.keys(generatedColors).length > 0;
     }
 
-    // matugen / 亮度脚本写入的 _mode 字段：cache 色值实际是哪个 variant 生成的。
-    // AUTO 模式下该值 == 壁纸亮度判定结果；LIGHT/DARK 模式根本不看 cache。
-    readonly property string generatedMode: {
-        const v = (generatedColors["_mode"] || "").toString().toLowerCase();
-        return (v === "light" || v === "dark") ? v : "";
-    }
-
-    // 对外暴露「当前实际呈现的明暗」：
-    //   LIGHT → light
-    //   DARK  → dark
-    //   AUTO  → 跟 cache._mode（壁纸亮度）；cache 未就绪时默认 dark
-    readonly property string effectiveMatugenMode: {
-        const mode = matugenMode.toLowerCase();
-        if (mode === "light" || mode === "dark")
-            return mode;
-        return generatedMode || "light";
-    }
+    readonly property string generatedRequestMode: (generatedColors["__qs_request_mode"] || "").toString().toLowerCase()
+    readonly property int generatedRequestSeq: Number(generatedColors["__qs_request_seq"] || -1)
+    readonly property string effectiveMatugenMode: matugenMode.toLowerCase()
 
     // Light: 粉蓝白；Dark: 黑莓系粉蓝白。
     readonly property var lightPalette: ({
@@ -224,10 +216,24 @@ Singleton {
         wallpaperPreviewVersion += 1;
     }
 
-    function refreshThemeByWallpaperPath(path) {
+    function nextThemeRequest(mode) {
+        _themeRequestSeq += 1;
+        return { mode: normalizeMode(mode || matugenMode), seq: _themeRequestSeq };
+    }
+
+    function refreshThemeByWallpaperPath(path, request) {
         if (!path || path.length === 0)
             return;
-        Quickshell.execDetached(["bash", localThemeScriptPath, path]);
+        const escapedScript = localThemeScriptPath.replace(/'/g, "'\\''");
+        const escapedPath = path.replace(/'/g, "'\\''");
+        const escapedMode = request.mode.replace(/'/g, "'\\''");
+        const escapedSeq = String(request.seq).replace(/'/g, "'\\''");
+        Quickshell.execDetached([
+            "bash",
+            "-lc",
+            "wp=$(readlink -f '" + escapedPath + "' 2>/dev/null || printf '%s' '" + escapedPath + "'); " +
+            "if [ -n \"$wp\" ] && [ -f \"$wp\" ]; then bash '" + escapedScript + "' \"$wp\" '" + escapedMode + "' '" + escapedSeq + "' >/dev/null 2>&1; fi"
+        ]);
     }
 
     function refreshFromWallpaperPath(path) {
@@ -235,7 +241,7 @@ Singleton {
             return;
         _lastWallpaperRealPath = path;
         updatePreviewUrls(path);
-        refreshThemeByWallpaperPath(path);
+        requestWallpaperThemeRefresh(path);
     }
 
     function snakeToM3(key) {
@@ -247,16 +253,9 @@ Singleton {
     }
 
     function applyPresetColors(mode) {
-        // 三套方案完全解耦：
-        //   LIGHT → lightPalette（固定，不跳 cache）
-        //   DARK  → darkPalette （固定，不跳 cache）
-        //   AUTO  → 以 cache._mode 选一份 light/dark 作为 fallback 基线，
-        //           后续 applyTheme 会再用 cache 覆盖（仅 AUTO 模式）。
         let palette = darkPalette;
         if (mode === "light")
             palette = lightPalette;
-        else if (mode === "auto")
-            palette = (generatedMode === "light") ? lightPalette : darkPalette;
         const target = {};
         for (const key in palette) {
             const m3name = snakeToM3(key);
@@ -268,9 +267,22 @@ Singleton {
 
     function applyGeneratedColors(target) {
         for (const key in generatedColors) {
+            if (key.indexOf("__qs_") === 0)
+                continue;
             const m3name = snakeToM3(key);
             if (m3name in m3colors)
                 target[m3name] = Qt.color(generatedColors[key]);
+        }
+        return target;
+    }
+
+    function applyColorsMap(source, target = ({ })) {
+        for (const key in source) {
+            if (key.indexOf("__qs_") === 0)
+                continue;
+            const m3name = snakeToM3(key);
+            if (m3name in m3colors)
+                target[m3name] = Qt.color(source[key]);
         }
         return target;
     }
@@ -298,6 +310,31 @@ Singleton {
             if (key in m3colors)
                 m3colors[key] = theme[key];
         }
+        _hasCommittedTheme = Object.keys(theme).length > 0;
+    }
+
+    function transparentTheme() {
+        const target = {};
+        for (const key in lightPalette) {
+            const m3name = snakeToM3(key);
+            if (m3name in m3colors)
+                target[m3name] = Qt.rgba(0, 0, 0, 0);
+        }
+        return target;
+    }
+
+    function clearDisplayedTheme() {
+        if (themeTransitionTimer.running)
+            themeTransitionTimer.stop();
+        commitTheme(transparentTheme());
+        _hasCommittedTheme = false;
+    }
+
+    function requestWallpaperThemeRefresh(pathOverride = "") {
+        const path = pathOverride || _lastWallpaperRealPath || wallpaperLinkPath;
+        if (!path)
+            return;
+        refreshThemeByWallpaperPath(path, nextThemeRequest(matugenMode));
     }
 
     function animateTheme(targetTheme) {
@@ -316,10 +353,9 @@ Singleton {
             return;
 
         const mode = matugenMode.toLowerCase();
-        let targetTheme = applyPresetColors(mode);
-        // AUTO 独立走 cache：LIGHT/DARK 完全不查 cache，避免三套方案耦合。
-        if (mode === "auto" && generatedMode !== "")
-            targetTheme = applyGeneratedColors(targetTheme);
+        const targetTheme = mode === "auto"
+            ? applyGeneratedColors({})
+            : applyPresetColors(mode);
 
         if (animated)
             animateTheme(targetTheme);
@@ -329,8 +365,12 @@ Singleton {
 
     // 就绪后自动 apply 一次（首次不动画，干净出现）。
     onReadyChanged: {
-        if (ready)
-            applyTheme(false);
+        if (!ready) {
+            if (!_hasCommittedTheme)
+                clearDisplayedTheme();
+            return;
+        }
+        applyTheme(_hasCommittedTheme);
     }
 
     function normalizeMode(mode) {
@@ -360,20 +400,28 @@ Singleton {
         if (_modeLoaded)
             persistMode();
 
-        // 即使 effectiveMatugenMode 不变（例如 auto->light 且都为 light），
-        // 也要重算主题，避免保留 auto 染色结果。
-        applyTheme(true);
+        if (normalized === "auto") {
+            const canReuseAuto = _lastAutoWallpaperPath === _lastWallpaperRealPath
+                && Object.keys(_lastAutoColors).length > 0;
+            generatedColors = canReuseAuto ? _lastAutoColors : ({});
+            if (canReuseAuto) {
+                const cachedTheme = applyColorsMap(_lastAutoColors, {});
+                if (_hasCommittedTheme)
+                    animateTheme(cachedTheme);
+                else
+                    commitTheme(cachedTheme);
+            }
+        } else {
+            applyTheme(_hasCommittedTheme);
+        }
 
-        if (!refreshThemeFromCurrentWallpaper.running)
-            refreshThemeFromCurrentWallpaper.running = true;
+        requestWallpaperThemeRefresh();
 
     }
 
-    onEffectiveMatugenModeChanged: applyTheme(true)
-
     Component.onCompleted: {
         readThemeMode.running = true;
-        refreshThemeFromCurrentWallpaper.running = true;
+        requestWallpaperThemeRefresh();
         pollCurrentWallpaper.running = true;
         // 不主动调 applyTheme：ready 跳变时 onReadyChanged 会负责首次提交。
     }
@@ -507,18 +555,6 @@ Singleton {
     }
 
     Process {
-        id: refreshThemeFromCurrentWallpaper
-        command: [
-            "bash",
-            "-lc",
-            "wp=$(readlink -f \"$HOME/.cache/wallpaper_rofi/current\" 2>/dev/null || true); " +
-            "if [ -n \"$wp\" ] && [ -f \"$wp\" ]; then " +
-            "bash '" + root.localThemeScriptPath.replace(/'/g, "'\\''") + "' \"$wp\" '" + root.matugenMode.replace(/'/g, "'\\''") + "' >/dev/null 2>&1; fi"
-        ]
-        running: false
-    }
-
-    Process {
         id: readCurrentWallpaperPath
         command: ["bash", "-lc", "readlink -f \"$HOME/.cache/wallpaper_rofi/current\" 2>/dev/null || true"]
         running: false
@@ -583,8 +619,21 @@ Singleton {
                 if (!text)
                     return;
 
-                generatedColors = JSON.parse(text);
-                applyTheme();
+                const parsed = JSON.parse(text);
+                const requestMode = (parsed["__qs_request_mode"] || "").toString().toLowerCase();
+                const requestSeq = Number(parsed["__qs_request_seq"] || -1);
+                if (requestMode !== root.matugenMode.toLowerCase())
+                    return;
+                if (requestSeq !== root._themeRequestSeq)
+                    return;
+
+                generatedColors = parsed;
+                if (requestMode === "auto") {
+                    root._lastAutoColors = parsed;
+                    root._lastAutoWallpaperPath = (parsed["__qs_wallpaper_path"] || root._lastWallpaperRealPath || "").toString();
+                }
+                if (root.matugenMode.toLowerCase() === "auto")
+                    applyTheme(root._hasCommittedTheme);
             } catch (e) {
                 // 保持静默，避免高频刷日志。
             }
