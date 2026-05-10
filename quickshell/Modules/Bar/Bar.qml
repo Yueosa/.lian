@@ -6,7 +6,6 @@ import QtQuick.Layouts
 import qs.Modules.Bar.Workspaces
 import qs.Modules.Bar.ActiveWindow
 import qs.Modules.Bar.Tray
-import qs.Modules.Bar.PowerButton
 import qs.Modules.Bar.QuickSettings
 import qs.config
 

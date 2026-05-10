@@ -89,31 +89,6 @@ Rectangle {
                 }
 
                 Item { Layout.fillWidth: true }
-
-                Rectangle {
-                    Layout.preferredWidth: Math.round(36 * root.uiScale)
-                    Layout.preferredHeight: Math.round(36 * root.uiScale)
-                    Layout.alignment: Qt.AlignVCenter
-                    radius: Math.round(18 * root.uiScale)
-                    color: moreMouse.containsMouse ? Colorscheme.surface_container_highest : Colorscheme.surface_container
-
-                    Behavior on color { ColorAnimation { duration: 150 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "more_horiz"
-                        color: Colorscheme.on_surface_variant
-                        font.family: "Material Symbols Outlined"
-                        font.pixelSize: Math.round(20 * root.uiScale)
-                    }
-
-                    MouseArea {
-                        id: moreMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: console.log("Open hourly weather menu")
-                    }
-                }
             }
         }
 
