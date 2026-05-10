@@ -8,6 +8,7 @@ set(CMAKE_AUTOMOC ON)
 
 # Find Qt 6 basics
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Network)
+find_package(SQLite3 REQUIRED)
 qt_standard_project_setup(REQUIRES 6.5)
 
 # Base reusable logic
@@ -16,3 +17,4 @@ add_subdirectory(src)
 # Quickshell plugins (niri removed – using Quickshell.Hyprland instead)
 add_subdirectory(plugin/sysmon)
 add_subdirectory(plugin/weather)
+add_subdirectory(plugin/clipboard)

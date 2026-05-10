@@ -51,3 +51,22 @@ target_link_libraries(ClavisWeatherCore PRIVATE
     Qt6::Network
 )
 target_include_directories(ClavisWeatherCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# === ClavisStore：SQLite 持久化（C 阶段全栈数据层） ===
+qt_add_library(ClavisStore STATIC)
+target_sources(ClavisStore PRIVATE
+    store/database.h
+    store/database.cpp
+    store/dao/clipboard_dao.h
+    store/dao/clipboard_dao.cpp
+    util/image_detect.h
+    util/image_detect.cpp
+    ipc/cliphist_watcher.h
+    ipc/cliphist_watcher.cpp
+)
+set_target_properties(ClavisStore PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(ClavisStore
+    PUBLIC  Qt6::Core
+    PRIVATE SQLite3::SQLite3
+)
+target_include_directories(ClavisStore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
