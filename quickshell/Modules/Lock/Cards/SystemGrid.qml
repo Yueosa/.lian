@@ -2,57 +2,18 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
-import Quickshell.Io
 import qs.config
+import Clavis.Sysmon 1.0
 
 Rectangle {
     id: root
     Layout.fillWidth: true
     Layout.preferredHeight: 280
-    
+
     color: Colorscheme.surface_container
     radius: Sizes.lockCardRadius
 
-    // ================== 数据属性 (初始化为 0 防止 undefined 报错) ==================
-    property var sysData: ({
-        cpu: { value: 0, text: "--%" },
-        ram: { value: 0, text: "--%" },
-        disk: { value: 0, text: "--%" },
-        temp: { value: 0, text: "--°C" }
-    })
-
-    // ================== 数据获取 ==================
-    readonly property string monitorScriptPath: Qt.resolvedUrl("../../../scripts/sys_monitor.py").toString().replace("file://", "")
-
-    Process {
-        id: monitorProc
-        // 确保调用的是 python3 且路径正确
-        command: ["python3", root.monitorScriptPath]
-        running: true 
-        
-        stdout: SplitParser {
-            onRead: (data) => {
-                try {
-                    // 解析 JSON 并更新属性
-                    var json = JSON.parse(data.trim());
-                    root.sysData = json;
-                } catch(e) {
-                    console.log("SysMonitor JSON Error: " + e);
-                }
-            }
-        }
-    }
-
-    // 定时刷新 (每 2 秒一次)
-    Timer {
-        interval: 2000
-        running: true
-        repeat: true
-        onTriggered: monitorProc.running = true
-    }
-    
-    // 界面显示时立即刷新一次
-    Component.onCompleted: monitorProc.running = true
+    // 直接绑定 SysmonPlugin (1s/2s/30s 自驱动), 替代旧的 python3 sys_monitor.py 每 2s fork
 
     // ================== 网格布局 ==================
     GridLayout {
@@ -66,8 +27,8 @@ Rectangle {
         SystemCircle { 
             title: "CPU"
             icon: "" // Nerd Font Chip
-            value: root.sysData.cpu.value
-            display: root.sysData.cpu.text
+            value: SysmonPlugin.cpuUsage / 100
+            display: Math.round(SysmonPlugin.cpuUsage) + "%"
             accent: Colorscheme.tertiary
         }
 
@@ -75,8 +36,8 @@ Rectangle {
         SystemCircle { 
             title: "TEMP"
             icon: "" // Thermometer
-            value: root.sysData.temp.value
-            display: root.sysData.temp.text
+            value: Math.min(Math.max(SysmonPlugin.coreTemp, 0), 100) / 100
+            display: Math.round(SysmonPlugin.coreTemp) + "°C"
             accent: Colorscheme.error
         }
 
@@ -84,8 +45,8 @@ Rectangle {
         SystemCircle { 
             title: "RAM"
             icon: "\ue266" // Memory
-            value: root.sysData.ram.value
-            display: root.sysData.ram.text
+            value: SysmonPlugin.ramUsage / 100
+            display: SysmonPlugin.ramUsedGB.toFixed(1) + "G"
             accent: Colorscheme.primary
         }
 
@@ -93,8 +54,8 @@ Rectangle {
         SystemCircle { 
             title: "DISK"
             icon: "" // HDD
-            value: root.sysData.disk.value
-            display: root.sysData.disk.text
+            value: SysmonPlugin.diskUsage / 100
+            display: Math.round(SysmonPlugin.diskUsage) + "%"
             accent: Colorscheme.secondary
         }
     }

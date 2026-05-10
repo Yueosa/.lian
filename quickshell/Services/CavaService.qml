@@ -16,6 +16,7 @@ Singleton {
 
     Process {
         id: cavaCheck
+        // oneshot: 启动期探测 cava 是否可用, exec 一次后自然退出
         command: ["which", "cava"]
         running: true
         onExited: exitCode => {

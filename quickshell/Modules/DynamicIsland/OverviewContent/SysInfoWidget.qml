@@ -18,7 +18,7 @@ Rectangle {
 
     Process {
         id: fetchProc
-        // 【核心修复】：彻底抛弃 JSON 拼装，改用纯净的自定义分隔符输出，绝对免疫转义符丢失
+        // oneshot: 仅启动期读取一次硬件信息(hostname/vendor/chassis), 进程退出即结束, 不重启
         command: ["sh", "-c", "echo \"$(cat /etc/hostname 2>/dev/null)|||$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)|||$(cat /sys/class/dmi/id/chassis_type 2>/dev/null)\""]
         running: true
         stdout: SplitParser {
