@@ -88,7 +88,7 @@ Item {
         Text {
             text: "能见度"
             color: "#f2edf7"
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.hero
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -104,7 +104,7 @@ Item {
         Text {
             text: root.valueNumberText()
             color: "#f6f2f7"
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Math.round(root.width * 0.24)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -113,7 +113,7 @@ Item {
         Text {
             text: root.valueUnitText()
             color: "#f2edf7"
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Math.round(root.width * 0.12)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -128,7 +128,7 @@ Item {
         width: parent.width * 0.36
         text: root.descriptionText()
         color: "#f2edf7"
-        font.family: "Noto Sans CJK SC"
+        font.family: Sizes.fontFamily
         font.pixelSize: Sizes.font.h1
         font.bold: true
         horizontalAlignment: Text.AlignHCenter

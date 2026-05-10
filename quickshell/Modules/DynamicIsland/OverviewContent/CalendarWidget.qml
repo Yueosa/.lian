@@ -81,7 +81,7 @@ Rectangle {
                 color: Colorscheme.surface_container_highest
                 scale: ma.pressed ? 0.9 : (ma.containsMouse ? 1.05 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 150 } }
-                Text { anchors.centerIn: parent; text: iconTxt; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: Colorscheme.primary }
+                Text { anchors.centerIn: parent; text: iconTxt; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: Colorscheme.primary }
                 signal clicked()
                 MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: parent.clicked() }
             }

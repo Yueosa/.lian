@@ -55,7 +55,7 @@ Item {
                 spacing: 6
                 Text {
                     text: "inventory_2"
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: 16
                     color: Colorscheme.on_surface_variant
                 }
@@ -213,7 +213,7 @@ Item {
                         anchors.centerIn: parent
                         text: inputCard._streaming ? "stop"
                               : (inputArea.text.trim().length > 0 ? "send" : "edit")
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: 18
                         color: inputCard._streaming
                             ? Colorscheme.on_error
@@ -337,7 +337,7 @@ Item {
                     spacing: 6
                     Text {
                         text: "verified_user"
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: 18
                         color: Colorscheme.tertiary
                     }
@@ -521,7 +521,7 @@ Item {
                         spacing: 6
                         Text {
                             text: "assignment"
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: 18
                             color: Colorscheme.tertiary
                             anchors.verticalCenter: parent.verticalCenter
@@ -634,7 +634,7 @@ Item {
                                                     visible: _checked
                                                     anchors.centerIn: parent
                                                     text: "check"
-                                                    font.family: "Material Symbols Outlined"
+                                                    font.family: Sizes.fontIcon
                                                     font.pixelSize: 12
                                                     color: Colorscheme.on_primary
                                                 }

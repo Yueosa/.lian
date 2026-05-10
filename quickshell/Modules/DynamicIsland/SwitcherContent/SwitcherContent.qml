@@ -304,7 +304,7 @@ Item {
                                         anchors.verticalCenterOffset: -10
                                         visible: !thumb.hasContent
                                         text: ""
-                                        font.family: "Font Awesome 6 Free Solid"
+                                        font.family: Sizes.fontAwesome
                                         font.pixelSize: Sizes.font.h5
                                         color: Colorscheme.on_surface_variant
                                     }

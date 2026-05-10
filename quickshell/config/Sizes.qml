@@ -6,7 +6,11 @@ Singleton {
     // ================= 原有配置 (保持不变) =================
     readonly property string fontFamily: "Noto Sans CJK SC"
     readonly property string fontFamilyMono: "JetBrainsMono Nerd Font"
+    readonly property string fontFamilyMonoCJK: "Noto Sans Mono CJK SC"
     readonly property string fontIcon: "Material Symbols Outlined"
+    readonly property string fontIconRounded: "Material Symbols Rounded"
+    readonly property string fontAwesome: "Font Awesome 6 Free Solid"
+    readonly property string fontSymbolsNerd: "Symbols Nerd Font Mono"
     readonly property real cornerRadius: 10
     readonly property real barHeight: 36
     readonly property real islandScale: 0.92

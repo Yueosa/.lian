@@ -59,7 +59,7 @@ Rectangle {
                 Text {
                     text: "schedule"
                     color: Colorscheme.on_surface_variant
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Math.round(22 * root.uiScale)
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -67,7 +67,7 @@ Rectangle {
                 Text {
                     text: "逐小时预报"
                     color: Colorscheme.on_surface
-                    font.family: "Noto Sans CJK SC"
+                    font.family: Sizes.fontFamily
                     font.bold: true
                     font.pixelSize: Math.round(22 * root.uiScale)
                     Layout.alignment: Qt.AlignVCenter
@@ -214,7 +214,7 @@ Rectangle {
                                 y: trendContent.topTextY
                                 text: root.hourLabel(hourItem.time)
                                 color: Colorscheme.on_surface_variant
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Math.round(13 * root.uiScale)
                                 horizontalAlignment: Text.AlignHCenter
                             }
@@ -328,7 +328,7 @@ Rectangle {
             id: textItem
             anchors.centerIn: parent
             text: parent.textStr
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.lg
             font.bold: parent.isActive
             color: parent.isActive ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant

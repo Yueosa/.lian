@@ -38,7 +38,7 @@ Item {
             id: volIcon
             // 【核心修复 2】：使用 Material Symbols 语义化名称，彻底告别 Unicode 乱码
             text: root.isMuted ? "volume_off" : "volume_up"
-            font.family: "Material Symbols Outlined" 
+            font.family: Sizes.fontIcon 
             font.pixelSize: Sizes.font.display 
             color: root.isMuted ? Colorscheme.on_surface_variant : Colorscheme.primary
             Layout.alignment: Qt.AlignVCenter
@@ -110,7 +110,7 @@ Item {
             color: Colorscheme.on_surface
             font.pixelSize: Sizes.font.body
             font.bold: true
-            font.family: "JetBrainsMono Nerd Font" 
+            font.family: Sizes.fontFamilyMono 
             Layout.alignment: Qt.AlignVCenter
             Layout.minimumWidth: 32 
             horizontalAlignment: Text.AlignRight

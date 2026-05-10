@@ -39,7 +39,7 @@ Rectangle {
             visible: root.icon.length > 0
             text: root.icon
             color: root.iconColor
-            font.family: "Material Symbols Outlined"
+            font.family: Sizes.fontIcon
             font.pixelSize: Math.round(18 * root.uiScale)
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -48,7 +48,7 @@ Rectangle {
             visible: root.title.length > 0
             text: root.title
             color: root.titleColor
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Math.round(13 * root.uiScale)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter

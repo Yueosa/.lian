@@ -159,7 +159,7 @@ Rectangle {
                         y: root.topPadding
                         text: modelData.hourText
                         color: parent.hourColor
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.xsm
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -190,7 +190,7 @@ Rectangle {
                         y: parent.barTop - 22
                         text: modelData.speedText
                         color: Colorscheme.on_surface_variant
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.sm
                     }
                 }
@@ -229,7 +229,7 @@ Rectangle {
         visible: !root.hasData
         text: "风况数据暂不可用"
         color: Colorscheme.on_surface_variant
-        font.family: "Noto Sans CJK SC"
+        font.family: Sizes.fontFamily
         font.pixelSize: Sizes.font.xl
     }
 }

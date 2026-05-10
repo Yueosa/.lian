@@ -73,7 +73,7 @@ Rectangle {
                 Text {
                     text: "calendar_month"
                     color: Colorscheme.on_surface_variant
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Math.round(22 * root.uiScale)
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -81,7 +81,7 @@ Rectangle {
                 Text {
                     text: "每日预报"
                     color: Colorscheme.on_surface
-                    font.family: "Noto Sans CJK SC"
+                    font.family: Sizes.fontFamily
                     font.bold: true
                     font.pixelSize: Math.round(22 * root.uiScale)
                     Layout.alignment: Qt.AlignVCenter
@@ -117,7 +117,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "refresh"
                         color: Colorscheme.on_surface_variant
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: Math.round(20 * root.uiScale)
                     }
 
@@ -363,7 +363,7 @@ Rectangle {
                                     width: parent.width
                                     text: root.dayLabel(index, dayItem.time)
                                     color: Colorscheme.on_surface
-                                    font.family: "Noto Sans CJK SC"
+                                    font.family: Sizes.fontFamily
                                     font.pixelSize: Math.round(16 * root.uiScale)
                                     font.bold: index === 1
                                     horizontalAlignment: Text.AlignHCenter
@@ -374,7 +374,7 @@ Rectangle {
                                     width: parent.width
                                     text: root.dateLabel(dayItem.time)
                                     color: Colorscheme.on_surface_variant
-                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.family: Sizes.fontFamilyMono
                                     font.pixelSize: Math.round(13 * root.uiScale)
                                     horizontalAlignment: Text.AlignHCenter
                                 }
@@ -396,7 +396,7 @@ Rectangle {
                                 y: trendContent.highTempTextY
                                 text: root.fmtTemp(root.valueAt(dayPart, "temperatureC", root.valueAt(dayItem, "temperatureMaxC", NaN)))
                                 color: Colorscheme.on_surface
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.hero
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
@@ -407,7 +407,7 @@ Rectangle {
                                 y: trendContent.lowTempTextY
                                 text: root.fmtTemp(root.valueAt(nightPart, "temperatureC", root.valueAt(dayItem, "temperatureMinC", NaN)))
                                 color: Colorscheme.on_surface_variant
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.xxl
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
@@ -522,7 +522,7 @@ Rectangle {
             id: textItem
             anchors.centerIn: parent
             text: parent.textStr
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.lg
             font.bold: parent.isActive
             color: parent.isActive ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant

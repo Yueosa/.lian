@@ -17,7 +17,7 @@ WidgetPanel {
 
     headerTools: Text {
         text: "\uf013"
-        font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.title
+        font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.title
         color: theme.subtext
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["pavucontrol"]) }
     }
@@ -45,7 +45,7 @@ WidgetPanel {
                 Layout.fillWidth: true
                 Text { 
                     text: isHeadphone(root.defaultSink) ? "\uf025" : "\uf028"
-                    font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.title; color: theme.primary 
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.title; color: theme.primary 
                 }
                 Text { 
                     text: root.defaultSink ? (root.defaultSink.description || root.defaultSink.name) : "未找到设备"

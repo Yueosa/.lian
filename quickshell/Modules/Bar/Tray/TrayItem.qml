@@ -139,7 +139,7 @@ MouseArea {
             ? "keyboard"
             : ((root.trayIconLower.indexOf("network-wired") >= 0) ? "lan" : "apps")
         color: Colorscheme.on_surface
-        font.family: "Material Symbols Outlined"
+        font.family: Sizes.fontIcon
         font.pixelSize: Sizes.font.xl
     }
 }

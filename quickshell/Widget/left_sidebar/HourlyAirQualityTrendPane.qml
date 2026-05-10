@@ -184,7 +184,7 @@ Rectangle {
                 anchors.bottomMargin: 5
                 text: modelData.value
                 color: Qt.rgba(Colorscheme.on_surface_variant.r, Colorscheme.on_surface_variant.g, Colorscheme.on_surface_variant.b, 0.72)
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.xsm
             }
 
@@ -195,7 +195,7 @@ Rectangle {
                 anchors.bottomMargin: 5
                 text: modelData.label
                 color: Qt.rgba(Colorscheme.on_surface_variant.r, Colorscheme.on_surface_variant.g, Colorscheme.on_surface_variant.b, 0.72)
-                font.family: "Noto Sans CJK SC"
+                font.family: Sizes.fontFamily
                 font.pixelSize: Sizes.font.sm
             }
         }
@@ -239,7 +239,7 @@ Rectangle {
                         y: root.topPadding
                         text: modelData.hourText
                         color: parent.hourColor
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.xsm
                     }
 
@@ -258,7 +258,7 @@ Rectangle {
                         y: root.chartBottom + 8
                         text: modelData.aqiText
                         color: Colorscheme.on_surface
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.xs
                     }
                 }
@@ -297,7 +297,7 @@ Rectangle {
         visible: !root.hasData
         text: "空气质量数据暂不可用"
         color: Colorscheme.on_surface_variant
-        font.family: "Noto Sans CJK SC"
+        font.family: Sizes.fontFamily
         font.pixelSize: Sizes.font.xl
     }
 }

@@ -24,7 +24,7 @@ Rectangle {
 
         Text {
             id: iconText
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.lg
             Layout.alignment: Qt.AlignVCenter
             color: Bluetooth.bluetoothEnabled ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant

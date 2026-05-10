@@ -346,7 +346,7 @@ Item {
   
                 component CtrlBtn : Text { 
                     property bool active: false
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.h1
                     color: active ? Colorscheme.primary : Colorscheme.on_surface
                     opacity: active ? 1.0 : 0.7
@@ -433,7 +433,7 @@ Item {
                                 ? Colorscheme.on_primary 
                                 : Colorscheme.on_surface
                             
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: Sizes.font.h3b
                             
                             // standard: 400ms
@@ -536,7 +536,7 @@ Item {
             Text {
                 text: MediaManager.getIdentityIcon(MediaManager.active)
                 color: Colorscheme.on_tertiary
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: Sizes.font.sm
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -549,7 +549,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight
                 color: Colorscheme.on_tertiary
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.xs
                 font.weight: Font.DemiBold
             }
@@ -611,7 +611,7 @@ Item {
                         Text {
                             text: MediaManager.getIdentityIcon(playerItem)
                             color: Colorscheme.on_tertiary
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: Sizes.font.sm
                             Layout.alignment: Qt.AlignVCenter
                         }
@@ -624,7 +624,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             verticalAlignment: Text.AlignVCenter
                             color: Colorscheme.on_tertiary
-                            font.family: "JetBrainsMono Nerd Font"
+                            font.family: Sizes.fontFamilyMono
                             font.pixelSize: Sizes.font.xs
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight

@@ -47,7 +47,7 @@ Item {
         Text {
             text: ""
             color: Colorscheme.primary
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.body
             Layout.alignment: Qt.AlignVCenter
         }
@@ -56,7 +56,7 @@ Item {
             id: windowTitle
             text: root.activeTitle
 
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.md
             color: Colorscheme.primary
 

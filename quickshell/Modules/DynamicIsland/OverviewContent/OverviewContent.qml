@@ -63,7 +63,7 @@ Item {
             color: sliderCol.expanded ? Colorscheme.primary : Colorscheme.surface_container_highest
             Behavior on color { ColorAnimation { duration: 250 } }
             Text {
-                anchors.centerIn: parent; text: sliderCol.icon; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.xxl
+                anchors.centerIn: parent; text: sliderCol.icon; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.xxl
                 color: sliderCol.expanded ? Colorscheme.on_primary : Colorscheme.on_surface
             }
             MouseArea { 
@@ -111,7 +111,7 @@ Item {
                         }
                         Text { 
                             anchors.centerIn: parent; text: Math.round(vSlider.value * 100); color: Colorscheme.on_primary_container
-                            font.pixelSize: Sizes.font.lg; font.bold: true; font.family: "JetBrainsMono Nerd Font" 
+                            font.pixelSize: Sizes.font.lg; font.bold: true; font.family: Sizes.fontFamilyMono 
                         }
                     }
                 }

@@ -192,7 +192,7 @@ Rectangle {
                         y: root.topPadding
                         text: modelData.dayText
                         color: parent.weekColor
-                        font.family: "Noto Sans CJK SC"
+                        font.family: Sizes.fontFamily
                         font.pixelSize: Sizes.font.lg
                         font.bold: modelData.dayText === "今天"
                     }
@@ -202,7 +202,7 @@ Rectangle {
                         y: root.topPadding + 22
                         text: modelData.dateText
                         color: parent.dateColor
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.xsm
                     }
 
@@ -222,7 +222,7 @@ Rectangle {
                         y: root.topBarBaseY - parent.dayBarHeight - 28
                         text: modelData.dayTextValue
                         color: Colorscheme.on_surface_variant
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.md
                     }
 
@@ -252,7 +252,7 @@ Rectangle {
                         y: root.bottomBarBaseY + parent.nightBarHeight + 8
                         text: modelData.nightTextValue
                         color: Colorscheme.on_surface_variant
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.md
                     }
 
@@ -301,7 +301,7 @@ Rectangle {
         visible: !root.hasData
         text: "风况数据暂不可用"
         color: Colorscheme.on_surface_variant
-        font.family: "Noto Sans CJK SC"
+        font.family: Sizes.fontFamily
         font.pixelSize: Sizes.font.xl
     }
 }

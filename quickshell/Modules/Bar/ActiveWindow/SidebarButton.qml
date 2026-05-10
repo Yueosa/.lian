@@ -32,7 +32,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: "segment"
-        font.family: "Material Symbols Outlined"
+        font.family: Sizes.fontIcon
         font.pixelSize: Sizes.font.xxl
         color: mouseArea.containsMouse ? Colorscheme.on_secondary_container : Colorscheme.on_surface_variant
         Behavior on color { ColorAnimation { duration: 150 } }

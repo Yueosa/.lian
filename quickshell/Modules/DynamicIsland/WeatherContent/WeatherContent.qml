@@ -9,7 +9,6 @@ Item {
     width: 720
     height: 540
     
-    property string materialFont: "Material Symbols Outlined" 
     
     property real latitude: WeatherPlugin.latitude
     property real longitude: WeatherPlugin.longitude
@@ -150,7 +149,7 @@ Item {
                         id: refreshIcon
                         anchors.centerIn: parent
                         text: "refresh"
-                        font.family: root.materialFont
+                        font.family: Sizes.fontIcon
                         font.pixelSize: Sizes.font.xl
                         color: refreshMouseArea.containsMouse ? Colorscheme.primary : Colorscheme.on_surface_variant
                         
@@ -195,7 +194,7 @@ Item {
             Row {
                 spacing: Sizes.spacing.md
                 Text { 
-                    text: root.currentIcon; font.family: root.materialFont; 
+                    text: root.currentIcon; font.family: Sizes.fontIcon; 
                     font.pixelSize: Sizes.font.h7; color: Colorscheme.primary 
                 }
                 Text { 
@@ -212,10 +211,10 @@ Item {
                 spacing: Sizes.spacing.md
                 columnSpacing: 24
                 
-                Row { spacing: Sizes.spacing.s; Text { text: "thermometer"; font.family: root.materialFont; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.feelsLike; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
-                Row { spacing: Sizes.spacing.s; Text { text: "water_drop"; font.family: root.materialFont; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.humidity; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
-                Row { spacing: Sizes.spacing.s; Text { text: "air"; font.family: root.materialFont; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.windSpeed; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
-                Row { spacing: Sizes.spacing.s; Text { text: "compress"; font.family: root.materialFont; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.pressure; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
+                Row { spacing: Sizes.spacing.s; Text { text: "thermometer"; font.family: Sizes.fontIcon; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.feelsLike; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
+                Row { spacing: Sizes.spacing.s; Text { text: "water_drop"; font.family: Sizes.fontIcon; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.humidity; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
+                Row { spacing: Sizes.spacing.s; Text { text: "air"; font.family: Sizes.fontIcon; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.windSpeed; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
+                Row { spacing: Sizes.spacing.s; Text { text: "compress"; font.family: Sizes.fontIcon; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.body } Text { text: root.pressure; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.md } }
             }
         }
     }
@@ -249,7 +248,7 @@ Item {
                 Row {
                     anchors.centerIn: parent
                     spacing: Sizes.spacing.xs
-                    Text { text: "check"; font.family: root.materialFont; font.pixelSize: Sizes.font.lg; color: Colorscheme.on_primary; visible: root.isHourly }
+                    Text { text: "check"; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.lg; color: Colorscheme.on_primary; visible: root.isHourly }
                     Text { text: "12 Hrs"; font.family: Sizes.fontFamily; font.bold: true; font.pixelSize: Sizes.font.md; color: root.isHourly ? Colorscheme.on_primary : Colorscheme.on_surface_variant }
                 }
                 MouseArea { anchors.fill: parent; onClicked: root.isHourly = true }
@@ -271,7 +270,7 @@ Item {
                 Row {
                     anchors.centerIn: parent
                     spacing: Sizes.spacing.xs
-                    Text { text: "check"; font.family: root.materialFont; font.pixelSize: Sizes.font.lg; color: Colorscheme.on_primary; visible: !root.isHourly }
+                    Text { text: "check"; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.lg; color: Colorscheme.on_primary; visible: !root.isHourly }
                     Text { text: "7 Days"; font.family: Sizes.fontFamily; font.bold: true; font.pixelSize: Sizes.font.md; color: !root.isHourly ? Colorscheme.on_primary : Colorscheme.on_surface_variant }
                 }
                 MouseArea { anchors.fill: parent; onClicked: root.isHourly = false }
@@ -494,7 +493,7 @@ Item {
                         ctx.lineWidth = 2; ctx.strokeStyle = Colorscheme.primary; ctx.stroke();
                         
                         ctx.fillStyle = Colorscheme.on_surface;
-                        ctx.font = "18px '" + root.materialFont + "'";
+                        ctx.font = "18px '" + Sizes.fontIcon + "'";
                         ctx.fillText(pt.data.icon, pt.x, pt.y - 22);
                         
                         ctx.font = "bold 13px '" + Sizes.fontFamilyMono + "'";
@@ -525,7 +524,7 @@ Item {
                             anchors.centerIn: parent
                             spacing: Sizes.spacing.md
                             Text { text: modelData.day; color: Colorscheme.on_surface_variant; font.family: Sizes.fontFamily; font.pixelSize: Sizes.font.lg; font.bold: true; anchors.horizontalCenter: parent.horizontalCenter }
-                            Text { text: modelData.icon; color: Colorscheme.primary; font.family: root.materialFont; font.pixelSize: Sizes.font.h4; anchors.horizontalCenter: parent.horizontalCenter }
+                            Text { text: modelData.icon; color: Colorscheme.primary; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.h4; anchors.horizontalCenter: parent.horizontalCenter }
                             Column {
                                 spacing: Sizes.spacing.xxs; anchors.horizontalCenter: parent.horizontalCenter
                                 Text { text: modelData.maxTemp; color: Colorscheme.on_surface; font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.xl; font.bold: true; anchors.horizontalCenter: parent.horizontalCenter }

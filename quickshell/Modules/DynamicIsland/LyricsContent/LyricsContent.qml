@@ -179,7 +179,7 @@ Item {
             }
             Text {
                 visible: root.artUrl === ""; anchors.centerIn: parent
-                text: "\uf001"; font.family: "Symbols Nerd Font Mono"; font.pixelSize: Sizes.font.lg
+                text: "\uf001"; font.family: Sizes.fontSymbolsNerd; font.pixelSize: Sizes.font.lg
                 color: Qt.rgba(Colorscheme.on_surface_variant.r, Colorscheme.on_surface_variant.g, Colorscheme.on_surface_variant.b, 0.78)
             }
         }

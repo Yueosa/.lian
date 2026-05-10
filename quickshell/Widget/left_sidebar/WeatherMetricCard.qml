@@ -29,7 +29,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: root.icon
                 color: root.accent
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: Sizes.font.h1
             }
         }
@@ -41,7 +41,7 @@ Rectangle {
             Text {
                 text: root.label
                 color: Colorscheme.on_surface_variant
-                font.family: "Noto Sans CJK SC"
+                font.family: Sizes.fontFamily
                 font.pixelSize: Sizes.font.xsm
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -50,7 +50,7 @@ Rectangle {
             Text {
                 text: root.value
                 color: Colorscheme.on_surface
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.bold: true
                 font.pixelSize: Sizes.font.lg
                 elide: Text.ElideRight
@@ -61,7 +61,7 @@ Rectangle {
                 text: root.detail
                 visible: root.detail.length > 0
                 color: Colorscheme.outline
-                font.family: "Noto Sans CJK SC"
+                font.family: Sizes.fontFamily
                 font.pixelSize: Sizes.font.xs
                 elide: Text.ElideRight
                 Layout.fillWidth: true

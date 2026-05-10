@@ -38,7 +38,7 @@ Item {
             Text { 
                 anchors.centerIn: parent
                 text: icon
-                font.family: "Font Awesome 6 Free Solid"
+                font.family: Sizes.fontAwesome
                 font.pixelSize: Sizes.font.xl
                 color: active ? iconActiveColor : iconInactiveColor 
             }
@@ -90,7 +90,7 @@ Item {
                 anchors.centerIn: parent
                 text: tile.icon
                 color: tile.active ? Colorscheme.on_primary : Colorscheme.on_surface
-                font.family: "Font Awesome 6 Free Solid"
+                font.family: Sizes.fontAwesome
                 font.pixelSize: Sizes.font.lg 
             }
         }
@@ -150,7 +150,7 @@ Item {
             anchors.centerIn: parent
             text: icon
             color: fgColor 
-            font.family: "Font Awesome 6 Free Solid"
+            font.family: Sizes.fontAwesome
             font.pixelSize: Sizes.font.xxl
         }
 

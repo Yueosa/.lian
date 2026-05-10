@@ -14,7 +14,6 @@ WidgetPanel {
     closeAction: () => WidgetState.qsOpen = false
 
     property bool isActive: WidgetState.qsOpen && WidgetState.qsView === "network"
-    property string mdFont: "Material Symbols Outlined"
 
     Component {
         id: elementMoveNumberAnimation
@@ -37,7 +36,7 @@ WidgetPanel {
 
         Text {
             text: "settings"
-            font.family: root.mdFont
+            font.family: Sizes.fontIcon
             font.pixelSize: Sizes.font.title
             color: Colorscheme.on_surface_variant
             Layout.alignment: Qt.AlignVCenter
@@ -74,7 +73,7 @@ WidgetPanel {
                 Text {
                     anchors.centerIn: parent
                     text: Network.wifiToggling ? "sync" : "check"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.sm
                     font.bold: true
                     color: Colorscheme.primary
@@ -112,7 +111,7 @@ WidgetPanel {
 
                 Text {
                     text: "settings_ethernet"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.display
                     color: Network.ethernetConnection !== "" ? Colorscheme.primary : Colorscheme.on_surface_variant
                     Layout.alignment: Qt.AlignVCenter
@@ -141,7 +140,7 @@ WidgetPanel {
                 Text {
                     visible: Network.ethernetConnection !== ""
                     text: "check"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.h1
                     color: Colorscheme.primary
                     Layout.alignment: Qt.AlignVCenter
@@ -175,7 +174,7 @@ WidgetPanel {
 
                 Text {
                     text: "error"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.md
                     color: Colorscheme.error
                     Layout.alignment: Qt.AlignVCenter
@@ -299,7 +298,7 @@ WidgetPanel {
                         : itemRoot.networkStrength > 40 ? "network_wifi_2_bar"
                         : itemRoot.networkStrength > 20 ? "network_wifi_1_bar"
                         : "signal_wifi_0_bar"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.display
                     color: itemRoot.networkActive ? Colorscheme.primary : Colorscheme.on_surface_variant
                     Layout.alignment: Qt.AlignVCenter
@@ -326,7 +325,7 @@ WidgetPanel {
                     text: itemRoot.networkActive ? "check"
                         : Network.wifiConnectTarget === itemRoot.wifiNetwork ? "settings_ethernet"
                         : "lock"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.h1
                     color: itemRoot.networkActive ? Colorscheme.primary : Colorscheme.on_surface_variant
                     Layout.alignment: Qt.AlignVCenter

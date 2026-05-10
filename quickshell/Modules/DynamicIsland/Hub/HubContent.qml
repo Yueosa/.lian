@@ -69,7 +69,7 @@ FocusScope {
                 spacing: Sizes.spacing.s
                 Text {
                     text: parent.parent.icon
-                    font.family: "Font Awesome 6 Free Solid"
+                    font.family: Sizes.fontAwesome
                     font.pixelSize: Sizes.font.title
                     color: parent.parent.active ? Colorscheme.on_background : Colorscheme.on_surface_variant
                     anchors.horizontalCenter: parent.horizontalCenter

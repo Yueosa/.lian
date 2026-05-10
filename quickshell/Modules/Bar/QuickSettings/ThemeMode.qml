@@ -41,7 +41,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignVCenter
             text: root.modeIcon(root.currentMode)
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.lg
             color: Colorscheme.on_secondary_container
         }

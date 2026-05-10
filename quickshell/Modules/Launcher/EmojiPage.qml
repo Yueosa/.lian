@@ -213,7 +213,7 @@ Item {
 
                 Text {
                     text: "search"
-                    font.family: "Material Symbols Rounded"
+                    font.family: Sizes.fontIconRounded
                     font.pixelSize: Sizes.font.lg
                     color: Colorscheme.on_surface_variant
                 }
@@ -335,7 +335,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: modelData.favorite ? "star" : "star_outline"
-                            font.family: "Material Symbols Rounded"
+                            font.family: Sizes.fontIconRounded
                             font.pixelSize: 14
                             color: modelData.favorite ? Colorscheme.on_primary_container : Colorscheme.on_surface_variant
                         }

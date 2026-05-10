@@ -113,7 +113,7 @@ Item {
                     Layout.fillWidth: true; spacing: Sizes.spacing.sm
                     
                     Image { source: getAppIconSource(root.appId); visible: root.appId !== "system"; Layout.preferredWidth: 16; Layout.preferredHeight: 16; sourceSize: Qt.size(16, 16) }
-                    Text { text: "\uf0f3"; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.primary; visible: root.appId === "system" }
+                    Text { text: "\uf0f3"; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.primary; visible: root.appId === "system" }
                     
                     Text { text: modelData.title; font.bold: true; font.pixelSize: Sizes.font.lg; color: theme.text; elide: Text.ElideRight; Layout.fillWidth: true }
                     
@@ -124,7 +124,7 @@ Item {
                     
                     Text {
                         text: "\uf00d" 
-                        font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.subtext; opacity: 0.6
+                        font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.subtext; opacity: 0.6
                         MouseArea { 
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor; hoverEnabled: true
                             onEntered: parent.opacity = 1; onExited: parent.opacity = 0.6
@@ -196,7 +196,7 @@ Item {
                     color: backHover.containsMouse ? Colorscheme.surface_variant : "transparent"
                     RowLayout {
                         anchors.fill: parent; anchors.margins: 10; spacing: Sizes.spacing.sm
-                        Text { text: "\uf060"; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.md; color: theme.text }
+                        Text { text: "\uf060"; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.md; color: theme.text }
                         Text { text: "返回总览"; font.bold: true; font.pixelSize: Sizes.font.md; color: theme.text; Layout.fillWidth: true }
                     }
                     MouseArea {
@@ -216,7 +216,7 @@ Item {
                         color: appItemHover.containsMouse ? Colorscheme.surface_variant : "transparent"
                         RowLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: Sizes.spacing.sm
-                            Text { text: getNerdIcon(modelData); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: Sizes.font.lg; color: theme.text }
+                            Text { text: getNerdIcon(modelData); font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.lg; color: theme.text }
                             Text { text: getAppName(modelData); font.bold: true; font.pixelSize: Sizes.font.md; color: theme.text; Layout.fillWidth: true }
                             
                             Rectangle {
@@ -271,7 +271,7 @@ Item {
                     id: leftContent
                     anchors.centerIn: parent
                     spacing: Sizes.spacing.sm
-                    Text { text: getNerdIcon(root.appId); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: Sizes.font.xl; color: Colorscheme.on_primary }
+                    Text { text: getNerdIcon(root.appId); font.family: Sizes.fontFamilyMono; font.pixelSize: Sizes.font.xl; color: Colorscheme.on_primary }
                     Text { text: getAppName(root.appId); font.bold: true; font.pixelSize: Sizes.font.body; color: Colorscheme.on_primary }
                 }
             }
@@ -309,7 +309,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: root.menuExpanded ? "\uf077" : "\uf078" 
-                    font.family: "Font Awesome 6 Free Solid"
+                    font.family: Sizes.fontAwesome
                     font.pixelSize: Sizes.font.lg 
                     color: Colorscheme.on_primary
                 }

@@ -111,8 +111,6 @@ Item {
     readonly property real innerPad: 11
     readonly property real bodyW: maxBubbleW - innerPad * 2
 
-    readonly property string bodyFamily: "Noto Sans CJK SC"
-    readonly property string monoFamily: "Noto Sans Mono CJK SC"
     readonly property bool _hasRichSegs: {
         for (let i = 0; i < _segs.length; ++i) {
             const seg = _segs[i];
@@ -299,7 +297,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     Text {
                         text: cell._expanded ? "expand_more" : "chevron_right"
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: 16
                         color: cell.bubbleFg
                         anchors.verticalCenter: parent.verticalCenter
@@ -307,7 +305,7 @@ Item {
                     Text {
                         text: cell.isTool ? "build"
                               : (cell.isAction ? "auto_awesome" : "psychology")
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: 14
                         color: cell.isTool ? cell.toolStatusColor
                               : (cell.isAction ? Colorscheme.tertiary : cell.bubbleFg)
@@ -324,7 +322,7 @@ Item {
                             if (cell.isAction) return cell.actionLabel || cell.actionType || "action";
                             return cell.live ? "思考中…" : "内部思考";
                         }
-                        font.family: cell.bodyFamily
+                        font.family: Sizes.fontFamily
                         font.pixelSize: Sizes.font.xsm
                         font.bold: cell.isTool || cell.isAction
                         color: cell.bubbleFg
@@ -339,7 +337,7 @@ Item {
                 width: parent.width
                 text: cell.toolArgs
                 color: Colorscheme.on_surface_variant
-                font.family: cell.monoFamily
+                font.family: Sizes.fontFamilyMonoCJK
                 font.pixelSize: Sizes.font.xs
                 elide: Text.ElideRight
                 maximumLineCount: 1
@@ -359,7 +357,7 @@ Item {
                     text: cell.toolArgs
                     wrapMode: Text.Wrap
                     color: Colorscheme.on_surface_variant
-                    font.family: cell.monoFamily
+                    font.family: Sizes.fontFamilyMonoCJK
                     font.pixelSize: Sizes.font.xs
                 }
             }
@@ -384,7 +382,7 @@ Item {
                              && !/!\[[^\]]*\]\(/.test(cell.text || "")
                             ? Text.MarkdownText
                             : Text.PlainText)
-                font.family: cell.bodyFamily
+                font.family: Sizes.fontFamily
                 font.italic: cell.isThinking
                 font.pixelSize: cell.isThinking ? Sizes.font.xsm
                                 : (cell.isAction ? Sizes.font.xsm : Sizes.font.md)
@@ -426,7 +424,7 @@ Item {
                             textFormat: modelData.t === "user" || !cell._usesMarkdown(modelData.s)
                                         ? Text.PlainText
                                         : Text.MarkdownText
-                            font.family: cell.bodyFamily
+                            font.family: Sizes.fontFamily
                             font.italic: cell.isThinking
                             font.pixelSize: cell.isThinking ? Sizes.font.xsm
                                             : (cell.isAction ? Sizes.font.xsm : Sizes.font.md)
@@ -465,7 +463,7 @@ Item {
                                     text: modelData.s || ""
                                     color: cell.bubbleFg
                                     textFormat: Text.PlainText
-                                    font.family: cell.monoFamily
+                                    font.family: Sizes.fontFamilyMonoCJK
                                     font.pixelSize: Sizes.font.sm
                                     wrapMode: Text.NoWrap
                                     onImplicitHeightChanged: cell._scheduleLayout()
@@ -532,7 +530,7 @@ Item {
                                 visible: imgEl.status === Image.Error
                                 text: "图片加载失败"
                                 color: Colorscheme.error
-                                font.family: cell.bodyFamily
+                                font.family: Sizes.fontFamily
                                 font.pixelSize: Sizes.font.xs
                             }
                         }

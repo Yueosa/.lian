@@ -128,8 +128,8 @@ Rectangle {
                             visible: !iconImg.visible
                             color: Colorscheme.on_surface_variant
                             // 这里要确保用支持图标的字体，通常 Nerd Font 兼容 FontAwesome
-                            font.family: "Font Awesome 6 Free Solid" 
-                            // 如果你的环境里主要是 Nerd Font，也可以试用 "JetBrainsMono Nerd Font"
+                            font.family: Sizes.fontAwesome 
+                            // 如需切换 Nerd Font, 改用 Sizes.fontFamilyMono
                             // font.family: Sizes.fontFamilyMono 
                             font.pixelSize: Sizes.font.xxl
                         }

@@ -297,7 +297,7 @@ PanelWindow {
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.icon
-                                            font.family: "Material Symbols Rounded"
+                                            font.family: Sizes.fontIconRounded
                                             font.pixelSize: Sizes.font.xl
                                             color: root.currentTab === modelData.id ? Colorscheme.on_primary_container : Colorscheme.on_surface
                                         }

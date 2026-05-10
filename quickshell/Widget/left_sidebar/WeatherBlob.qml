@@ -95,7 +95,7 @@ Item {
         Text {
             text: root.title
             color: "#f2edf7"
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.bold: true
             font.pixelSize: Math.round(15 * root.uiScale)
             anchors.verticalCenter: parent.verticalCenter
@@ -107,7 +107,7 @@ Item {
         anchors.verticalCenterOffset: -2
         text: isNaN(root.value) ? "--" : Math.round(root.value)
         color: "#f6f2f7"
-        font.family: "JetBrainsMono Nerd Font"
+        font.family: Sizes.fontFamilyMono
         font.bold: true
         font.pixelSize: Math.round(52 * root.uiScale)
     }
@@ -119,7 +119,7 @@ Item {
         width: parent.width * 0.40
         text: root.level
         color: "#f2edf7"
-        font.family: "Noto Sans CJK SC"
+        font.family: Sizes.fontFamily
         font.pixelSize: Math.round(16 * root.uiScale)
         font.bold: true
         horizontalAlignment: Text.AlignHCenter

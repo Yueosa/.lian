@@ -33,7 +33,7 @@ Item {
 
         Text {
             text: WeatherPlugin.currentIconName || "cloud"
-            font.family: "Material Symbols Rounded"
+            font.family: Sizes.fontIconRounded
             font.variableAxes: { "FILL": 1 }
             font.pixelSize: Sizes.font.title
             color: Colorscheme.on_surface
@@ -46,7 +46,7 @@ Item {
             visible: root.isHovered
             opacity: root.isHovered ? 1 : 0
             text: root.temperatureText
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.sm
             font.bold: true
             color: Colorscheme.on_surface

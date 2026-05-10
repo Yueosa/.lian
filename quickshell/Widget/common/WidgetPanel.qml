@@ -23,7 +23,7 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Text { text: root.icon; font.family: "Material Symbols Outlined"; font.pixelSize: Sizes.font.h1; color: theme.primary }
+            Text { text: root.icon; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.h1; color: theme.primary }
             Text { text: root.title; font.bold: true; font.pixelSize: Sizes.font.xxl; color: theme.text; Layout.fillWidth: true; Layout.leftMargin: 10 }
             
             RowLayout { id: headerToolsLayout; spacing: Sizes.spacing.md }
@@ -32,7 +32,7 @@ Rectangle {
             
             Text {
                 text: "close"
-                font.family: "Material Symbols Outlined"; font.pixelSize: Sizes.font.title; color: theme.subtext
+                font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.title; color: theme.subtext
                 MouseArea { 
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.closeAction()
                 }

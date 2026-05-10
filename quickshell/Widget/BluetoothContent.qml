@@ -12,7 +12,6 @@ WidgetPanel {
     closeAction: () => WidgetState.qsOpen = false
 
     property bool isActive: WidgetState.qsOpen && WidgetState.qsView === "bluetooth"
-    property string mdFont: "Material Symbols Outlined"
     property string expandedMac: ""
 
     function boolText(value) {
@@ -29,7 +28,7 @@ WidgetPanel {
 
         Text {
             text: "settings"
-            font.family: root.mdFont
+            font.family: Sizes.fontIcon
             font.pixelSize: Sizes.font.title
             color: Colorscheme.on_surface_variant
             Layout.alignment: Qt.AlignVCenter
@@ -68,7 +67,7 @@ WidgetPanel {
                 Text {
                     anchors.centerIn: parent
                     text: Bluetooth.bluetoothToggling ? "sync" : "check"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.sm
                     font.bold: true
                     color: Colorscheme.primary
@@ -106,7 +105,7 @@ WidgetPanel {
 
                 Text {
                     text: "error"
-                    font.family: root.mdFont
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.md
                     color: Colorscheme.error
                     Layout.alignment: Qt.AlignVCenter
@@ -367,7 +366,7 @@ WidgetPanel {
                 spacing: Sizes.spacing.s
 
                 Text {
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Sizes.fontFamilyMono
                     font.pixelSize: Sizes.font.xl
                     color: connected ? Colorscheme.primary : Colorscheme.on_surface_variant
                     text: connected ? "󰂱" : "󰂯"

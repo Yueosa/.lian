@@ -195,7 +195,7 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "lyrics" 
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: Sizes.font.xxl
                 color: root.showLyrics ? Colorscheme.background : "white"
             }
@@ -486,9 +486,9 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Text { text: root.isActive ? root.formatTime(root.currentPos) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: "JetBrainsMono Nerd Font" }
+                        Text { text: root.isActive ? root.formatTime(root.currentPos) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
                         Item { Layout.fillWidth: true }
-                        Text { text: root.isActive ? root.formatTime(root.player.length) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: "JetBrainsMono Nerd Font" }
+                        Text { text: root.isActive ? root.formatTime(root.player.length) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
                     }
                 }
             }
@@ -500,7 +500,7 @@ Item {
 
                 component CtrlBtn : Text {
                     property bool active: false
-                    font.family: "Material Symbols Outlined"; font.pixelSize: Sizes.font.display
+                    font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.display
                     color: active ? root.dynamicThemeColor : "white"; opacity: active ? 1.0 : 0.7
                     scale: ma.pressed ? 0.8 : (ma.containsMouse ? 1.1 : 1.0)
                     Behavior on scale { NumberAnimation { duration: 150 } }
@@ -515,7 +515,7 @@ Item {
                     width: 60; height: 60; radius: Sizes.rounding.pill; color: root.dynamicThemeColor 
                     scale: playMa.pressed ? 0.9 : (playMa.containsMouse ? 1.05 : 1.0)
                     Behavior on scale { NumberAnimation { duration: 150 } }
-                    Text { anchors.centerIn: parent; text: (root.player && root.player.isPlaying) ? "pause" : "play_arrow"; color: Colorscheme.background; font.family: "Material Symbols Outlined"; font.pixelSize: Sizes.font.h3 }
+                    Text { anchors.centerIn: parent; text: (root.player && root.player.isPlaying) ? "pause" : "play_arrow"; color: Colorscheme.background; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.h3 }
                     MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if(root.player) root.player.togglePlaying() }
                 }
 

@@ -108,7 +108,7 @@ Item {
 
             Text {
                 text: root.expanded ? "expand_less" : "expand_more"
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: 22
                 color: Colorscheme.on_surface_variant
             }
@@ -221,7 +221,7 @@ Item {
                         spacing: 4
                         Text {
                             text: "add"
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: 18
                             color: Colorscheme.on_primary
                         }
@@ -260,7 +260,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: "refresh"
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: 18
                         color: Colorscheme.on_surface_variant
                     }

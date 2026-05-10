@@ -24,7 +24,7 @@ Rectangle {
 
         Text {
             text: "system_update_alt"
-            font.family: "Material Symbols Outlined"
+            font.family: Sizes.fontIcon
             font.pixelSize: Sizes.font.xl
             color: root.hasUpdates ? Colorscheme.on_secondary_container : Colorscheme.on_surface_variant
             Layout.alignment: Qt.AlignVCenter
@@ -32,7 +32,7 @@ Rectangle {
 
         Text {
             text: root.hasUpdates ? Updates.totalCount.toString() : "0"
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.sm
             font.bold: true
             color: root.hasUpdates ? Colorscheme.on_secondary_container : Colorscheme.on_surface_variant

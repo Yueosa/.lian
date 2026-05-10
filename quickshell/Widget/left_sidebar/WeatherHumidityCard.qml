@@ -74,7 +74,7 @@ WeatherInsightCard {
         Text {
             text: "相对湿度"
             color: "#f2edf7"
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Math.round(18 * root.uiScale)
             font.bold: true
         }
@@ -111,7 +111,7 @@ WeatherInsightCard {
         anchors.topMargin: Math.round(72 * root.uiScale)
         text: root.humidityText
         color: "#f5f2f7"
-        font.family: "JetBrainsMono Nerd Font"
+        font.family: Sizes.fontFamilyMono
         font.pixelSize: Math.round(58 * root.uiScale)
         font.bold: true
     }
@@ -134,7 +134,7 @@ WeatherInsightCard {
                 anchors.centerIn: parent
                 text: root.dewPointText
                 color: "#302742"
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Math.round(17 * root.uiScale)
                 font.bold: true
             }
@@ -143,7 +143,7 @@ WeatherInsightCard {
         Text {
             text: "露点"
             color: "#f5f2f7"
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Math.round(18 * root.uiScale)
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter

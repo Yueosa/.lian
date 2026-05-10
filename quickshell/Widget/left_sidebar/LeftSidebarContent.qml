@@ -46,7 +46,7 @@ Item {
                         
                         Text {
                             text: modelData.icon
-                            font.family: "Material Symbols Outlined" 
+                            font.family: Sizes.fontIcon 
                             font.pixelSize: Sizes.font.title 
                             color: tabBtn.contentColor
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -55,7 +55,7 @@ Item {
                         
                         Text {
                             text: modelData.label
-                            font.family: "Noto Sans CJK SC"
+                            font.family: Sizes.fontFamily
                             font.bold: tabBtn.isActive
                             font.pixelSize: Sizes.font.md 
                             color: tabBtn.contentColor

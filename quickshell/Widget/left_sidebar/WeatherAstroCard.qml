@@ -139,7 +139,7 @@ Rectangle {
         Text {
             text: root.moon ? "月亮" : "太阳"
             color: root.titleInk
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.xxl
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
@@ -255,7 +255,7 @@ Rectangle {
         anchors.bottomMargin: root.moon ? 42 : 40
         text: root.riseText
         color: root.cardInk
-        font.family: "JetBrainsMono Nerd Font"
+        font.family: Sizes.fontFamilyMono
         font.pixelSize: Math.round(root.width * 0.095)
         font.bold: true
         z: 3
@@ -268,7 +268,7 @@ Rectangle {
         anchors.bottomMargin: root.moon ? 42 : 40
         text: root.setText
         color: root.cardInk
-        font.family: "JetBrainsMono Nerd Font"
+        font.family: Sizes.fontFamilyMono
         font.pixelSize: Math.round(root.width * 0.095)
         font.bold: true
         z: 3
@@ -370,7 +370,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: root.phaseText(root.phaseAngle)
             color: Qt.rgba(0.82, 0.80, 0.87, 0.88)
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.xsm
         }
     }

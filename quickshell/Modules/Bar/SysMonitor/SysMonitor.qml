@@ -63,14 +63,14 @@ Item {
             Text { 
                 text: "" 
                 color: Colorscheme.secondary
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
             Text { 
                 // 同时保全了原始流的传递。并在这里调取新的 ramUsedGB。toFixed(1) 可保留如 14.2G 格式：
                 text: SysmonPlugin.ramUsedGB.toFixed(1) + "G"
                 color: Colorscheme.on_surface
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
         }
@@ -86,13 +86,13 @@ Item {
             Text { 
                 text: "" 
                 color: Colorscheme.primary
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
             Text { 
                 text: Math.round(SysmonPlugin.diskUsage) + "%"
                 color: Colorscheme.on_surface
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
         }
@@ -108,13 +108,13 @@ Item {
             Text { 
                 text: "" 
                 color: Colorscheme.secondary_container
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
             Text { 
                 text: Math.round(SysmonPlugin.coreTemp) + "°C"
                 color: Colorscheme.on_surface
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
         }
@@ -130,13 +130,13 @@ Item {
             Text { 
                 text: "" 
                 color: Colorscheme.tertiary
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
             Text { 
                 text: Math.round(SysmonPlugin.cpuUsage) + "%"
                 color: Colorscheme.on_surface
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.md
             }
         }

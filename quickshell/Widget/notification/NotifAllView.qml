@@ -73,7 +73,7 @@ Item {
                     Layout.fillWidth: true; spacing: Sizes.spacing.sm
                     
                     Image { source: getAppIconSource(modelData.appId); visible: modelData.appId !== "system"; Layout.preferredWidth: 16; Layout.preferredHeight: 16; sourceSize: Qt.size(16, 16) }
-                    Text { text: "\uf0f3"; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.primary; visible: modelData.appId === "system" }
+                    Text { text: "\uf0f3"; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.primary; visible: modelData.appId === "system" }
                     
                     Text { text: modelData.title; font.bold: true; font.pixelSize: Sizes.font.lg; color: theme.text; elide: Text.ElideRight; Layout.fillWidth: true }
                     
@@ -84,7 +84,7 @@ Item {
                     
                     Text {
                         text: "\uf00d" 
-                        font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.subtext; opacity: 0.6
+                        font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.subtext; opacity: 0.6
                         MouseArea { 
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor; hoverEnabled: true
                             onEntered: parent.opacity = 1; onExited: parent.opacity = 0.6

@@ -366,7 +366,7 @@ Item {
                         Text {
                             text: "location_on"
                             color: root.headerInkMuted
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: Sizes.font.hero
                             Layout.preferredWidth: 20
                             Layout.alignment: Qt.AlignVCenter
@@ -376,7 +376,7 @@ Item {
                         Text {
                             text: WeatherPlugin.locationName || "Weather"
                             color: root.headerInk
-                            font.family: "Noto Sans CJK SC"
+                            font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.hero
                             font.bold: true
                             elide: Text.ElideRight
@@ -403,7 +403,7 @@ Item {
                         contentItem: Text {
                             text: "edit"
                             color: root.headerInk
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: Sizes.font.h1
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -431,7 +431,7 @@ Item {
                         contentItem: Text {
                             text: "refresh"
                             color: root.headerInk
-                            font.family: "Material Symbols Outlined"
+                            font.family: Sizes.fontIcon
                             font.pixelSize: Sizes.font.h1
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -449,7 +449,7 @@ Item {
                         color: WeatherPlugin.status === "stale" || WeatherPlugin.status === "error"
                                ? root.headerErrorInk
                                : root.headerInkMuted
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: Sizes.font.hero
                         Layout.preferredWidth: 20
                         Layout.alignment: Qt.AlignVCenter
@@ -461,7 +461,7 @@ Item {
                         color: WeatherPlugin.status === "stale" || WeatherPlugin.status === "error"
                                ? root.headerErrorInk
                                : root.headerInk
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Sizes.fontFamilyMono
                         font.pixelSize: Sizes.font.sm
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -504,7 +504,7 @@ Item {
                             width: parent.width
                             text: WeatherPlugin.currentWeatherText || "Unknown"
                             color: Colorscheme.on_surface
-                            font.family: "Noto Sans CJK SC"
+                            font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.h2b
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
@@ -523,7 +523,7 @@ Item {
                                 anchors.bottom: parent.bottom
                                 text: fmtTempPlain(WeatherPlugin.currentTemperatureC)
                                 color: Colorscheme.on_surface
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.jumbo
                                 font.bold: true
                                 font.letterSpacing: 0
@@ -545,7 +545,7 @@ Item {
                             width: parent.width
                             text: "体感温度: " + fmtTemp(WeatherPlugin.currentFeelsLikeC)
                             color: Colorscheme.on_surface
-                            font.family: "Noto Sans CJK SC"
+                            font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.xxl
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -556,7 +556,7 @@ Item {
                             text: "最高 " + fmtTemp(today().temperatureMaxC)
                                   + " · 最低 " + fmtTemp(today().temperatureMinC)
                             color: Colorscheme.on_surface
-                            font.family: "Noto Sans CJK SC"
+                            font.family: Sizes.fontFamily
                             font.pixelSize: Sizes.font.xxl
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -735,7 +735,7 @@ Item {
 
                 Text {
                     text: "设置天气位置"
-                    font.family: "Noto Sans CJK SC"
+                    font.family: Sizes.fontFamily
                     font.pixelSize: Sizes.font.xxl
                     font.bold: true
                     color: Colorscheme.on_surface
@@ -743,7 +743,7 @@ Item {
 
                 Text {
                     text: "国家/城市通过联网查询，选择结果后立即切换。"
-                    font.family: "Noto Sans CJK SC"
+                    font.family: Sizes.fontFamily
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.on_surface_variant
                     wrapMode: Text.WordWrap
@@ -797,7 +797,7 @@ Item {
                 Text {
                     visible: root.geocodeBusy
                     text: "正在查询..."
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Sizes.fontFamilyMono
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.primary
                 }
@@ -805,7 +805,7 @@ Item {
                 Text {
                     visible: root.geocodeError.length > 0
                     text: root.geocodeError
-                    font.family: "Noto Sans CJK SC"
+                    font.family: Sizes.fontFamily
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.error
                     wrapMode: Text.WordWrap
@@ -839,14 +839,14 @@ Item {
                             Text {
                                 text: modelData.label || ""
                                 color: Colorscheme.on_surface
-                                font.family: "Noto Sans CJK SC"
+                                font.family: Sizes.fontFamily
                                 font.pixelSize: Sizes.font.md
                                 elide: Text.ElideRight
                             }
                             Text {
                                 text: "lat " + Number(modelData.latitude).toFixed(3) + " · lon " + Number(modelData.longitude).toFixed(3)
                                 color: Colorscheme.on_surface_variant
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.xsm
                             }
                         }
@@ -877,7 +877,7 @@ Item {
 
                     Text {
                         text: "最近使用"
-                        font.family: "Noto Sans CJK SC"
+                        font.family: Sizes.fontFamily
                         font.pixelSize: Sizes.font.sm
                         color: Colorscheme.on_surface_variant
                     }
@@ -907,7 +907,7 @@ Item {
                                     id: chipLabel
                                     anchors.centerIn: parent
                                     text: modelData.label || ""
-                                    font.family: "Noto Sans CJK SC"
+                                    font.family: Sizes.fontFamily
                                     font.pixelSize: Sizes.font.sm
                                     color: Colorscheme.primary
                                     elide: Text.ElideRight
@@ -958,7 +958,7 @@ Item {
         font {
             pixelSize: 14
             hintingPreference: Font.PreferFullHinting
-            family: "Noto Sans CJK SC"
+            family: Sizes.fontFamily
         }
 
         cursorDelegate: Rectangle {
@@ -1019,7 +1019,7 @@ Item {
             font.pixelSize: Sizes.font.sm
             font.bold: true
             color: Colorscheme.primary
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
 
             Behavior on color { ColorAnimation { duration: 140 } }
         }
@@ -1055,7 +1055,7 @@ Item {
             Text {
                 text: card.icon
                 color: Colorscheme.on_surface
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: Sizes.font.title
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -1063,7 +1063,7 @@ Item {
             Text {
                 text: card.title
                 color: Colorscheme.on_surface
-                font.family: "Noto Sans CJK SC"
+                font.family: Sizes.fontFamily
                 font.bold: true
                 font.pixelSize: Sizes.font.body
                 anchors.verticalCenter: parent.verticalCenter

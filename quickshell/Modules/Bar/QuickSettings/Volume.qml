@@ -73,7 +73,7 @@ Item {
         Text {
             id: volText
             text: Math.round(Volume.sinkVolume * 100).toString()
-            font.family: "JetBrainsMono Nerd Font"
+            font.family: Sizes.fontFamilyMono
             font.pixelSize: Sizes.font.sm
             font.bold: true
             color: Colorscheme.on_surface

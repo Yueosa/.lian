@@ -42,7 +42,7 @@ Rectangle {
         }
         Text {
             text: "expand_more"
-            font.family: "Material Symbols Outlined"
+            font.family: Sizes.fontIcon
             font.pixelSize: 16
             color: Colorscheme.on_surface_variant
             anchors.verticalCenter: parent.verticalCenter

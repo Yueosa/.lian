@@ -55,7 +55,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf060" // 箭头向左的返回图标
-                    font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.text
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.text
                 }
 
                 MouseArea {
@@ -79,7 +79,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: ControlBackend.dndEnabled ? "\uf1f6" : "\uf0f3"
-                    font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg
                     color: ControlBackend.dndEnabled ? Colorscheme.secondary_container : theme.text
                 }
 
@@ -98,7 +98,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf1f8" 
-                    font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg
                     color: root.hasMessages ? theme.error : theme.subtext
                     opacity: root.hasMessages ? 1.0 : 0.4
                 }
@@ -122,7 +122,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: WidgetState.notifDisplayMode === "compact" ? "\uf0ca" : "\uf009" 
-                    font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.lg; color: theme.text
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.lg; color: theme.text
                 }
 
                 MouseArea {
@@ -140,7 +140,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf00d" 
-                    font.family: "Font Awesome 6 Free Solid"
+                    font.family: Sizes.fontAwesome
                     font.pixelSize: Sizes.font.xl; color: theme.text
                 }
 

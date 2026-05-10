@@ -97,7 +97,7 @@ Item {
                             Image { anchors.fill: parent; source: getAppIconSource(modelData); visible: modelData !== "system"; sourceSize: Qt.size(40, 40) }
                             Rectangle {
                                 anchors.fill: parent; radius: Sizes.rounding.xl; color: brandColor; visible: modelData === "system"
-                                Text { anchors.centerIn: parent; text: "\uf0f3"; font.family: "Font Awesome 6 Free Solid"; font.pixelSize: Sizes.font.xl; color: Colorscheme.on_primary }
+                                Text { anchors.centerIn: parent; text: "\uf0f3"; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.xl; color: Colorscheme.on_primary }
                             }
                         }
 

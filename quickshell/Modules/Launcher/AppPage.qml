@@ -168,7 +168,7 @@ Item {
 
                 Text {
                     text: "\uf002"
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Sizes.fontFamilyMono
                     font.pixelSize: Sizes.font.lg
                     color: Colorscheme.on_surface_variant
                 }
@@ -201,7 +201,7 @@ Item {
 
                 Text {
                     text: "\uf00d"
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Sizes.fontFamilyMono
                     font.pixelSize: Sizes.font.sm
                     color: Colorscheme.on_surface_variant
                     visible: searchInput.text.length > 0
@@ -316,7 +316,7 @@ Item {
                         anchors.centerIn: parent
                         visible: iconRoot.forceFontFallback || appImage.status !== Image.Ready
                         text: modelData.materialGlyph || "apps"
-                        font.family: "Material Symbols Outlined"
+                        font.family: Sizes.fontIcon
                         font.pixelSize: Sizes.font.display
                         color: delegateItem.ListView.isCurrentItem ? Colorscheme.on_primary : Colorscheme.on_surface
                     }

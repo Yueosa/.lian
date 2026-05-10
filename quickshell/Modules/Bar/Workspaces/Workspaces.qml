@@ -74,7 +74,7 @@ Item {
                 anchors.centerIn: parent
                 text: root.focusedWorkspaceLabel()
                 color: Colorscheme.primary
-                font.family: "JetBrainsMono Nerd Font"
+                font.family: Sizes.fontFamilyMono
                 font.pixelSize: Sizes.font.xsm
                 font.bold: true
             }

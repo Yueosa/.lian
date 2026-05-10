@@ -98,7 +98,7 @@ Item {
             Text {
                 visible: row.archived
                 text: "inventory_2"
-                font.family: "Material Symbols Outlined"
+                font.family: Sizes.fontIcon
                 font.pixelSize: Sizes.font.sm
                 color: Colorscheme.on_surface_variant
             }
@@ -118,7 +118,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: row.isEditing ? "close" : "edit"
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: 16
                     color: Colorscheme.on_surface_variant
                 }
@@ -150,7 +150,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: row.isConfirmDelete ? "close" : "delete"
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: 16
                     color: dlMa.containsMouse ? Colorscheme.error : Colorscheme.on_surface_variant
                 }

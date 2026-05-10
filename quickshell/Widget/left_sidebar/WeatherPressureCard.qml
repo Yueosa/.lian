@@ -76,7 +76,7 @@ Item {
             Text {
                 text: "气压"
                 color: root.mutedInk
-                font.family: "Noto Sans CJK SC"
+                font.family: Sizes.fontFamily
                 font.pixelSize: Sizes.font.xxl
                 font.bold: true
             }
@@ -88,7 +88,7 @@ Item {
             anchors.verticalCenterOffset: -4
             text: root.formattedPressureText()
             color: root.ink
-            font.family: "sans-serif"
+            font.family: Sizes.fontFamily
             font.pixelSize: Math.round(parent.width * 0.21)
             font.weight: Font.Light
             z: 2
@@ -100,7 +100,7 @@ Item {
             anchors.topMargin: 20
             text: root.unitText
             color: root.ink
-            font.family: "Noto Sans CJK SC"
+            font.family: Sizes.fontFamily
             font.pixelSize: Sizes.font.xxl
             font.bold: true
             z: 2

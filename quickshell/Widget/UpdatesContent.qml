@@ -19,7 +19,7 @@ WidgetPanel {
 
     headerTools: Text {
         text: "refresh"
-        font.family: "Material Symbols Outlined"
+        font.family: Sizes.fontIcon
         font.pixelSize: Sizes.font.title
         color: Colorscheme.on_surface_variant
         MouseArea {
@@ -47,7 +47,7 @@ WidgetPanel {
 
                 Text {
                     text: "inventory_2"
-                    font.family: "Material Symbols Outlined"
+                    font.family: Sizes.fontIcon
                     font.pixelSize: Sizes.font.h3
                     color: Colorscheme.primary
                     Layout.alignment: Qt.AlignVCenter
@@ -118,7 +118,7 @@ WidgetPanel {
                             Item { Layout.fillWidth: true }
                             Text {
                                 text: Updates.officialCount.toString()
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.md
                                 font.bold: true
                                 color: Colorscheme.primary
@@ -130,7 +130,7 @@ WidgetPanel {
                             delegate: Text {
                                 Layout.fillWidth: true
                                 text: modelData
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.xsm
                                 color: Colorscheme.on_surface_variant
                                 elide: Text.ElideRight
@@ -162,7 +162,7 @@ WidgetPanel {
                             Item { Layout.fillWidth: true }
                             Text {
                                 text: Updates.aurCount.toString()
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.md
                                 font.bold: true
                                 color: Colorscheme.secondary
@@ -174,7 +174,7 @@ WidgetPanel {
                             delegate: Text {
                                 Layout.fillWidth: true
                                 text: modelData
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Sizes.fontFamilyMono
                                 font.pixelSize: Sizes.font.xsm
                                 color: Colorscheme.on_surface_variant
                                 elide: Text.ElideRight

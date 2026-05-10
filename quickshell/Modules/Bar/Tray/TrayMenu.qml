@@ -271,7 +271,7 @@ PopupWindow {
                                     anchors.centerIn: parent
                                     visible: parent.glyph !== "" || iconRaw.status === Image.Error
                                     text: parent.glyph !== "" ? parent.glyph : "apps"
-                                    font.family: "Material Symbols Outlined"
+                                    font.family: Sizes.fontIcon
                                     font.pixelSize: Sizes.font.lg
                                     color: itemMa.containsMouse ? Colorscheme.on_secondary_container : Colorscheme.secondary
                                 }

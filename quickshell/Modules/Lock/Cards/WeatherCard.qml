@@ -49,7 +49,7 @@ Rectangle {
         // 左侧：大图标
         Text {
             text: root.iconName
-            font.family: "Material Symbols Outlined"
+            font.family: Sizes.fontIcon
             font.pixelSize: 64
             color: Colorscheme.primary
             Layout.alignment: Qt.AlignVCenter
