@@ -136,6 +136,9 @@ void SseStream::dispatchEvent() {
         return;
     }
     QVariantMap env = doc.object().toVariantMap();
+    // 注意：上游 SSE 偶尔会出现重复 seq（reconnect 竞态），但 dedup 必须在
+    // QML 层做（_lastEnvelopeSeq）。在这里做会和上面 handleLine 里
+    // `id:` 字段提前 bump m_lastSeq 的逻辑冲突，导致正常事件全被吞掉。
     bool ok = false;
     qint64 seq = env.value("seq").toLongLong(&ok);
     if (ok && seq > m_lastSeq) {

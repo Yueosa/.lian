@@ -78,6 +78,7 @@ Item {
 
             ListView {
                 id: msgList
+                property bool _layoutQueued: false
                 anchors.fill: parent
                 anchors.margins: Sizes.spacing.md
                 anchors.rightMargin: Sizes.spacing.md + 6  // 让出细滚动条空间
@@ -88,7 +89,21 @@ Item {
                 cacheBuffer: 800
                 ScrollBar.vertical: LcThinScrollBar {}
 
+                function _scheduleLayout(stickBottom) {
+                    if (_layoutQueued)
+                        return;
+                    _layoutQueued = true;
+                    Qt.callLater(function() {
+                        _layoutQueued = false;
+                        msgList.forceLayout();
+                        if (stickBottom || inputCard._streaming || msgList.atYEnd)
+                            msgList.positionViewAtEnd();
+                    });
+                }
+
                 onCountChanged: Qt.callLater(function() { msgList.positionViewAtEnd(); })
+                onContentHeightChanged: _scheduleLayout(inputCard._streaming)
+                onWidthChanged: _scheduleLayout(inputCard._streaming)
 
                 delegate: MessageBubble {
                     kind: model.kind

@@ -46,6 +46,7 @@ QtObject {
     property int _liveReplyIdx: -1
     property int _liveThinkingIdx: -1
     property int _liveActionIdx: -1
+    property int _lastEnvelopeSeq: 0
     property var _toolIdxMap: ({})
     property string _liveIntentId: ""
 
@@ -284,6 +285,7 @@ QtObject {
         _liveReplyIdx = -1;
         _liveThinkingIdx = -1;
         _liveActionIdx = -1;
+        _lastEnvelopeSeq = 0;
         _toolIdxMap = {};
         _liveIntentId = "";
         activeIntentId = "";
@@ -297,6 +299,12 @@ QtObject {
     function _onEnvelope(env) {
         if (!env) return;
         if (currentSid && env.session_id && env.session_id !== currentSid) return;
+        var seq = Number(env.seq || -1);
+        if (seq >= 0) {
+            if (seq <= _lastEnvelopeSeq)
+                return;
+            _lastEnvelopeSeq = seq;
+        }
         var dom = env.domain || "";
         var typ = env.type || "";
         var data = env.data || {};
@@ -430,18 +438,29 @@ QtObject {
         _liveThinkingIdx = -1;
         _liveReplyIdx = -1;
     }
+
+    function _freezeReplyIfLive() {
+        if (_liveReplyIdx < 0 || _liveReplyIdx >= blocks.count)
+            return;
+        var row = blocks.get(_liveReplyIdx);
+        if (!row || row.kind !== "reply") {
+            _liveReplyIdx = -1;
+            return;
+        }
+        if (row.live)
+            blocks.setProperty(_liveReplyIdx, "live", false);
+        blocks.setProperty(_liveReplyIdx, "frozen", true);
+        _liveReplyIdx = -1;
+    }
+
     function _pushAction(actName, label, live) {
-        // 把 thinking/reply 的 live 切到 frozen
+        // action 起点要切分 reply：后续 delta 会自动开启新的 reply 行。
         if (_liveThinkingIdx >= 0 && _liveThinkingIdx < blocks.count) {
             blocks.setProperty(_liveThinkingIdx, "live", false);
             blocks.setProperty(_liveThinkingIdx, "frozen", true);
             _liveThinkingIdx = -1;
         }
-        if (_liveReplyIdx >= 0 && _liveReplyIdx < blocks.count) {
-            blocks.setProperty(_liveReplyIdx, "live", false);
-            blocks.setProperty(_liveReplyIdx, "frozen", true);
-            _liveReplyIdx = -1;
-        }
+        _freezeReplyIfLive();
         blocks.append(_row({
             key: "act:" + actName + ":" + Date.now(),
             kind: "action", text: "",
@@ -481,16 +500,13 @@ QtObject {
 
     function _onToolCall(d) {
         if (!d || !d.tool_call_id) return;
+        // 工具调用同样作为阶段边界，切分 reply。
         if (_liveThinkingIdx >= 0 && _liveThinkingIdx < blocks.count) {
             blocks.setProperty(_liveThinkingIdx, "live", false);
             blocks.setProperty(_liveThinkingIdx, "frozen", true);
             _liveThinkingIdx = -1;
         }
-        if (_liveReplyIdx >= 0 && _liveReplyIdx < blocks.count) {
-            blocks.setProperty(_liveReplyIdx, "live", false);
-            blocks.setProperty(_liveReplyIdx, "frozen", true);
-            _liveReplyIdx = -1;
-        }
+        _freezeReplyIfLive();
         var argText = "";
         if (d.arguments_preview != null) {
             argText = String(d.arguments_preview);
@@ -573,13 +589,16 @@ QtObject {
                 return;
             }
             if (token.indexOf("lc:history:") === 0) {
+                var sid = token.substring("lc:history:".length);
+                if (sid !== root.currentSid)
+                    return;
                 if (ok && body && body.messages) {
                     root.blocks.clear();
                     root._appendHistory(body.messages);
                     root.historyTotal = body.total || 0;
                     root.hasMoreHistory = !!body.has_more;
                     var seq = body.last_event_seq || 0;
-                    var sid = token.substring("lc:history:".length);
+                    root._lastEnvelopeSeq = Number(seq || 0);
                     if (sid && sid === root.currentSid) {
                         LianClawClient.openStream(sid, seq);
                     }

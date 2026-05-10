@@ -27,6 +27,7 @@ Item {
     property string modelName: ""
 
     property bool _expanded: false
+    property bool _layoutQueued: false
 
     readonly property bool isUser:     kind === "user"
     readonly property bool isReply:    kind === "reply"
@@ -45,12 +46,30 @@ Item {
     onLiveChanged: {
         if (isTool || isThinking || isAction) _expanded = live;
         // 流式结束（live: true→false）才重新切段
-        if (!_streamingPlain) _rebuild();
+        if (!_streamingPlain) {
+            _rebuild();
+            _scheduleLayout();
+        }
     }
     onTextChanged: {
         // 流式期间不重建 segs（避免 Repeater 销毁/重建 delegate 导致卡死）
         if (_streamingPlain) return;
         _rebuild();
+        _scheduleLayout();
+    }
+
+    function _scheduleLayout() {
+        if (!ListView.view || _layoutQueued)
+            return;
+        _layoutQueued = true;
+        Qt.callLater(function() {
+            _layoutQueued = false;
+            if (!ListView.view)
+                return;
+            ListView.view.forceLayout();
+            if (cell.live || ListView.view.atYEnd)
+                ListView.view.positionViewAtEnd();
+        });
     }
 
     readonly property color bubbleBg: {
@@ -78,6 +97,18 @@ Item {
 
     readonly property string bodyFamily: "Noto Sans CJK SC"
     readonly property string monoFamily: "Noto Sans Mono CJK SC"
+    readonly property bool _hasRichSegs: {
+        for (let i = 0; i < _segs.length; ++i) {
+            const seg = _segs[i];
+            if (seg.t !== "text" && seg.t !== "user")
+                return true;
+        }
+        return false;
+    }
+    readonly property bool _frozenPlainText: !cell._streamingPlain
+                                            && (cell.isReply || cell.isError || cell.isUser)
+                                            && !cell._hasRichSegs
+                                            && !cell._usesMarkdown(cell.text)
 
     implicitHeight: bubble.implicitHeight + 4
 
@@ -141,6 +172,13 @@ Item {
         }
         if (li < src.length) _splitImages(src.substring(li), out);
         _segs = out;
+    }
+
+    function _usesMarkdown(textValue) {
+        const source = textValue || "";
+        if (!source)
+            return false;
+        return /```|`[^`]+`|!\[[^\]]*\]\(|\[[^\]]+\]\([^\)]+\)|^\s{0,3}(#{1,6}|[-*+] |\d+\. |>)/m.test(source);
     }
 
     Rectangle {
@@ -245,142 +283,154 @@ Item {
                 }
             }
 
-            // ===================== 段渲染 =====================
-            // 流式期间走独立 Text，直接 bind cell.text，避免 Repeater rebuild
+            // 主文本：直接坐在 Column 里。一条 Text 同时承载流式与冻结两种状态：
+            //   * live=true 或 不含 markdown ⇒ PlainText（避免 MarkdownText 在
+            //     不完整 token / 流式中间产生的卡顿）
+            //   * 冻结后且包含 markdown 标记 ⇒ MarkdownText
+            // 折叠态（thinking/tool/action 未展开）下不显示。
             Text {
-                id: liveTxt
-                visible: cell._streamingPlain && (cell.text || "").length > 0
+                id: mainText
+                visible: !cell._hasRichSegs
+                         && (cell.isUser || cell.isReply || cell.isError
+                             || ((cell.isThinking || cell.isTool || cell.isAction) && cell._expanded))
                 width: cell.bodyW
                 text: cell.text || ""
                 color: cell.bubbleFg
                 wrapMode: Text.Wrap
-                textFormat: Text.PlainText
+                elide: Text.ElideNone
+                textFormat: (!cell.live && cell._usesMarkdown(cell.text))
+                            ? Text.MarkdownText
+                            : Text.PlainText
                 font.family: cell.bodyFamily
                 font.italic: cell.isThinking
-                font.pixelSize: cell.isThinking ? Sizes.font.xsm : Sizes.font.md
+                font.pixelSize: cell.isThinking ? Sizes.font.xsm
+                                : (cell.isAction ? Sizes.font.xsm : Sizes.font.md)
+                linkColor: Colorscheme.primary
+                onLinkActivated: function(link) { Qt.openUrlExternally(link); }
+                onImplicitHeightChanged: cell._scheduleLayout()
             }
 
-            Repeater {
-                model: {
-                    if (cell.isUser) return [];
-                    if (cell._streamingPlain) return [];
-                    if (cell.isThinking || cell.isTool || cell.isAction)
-                        return cell._expanded ? cell._segs : [];
-                    return cell._segs;
-                }
-                delegate: Item {
-                    id: segItem
-                    width: cell.bodyW
-                    implicitHeight: {
-                        if (modelData.t === "img")  return imgEl.height;
-                        if (modelData.t === "code") return codeBox.implicitHeight;
-                        return txtEl.implicitHeight;
-                    }
+            // rich 段（代码块 / 图片）：仅当 _hasRichSegs 为 true 时启用，
+            // 此时 mainText 已隐藏，所有内容都从 _segs 渲染。
+            Column {
+                id: richBody
+                visible: cell._hasRichSegs
+                width: cell.bodyW
+                spacing: 4
 
-                    // ---- 文本段：流式时 PlainText，落定时 MarkdownText ----
-                    Text {
-                        id: txtEl
-                        visible: modelData.t === "text"
-                        width: parent.width
-                        text: modelData.s || ""
-                        color: cell.bubbleFg
-                        wrapMode: Text.Wrap
-                        elide: Text.ElideNone
-                        textFormat: cell._streamingPlain ? Text.PlainText : Text.MarkdownText
-                        font.family: cell.bodyFamily
-                        font.italic: cell.isThinking
-                        font.pixelSize: cell.isThinking ? Sizes.font.xsm
-                                        : (cell.isAction ? Sizes.font.xsm : Sizes.font.md)
-                        linkColor: Colorscheme.primary
-                        onLinkActivated: function(link) { Qt.openUrlExternally(link); }
-                    }
+                Repeater {
+                    model: cell._hasRichSegs ? cell._segs : []
 
-                    // ---- 代码段：横向滚动 ----
-                    Rectangle {
-                        id: codeBox
-                        visible: modelData.t === "code"
-                        width: parent.width
-                        radius: Sizes.rounding.medium
-                        color: Qt.rgba(0, 0, 0, 0.22)
-                        border.width: 1
-                        border.color: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.08)
-                        implicitHeight: codeFlick.height + 12
-                        Flickable {
-                            id: codeFlick
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 6
-                            height: Math.min(codeText.implicitHeight, 360)
-                            contentWidth: codeText.implicitWidth
-                            contentHeight: codeText.implicitHeight
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
-                            flickableDirection: Flickable.HorizontalAndVerticalFlick
-                            ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 6 }
-                            ScrollBar.vertical:   ScrollBar { policy: ScrollBar.AsNeeded; width:  6 }
-                            Text {
-                                id: codeText
-                                text: modelData.s || ""
-                                color: cell.bubbleFg
-                                textFormat: Text.PlainText
-                                font.family: cell.monoFamily
-                                font.pixelSize: Sizes.font.sm
-                                wrapMode: Text.NoWrap
-                            }
+                    delegate: Item {
+                        id: segItem
+                        width: cell.bodyW
+                        implicitHeight: {
+                            if (modelData.t === "img")  return imgEl.height;
+                            if (modelData.t === "code") return codeBox.implicitHeight;
+                            return txtEl.implicitHeight;
                         }
-                    }
+                        // Column 定位器用 height 排版，Item 默认 height=0 会被 bubble.clip 裁掉
+                        height: implicitHeight
 
-                    // ---- 图片段：原生 Image ----
-                    Image {
-                        id: imgEl
-                        visible: modelData.t === "img"
-                        width: parent.width
-                        fillMode: Image.PreserveAspectFit
-                        source: modelData.url || ""
-                        asynchronous: true
-                        cache: true
-                        sourceSize.width: Math.max(128, Math.floor(cell.bodyW * 2))
-                        height: status === Image.Ready
-                                ? Math.min(implicitHeight, 480)
-                                : (status === Image.Loading ? 80 : 24)
-                        Rectangle {
-                            anchors.centerIn: parent
-                            visible: imgEl.status === Image.Loading
-                            width: 28; height: 28
-                            radius: 14
-                            color: "transparent"
-                            border.width: 2
-                            border.color: Colorscheme.primary
-                            opacity: 0.5
-                            RotationAnimation on rotation {
-                                running: imgEl.status === Image.Loading
-                                from: 0; to: 360; duration: 900
-                                loops: Animation.Infinite
-                            }
-                        }
                         Text {
-                            anchors.centerIn: parent
-                            visible: imgEl.status === Image.Error
-                            text: "图片加载失败"
-                            color: Colorscheme.error
+                            id: txtEl
+                            visible: modelData.t === "text" || modelData.t === "user"
+                            width: parent.width
+                            text: modelData.s || ""
+                            color: cell.bubbleFg
+                            wrapMode: Text.Wrap
+                            elide: Text.ElideNone
+                            textFormat: modelData.t === "user" || !cell._usesMarkdown(modelData.s)
+                                        ? Text.PlainText
+                                        : Text.MarkdownText
                             font.family: cell.bodyFamily
-                            font.pixelSize: Sizes.font.xs
+                            font.italic: cell.isThinking
+                            font.pixelSize: cell.isThinking ? Sizes.font.xsm
+                                            : (cell.isAction ? Sizes.font.xsm : Sizes.font.md)
+                            linkColor: Colorscheme.primary
+                            onLinkActivated: function(link) { Qt.openUrlExternally(link); }
+                            onImplicitHeightChanged: cell._scheduleLayout()
+                        }
+
+                        Rectangle {
+                            id: codeBox
+                            visible: modelData.t === "code"
+                            width: parent.width
+                            radius: Sizes.rounding.medium
+                            color: Qt.rgba(0, 0, 0, 0.22)
+                            border.width: 1
+                            border.color: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.08)
+                            implicitHeight: codeFlick.height + 12
+
+                            Flickable {
+                                id: codeFlick
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 6
+                                height: Math.min(codeText.implicitHeight, 360)
+                                contentWidth: codeText.implicitWidth
+                                contentHeight: codeText.implicitHeight
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                flickableDirection: Flickable.HorizontalAndVerticalFlick
+                                ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 6 }
+                                ScrollBar.vertical:   ScrollBar { policy: ScrollBar.AsNeeded; width:  6 }
+
+                                Text {
+                                    id: codeText
+                                    text: modelData.s || ""
+                                    color: cell.bubbleFg
+                                    textFormat: Text.PlainText
+                                    font.family: cell.monoFamily
+                                    font.pixelSize: Sizes.font.sm
+                                    wrapMode: Text.NoWrap
+                                    onImplicitHeightChanged: cell._scheduleLayout()
+                                }
+                            }
+                        }
+
+                        Image {
+                            id: imgEl
+                            visible: modelData.t === "img"
+                            width: parent.width
+                            fillMode: Image.PreserveAspectFit
+                            source: modelData.url || ""
+                            asynchronous: true
+                            cache: true
+                            sourceSize.width: Math.max(128, Math.floor(cell.bodyW * 2))
+                            height: status === Image.Ready
+                                    ? Math.min(implicitHeight, 480)
+                                    : (status === Image.Loading ? 80 : 24)
+                            onStatusChanged: cell._scheduleLayout()
+
+                            Rectangle {
+                                anchors.centerIn: parent
+                                visible: imgEl.status === Image.Loading
+                                width: 28; height: 28
+                                radius: 14
+                                color: "transparent"
+                                border.width: 2
+                                border.color: Colorscheme.primary
+                                opacity: 0.5
+                                RotationAnimation on rotation {
+                                    running: imgEl.status === Image.Loading
+                                    from: 0; to: 360; duration: 900
+                                    loops: Animation.Infinite
+                                }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: imgEl.status === Image.Error
+                                text: "图片加载失败"
+                                color: Colorscheme.error
+                                font.family: cell.bodyFamily
+                                font.pixelSize: Sizes.font.xs
+                            }
                         }
                     }
                 }
-            }
-
-            // ---- 用户消息：单 PlainText ----
-            Text {
-                visible: cell.isUser && (cell.text || "").length > 0
-                width: parent.width
-                text: cell.text
-                color: cell.bubbleFg
-                wrapMode: Text.Wrap
-                textFormat: Text.PlainText
-                font.family: cell.bodyFamily
-                font.pixelSize: Sizes.font.md
             }
 
             // 流式光标
