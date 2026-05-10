@@ -25,6 +25,7 @@ class ClipboardStore : public QObject {
 
     Q_PROPERTY(ClipboardListModel* recentEntries READ recentEntries CONSTANT)
     Q_PROPERTY(QString searchKeyword READ searchKeyword WRITE setSearchKeyword NOTIFY searchKeywordChanged)
+    Q_PROPERTY(int recentLimit READ recentLimit NOTIFY recentLimitChanged)
 
 public:
     explicit ClipboardStore(QObject* parent = nullptr);
@@ -32,15 +33,20 @@ public:
 
     ClipboardListModel* recentEntries() const { return m_model; }
     QString searchKeyword() const { return m_search; }
+    int recentLimit() const { return m_recentLimit; }
     void setSearchKeyword(const QString& s);
 
     Q_INVOKABLE void pasteEntry(qint64 id);
+    Q_INVOKABLE QString decodeEntryText(qint64 id) const;
+    Q_INVOKABLE void loadMore(int step = 50);
+    Q_INVOKABLE void resetRecentLimit();
     Q_INVOKABLE void clearAll();
     Q_INVOKABLE void refresh();
 
 signals:
     void entriesChanged();
     void searchKeywordChanged();
+    void recentLimitChanged();
 
 private slots:
     void onWatcherUpdated();
@@ -48,7 +54,8 @@ private slots:
 private:
     void reload();
 
-    static constexpr int kRecentLimit = 50;
+    static constexpr int kDefaultRecentLimit = 50;
+    static constexpr int kMaxRecentLimit = 1000;
 
     clavis::store::ClipboardDao* m_dao = nullptr;
     ClipboardListModel*          m_model = nullptr;
@@ -56,6 +63,7 @@ private:
     QThread*                      m_worker = nullptr;
     QString                       m_cacheDir;
     QString                       m_search;
+    int                           m_recentLimit = kDefaultRecentLimit;
 };
 
 } // namespace clavis::services

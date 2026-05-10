@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QStringDecoder>
 #include <QThread>
 
 using clavis::ipc::CliphistWatcher;
@@ -84,14 +85,30 @@ void ClipboardStore::setSearchKeyword(const QString& s) {
     if (m_search == s) return;
     m_search = s;
     emit searchKeywordChanged();
+    resetRecentLimit();
     reload();
+}
+
+void ClipboardStore::loadMore(int step) {
+    const int inc = step > 0 ? step : 50;
+    const int next = std::min(kMaxRecentLimit, m_recentLimit + inc);
+    if (next == m_recentLimit) return;
+    m_recentLimit = next;
+    emit recentLimitChanged();
+    reload();
+}
+
+void ClipboardStore::resetRecentLimit() {
+    if (m_recentLimit == kDefaultRecentLimit) return;
+    m_recentLimit = kDefaultRecentLimit;
+    emit recentLimitChanged();
 }
 
 void ClipboardStore::onWatcherUpdated() { reload(); }
 
 void ClipboardStore::reload() {
     if (!m_dao || !m_model) return;
-    m_model->setEntries(m_dao->recent(kRecentLimit, m_search));
+    m_model->setEntries(m_dao->recent(m_recentLimit, m_search));
     emit entriesChanged();
 }
 
@@ -124,13 +141,38 @@ void ClipboardStore::pasteEntry(qint64 id) {
         const QString safe = QString(pasteHtml).replace(QLatin1Char('\''), QLatin1String("'\\''"));
         cmd = QStringLiteral("printf '%s' '%1' | %2").arg(safe, wlcopy.join(QLatin1Char(' ')));
     } else {
-        cmd = QStringLiteral("printf '%1\\n' | cliphist decode | %2")
+        cmd = QStringLiteral("cliphist decode %1 | %2")
                   .arg(QString::number(id), wlcopy.join(QLatin1Char(' ')));
     }
 
     QProcess::startDetached(QStringLiteral("bash"),
                             { QStringLiteral("-lc"), cmd });
     m_dao->touch(id);
+}
+
+QString ClipboardStore::decodeEntryText(qint64 id) const {
+    if (id <= 0) return {};
+
+    QProcess p;
+    p.setProcessChannelMode(QProcess::SeparateChannels);
+    p.start(QStringLiteral("cliphist"), { QStringLiteral("decode"), QString::number(id) });
+    if (!p.waitForStarted(1500)) return {};
+    if (!p.waitForFinished(4000)) {
+        p.kill();
+        p.waitForFinished(500);
+        return {};
+    }
+    if (p.exitCode() != 0) return {};
+
+    const QByteArray out = p.readAllStandardOutput();
+    if (out.isEmpty() || out.contains('\0')) return {};
+
+    auto dec = QStringDecoder(QStringDecoder::Utf8, QStringDecoder::Flag::Stateless);
+    QString text = dec.decode(out);
+    if (dec.hasError()) {
+        text = QString::fromUtf8(out);
+    }
+    return text;
 }
 
 void ClipboardStore::clearAll() {
