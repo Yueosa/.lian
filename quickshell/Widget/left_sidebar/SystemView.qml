@@ -84,66 +84,6 @@ Item {
         return arr
     }
 
-    function chartSeries(tab, slot) {
-        if (tab === 0)
-            return slot === 0 ? netDownHistory : netUpHistory
-        if (tab === 1)
-            return slot === 0 ? ramHistory : []
-        if (slot === 0)
-            return load1History
-        if (slot === 1)
-            return load5History
-        return load15History
-    }
-
-    function chartMaxValue(tab) {
-        if (tab === 0)
-            return Math.max(1, smoothMaxNet)
-        if (tab === 1)
-            return 1.0
-        return Math.max(1, smoothMaxLoad)
-    }
-
-    function chartLinePath(points, maxValue, chartWidth, chartHeight) {
-        if (!points || points.length < 2 || chartWidth <= 0 || chartHeight <= 0)
-            return "M 0 0"
-
-        const maxV = Math.max(0.0001, maxValue)
-        const padX = 2
-        const padY = 4
-        const baseY = chartHeight - padY
-        const usableW = Math.max(1, chartWidth - padX * 2)
-        const usableH = Math.max(1, chartHeight - padY * 2)
-        const segments = Math.max(1, points.length - 1)
-
-        let path = ""
-        for (let i = 0; i < points.length; ++i) {
-            const x = padX + usableW * (i / segments)
-            const clamped = Math.max(0, Number(points[i] || 0))
-            const y = baseY - (clamped / maxV) * usableH
-            path += (i === 0 ? "M " : " L ") + x + " " + y
-        }
-        return path
-    }
-
-    function chartFillPath(points, maxValue, chartWidth, chartHeight) {
-        if (!points || points.length < 2 || chartWidth <= 0 || chartHeight <= 0)
-            return "M 0 0"
-
-        const linePath = chartLinePath(points, maxValue, chartWidth, chartHeight)
-        if (!linePath || linePath === "M 0 0")
-            return "M 0 0"
-
-        const padX = 2
-        const padY = 4
-        const baseY = chartHeight - padY
-        const usableW = Math.max(1, chartWidth - padX * 2)
-        const segments = Math.max(1, points.length - 1)
-        const endX = padX + usableW
-
-        return linePath + " L " + endX + " " + baseY + " L " + padX + " " + baseY + " Z"
-    }
-
     Connections {
         target: SysmonPlugin
         function onFastDataChanged() {
@@ -469,100 +409,30 @@ Item {
                     radius: Sizes.rounding.large
                     clip: true
                     
-                    Canvas {
-                        id: chartCanvas
+                    SystemChartCanvas {
                         anchors.fill: parent
                         anchors.margins: 8
-                        antialiasing: true
-                        renderStrategy: Canvas.Cooperative
 
-                        Connections {
-                            target: root
-                            function onChartRevisionChanged() { chartCanvas.requestPaint() }
-                            function onCurrentChartTabChanged() { chartCanvas.requestPaint() }
-                        }
-                        onWidthChanged: requestPaint()
-                        onHeightChanged: requestPaint()
+                        currentTab:    root.currentChartTab
+                        slideProgress: root.slideProgress
+                        revision:      root.chartRevision
 
-                        function buildSmoothPath(ctx, points, maxValue, w, h) {
-                            if (!points || points.length < 2 || w <= 0 || h <= 0)
-                                return null
-                            const maxV = Math.max(0.0001, maxValue)
-                            const padX = 2
-                            const padY = 4
-                            const baseY = h - padY
-                            const usableW = Math.max(1, w - padX * 2)
-                            const usableH = Math.max(1, h - padY * 2)
-                            const N = points.length
-                            const seg = Math.max(1, N - 1)
-                            const prog = Math.max(0, Math.min(1, root.slideProgress))
-                            const pts = []
-                            for (let i = 0; i < N; ++i) {
-                                // 新数据到达时 prog 从 0→1：所有点向左滑一格，最新点从右边界外滑入
-                                const t = (i + 1 - prog) / seg
-                                let v = Math.max(0, Number(points[i] || 0))
-                                // 最新一点的 y 在“上一采样”和“当前采样”之间插值，让折线生长平滑
-                                if (i === N - 1 && N >= 2) {
-                                    const prev = Math.max(0, Number(points[N - 2] || 0))
-                                    v = prev + (v - prev) * prog
-                                }
-                                pts.push({
-                                    x: padX + usableW * t,
-                                    y: baseY - (v / maxV) * usableH
-                                })
-                            }
-                            ctx.beginPath()
-                            ctx.moveTo(pts[0].x, pts[0].y)
-                            // Catmull-Rom -> Cubic Bezier，端点夹紧
-                            for (let i = 0; i < pts.length - 1; ++i) {
-                                const p0 = pts[i - 1] || pts[i]
-                                const p1 = pts[i]
-                                const p2 = pts[i + 1]
-                                const p3 = pts[i + 2] || p2
-                                const cp1x = p1.x + (p2.x - p0.x) / 6
-                                const cp1y = p1.y + (p2.y - p0.y) / 6
-                                const cp2x = p2.x - (p3.x - p1.x) / 6
-                                const cp2y = p2.y - (p3.y - p1.y) / 6
-                                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
-                            }
-                            return { first: pts[0], last: pts[pts.length - 1], baseY: baseY, padX: padX, padX2: padX + usableW }
-                        }
+                        netDownHistory: root.netDownHistory
+                        netUpHistory:   root.netUpHistory
+                        ramHistory:     root.ramHistory
+                        load1History:   root.load1History
+                        load5History:   root.load5History
+                        load15History:  root.load15History
 
-                        function drawSeries(ctx, points, maxValue, color, lineWidth, fillAlpha) {
-                            const meta = buildSmoothPath(ctx, points, maxValue, width, height)
-                            if (!meta) return
-                            if (fillAlpha > 0) {
-                                ctx.lineTo(meta.last.x, meta.baseY)
-                                ctx.lineTo(meta.first.x, meta.baseY)
-                                ctx.closePath()
-                                ctx.fillStyle = Qt.rgba(color.r, color.g, color.b, fillAlpha)
-                                ctx.fill()
-                                // 重新建一次描边路径（fill 会带闭合段）
-                                buildSmoothPath(ctx, points, maxValue, width, height)
-                            }
-                            ctx.lineWidth = lineWidth
-                            ctx.lineCap = "round"
-                            ctx.lineJoin = "round"
-                            ctx.strokeStyle = color
-                            ctx.stroke()
-                        }
+                        smoothMaxNet:  root.smoothMaxNet
+                        smoothMaxLoad: root.smoothMaxLoad
 
-                        onPaint: {
-                            const ctx = getContext("2d")
-                            ctx.reset()
-                            ctx.clearRect(0, 0, width, height)
-                            const tab = root.currentChartTab
-                            if (tab === 0) {
-                                drawSeries(ctx, root.chartSeries(0, 0), root.chartMaxValue(0), root.netDownColor, 2.4, 0.22)
-                                drawSeries(ctx, root.chartSeries(0, 1), root.chartMaxValue(0), root.netUpColor,   2.4, 0.16)
-                            } else if (tab === 1) {
-                                drawSeries(ctx, root.chartSeries(1, 0), root.chartMaxValue(1), root.ramLineColor, 2.4, 0.22)
-                            } else {
-                                drawSeries(ctx, root.chartSeries(2, 0), root.chartMaxValue(2), root.load1Color,  2.4, 0.16)
-                                drawSeries(ctx, root.chartSeries(2, 1), root.chartMaxValue(2), root.load5Color,  2.2, 0.0)
-                                drawSeries(ctx, root.chartSeries(2, 2), root.chartMaxValue(2), root.load15Color, 2.0, 0.0)
-                            }
-                        }
+                        netDownColor: root.netDownColor
+                        netUpColor:   root.netUpColor
+                        ramLineColor: root.ramLineColor
+                        load1Color:   root.load1Color
+                        load5Color:   root.load5Color
+                        load15Color:  root.load15Color
                     }
                 }
                 
