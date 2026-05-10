@@ -37,6 +37,7 @@ exec-once = qs
 - `quickshell`（Qt 6，Wayland 环境）
 - `hyprland`
 - `nmcli`（网络）、`bluetoothctl`（蓝牙）、`playerctl`（媒体）、`cliphist` + `wl-clipboard`（剪贴板）
+- `sqlite`（剪贴板/通知/媒体/课表/更新等数据层后端单一存储于 `~/.local/state/lian/lian.db`）
 - `pacman` + `checkupdates` + `paru`（系统更新检查）
 - `python3`（脚本依赖）、`bash`、`jq`、`grim`、`slurp`
 - 字体：`Material Symbols Outlined`、`JetBrainsMono Nerd Font`、`Font Awesome 6 Free Solid`
