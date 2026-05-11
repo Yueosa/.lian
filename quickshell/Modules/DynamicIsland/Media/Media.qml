@@ -20,6 +20,13 @@ Item {
     property string artist: (player && player.trackArtist) ? player.trackArtist : "Unknown Artist"
     property string album: (player && player.trackAlbum) ? player.trackAlbum : ""
 
+    readonly property color mediaTitleColor: {
+        const c = Colorscheme.on_surface
+        const luma = c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722
+        return luma < 0.40 ? Qt.rgba(1, 1, 1, 0.98) : Qt.rgba(c.r, c.g, c.b, 0.98)
+    }
+    readonly property color mediaSubColor: Qt.rgba(mediaTitleColor.r, mediaTitleColor.g, mediaTitleColor.b, 0.78)
+
     readonly property bool isActive: root.visible && root.player
     property bool showLyrics: false 
 
@@ -313,9 +320,9 @@ Item {
                 y: coverContainer.y + coverContainer.height - 8
                 spacing: Sizes.spacing.xxs 
 
-                Text { text: root.title; color: Colorscheme.on_background; font.pixelSize: Sizes.font.title; font.bold: true; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
-                Text { text: root.artist; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.lg; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
-                Text { text: root.album; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.sm; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
+                Text { text: root.title; color: root.mediaTitleColor; font.pixelSize: Sizes.font.title; font.bold: true; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
+                Text { text: root.artist; color: root.mediaSubColor; font.pixelSize: Sizes.font.lg; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
+                Text { text: root.album; color: root.mediaSubColor; font.pixelSize: Sizes.font.sm; Layout.alignment: Qt.AlignHCenter; elide: Text.ElideRight; Layout.maximumWidth: root.width - 80 }
             }
 
             Item {
@@ -486,9 +493,9 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Text { text: root.isActive ? root.formatTime(root.currentPos) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
+                        Text { text: root.isActive ? root.formatTime(root.currentPos) : "0:00"; color: root.mediaSubColor; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
                         Item { Layout.fillWidth: true }
-                        Text { text: root.isActive ? root.formatTime(root.player.length) : "0:00"; color: Colorscheme.on_surface; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
+                        Text { text: root.isActive ? root.formatTime(root.player.length) : "0:00"; color: root.mediaSubColor; font.pixelSize: Sizes.font.sm; font.family: Sizes.fontFamilyMono }
                     }
                 }
             }

@@ -3,6 +3,8 @@ import Quickshell
 import QtQuick
 
 Singleton {
+    id: root
+
     // ================= 原有配置 (保持不变) =================
     readonly property string fontFamily: "Noto Sans CJK SC"
     readonly property string fontFamilyMono: "JetBrainsMono Nerd Font"
@@ -173,6 +175,23 @@ Singleton {
         readonly property int rowHeight: 44
         readonly property int iconBoxSize: 36
         readonly property int controlChipHeight: 36
+    }
+
+    // ================= Overview 控制中心字体规范 =================
+    readonly property QtObject controlCenter: QtObject {
+        readonly property int tileIconFont: root.font.xl
+        readonly property int tileTitleFont: root.font.md
+        readonly property int chargingCurrentIconFont: root.font.lg
+        readonly property int chargingLabelFont: root.font.sm
+        readonly property int chargingExpandedIconFont: root.font.md
+        readonly property int cornerIconFont: root.font.xxl
+        readonly property int prefsHeaderFont: root.font.sm
+        readonly property int prefsSectionFont: root.font.hairline
+        readonly property int prefsChipIconFont: root.font.sm
+        readonly property int prefsChipLabelFont: root.font.hairline
+        readonly property int prefsSliderLabelFont: root.font.hairline
+        readonly property int prefsSliderValueFont: root.font.xs
+        readonly property int prefsHintFont: root.font.xs
     }
 
     // ================= 灵动岛歌词胶囊 =================

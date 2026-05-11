@@ -14,6 +14,7 @@ import qs.Modules.DynamicIsland.NotificationContent
 import qs.Modules.DynamicIsland.VolumeContent
 import qs.Modules.DynamicIsland.LyricsContent 
 import qs.Modules.DynamicIsland.Hub
+import qs.Modules.DynamicIsland.OverviewContent
 
 Variants {
     model: Quickshell.screens
@@ -22,6 +23,7 @@ Variants {
         id: islandWindow
         required property var modelData
         screen: modelData
+        readonly property bool islandEventCenterBooted: IslandEventCenter.booted
 
         property int earRadius: 16 
         readonly property real islandShadowStrongAlpha: {
@@ -273,6 +275,15 @@ Variants {
                 IpcHandler {
                     target: "island"
 
+                    function _parseSwitchValue(state: string, fallback: bool) {
+                        const s = String(state || "").toLowerCase()
+                        if (s === "on" || s === "1" || s === "true" || s === "enable" || s === "enabled")
+                            return true
+                        if (s === "off" || s === "0" || s === "false" || s === "disable" || s === "disabled")
+                            return false
+                        return fallback
+                    }
+
                     function closeAllOthers() {
                         root.showLyrics = false;
                         root.expanded = false;
@@ -289,6 +300,43 @@ Variants {
                         root.showHub = true;
                         root.hubTabIndex = 3;
                         return "SWITCHER_OPENED"
+                    }
+
+                    function notifytest(preset: string) {
+                        const name = (preset && preset.length > 0) ? preset : "resource_cpu"
+                        IslandEventCenter.debugEmitPreset(name, "force")
+                    }
+
+                    function notifytestmode(preset: string, mode: string) {
+                        const name = (preset && preset.length > 0) ? preset : "resource_cpu"
+                        const strategy = (mode && mode.length > 0) ? mode : "force"
+                        IslandEventCenter.debugEmitPreset(name, strategy)
+                    }
+
+                    function notifystats() {
+                        IslandEventCenter.debugDumpStats()
+                    }
+
+                    function notifyreset() {
+                        IslandEventCenter.debugResetStats()
+                    }
+
+                    function notifysetdnd(state: string) {
+                        const want = _parseSwitchValue(state, ControlBackend.dndEnabled)
+                        if (want !== ControlBackend.dndEnabled)
+                            ControlBackend.toggleDnd()
+                    }
+
+                    function notifysetquiet(state: string, startHour: string, endHour: string) {
+                        const want = _parseSwitchValue(state, DynamicIslandPrefs.quietHoursEnabled)
+                        DynamicIslandPrefs.quietHoursEnabled = want
+
+                        const start = Number(startHour)
+                        const end = Number(endHour)
+                        if (!isNaN(start))
+                            DynamicIslandPrefs.setQuietStartHour(start)
+                        if (!isNaN(end))
+                            DynamicIslandPrefs.setQuietEndHour(end)
                     }
                 }
 

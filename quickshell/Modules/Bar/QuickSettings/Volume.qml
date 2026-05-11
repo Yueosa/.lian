@@ -9,6 +9,24 @@ Item {
     id: root
     property bool isHovered: mouseArea.containsMouse
 
+    function _luma(c) {
+        return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+    }
+
+    function _pickReadable(base, fallback, bg) {
+        const b = Qt.color(base)
+        const f = Qt.color(fallback)
+        const g = Qt.color(bg)
+        return Math.abs(_luma(b) - _luma(g)) < 0.20 ? f : b
+    }
+
+    readonly property color ringBgColor: Colorscheme.surface_container
+    readonly property color ringTrackColor: Qt.rgba(Colorscheme.on_surface.r, Colorscheme.on_surface.g, Colorscheme.on_surface.b, 0.32)
+    readonly property color ringProgressColor: {
+        const base = (Volume.sinkMuted || Volume.sinkVolume <= 0) ? Colorscheme.error : Colorscheme.primary
+        return _pickReadable(base, Colorscheme.on_surface, ringBgColor)
+    }
+
     // 默认高度 28，宽度在悬浮时平滑展开以容纳数字
     implicitHeight: 28
     implicitWidth: isHovered ? layout.implicitWidth : 28
@@ -32,7 +50,7 @@ Item {
 
                 ShapePath {
                     fillColor: "transparent"
-                    strokeColor: Colorscheme.surface_variant
+                    strokeColor: root.ringTrackColor
                     strokeWidth: 3
                     capStyle: ShapePath.RoundCap 
                     PathAngleArc {
@@ -44,7 +62,7 @@ Item {
 
                 ShapePath {
                     fillColor: "transparent"
-                    strokeColor: (Volume.sinkMuted || Volume.sinkVolume <= 0) ? Colorscheme.error : Colorscheme.primary
+                    strokeColor: root.ringProgressColor
                     strokeWidth: 3
                     capStyle: ShapePath.RoundCap
                     PathAngleArc {
@@ -59,7 +77,7 @@ Item {
             Text {
                 anchors.centerIn: parent
                 font.pixelSize: Sizes.font.xs
-                color: (Volume.sinkMuted || Volume.sinkVolume <= 0) ? Colorscheme.error : Colorscheme.on_surface
+                color: root.ringProgressColor
                 text: {
                     if (Volume.isHeadphone) return ""
                     if (Volume.sinkMuted || Volume.sinkVolume <= 0) return ""

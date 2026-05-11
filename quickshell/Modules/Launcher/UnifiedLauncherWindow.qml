@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -184,6 +185,7 @@ PanelWindow {
             height: parent ? parent.height : root.frameHeight
             color: "transparent"
             radius: Sizes.rounding.xxl
+            clip: true
             focus: root.windowOpen
             visible: root.contentActive
 
@@ -202,11 +204,21 @@ PanelWindow {
                     Layout.fillHeight: true
 
                     Rectangle {
+                        id: previewPaneBg
                         anchors.fill: parent
                         color: Colorscheme.surface_container_high
                         topLeftRadius: Sizes.rounding.xxl
                         bottomLeftRadius: Sizes.rounding.xxl
-                        clip: true
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: previewPaneBg.width
+                                height: previewPaneBg.height
+                                color: "black"
+                                topLeftRadius: previewPaneBg.topLeftRadius
+                                bottomLeftRadius: previewPaneBg.bottomLeftRadius
+                            }
+                        }
 
                         Image {
                             anchors.fill: parent

@@ -230,6 +230,172 @@ Item {
             out.push({ t: "text", s: s.substring(li) });
     }
 
+    function _splitInlineCodeAware(s, out) {
+        // 先识别 backtick 包裹区间，避免其中的 ![]() 被当作图片语法。
+        var i = 0;
+        var plainStart = 0;
+
+        while (i < s.length) {
+            if (s.charAt(i) !== "`") {
+                i += 1;
+                continue;
+            }
+
+            var ticks = 1;
+            while (i + ticks < s.length && s.charAt(i + ticks) === "`")
+                ticks += 1;
+
+            var search = i + ticks;
+            var close = -1;
+
+            while (search < s.length) {
+                var n = s.indexOf("`", search);
+                if (n < 0)
+                    break;
+
+                var run = 1;
+                while (n + run < s.length && s.charAt(n + run) === "`")
+                    run += 1;
+
+                if (run === ticks) {
+                    close = n;
+                    break;
+                }
+
+                search = n + run;
+            }
+
+            if (close < 0) {
+                i += ticks;
+                continue;
+            }
+
+            if (i > plainStart)
+                _splitImages(s.substring(plainStart, i), out);
+
+            var codeText = s.substring(i + ticks, close);
+            var isBlock = ticks >= 2;
+
+            if (isBlock)
+                out.push({ t: "code", lang: "", s: codeText });
+            else
+                out.push({ t: "text", s: s.substring(i, close + ticks) });
+
+            i = close + ticks;
+            plainStart = i;
+        }
+
+        if (plainStart < s.length)
+            _splitImages(s.substring(plainStart), out);
+    }
+
+    function _escapeHtml(raw) {
+        var s = String(raw || "");
+        return s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function _escapeHtmlWithBreaks(raw) {
+        return _escapeHtml(raw).replace(/\n/g, "<br/>");
+    }
+
+    function _cssRgba(colorObj, alpha) {
+        var a = (alpha === undefined) ? 1.0 : Math.max(0, Math.min(1, Number(alpha)));
+        var r = Math.max(0, Math.min(255, Math.round(colorObj.r * 255)));
+        var g = Math.max(0, Math.min(255, Math.round(colorObj.g * 255)));
+        var b = Math.max(0, Math.min(255, Math.round(colorObj.b * 255)));
+        return "rgba(" + r + "," + g + "," + b + "," + a.toFixed(3) + ")";
+    }
+
+    function _hasBacktickSyntax(textValue) {
+        return String(textValue || "").indexOf("`") >= 0;
+    }
+
+    function _containsImageMarkdown(textValue) {
+        return /!\[[^\]]*\]\(/.test(textValue || "");
+    }
+
+    function _renderInlineCodeRichText(textValue) {
+        var src = String(textValue || "");
+        var i = 0;
+        var html = "";
+        var codeBg = _cssRgba(Colorscheme.on_surface, 0.12);
+        var codeFg = _cssRgba(cell.bubbleFg, 1.0);
+
+        while (i < src.length) {
+            var tickAt = src.indexOf("`", i);
+            if (tickAt < 0) {
+                html += _escapeHtmlWithBreaks(src.substring(i));
+                break;
+            }
+
+            html += _escapeHtmlWithBreaks(src.substring(i, tickAt));
+
+            var ticks = 1;
+            while (tickAt + ticks < src.length && src.charAt(tickAt + ticks) === "`")
+                ticks += 1;
+
+            var search = tickAt + ticks;
+            var close = -1;
+
+            while (search < src.length) {
+                var n = src.indexOf("`", search);
+                if (n < 0)
+                    break;
+
+                var run = 1;
+                while (n + run < src.length && src.charAt(n + run) === "`")
+                    run += 1;
+
+                if (run === ticks) {
+                    close = n;
+                    break;
+                }
+
+                search = n + run;
+            }
+
+            if (close < 0) {
+                html += _escapeHtmlWithBreaks(src.substring(tickAt, tickAt + ticks));
+                i = tickAt + ticks;
+                continue;
+            }
+
+            var codeText = src.substring(tickAt + ticks, close);
+            html += "<span style=\"font-family:'" + Sizes.fontFamilyMonoCJK
+                 + "'; background-color:" + codeBg
+                 + "; color:" + codeFg
+                 + ";\">"
+                 + _escapeHtmlWithBreaks(codeText)
+                 + "</span>";
+
+            i = close + ticks;
+        }
+
+        return "<div style=\"white-space:pre-wrap;\">" + html + "</div>";
+    }
+
+    function _textFormatForSegment(textValue, forcePlain) {
+        var src = textValue || "";
+        if (forcePlain)
+            return Text.PlainText;
+        if (_hasBacktickSyntax(src))
+            return Text.RichText;
+        if (_containsImageMarkdown(src))
+            return Text.PlainText;
+        return _usesMarkdown(src) ? Text.MarkdownText : Text.PlainText;
+    }
+
+    function _textContentForSegment(textValue, forcePlain) {
+        var src = textValue || "";
+        if (!forcePlain && _hasBacktickSyntax(src))
+            return _renderInlineCodeRichText(src);
+        return src;
+    }
+
     function _rebuild() {
         if (!isUser && !isReply && !isTool && !isError && !isAction && !isThinking) {
             _segs = [{ t: "text", s: text || "" }];
@@ -245,11 +411,11 @@ Item {
         var fenceRe = /```([^\n`]*)\n([\s\S]*?)```/g;
         var li = 0, m;
         while ((m = fenceRe.exec(src)) !== null) {
-            if (m.index > li) _splitImages(src.substring(li, m.index), out);
+            if (m.index > li) _splitInlineCodeAware(src.substring(li, m.index), out);
             out.push({ t: "code", lang: (m[1] || "").trim(), s: m[2] });
             li = fenceRe.lastIndex;
         }
-        if (li < src.length) _splitImages(src.substring(li), out);
+        if (li < src.length) _splitInlineCodeAware(src.substring(li), out);
         _segs = out;
     }
 
@@ -257,7 +423,7 @@ Item {
         const source = textValue || "";
         if (!source)
             return false;
-        return /```|`[^`]+`|!\[[^\]]*\]\(|\[[^\]]+\]\([^\)]+\)|^\s{0,3}(#{1,6}|[-*+] |\d+\. |>)/m.test(source);
+        return /!\[[^\]]*\]\(|\[[^\]]+\]\([^\)]+\)|^\s{0,3}(#{1,6}|[-*+] |\d+\. |>)/m.test(source);
     }
 
     Rectangle {
@@ -373,15 +539,13 @@ Item {
                          && (cell.isUser || cell.isReply || cell.isError
                              || ((cell.isThinking || cell.isTool || cell.isAction) && cell._expanded))
                 width: cell.bodyW
-                text: cell.text || ""
+                text: cell._textContentForSegment(cell.text || "", false)
                 color: cell.bubbleFg
                 wrapMode: Text.Wrap
                 elide: Text.ElideNone
-                textFormat: (!cell.live
-                             && cell._usesMarkdown(cell.text)
-                             && !/!\[[^\]]*\]\(/.test(cell.text || "")
-                            ? Text.MarkdownText
-                            : Text.PlainText)
+                textFormat: cell.live
+                            ? Text.PlainText
+                            : cell._textFormatForSegment(cell.text || "", false)
                 font.family: Sizes.fontFamily
                 font.italic: cell.isThinking
                 font.pixelSize: cell.isThinking ? Sizes.font.xsm
@@ -396,6 +560,8 @@ Item {
             Column {
                 id: richBody
                 visible: cell._hasRichSegs
+                         && (cell.isUser || cell.isReply || cell.isError
+                             || ((cell.isThinking || cell.isTool || cell.isAction) && cell._expanded))
                 width: cell.bodyW
                 spacing: 4
 
@@ -417,13 +583,11 @@ Item {
                             id: txtEl
                             visible: modelData.t === "text" || modelData.t === "user"
                             width: parent.width
-                            text: modelData.s || ""
+                            text: cell._textContentForSegment(modelData.s || "", modelData.t === "user")
                             color: cell.bubbleFg
                             wrapMode: Text.Wrap
                             elide: Text.ElideNone
-                            textFormat: modelData.t === "user" || !cell._usesMarkdown(modelData.s)
-                                        ? Text.PlainText
-                                        : Text.MarkdownText
+                            textFormat: cell._textFormatForSegment(modelData.s || "", modelData.t === "user")
                             font.family: Sizes.fontFamily
                             font.italic: cell.isThinking
                             font.pixelSize: cell.isThinking ? Sizes.font.xsm
