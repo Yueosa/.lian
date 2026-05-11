@@ -14,7 +14,52 @@ Item {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
 
+    function _workspaceIdOf(obj) {
+        if (!obj)
+            return -1
+        if (obj.id !== undefined && obj.id !== null)
+            return Number(obj.id)
+        if (obj.lastIpcObject && obj.lastIpcObject.id !== undefined && obj.lastIpcObject.id !== null)
+            return Number(obj.lastIpcObject.id)
+        return -1
+    }
+
+    function _activeWorkspaceId() {
+        if (!activeWindow)
+            return -1
+
+        // 优先读结构化 workspace，其次回退 lastIpcObject.workspace
+        const ws = activeWindow.workspace
+        if (ws) {
+            const id = _workspaceIdOf(ws)
+            if (id >= 0)
+                return id
+        }
+
+        const ipcWs = activeWindow.lastIpcObject && activeWindow.lastIpcObject.workspace
+        if (ipcWs) {
+            if (ipcWs.id !== undefined && ipcWs.id !== null)
+                return Number(ipcWs.id)
+            if (ipcWs.name !== undefined && ipcWs.name !== null) {
+                const m = String(ipcWs.name).match(/\d+/)
+                if (m && m.length > 0)
+                    return Number(m[0])
+            }
+        }
+        return -1
+    }
+
     readonly property var focusedWorkspace: Hyprland.focusedWorkspace
+    readonly property int focusedWorkspaceId: _workspaceIdOf(focusedWorkspace)
+    readonly property int activeWorkspaceId: _activeWorkspaceId()
+    readonly property bool activeOnFocusedWorkspace: {
+        // 无法解析 active workspace id 时，不做强拦截，避免误伤正常显示
+        if (focusedWorkspaceId < 0)
+            return true
+        if (activeWorkspaceId < 0)
+            return true
+        return activeWorkspaceId === focusedWorkspaceId
+    }
     readonly property bool focusedWorkspaceEmpty: {
         const ws = focusedWorkspace
         if (!ws)
@@ -26,9 +71,13 @@ Item {
 
     readonly property var activeWindow: Hyprland.activeToplevel
     readonly property string activeTitle: {
+        if (!activeWindow)
+            return "Desktop"
+        if (!activeOnFocusedWorkspace)
+            return "Desktop"
         if (focusedWorkspaceEmpty)
             return "Desktop"
-        return activeWindow ? (activeWindow.title || "Desktop") : "Desktop"
+        return activeWindow.title || "Desktop"
     }
 
     Rectangle {
