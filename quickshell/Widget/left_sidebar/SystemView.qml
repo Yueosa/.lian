@@ -1052,7 +1052,7 @@ Item {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Sizes.spacing.sm
-                            Text { text: "  名称"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamily; Layout.fillWidth: true }
+                            Text { text: "名称"; color: Colorscheme.on_surface_variant; font.pixelSize: Sizes.font.md; font.family: Sizes.fontFamily; Layout.fillWidth: true }
                             
                             component SortHeader: Rectangle {
                                 property string title
@@ -1151,14 +1151,7 @@ Item {
                                     RowLayout {
                                         width: parent.width
                                         height: 42
-                                        spacing: Sizes.spacing.md
-
-                                        Text {
-                                            text: expanded ? "expand_less" : "chevron_right"
-                                            font.family: Sizes.fontIcon
-                                            color: expanded ? Colorscheme.primary : Colorscheme.on_surface_variant
-                                            font.pixelSize: Sizes.font.xl
-                                        }
+                                        spacing: Sizes.spacing.sm
 
                                         Text { 
                                             text: proc && proc.name ? proc.name : ""

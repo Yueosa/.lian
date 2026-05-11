@@ -92,18 +92,34 @@ Item {
                 function _scheduleLayout(stickBottom) {
                     if (_layoutQueued)
                         return;
+                    var nearBottomBefore = (msgList.contentY + msgList.height + 24) >= msgList.contentHeight;
                     _layoutQueued = true;
                     Qt.callLater(function() {
                         _layoutQueued = false;
                         msgList.forceLayout();
-                        if (stickBottom || inputCard._streaming || msgList.atYEnd)
+                        if (stickBottom || inputCard._streaming || nearBottomBefore || msgList.atYEnd)
                             msgList.positionViewAtEnd();
                     });
                 }
 
-                onCountChanged: Qt.callLater(function() { msgList.positionViewAtEnd(); })
+                onCountChanged: _scheduleLayout(true)
                 onContentHeightChanged: _scheduleLayout(inputCard._streaming)
                 onWidthChanged: _scheduleLayout(inputCard._streaming)
+                onHeightChanged: _scheduleLayout(inputCard._streaming)
+
+                Connections {
+                    target: LianClawState
+
+                    function onCurrentSidChanged() {
+                        msgList._scheduleLayout(true)
+                    }
+
+                    function onStreamPhaseChanged() {
+                        var p = LianClawState.streamPhase
+                        if (p === "completed" || p === "error")
+                            msgList._scheduleLayout(true)
+                    }
+                }
 
                 delegate: MessageBubble {
                     kind: model.kind

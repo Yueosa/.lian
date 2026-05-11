@@ -49,6 +49,8 @@ QtObject {
     property int _lastEnvelopeSeq: 0
     property var _toolIdxMap: ({})
     property string _liveIntentId: ""
+    property var _resolvedConfirmMap: ({})
+    property var _resolvedFormMap: ({})
 
     // ---------- 行为标签（与 webui chatActionLabels 同步） ----------
     readonly property var _actionLabel: ({
@@ -128,6 +130,28 @@ QtObject {
     }
     function renameSession(sid, newTitle) {
         if (!sid || !newTitle) return;
+        var title = String(newTitle).trim();
+        if (!title.length) return;
+
+        // 本地先同步，确保顶部标题与抽屉列表立即刷新。
+        var nextSessions = [];
+        for (var i = 0; i < sessions.length; ++i) {
+            var s = sessions[i] || {};
+            var ns = {};
+            for (var k in s) ns[k] = s[k];
+            if (ns.id === sid) ns.title = title;
+            nextSessions.push(ns);
+        }
+        sessions = nextSessions;
+
+        if (currentSid === sid) {
+            var m = {};
+            var src = currentMeta || {};
+            for (var mk in src) m[mk] = src[mk];
+            m.title = title;
+            currentMeta = m;
+        }
+
         LianClawClient.request("lc:rename:" + sid, "PUT", "/sessions/" + sid, { title: newTitle });
     }
     function deleteSession(sid) {
@@ -188,6 +212,13 @@ QtObject {
 
     function confirmTool(approved, feedback) {
         if (!currentSid || !pendingConfirm) return;
+        var cid = pendingConfirm.confirmation_id || "";
+        if (cid.length > 0) {
+            var m = {};
+            for (var k in _resolvedConfirmMap) m[k] = _resolvedConfirmMap[k];
+            m[cid] = true;
+            _resolvedConfirmMap = m;
+        }
         var body = {
             confirmation_id: pendingConfirm.confirmation_id,
             approved: !!approved
@@ -199,6 +230,13 @@ QtObject {
     }
     function submitForm(answers) {
         if (!currentSid || !pendingForm) return;
+        var fid = pendingForm.form_id || "";
+        if (fid.length > 0) {
+            var m = {};
+            for (var k in _resolvedFormMap) m[k] = _resolvedFormMap[k];
+            m[fid] = true;
+            _resolvedFormMap = m;
+        }
         LianClawClient.request("lc:form:" + currentSid, "POST",
                                "/sessions/" + currentSid + "/form_response",
                                { form_id: pendingForm.form_id, answers: answers || {} });
@@ -365,16 +403,36 @@ QtObject {
             } else if (typ === "result") {
                 _onToolResult(data);
             } else if (typ === "confirm_required") {
+                var cid = data && data.confirmation_id ? String(data.confirmation_id) : "";
+                if (cid.length > 0 && _resolvedConfirmMap[cid])
+                    return;
                 pendingConfirm = data;
             } else if (typ === "confirm_resolved") {
+                var rcid = data && data.confirmation_id ? String(data.confirmation_id) : "";
+                if (rcid.length > 0) {
+                    var cm = {};
+                    for (var ck in _resolvedConfirmMap) cm[ck] = _resolvedConfirmMap[ck];
+                    cm[rcid] = true;
+                    _resolvedConfirmMap = cm;
+                }
                 if (pendingConfirm && pendingConfirm.confirmation_id === data.confirmation_id) {
                     pendingConfirm = null;
                 }
             }
         } else if (dom === "human") {
             if (typ === "form_required") {
+                var fid = data && data.form_id ? String(data.form_id) : "";
+                if (fid.length > 0 && _resolvedFormMap[fid])
+                    return;
                 pendingForm = data;
             } else if (typ === "form_resolved") {
+                var rfid = data && data.form_id ? String(data.form_id) : "";
+                if (rfid.length > 0) {
+                    var fm = {};
+                    for (var fk in _resolvedFormMap) fm[fk] = _resolvedFormMap[fk];
+                    fm[rfid] = true;
+                    _resolvedFormMap = fm;
+                }
                 if (pendingForm && pendingForm.form_id === data.form_id) {
                     pendingForm = null;
                 }
@@ -614,7 +672,17 @@ QtObject {
                 return;
             }
             if (token.indexOf("lc:rename:") === 0) {
-                if (ok) root.refreshSessions();
+                var rsid = token.substring("lc:rename:".length);
+                if (ok) {
+                    if (body && body.title !== undefined && root.currentSid === rsid) {
+                        var m2 = {};
+                        var srcm = root.currentMeta || {};
+                        for (var mk2 in srcm) m2[mk2] = srcm[mk2];
+                        m2.title = body.title;
+                        root.currentMeta = m2;
+                    }
+                    root.refreshSessions();
+                }
                 return;
             }
             if (token.indexOf("lc:delete:") === 0) {
