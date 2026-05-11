@@ -44,6 +44,8 @@ def main() -> int:
     ok = bool(data.get("ok", True))
     official_pkgs = data.get("official_packages", [])
     aur_pkgs = data.get("aur_packages", [])
+    last_applied_count = int(data.get("last_applied_count", 0))
+    last_applied_at = int(data.get("last_applied_at", 0))
 
     now = int(time.time())
     payload = {
@@ -57,6 +59,9 @@ def main() -> int:
         "error_ago": humanize_ago(last_error_at, now) if last_error_at > 0 else "",
         "official_packages": official_pkgs[:100],
         "aur_packages": aur_pkgs[:100],
+        "last_applied_count": last_applied_count,
+        "last_applied_at": last_applied_at,
+        "last_applied_ago": humanize_ago(last_applied_at, now) if last_applied_at > 0 else "",
     }
     print(json.dumps(payload, ensure_ascii=False))
     return 0

@@ -17,6 +17,8 @@ Singleton {
     property var aurPackages: []
     property string updatedAgo: "从未"
     property string errorAgo: ""
+    property int lastAppliedCount: 0
+    property string lastAppliedAgo: ""
     property bool ok: true
 
     function refresh() {
@@ -47,6 +49,8 @@ Singleton {
                     root.aurPackages = data.aur_packages || [];
                     root.updatedAgo = data.updated_ago || "从未";
                     root.errorAgo = data.error_ago || "";
+                    root.lastAppliedCount = data.last_applied_count || 0;
+                    root.lastAppliedAgo = data.last_applied_ago || "";
                     root.ok = !!data.ok;
                 } catch (e) {
                     console.log("Updates parse failed:", e);

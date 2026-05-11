@@ -58,14 +58,22 @@ WidgetPanel {
                     spacing: Sizes.spacing.xxs
 
                     Text {
-                        text: Updates.totalCount > 0 ? (Updates.totalCount + " 个可更新") : "系统已是最新"
+                        text: Updates.totalCount > 0
+                            ? (Updates.totalCount + " 个可更新")
+                            : (Updates.lastAppliedCount > 0
+                                ? ("系统已是最新（上次更新 " + Updates.lastAppliedCount + " 包）")
+                                : "系统已是最新")
                         font.pixelSize: Sizes.font.body
                         font.bold: true
                         color: Colorscheme.on_primary_container
                     }
 
                     Text {
-                        text: Updates.ok ? ("更新于 " + Updates.updatedAgo) : ("最近采集失败 " + Updates.errorAgo)
+                        text: Updates.totalCount > 0
+                            ? (Updates.ok ? ("更新于 " + Updates.updatedAgo) : ("最近采集失败 " + Updates.errorAgo))
+                            : (Updates.lastAppliedCount > 0
+                                ? ("上次更新于 " + Updates.lastAppliedAgo)
+                                : (Updates.ok ? ("更新于 " + Updates.updatedAgo) : ("最近采集失败 " + Updates.errorAgo)))
                         font.pixelSize: Sizes.font.xsm
                         color: Colorscheme.on_surface_variant
                     }
