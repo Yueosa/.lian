@@ -14,8 +14,22 @@ Item {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
 
+    readonly property var focusedWorkspace: Hyprland.focusedWorkspace
+    readonly property bool focusedWorkspaceEmpty: {
+        const ws = focusedWorkspace
+        if (!ws)
+            return true
+        if (!ws.toplevels)
+            return false
+        return ws.toplevels.count <= 0
+    }
+
     readonly property var activeWindow: Hyprland.activeToplevel
-    readonly property string activeTitle: activeWindow ? (activeWindow.title || "Desktop") : "Desktop"
+    readonly property string activeTitle: {
+        if (focusedWorkspaceEmpty)
+            return "Desktop"
+        return activeWindow ? (activeWindow.title || "Desktop") : "Desktop"
+    }
 
     Rectangle {
         id: bgRect
