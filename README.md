@@ -514,8 +514,11 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 | `ALT  + TAB` | 灵动岛 Hub（Overview）：`qs ipc call island hub` |
 | `SUPER + TAB` | 灵动岛 Switcher（窗口）：`qs ipc call island switcher` |
 | `SUPER + Z` | 剪贴板：`qs ipc call clipboard toggle` |
-| `ALT  + Z` | 侧边栏：`qs ipc call sidebar toggle` |
-| `ALT  + SPACE` | 通知中心：`qs ipc call notif toggle` |
+| `SUPER + C` | 左侧边栏：`qs ipc call sidebar toggle` |
+| `SUPER + V` | 右侧边栏：`qs ipc call rightbar toggle` |
+| `SUPER + N` | 通知中心：`qs ipc call notif toggle` |
+| `SUPER + X` | Emoji 面板：`qs ipc call emoji toggle` |
+| `SUPER + SPACE` | 电源菜单：`$sysmenu`（默认走 wlogout） |
 | `ALT  + N` / `ALT + S` | 壁纸 next / 模式切换：`lianwall next` / `lianwall switch` |
 | `SUPER + SHIFT + ←/→/↓` | 工作区切换：`$window down/up/empty` |
 
@@ -664,6 +667,7 @@ ln -sf ~/.lian/nvim ~/.config/nvim
 │           ├──  autopairs.lua
 │           ├──  git.lua         # vim-fugitive + gitsigns
 │           └──  venv.lua        # python venv 选择器
+│           └──  wakatime.lua    # WakaTime 统计
 └──  sakurine                 # 我自己写的主题（colorscheme），不是第三方主题包
     ├──  autoload
     └──  colors
@@ -681,8 +685,9 @@ ln -sf ~/.lian/nvim ~/.config/nvim
 | 语法 | `nvim-treesitter`（rust/lua/python/c/asm/dart/html/css/js/ts/vue/json/toml/sql/markdown 等） |
 | Rust | `rustaceanvim`（直接接管 rust-analyzer，不走 lspconfig） |
 | 模糊搜索 | `telescope.nvim` |
+| 依赖插件 | `plenary.nvim`、`nvim-web-devicons` |
 | Git | `vim-fugitive`、`gitsigns.nvim` |
-| 体验 | `which-key.nvim`、`comment.nvim`、`nvim-autopairs` |
+| 体验 | `which-key.nvim`、`comment.nvim`、`nvim-autopairs`、`vim-wakatime` |
 | Python | venv 选择器 |
 
 系统依赖：
@@ -714,12 +719,18 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 ## | quickshell
 
-[quickshell](https://quickshell.outfoxxed.me/) 是基于 Qt6/QML 的 Wayland 桌面外壳框架
+[quickshell](https://quickshell.outfoxxed.me/) 是我桌面主交互层，功能基本都在这个目录里完成。
 
-- 顶部 Bar / 灵动岛（含 Hub / Switcher / Overview / 媒体 / 天气）
-- 应用启动器、剪贴板、通知中心、侧边栏
-- 锁屏（hyprlock 之外的应用层补充）
-- 与 [matugen](#matugen) 联动，主题色随壁纸切换实时更新
+当前仓库内的核心分层：
+
+- `Modules/`：Bar、DynamicIsland、Launcher、Clipboard、Lock、HotCorner
+- `Widget/`：左/右侧边栏、通知内容、更新面板等页面级组件
+- `Services/`：网络、蓝牙、媒体、更新、LianClaw 等状态服务
+- `config/`：Colorscheme、Sizes、WidgetState 等全局单例
+- `scripts/`：外部命令桥接脚本（截图、系统信息、更新读取等）
+- `core/`：Qt/C++ 插件（sysmon / weather / notif / clipboard / lianclaw）
+
+也就是说：桌面 UI、状态编排、IPC 响应都在 quickshell 这一套里闭环，Hyprland 主要负责窗口管理和按键入口。
 
 ###### 安装依赖
 
@@ -743,6 +754,23 @@ ln -sf ~/.lian/quickshell ~/.config/quickshell
 所有桌面快捷键通过 `qs ipc call <module> <action>` 调用，定义在 [Hyprland](#hyprland) 节的快捷键表里 
 
 > 实现细节、模块拆分、IPC 协议见 [quickshell/README.md](quickshell/README.md) 
+
+###### 截图补充清单（待你补图）
+
+为了把文档信息补齐但不过度冗长，建议新增这些 quickshell 截图：
+
+| 文件名建议 | 截图内容 | 备注 |
+|---|---|---|
+| `image/qs-overview.png` | 桌面全景（Bar + 灵动岛 + 侧边栏入口） | 一张总览图 |
+| `image/qs-launcher.png` | 启动器界面 | 展示搜索与结果列表 |
+| `image/qs-clipboard.png` | 剪贴板界面 | 有分组/预览更好 |
+| `image/qs-notif-center.png` | 通知中心 | 含未读通知示例 |
+| `image/qs-system-view.png` | 左侧 System 页面 | 带图表与进程区 |
+| `image/qs-weather-view.png` | 左侧 Weather 页面 | 建议有动态背景 |
+| `image/qs-island-hub.png` | 灵动岛 Hub | 至少包含一个 tab 内容 |
+| `image/qs-island-switcher.png` | 灵动岛 Switcher | 有窗口切换卡片 |
+
+补图后我可以再帮你把 README 里的图文顺序统一成「总览 -> 功能 -> 细节」的展示流。
 
 ## | matugen
 
