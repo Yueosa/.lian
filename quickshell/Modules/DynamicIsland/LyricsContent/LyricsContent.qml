@@ -343,7 +343,8 @@ Item {
                         id: lyricText
                         anchors.verticalCenter: parent.verticalCenter
                         text: modelData.text
-                        color: Colorscheme.on_background
+                        textFormat: Text.PlainText
+                        color: delegateItem.isCurrent ? Colorscheme.primary : Colorscheme.on_surface_variant
                         font.family: Sizes.fontFamily
                         font.pixelSize: Sizes.font.body
                         font.weight: Font.Bold

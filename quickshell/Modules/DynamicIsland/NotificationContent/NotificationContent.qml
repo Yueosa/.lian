@@ -85,8 +85,10 @@ Item {
                 return Colorscheme.primary
             }
 
-            readonly property color titleColor: Colorscheme.on_background
-            readonly property color bodyColor: Colorscheme.on_surface_variant
+            readonly property color titleColor: isIslandEvent ? accentColor : Colorscheme.on_surface
+            readonly property color bodyColor: isIslandEvent
+                ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.88)
+                : Colorscheme.on_surface_variant
 
             // ============================================================
             // 【核心修复 4】：每条消息自带独立的心脏起搏器，时间一到，精准呼叫后端销毁自己
@@ -206,11 +208,13 @@ Item {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter; spacing: Sizes.spacing.xxs
                     Text {
                         text: delegateRoot.summaryText
+                        textFormat: Text.PlainText
                         color: delegateRoot.titleColor; font.bold: true; font.pixelSize: Sizes.font.lg
                         Layout.fillWidth: true; elide: Text.ElideRight
                     }
                     Text {
                         text: delegateRoot.bodyText
+                        textFormat: Text.PlainText
                         color: delegateRoot.bodyColor; font.pixelSize: Sizes.font.sm
                         Layout.fillWidth: true; elide: Text.ElideRight; maximumLineCount: 2
                     }
