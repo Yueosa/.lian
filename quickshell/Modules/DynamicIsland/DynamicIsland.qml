@@ -395,17 +395,34 @@ Variants {
                         root.expanded = false;
                     }
 
+                    function _openHubTab(index: int) {
+                        if (!root.showHub) {
+                            closeAllOthers()
+                            root.hubTabIndex = index
+                            root.showHub = true
+                        } else if (root.hubTabIndex !== index) {
+                            root.hubTabIndex = index
+                        }
+
+                        Qt.callLater(() => hub.forceActiveFocus())
+                    }
+
+                    function _toggleHubTab(index: int) {
+                        if (root.showHub && root.hubTabIndex === index) {
+                            root.showHub = false
+                            return false
+                        }
+
+                        _openHubTab(index)
+                        return true
+                    }
+
                     function hub() {
-                        if (root.showHub) { root.showHub = false; return "HUB_CLOSED" } 
-                        else { closeAllOthers(); root.showHub = true; root.hubTabIndex = 0; return "HUB_OPENED" }
+                        return _toggleHubTab(0) ? "HUB_OPENED" : "HUB_CLOSED"
                     }
 
                     function switcher() {
-                        if (root.showHub && root.hubTabIndex === 3) { root.showHub = false; return "SWITCHER_CLOSED" }
-                        closeAllOthers();
-                        root.showHub = true;
-                        root.hubTabIndex = 3;
-                        return "SWITCHER_OPENED"
+                        return _toggleHubTab(3) ? "SWITCHER_OPENED" : "SWITCHER_CLOSED"
                     }
 
                     function notifytest(preset: string) {
