@@ -1,0 +1,1 @@
+-- Placeholder for layout-specific rules. The active scrolling options live in appearance.lua.

@@ -262,11 +262,9 @@ bind = $mainMod, T, exec, $terminal
 # === 打开 文件管理器 ===
 bind = $mainMod, E, exec, $fileManager
 
-# === 打开 rofi drun（临时注释，切到 quickshell Launcher）===
 # bind = $mainMod, A, exec, $menu_app
 bind = $mainMod, A, exec, qs ipc call launcher toggle
 
-# === 打开 rofi window ===
 # bind = ALT, TAB, exec, $menu_window
 bind = ALT, TAB, exec, qs ipc call island hub
 bind = SUPER, TAB, exec, qs ipc call island switcher
@@ -310,13 +308,13 @@ bind = CTRL_ALT, S, exec, qs ipc call island capturestatekey
 bind = CTRL_ALT_SHIFT, S, exec, qs ipc call island captureforcestop
 
 # === 灵动岛 Media 快捷键 ===
-# Ctrl+Alt+P：播放 / 暂停
+# Ctrl+Alt+D：播放 / 暂停
 bind = CTRL_ALT, D, exec, qs ipc call island mediatoggle
 
-# Ctrl+Alt+,：上一首
+# Ctrl+Alt+left：上一首
 bind = CTRL_ALT, left, exec, qs ipc call island mediaprevious
 
-# Ctrl+Alt+.：下一首
+# Ctrl+Alt+right：下一首
 bind = CTRL_ALT, right, exec, qs ipc call island medianext
 
 
