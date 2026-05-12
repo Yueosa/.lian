@@ -189,7 +189,7 @@ Item {
                         Image {
                             id: avatarImg
                             anchors.fill: parent
-                            source: "file://" + Quickshell.env("HOME") + "/.lian/hypr/pln_avatar.jpg"
+                            source: "file://" + Quickshell.env("HOME") + "/.lian/hypr/avatar.jpg"
                             sourceSize: Qt.size(180, 180)
                             fillMode: Image.PreserveAspectCrop
                             visible: false
