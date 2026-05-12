@@ -2,9 +2,9 @@ local mainMod = "SUPER"
 local terminal = "kitty"
 local fileManager = "thunar"
 local browser = "google-chrome-stable"
-local scriptDir = "$HOME/.local/bin"
+local scriptDir = "/home/Sakurine/.local/bin"
 local sysmenu = scriptDir .. "/wlogout/wlogout"
-local workspaceTool = "$HOME/.local/bin/qshell/workspaces"
+local workspaceTool = scriptDir .. "/qshell/workspaces"
 
 local function sh(command)
     return hl.dsp.exec_cmd(command)
