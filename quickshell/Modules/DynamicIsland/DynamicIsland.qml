@@ -375,6 +375,21 @@ Variants {
                         Quickshell.execDetached(["bash", _captureScriptPath(), "menu", nextAction])
                     }
 
+                    function mediatoggle() {
+                        if (root.currentPlayer)
+                            root.currentPlayer.togglePlaying()
+                    }
+
+                    function mediaprevious() {
+                        if (root.currentPlayer)
+                            root.currentPlayer.previous()
+                    }
+
+                    function medianext() {
+                        if (root.currentPlayer)
+                            root.currentPlayer.next()
+                    }
+
                     function closeAllOthers() {
                         root.showLyrics = false;
                         root.expanded = false;
