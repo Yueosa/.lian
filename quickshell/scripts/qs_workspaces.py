@@ -24,6 +24,18 @@ def _run(args: list[str]) -> str:
         return ""
 
 
+def _switch_workspace(workspace_id: int) -> None:
+    subprocess.run(
+        [
+            "hyprctl",
+            "dispatch",
+            f"hl.dsp.focus({{ workspace = {workspace_id} }})",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def main() -> int:
     direction = sys.argv[1] if len(sys.argv) > 1 else "up"
 
@@ -46,11 +58,7 @@ def main() -> int:
                 occupied.add(wid)
         for candidate in range(1, 11):
             if candidate not in occupied:
-                subprocess.run(
-                    ["hyprctl", "dispatch", "workspace", str(candidate)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
+                _switch_workspace(candidate)
                 return 0
         return 0
 
@@ -77,11 +85,7 @@ def main() -> int:
     step = 1 if direction == "up" else -1
     next_id = ids[(idx + step) % len(ids)]
 
-    subprocess.run(
-        ["hyprctl", "dispatch", "workspace", str(next_id)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    _switch_workspace(next_id)
     return 0
 
 
