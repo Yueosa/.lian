@@ -201,8 +201,8 @@ Item {
             
             Text {
                 anchors.centerIn: parent
-                text: "lyrics" 
-                font.family: Sizes.fontIcon
+                text: "" 
+                font.family: Sizes.fontAwesome
                 font.pixelSize: Sizes.font.xxl
                 color: root.showLyrics ? Colorscheme.background : "white"
             }
@@ -507,7 +507,7 @@ Item {
 
                 component CtrlBtn : Text {
                     property bool active: false
-                    font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.display
+                    font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.display
                     color: active ? root.dynamicThemeColor : "white"; opacity: active ? 1.0 : 0.7
                     scale: ma.pressed ? 0.8 : (ma.containsMouse ? 1.1 : 1.0)
                     Behavior on scale { NumberAnimation { duration: 150 } }
@@ -515,21 +515,23 @@ Item {
                     signal triggered() 
                 }
 
-                CtrlBtn { text: "shuffle"; active: root.player && root.player.shuffle; onTriggered: if(root.player && root.player.shuffleSupported) root.player.shuffle = !root.player.shuffle } 
-                CtrlBtn { text: "skip_previous"; onTriggered: if(root.player) root.player.previous() } 
+                CtrlBtn { text: ""; active: root.player && root.player.shuffle; onTriggered: if(root.player && root.player.shuffleSupported) root.player.shuffle = !root.player.shuffle } 
+                CtrlBtn { text: ""; onTriggered: if(root.player) root.player.previous() } 
                 
                 Rectangle {
                     width: 60; height: 60; radius: Sizes.rounding.pill; color: root.dynamicThemeColor 
                     scale: playMa.pressed ? 0.9 : (playMa.containsMouse ? 1.05 : 1.0)
                     Behavior on scale { NumberAnimation { duration: 150 } }
-                    Text { anchors.centerIn: parent; text: (root.player && root.player.isPlaying) ? "pause" : "play_arrow"; color: Colorscheme.background; font.family: Sizes.fontIcon; font.pixelSize: Sizes.font.h3 }
+                    Text { anchors.centerIn: parent; text: (root.player && root.player.isPlaying) ? "" : ""; color: Colorscheme.background; font.family: Sizes.fontAwesome; font.pixelSize: Sizes.font.h3 }
                     MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if(root.player) root.player.togglePlaying() }
                 }
 
-                CtrlBtn { text: "skip_next"; onTriggered: if(root.player) root.player.next() } 
+                CtrlBtn { text: ""; onTriggered: if(root.player) root.player.next() } 
                 CtrlBtn { 
                     active: root.player && root.player.loopState !== MprisLoopState.None
-                    text: (!root.player) ? "repeat" : (root.player.loopState === MprisLoopState.Track ? "repeat_one" : "repeat")
+                    text: (!root.player)
+                        ? ""
+                        : (root.player.loopState === MprisLoopState.Track ? "" : "")
                     onTriggered: {
                         if(!root.player || !root.player.loopSupported) return;
                         if (root.player.loopState === MprisLoopState.None) root.player.loopState = MprisLoopState.Playlist; 

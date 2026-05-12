@@ -14,6 +14,7 @@ Singleton {
     property bool lianclawEnabled: true
     property bool resourcesEnabled: true
     property bool powerStorageEnabled: false
+    property bool dndEnabled: false
 
     // === 子项开关（Phase B 完整）===
     property bool wifiEventEnabled: true
@@ -88,6 +89,7 @@ Singleton {
             lianclawEnabled: lianclawEnabled,
             resourcesEnabled: resourcesEnabled,
             powerStorageEnabled: powerStorageEnabled,
+            dndEnabled: dndEnabled,
             wifiEventEnabled: wifiEventEnabled,
             bluetoothEventEnabled: bluetoothEventEnabled,
             lianclawConfirmEnabled: lianclawConfirmEnabled,
@@ -127,6 +129,8 @@ Singleton {
             resourcesEnabled = src.resourcesEnabled
         if (typeof src.powerStorageEnabled === "boolean")
             powerStorageEnabled = src.powerStorageEnabled
+        if (typeof src.dndEnabled === "boolean")
+            dndEnabled = src.dndEnabled
         if (typeof src.wifiEventEnabled === "boolean")
             wifiEventEnabled = src.wifiEventEnabled
         if (typeof src.bluetoothEventEnabled === "boolean")
@@ -196,6 +200,7 @@ Singleton {
         lianclawEnabled = true
         resourcesEnabled = true
         powerStorageEnabled = false
+        dndEnabled = false
         wifiEventEnabled = true
         bluetoothEventEnabled = true
         lianclawConfirmEnabled = true
@@ -228,6 +233,7 @@ Singleton {
     onLianclawEnabledChanged: requestPersist()
     onResourcesEnabledChanged: requestPersist()
     onPowerStorageEnabledChanged: requestPersist()
+    onDndEnabledChanged: requestPersist()
     onWifiEventEnabledChanged: requestPersist()
     onBluetoothEventEnabledChanged: requestPersist()
     onLianclawConfirmEnabledChanged: requestPersist()

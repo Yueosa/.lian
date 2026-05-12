@@ -39,7 +39,7 @@ exec-once = qs
 - `nmcli`（网络）、`bluetoothctl`（蓝牙）、`playerctl`（媒体）、`cliphist` + `wl-clipboard`（剪贴板）
 - `sqlite`（剪贴板/通知/媒体/课表/更新等数据层后端单一存储于 `~/.local/state/lian/lian.db`）
 - `pacman` + `checkupdates` + `paru`（系统更新检查）
-- `python3`（脚本依赖）、`bash`、`jq`、`grim`、`slurp`
+- `python3`（脚本依赖）、`bash`、`jq`、`grim`、`slurp`、`wf-recorder`、`ffmpeg`
 - 字体：`Material Symbols Outlined`、`JetBrainsMono Nerd Font`、`Font Awesome 6 Free Solid`
 - 图标：`papirus-icon-theme` 通过 `~/.config/qt6ct/qt6ct.conf` 中 `icon_theme=Papirus-Dark` 暴露给 Quickshell
 
@@ -60,8 +60,11 @@ exec-once = qs
 | `Alt+Tab` | 灵动岛 Hub（默认 Overview） |
 | `Alt+Space` | 通知面板开关 |
 | `Super+Space` | wlogout 电源菜单 |
-| `Ctrl+Alt+A` | 区域截图（grim+slurp，外部链路） |
-| `Ctrl+Alt+Q` | 全屏截图（grim，外部链路） |
+| `Ctrl+Alt+A` | 区域截图（统一入口：`qs ipc call island captureshot region`） |
+| `Ctrl+Alt+Q` | 全屏截图（统一入口：`qs ipc call island captureshot full`） |
+| `Ctrl+Alt+R` | 录制快速开始/停止（统一入口：`qs ipc call island capturerecordtoggle video full`） |
+| `Ctrl+Alt+S` | 状态键：空闲开菜单；录制中暂停；暂停态恢复 |
+| `Ctrl+Alt+Shift+S` | 强制停止并保存 |
 
 ---
 

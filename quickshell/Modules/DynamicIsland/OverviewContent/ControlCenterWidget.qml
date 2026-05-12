@@ -991,7 +991,7 @@ Item {
 
                                 PrefSwitchChip {
                                     width: (parent.width - parent.spacing) / 2
-                                    icon: ""
+                                    icon: ""
                                     title: "GPU 温度"
                                     checked: DynamicIslandPrefs.gpuTempEnabled
                                     chipEnabled: DynamicIslandPrefs.enabled && DynamicIslandPrefs.resourcesEnabled

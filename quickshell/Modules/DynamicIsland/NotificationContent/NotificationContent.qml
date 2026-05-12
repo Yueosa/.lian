@@ -56,6 +56,8 @@ Item {
                 const t = (summaryText + " " + bodyText).toLowerCase()
                 if (t.indexOf("lianclaw") >= 0 || t.indexOf("确认") >= 0 || t.indexOf("表单") >= 0)
                     return "lianclaw"
+                if (t.indexOf("录制") >= 0 || t.indexOf("录屏") >= 0 || t.indexOf("gif") >= 0 || t.indexOf("截图") >= 0)
+                    return "capture"
                 if (t.indexOf("网络") >= 0 || t.indexOf("蓝牙") >= 0)
                     return "connection"
                 if (t.indexOf("电池") >= 0 || t.indexOf("磁盘") >= 0)
@@ -116,11 +118,36 @@ Item {
                     property bool isIconName: model.imagePath !== undefined && model.imagePath.startsWith("icon:")
                     property string cleanPath: isIconName ? model.imagePath.substring(5) : (model.imagePath !== undefined ? model.imagePath : "")
                     property string notifSummary: delegateRoot.summaryText
-                    property bool forceGlyphIcon: cleanPath.toLowerCase().indexOf("temperature") >= 0
-                                                 || notifSummary.toLowerCase().indexOf("温度") >= 0
+                    property string cleanPathLower: cleanPath.toLowerCase()
+                    property string summaryLower: notifSummary.toLowerCase()
+                    property bool captureHint: delegateRoot.eventCategory === "capture"
+                                               || summaryLower.indexOf("录制") >= 0
+                                               || summaryLower.indexOf("录屏") >= 0
+                                               || summaryLower.indexOf("gif") >= 0
+                                               || summaryLower.indexOf("截图") >= 0
+                                               || cleanPathLower.indexOf("camera") >= 0
+                                               || cleanPathLower.indexOf("video") >= 0
+                                               || cleanPathLower.indexOf("image") >= 0
+                    property bool hasThumbnailPreview: !isIconName && (cleanPathLower.endsWith(".png")
+                                                || cleanPathLower.endsWith(".jpg")
+                                                || cleanPathLower.endsWith(".jpeg")
+                                                || cleanPathLower.endsWith(".webp")
+                                                || cleanPathLower.endsWith(".gif")
+                                                || cleanPathLower.endsWith(".bmp"))
+                    property bool forceGlyphIcon: cleanPathLower.indexOf("temperature") >= 0
+                                                 || summaryLower.indexOf("温度") >= 0
+                                                 || (captureHint && !hasThumbnailPreview)
                     property string fallbackGlyph: {
-                        const icon = cleanPath.toLowerCase()
-                        const summary = notifSummary.toLowerCase()
+                        const icon = cleanPathLower
+                        const summary = summaryLower
+
+                        if (delegateRoot.eventCategory === "capture") {
+                            if (summary.indexOf("gif") >= 0 || icon.endsWith(".gif") || icon.indexOf("image") >= 0)
+                                return ""
+                            if (summary.indexOf("截图") >= 0 || icon.indexOf("camera-photo") >= 0)
+                                return ""
+                            return ""
+                        }
 
                         if (icon.indexOf("temperature") >= 0 || summary.indexOf("温度") >= 0)
                             return ""

@@ -14,6 +14,7 @@ import qs.Widget
 // 【新增】：引入热角触发器路径
 import "./Widget/left_sidebar"
 import "./Modules/HotCorner"
+import "./Modules/CaptureMenu"
 
 ShellRoot {
     readonly property var notificationManagerSingleton: NotificationManager
@@ -62,6 +63,41 @@ ShellRoot {
 
     // ================= 启动器 (Launcher) =================
     UnifiedLauncherWindow { id: launcherWindow }
+    CaptureMenuWindow { id: captureMenuWindow }
+
+    IpcHandler {
+        target: "capturemenu"
+
+        function toggle() {
+            captureMenuWindow.toggleWindow()
+            return "CAPTUREMENU_TOGGLED"
+        }
+
+        function show() {
+            captureMenuWindow.showWindow()
+            return "CAPTUREMENU_OPENED"
+        }
+
+        function hide() {
+            captureMenuWindow.hideWindow()
+            return "CAPTUREMENU_CLOSED"
+        }
+
+        function mode(next: string) {
+            captureMenuWindow.setMode(next)
+            return "CAPTUREMENU_MODE_UPDATED"
+        }
+
+        function scope(next: string) {
+            captureMenuWindow.setScope(next)
+            return "CAPTUREMENU_SCOPE_UPDATED"
+        }
+
+        function action() {
+            return captureMenuWindow.triggerPrimary()
+        }
+    }
+
     IpcHandler {
         target: "launcher"
 

@@ -346,7 +346,7 @@ Item {
   
                 component CtrlBtn : Text { 
                     property bool active: false
-                    font.family: Sizes.fontIcon
+                    font.family: Sizes.fontAwesome
                     font.pixelSize: Sizes.font.h1
                     color: active ? Colorscheme.primary : Colorscheme.on_surface
                     opacity: active ? 1.0 : 0.7
@@ -366,7 +366,7 @@ Item {
                 }
                 
                 CtrlBtn { 
-                    text: "shuffle"
+                    text: ""
                     active: MediaManager.active && MediaManager.active.shuffle
                     onTriggered: {
                         if(MediaManager.active && MediaManager.active.shuffleSupported) {
@@ -376,7 +376,7 @@ Item {
                 } 
                 
                 CtrlBtn { 
-                    text: "skip_previous"
+                    text: ""
                     font.pixelSize: Sizes.font.h3
                     onTriggered: if(MediaManager.active) MediaManager.active.previous() 
                 } 
@@ -426,14 +426,14 @@ Item {
                         Text { 
                             id: playIcon
                             anchors.centerIn: parent
-                            text: (MediaManager.active && MediaManager.active.isPlaying) ? "pause" : "play_arrow"
+                            text: (MediaManager.active && MediaManager.active.isPlaying) ? "" : ""
                             
                             // 暂停时图标为深色，播放时为浅白
                             color: (MediaManager.active && MediaManager.active.isPlaying) 
                                 ? Colorscheme.on_primary 
                                 : Colorscheme.on_surface
                             
-                            font.family: Sizes.fontIcon
+                            font.family: Sizes.fontAwesome
                             font.pixelSize: Sizes.font.h3b
                             
                             // standard: 400ms
@@ -462,16 +462,16 @@ Item {
                 }
                 
                 CtrlBtn { 
-                    text: "skip_next"
+                    text: ""
                     font.pixelSize: Sizes.font.h3
                     onTriggered: if(MediaManager.active) MediaManager.active.next() 
                 } 
                 
                 CtrlBtn { 
                     active: MediaManager.active && MediaManager.active.loopState !== MprisLoopState.None
-                    text: (!MediaManager.active) 
-                        ? "repeat" 
-                        : (MediaManager.active.loopState === MprisLoopState.Track ? "repeat_one" : "repeat")
+                    text: (!MediaManager.active)
+                        ? ""
+                        : (MediaManager.active.loopState === MprisLoopState.Track ? "" : "")
                     onTriggered: { 
                         if(!MediaManager.active || !MediaManager.active.loopSupported) return;
                         
@@ -536,7 +536,7 @@ Item {
             Text {
                 text: MediaManager.getIdentityIcon(MediaManager.active)
                 color: Colorscheme.on_tertiary
-                font.family: Sizes.fontIcon
+                font.family: Sizes.fontAwesome
                 font.pixelSize: Sizes.font.sm
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -611,7 +611,7 @@ Item {
                         Text {
                             text: MediaManager.getIdentityIcon(playerItem)
                             color: Colorscheme.on_tertiary
-                            font.family: Sizes.fontIcon
+                            font.family: Sizes.fontAwesome
                             font.pixelSize: Sizes.font.sm
                             Layout.alignment: Qt.AlignVCenter
                         }

@@ -32,13 +32,12 @@ Item {
         spacing: Sizes.spacing.lg
 
         // ==========================================
-        // 左侧：Material Symbols 图标
+        // 左侧：FontAwesome 图标
         // ==========================================
         Text {
             id: volIcon
-            // 【核心修复 2】：使用 Material Symbols 语义化名称，彻底告别 Unicode 乱码
-            text: root.isMuted ? "volume_off" : "volume_up"
-            font.family: Sizes.fontIcon 
+            text: root.isMuted ? "" : ""
+            font.family: Sizes.fontAwesome 
             font.pixelSize: Sizes.font.display 
             color: root.isMuted ? Colorscheme.on_surface_variant : Colorscheme.primary
             Layout.alignment: Qt.AlignVCenter

@@ -216,6 +216,13 @@ Variants {
                     && !isNotifMode && !isVolumeMode
                     && !isLyricsMode && !isHubMode
                 property bool isCollapsedMode: !expanded && !isNotifMode && !isVolumeMode && !isLyricsMode && !isAutoLyricsMode && !isHubMode
+                property bool captureActive: false
+                property bool capturePaused: false
+                property string captureKind: "video"
+                property string captureScope: "full"
+                property int captureElapsedSec: 0
+                property var captureMilestoneSent: ({})
+                property bool isCaptureHoverMode: captureActive && isCollapsedMode && islandMouseArea.containsMouse
                 
                 // showOverviewHole 已废弃：Overview 不再挖洞，SolidGlassCard 用 alpha 营造透明感
                 property bool showOverviewHole: false
@@ -226,6 +233,8 @@ Variants {
                 property int collapsedW: Math.round(220 * uiScale); property int collapsedH: Math.round(48 * uiScale)
                 property int notifW: Math.round(380 * uiScale); property int notifH: Math.round((NotificationManager.model.count * 70) + 20)
                 property int volW: Math.round(320 * uiScale); property int volH: Math.round(64 * uiScale)
+                property int captureHoverW: Math.round(356 * uiScale)
+                property int captureHoverH: Math.round(56 * uiScale)
                 
                 property color color: Colorscheme.background 
                 clip: true
@@ -236,6 +245,7 @@ Variants {
                         ? Math.round(24 * uiScale) : (isCollapsedMode && islandMouseArea.containsMouse ? Math.round(18 * uiScale) : Math.round(16 * uiScale))
 
                 property int targetW: isHubMode ? hub.implicitWidth : 
+                    isCaptureHoverMode ? captureHoverW :
                     (isLyricsMode || isAutoLyricsMode) ? lyricsW : 
                     expanded ? expandedW : 
                     isVolumeMode ? volW : 
@@ -243,11 +253,64 @@ Variants {
                     (collapsedW + (isCollapsedMode && islandMouseArea.containsMouse ? 16 : 0))
 
                 property int targetH: isHubMode ? hub.implicitHeight : 
+                        isCaptureHoverMode ? captureHoverH :
                         (isLyricsMode || isAutoLyricsMode) ? lyricsH : 
                         expanded ? expandedH : 
                         isVolumeMode ? volH : 
                         isNotifMode ? notifH : 
                         (collapsedH + (isCollapsedMode && islandMouseArea.containsMouse ? 6 : 0))
+
+                function captureKindLabel() {
+                    return captureKind === "gif" ? "GIF" : "Video"
+                }
+
+                function captureScopeLabel() {
+                    return captureScope === "region" ? "区域" : "全屏"
+                }
+
+                function formatCaptureDuration(sec) {
+                    let value = Math.max(0, Math.floor(Number(sec) || 0))
+                    const h = Math.floor(value / 3600)
+                    const m = Math.floor((value % 3600) / 60)
+                    const s = value % 60
+                    if (h > 0)
+                        return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0")
+                    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0")
+                }
+
+                function resetCaptureMilestones() {
+                    captureMilestoneSent = ({})
+                }
+
+                function maybeNotifyCaptureMilestone() {
+                    if (!captureActive || capturePaused)
+                        return
+
+                    const totalMinutes = Math.floor(Math.max(0, captureElapsedSec) / 60)
+                    let milestone = -1
+                    if (totalMinutes === 1 || totalMinutes === 10 || totalMinutes === 30)
+                        milestone = totalMinutes
+                    else if (totalMinutes >= 60 && totalMinutes % 60 === 0)
+                        milestone = totalMinutes
+
+                    if (milestone < 0)
+                        return
+
+                    const key = String(milestone)
+                    if (captureMilestoneSent[key])
+                        return
+
+                    const nextSent = Object.assign({}, captureMilestoneSent)
+                    nextSent[key] = true
+                    captureMilestoneSent = nextSent
+
+                    const extra = milestone >= 60
+                        ? ("（" + Math.floor(milestone / 60) + "h）")
+                        : ""
+                    const title = "录制提醒"
+                    const body = "已录制 " + milestone + " 分钟" + extra + "\n类型：" + captureKindLabel() + "  范围：" + captureScopeLabel()
+                    Quickshell.execDetached(["notify-send", "-a", "quickshell-capture", "-i", "camera-video", title, body])
+                }
 
                 width: targetW
                 height: targetH
@@ -282,6 +345,34 @@ Variants {
                         if (s === "off" || s === "0" || s === "false" || s === "disable" || s === "disabled")
                             return false
                         return fallback
+                    }
+
+                    function _captureScriptPath() {
+                        return Quickshell.env("HOME") + "/.config/quickshell/scripts/capture.sh"
+                    }
+
+                    function captureshot(scope: string) {
+                        const target = (scope && scope.length > 0) ? scope : "region"
+                        Quickshell.execDetached(["bash", _captureScriptPath(), "shot", target])
+                    }
+
+                    function capturerecordtoggle(kind: string, scope: string) {
+                        const mode = (kind && kind.length > 0) ? kind : "video"
+                        const target = (scope && scope.length > 0) ? scope : "full"
+                        Quickshell.execDetached(["bash", _captureScriptPath(), "record-toggle", mode, target])
+                    }
+
+                    function capturestatekey() {
+                        Quickshell.execDetached(["bash", _captureScriptPath(), "state-key"])
+                    }
+
+                    function captureforcestop() {
+                        Quickshell.execDetached(["bash", _captureScriptPath(), "force-stop"])
+                    }
+
+                    function capturemenu(action: string) {
+                        const nextAction = (action && action.length > 0) ? action : "toggle"
+                        Quickshell.execDetached(["bash", _captureScriptPath(), "menu", nextAction])
                     }
 
                     function closeAllOthers() {
@@ -323,8 +414,8 @@ Variants {
 
                     function notifysetdnd(state: string) {
                         const want = _parseSwitchValue(state, ControlBackend.dndEnabled)
-                        if (want !== ControlBackend.dndEnabled)
-                            ControlBackend.toggleDnd()
+                        ControlBackend.dndEnabled = want
+                        DynamicIslandPrefs.dndEnabled = want
                     }
 
                     function notifysetquiet(state: string, startHour: string, endHour: string) {
@@ -338,6 +429,7 @@ Variants {
                         if (!isNaN(end))
                             DynamicIslandPrefs.setQuietEndHour(end)
                     }
+
                 }
 
                 PwObjectTracker { objects: [ Pipewire.defaultAudioSink ] }
@@ -366,6 +458,55 @@ Variants {
                 }
                 
                 property var currentPlayer: null
+
+                Process {
+                    id: captureStatusProc
+                    command: ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/capture.sh", "status-detail"]
+                    stdout: SplitParser {
+                        onRead: data => {
+                            const line = String(data || "").trim()
+                            if (line.length === 0)
+                                return
+
+                            const parts = line.split("|")
+                            if (parts.length < 4)
+                                return
+
+                            const state = String(parts[0] || "idle")
+                            const active = (state === "recording" || state === "paused")
+
+                            if (!active) {
+                                if (root.captureActive)
+                                    root.resetCaptureMilestones()
+                                root.captureActive = false
+                                root.capturePaused = false
+                                root.captureElapsedSec = 0
+                                return
+                            }
+
+                            root.captureActive = true
+                            root.capturePaused = (state === "paused")
+                            root.captureKind = String(parts[1] || "video")
+                            root.captureScope = String(parts[2] || "full")
+
+                            const sec = Number(parts[3])
+                            root.captureElapsedSec = isNaN(sec) ? 0 : Math.max(0, Math.floor(sec))
+                            root.maybeNotifyCaptureMilestone()
+                        }
+                    }
+                }
+
+                Timer {
+                    id: captureStatusTimer
+                    interval: 1000
+                    running: true
+                    repeat: true
+                    triggeredOnStart: true
+                    onTriggered: {
+                        if (!captureStatusProc.running)
+                            captureStatusProc.running = true
+                    }
+                }
 
                 // ============================================================
                 // 【自动歌词抢占】：监听 currentPlayer 播放状态
@@ -469,8 +610,63 @@ Variants {
                         
                         player: root.currentPlayer
                         
-                        opacity: (!root.expanded && !root.isNotifMode && !root.isVolumeMode && !root.isLyricsMode && !root.isAutoLyricsMode && !root.isHubMode) ? 1 : 0
+                        opacity: (!root.expanded && !root.isNotifMode && !root.isVolumeMode && !root.isLyricsMode && !root.isAutoLyricsMode && !root.isHubMode && !root.isCaptureHoverMode) ? 1 : 0
                         visible: opacity > 0.01; Behavior on opacity { NumberAnimation { duration: 200 } } 
+                    }
+
+                    Item {
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: root.captureHoverW
+                        height: root.captureHoverH
+
+                        opacity: root.isCaptureHoverMode ? 1 : 0
+                        visible: opacity > 0.01
+                        Behavior on opacity { NumberAnimation { duration: 160 } }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 14
+                            anchors.rightMargin: 14
+                            spacing: 10
+
+                            Rectangle {
+                                width: 10
+                                height: 10
+                                radius: 5
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: root.capturePaused ? Colorscheme.tertiary : Colorscheme.error
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.capturePaused ? "PAUSED" : "REC"
+                                color: root.capturePaused ? Colorscheme.tertiary : Colorscheme.error
+                                font.family: Sizes.fontFamilyMono
+                                font.pixelSize: Sizes.font.sm
+                                font.bold: true
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.captureKindLabel() + " · " + root.captureScopeLabel()
+                                color: Colorscheme.on_surface
+                                font.family: Sizes.fontFamily
+                                font.pixelSize: Sizes.font.sm
+                                font.bold: true
+                            }
+
+                            Item { width: 1; height: 1 }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.formatCaptureDuration(root.captureElapsedSec)
+                                color: Colorscheme.primary
+                                font.family: Sizes.fontFamilyMono
+                                font.pixelSize: Sizes.font.body
+                                font.bold: true
+                            }
+                        }
                     }
                         
                     VolumeContent {

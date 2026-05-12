@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 
 Singleton {
         id: root
@@ -11,7 +12,7 @@ Singleton {
         property bool bluetoothEnabled: false
         property bool bluetoothConnected: false 
         property bool caffeineEnabled: false 
-        property bool dndEnabled: false      
+        property bool dndEnabled: DynamicIslandPrefs.dndEnabled
         property string chargingProfile: "high_capacity"
 
         Process {
@@ -69,6 +70,14 @@ Singleton {
                 onTriggered: statusPoller.running = true
         }
 
+        Connections {
+                target: DynamicIslandPrefs
+                ignoreUnknownSignals: true
+                function onDndEnabledChanged() {
+                        root.dndEnabled = DynamicIslandPrefs.dndEnabled;
+                }
+        }
+
         function toggleWifi() {
                 Quickshell.execDetached(["bash", "-c", root.wifiEnabled ? "nmcli radio wifi off" : "nmcli radio wifi on"]);
                 root.wifiEnabled = !root.wifiEnabled; 
@@ -90,6 +99,7 @@ Singleton {
 
         function toggleDnd() {
                 root.dndEnabled = !root.dndEnabled;
+                DynamicIslandPrefs.dndEnabled = root.dndEnabled;
         }
 
         function setChargingProfile(profile) {

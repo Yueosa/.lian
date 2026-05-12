@@ -63,11 +63,11 @@ Item {
 
     function getIdentityIcon(player) {
         const identity = getIdentity(player).toLowerCase();
-        if (identity === "no media") return "music_note";
-        if (identity === "spotify") return "album";
-        if (identity === "vlc") return "movie";
-        if (identity === "firefox" || identity === "browser" || identity === "edge") return "language";
-        return "audio_file";
+        if (identity === "no media") return "";
+        if (identity === "spotify") return "";
+        if (identity === "vlc") return "";
+        if (identity === "firefox" || identity === "browser" || identity === "edge") return "";
+        return "";
     }
 
     // 是否为「音乐型」播放器：决定灵动岛 / 歌词面板是否触发 lyrics_fetcher。
