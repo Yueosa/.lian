@@ -120,7 +120,7 @@ FocusScope {
         OverviewContent {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: true
+            visible: root.currentIndex === 0
             enabled: root.currentIndex === 0
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0
@@ -132,7 +132,7 @@ FocusScope {
             player: root.player
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: true
+            visible: root.currentIndex === 1
             enabled: root.currentIndex === 1
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0
@@ -142,7 +142,7 @@ FocusScope {
         WeatherContent {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: true
+            visible: root.currentIndex === 2
             enabled: root.currentIndex === 2
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0
@@ -151,7 +151,7 @@ FocusScope {
 
         SwitcherContent {
             anchors.fill: parent
-            visible: true
+            visible: root.currentIndex === 3
             enabled: root.currentIndex === 3
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0

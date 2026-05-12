@@ -109,7 +109,7 @@ Item {
         skyCanvas.requestPaint();
     }
 
-    Timer { interval: 60000; running: true; repeat: true; onTriggered: updateAstroData() }
+    Timer { interval: 60000; running: root.visible; repeat: true; onTriggered: updateAstroData() }
 
     // ==========================================
     // 布局设计

@@ -64,6 +64,24 @@ Item {
     Connections {
         target: root
         function onTitleChanged() {
+            if (!root.isActive)
+                return;
+
+            if (root.title && root.title !== "Not Playing") {
+                lyricsModel.clear();
+                lyricsModel.append({"time": 0, "text": "🎵 正在搜寻歌词..."});
+                lyricsProc.running = false;
+                lyricsProc.running = true;
+            }
+        }
+
+        function onVisibleChanged() {
+            if (!root.visible)
+                return;
+
+            if (root.artUrl !== "")
+                colorExtractor.loadImage(root.artUrl);
+
             if (root.title && root.title !== "Not Playing") {
                 lyricsModel.clear();
                 lyricsModel.append({"time": 0, "text": "🎵 正在搜寻歌词..."});
@@ -84,6 +102,11 @@ Item {
         Connections {
             target: root
             function onArtUrlChanged() {
+                if (!root.visible) {
+                    colorExtractor.extractedColor = Colorscheme.primary;
+                    return;
+                }
+
                 if (root.artUrl !== "") colorExtractor.loadImage(root.artUrl);
                 else colorExtractor.extractedColor = Colorscheme.primary;
             }

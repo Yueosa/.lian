@@ -206,6 +206,11 @@ Variants {
                 property bool showHub: false
 
                 property int hubTabIndex: 0
+                property int hubLastOpenIndex: 0
+
+                onHubTabIndexChanged: {
+                    hubLastOpenIndex = hubTabIndex
+                }
 
                 property bool isLyricsMode: showLyrics
                 property bool isHubMode: showHub && !isLyricsMode
@@ -407,6 +412,13 @@ Variants {
                         Qt.callLater(() => hub.forceActiveFocus())
                     }
 
+                    function _resolveHubDefaultTab() {
+                        if (root.hubLastOpenIndex === 1 || root.hubLastOpenIndex === 2)
+                            return root.hubLastOpenIndex
+                        // 上次是 switcher 或未知，ALT+TAB 重定向到 overview
+                        return 0
+                    }
+
                     function _toggleHubTab(index: int) {
                         if (root.showHub && root.hubTabIndex === index) {
                             root.showHub = false
@@ -418,7 +430,8 @@ Variants {
                     }
 
                     function hub() {
-                        return _toggleHubTab(0) ? "HUB_OPENED" : "HUB_CLOSED"
+                        const target = _resolveHubDefaultTab()
+                        return _toggleHubTab(target) ? "HUB_OPENED" : "HUB_CLOSED"
                     }
 
                     function switcher() {

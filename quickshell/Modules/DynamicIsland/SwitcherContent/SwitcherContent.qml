@@ -16,6 +16,9 @@ Item {
     // 只展示包含至少 1 个窗口的工作区，按 workspace.id 升序。
     // 组内窗口依 address 稳定排序（title 可变会导致顶点跳动）。
     readonly property var groups: {
+        if (!root.enabled)
+            return []
+
         const out = []
         const wss = Hyprland.workspaces.values
         const sorted = wss.slice().sort((a, b) => (a && b ? a.id - b.id : 0))
@@ -281,14 +284,16 @@ Item {
                                         anchors.fill: parent
                                         anchors.margins: 6
                                         anchors.bottomMargin: 24
-                                        captureSource: card.modelData && card.modelData.wayland ? card.modelData.wayland : null
-                                        live: true
+                                        captureSource: (root.enabled && card.modelData && card.modelData.wayland)
+                                            ? card.modelData.wayland
+                                            : null
+                                        live: root.enabled
                                         paintCursor: false
-                                        visible: hasContent
+                                        visible: root.enabled && hasContent
                                         smooth: true
                                         // 圆角裁剪 + 插值平滑：将贴图纹理过一层 OpacityMask，
                                         // 避免原始 screencopy 贴边生硬。mask 随 thumb 尺寸反活。
-                                        layer.enabled: hasContent
+                                        layer.enabled: root.enabled && hasContent
                                         layer.smooth: true
                                         layer.effect: OpacityMask {
                                             maskSource: Rectangle {
