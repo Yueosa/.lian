@@ -6,6 +6,7 @@ import Quickshell.Services.Mpris
 import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 import qs.Services
+import qs.Components
 import qs.config
 
 import qs.Modules.DynamicIsland.ClockContent
@@ -49,7 +50,12 @@ Variants {
         
         color: "transparent"
         exclusiveZone: -1
-        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.layer: WidgetState.shouldOverlayIsland(!root.isCollapsedMode) ? WlrLayer.Overlay : WlrLayer.Top
+
+        LayerSurfaceRemapper {
+            window: islandWindow
+            active: WidgetState.shouldOverlayIsland(!root.isCollapsedMode)
+        }
 
         WlrLayershell.keyboardFocus: root.showHub
             ? WlrKeyboardFocus.Exclusive 

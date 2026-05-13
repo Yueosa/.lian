@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 import qs.Widget.common
 
@@ -15,7 +16,8 @@ PanelWindow {
     property int gap: -16 
     property int gooeyRadius: 48  
 
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WidgetState.shouldOverlayPanel(WidgetState.notifOpen || WidgetState.notifIsHovered) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(WidgetState.notifOpen || WidgetState.notifIsHovered) }
     WlrLayershell.namespace: "qs-notification-corner"
     WlrLayershell.keyboardFocus: WidgetState.notifOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

@@ -2,12 +2,14 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 
 PanelWindow {
     id: root
     
-    WlrLayershell.layer: WlrLayer.Top 
+    WlrLayershell.layer: WidgetState.shouldOverlayPersistent() ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPersistent() }
     WlrLayershell.namespace: "qs-hotcorner-bottom-right"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

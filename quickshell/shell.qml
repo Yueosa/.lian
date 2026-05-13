@@ -17,7 +17,21 @@ import "./Modules/HotCorner"
 import "./Modules/CaptureMenu"
 
 ShellRoot {
+    id: shellRoot
+
     readonly property var notificationManagerSingleton: NotificationManager
+
+    Process {
+        id: overlayModeNotify
+        running: false
+        command: ["notify-send", "显示模式", WidgetState.overlayModeLabel()]
+    }
+
+    function notifyOverlayMode() {
+        overlayModeNotify.running = false
+        overlayModeNotify.command = ["notify-send", "显示模式", WidgetState.overlayModeLabel()]
+        overlayModeNotify.running = true
+    }
 
     Bar {}
     
@@ -37,6 +51,30 @@ ShellRoot {
         function toggle() {
             WidgetState.hotCornerEnabled = !WidgetState.hotCornerEnabled
             return `HotCorner toggled to: ${WidgetState.hotCornerEnabled}`
+        }
+    }
+
+    IpcHandler {
+        target: "overlay"
+
+        function next() {
+            WidgetState.nextOverlayMode()
+            shellRoot.notifyOverlayMode()
+            return WidgetState.overlayModeLabel()
+        }
+
+        function toggle() {
+            return next()
+        }
+
+        function cycle() {
+            return next()
+        }
+
+        function mode(next: string) {
+            WidgetState.setOverlayMode(next)
+            shellRoot.notifyOverlayMode()
+            return WidgetState.overlayModeLabel()
         }
     }
 

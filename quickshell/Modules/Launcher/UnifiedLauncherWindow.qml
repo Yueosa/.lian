@@ -5,6 +5,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 import qs.Modules.Clipboard
 
@@ -22,7 +23,8 @@ PanelWindow {
     }
 
     WlrLayershell.namespace: "qs-unified-launcher-overlay"
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WidgetState.shouldOverlayTransient(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(contentActive) }
     WlrLayershell.keyboardFocus: root.windowOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 

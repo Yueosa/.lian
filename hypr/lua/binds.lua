@@ -46,6 +46,7 @@ bind(mainMod .. " + X", sh("qs ipc call emoji toggle"))
 bind(mainMod .. " + C", sh("qs ipc call sidebar toggle"))
 bind(mainMod .. " + V", sh("qs ipc call rightbar toggle"))
 bind(mainMod .. " + N", sh("qs ipc call notif toggle"))
+bind(mainMod .. " + G", sh("qs ipc call overlay next"))
 bind(mainMod .. " + B", sh(browser))
 
 bind("CTRL + ALT + A", sh("qs ipc call island captureshot region"))

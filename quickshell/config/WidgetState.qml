@@ -27,6 +27,10 @@ QtObject {
     // 热角
     property bool hotCornerEnabled: true
 
+    // 覆盖层策略: partial(Game) | full(DeskTop) | none(专注模式)
+    property string overlayMode: "partial"
+    readonly property var overlayModes: ["partial", "full", "none"]
+
     function normalizeView(view, views, fallback) {
         return views.indexOf(view) !== -1 ? view : fallback;
     }
@@ -94,5 +98,52 @@ QtObject {
         if (hotCornerEnabled && !notifOpen) {
             notifOpen = true;
         }
+    }
+
+    function normalizeOverlayMode(mode) {
+        return overlayModes.indexOf(mode) !== -1 ? mode : "partial";
+    }
+
+    function setOverlayMode(mode) {
+        overlayMode = normalizeOverlayMode(mode);
+        return overlayMode;
+    }
+
+    function nextOverlayMode() {
+        const index = overlayModes.indexOf(overlayMode);
+        overlayMode = overlayModes[(index + 1 + overlayModes.length) % overlayModes.length];
+        return overlayMode;
+    }
+
+    function toggleOverlayMode() {
+        return nextOverlayMode();
+    }
+
+    function cycleOverlayMode() {
+        return nextOverlayMode();
+    }
+
+    function overlayModeLabel() {
+        if (overlayMode === "full") return "桌面模式";
+        if (overlayMode === "none") return "专注模式";
+        return "游戏模式";
+    }
+
+    function shouldOverlayTransient(active) {
+        if (overlayMode === "none") return false;
+        if (overlayMode === "full") return true;
+        return !!active;
+    }
+
+    function shouldOverlayPanel(active) {
+        return shouldOverlayTransient(active);
+    }
+
+    function shouldOverlayIsland(active) {
+        return shouldOverlayTransient(active);
+    }
+
+    function shouldOverlayPersistent() {
+        return overlayMode === "full";
     }
 }

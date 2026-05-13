@@ -7,6 +7,7 @@ import qs.Modules.Bar.Workspaces
 import qs.Modules.Bar.ActiveWindow
 import qs.Modules.Bar.Tray
 import qs.Modules.Bar.QuickSettings
+import qs.Components
 import qs.config
 
 Variants {
@@ -28,7 +29,12 @@ Variants {
         
         exclusiveZone: barHeight
         
-        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.layer: WidgetState.shouldOverlayPersistent() ? WlrLayer.Overlay : WlrLayer.Top
+
+        LayerSurfaceRemapper {
+            window: barWindow
+            active: WidgetState.shouldOverlayPersistent()
+        }
 
         // --- 内容容器 ---
         Item {

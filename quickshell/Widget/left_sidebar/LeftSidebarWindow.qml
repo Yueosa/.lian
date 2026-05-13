@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 import qs.Widget.common
 
@@ -18,7 +19,8 @@ PanelWindow {
     readonly property int closedSlideOffset: -sidebarWidth - 100
     readonly property bool contentActive: WidgetState.leftSidebarOpen || animController.slideOffset > closedSlideOffset
 
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WidgetState.shouldOverlayPanel(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive) }
     WlrLayershell.namespace: "qs-unified-left-sidebar"
     WlrLayershell.keyboardFocus: WidgetState.leftSidebarOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

@@ -21,7 +21,7 @@ PanelWindow {
     }
     
     WlrLayershell.namespace: "rofi-launcher-overlay"
-    WlrLayershell.layer: WlrLayer.Top 
+    WlrLayershell.layer: WidgetState.shouldOverlayTransient(root.visible) ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive 
     WlrLayershell.exclusionMode: ExclusionMode.Ignore 
 

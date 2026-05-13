@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 import qs.Widget.common
 
@@ -17,7 +18,8 @@ PanelWindow {
     property int gooeyRadius: 36  
     readonly property bool contentActive: WidgetState.qsOpen || qsShadow.x < root.offScreenX
 
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WidgetState.shouldOverlayPanel(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive) }
     WlrLayershell.namespace: "qs-unified-sidebar"
     WlrLayershell.keyboardFocus: WidgetState.qsOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

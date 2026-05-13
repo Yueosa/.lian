@@ -18,7 +18,7 @@ PanelWindow {
     }
 
     WlrLayershell.namespace: "qs-capture-menu-overlay"
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WidgetState.shouldOverlayTransient(root.visible) ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
