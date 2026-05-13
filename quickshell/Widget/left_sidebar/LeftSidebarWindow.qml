@@ -20,7 +20,7 @@ PanelWindow {
     readonly property bool contentActive: WidgetState.leftSidebarOpen || animController.slideOffset > closedSlideOffset
 
     WlrLayershell.layer: WidgetState.shouldOverlayPanel(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
-    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive) }
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.namespace: "qs-unified-left-sidebar"
     WlrLayershell.keyboardFocus: WidgetState.leftSidebarOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

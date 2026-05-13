@@ -17,7 +17,7 @@ PanelWindow {
     property int gooeyRadius: 48  
 
     WlrLayershell.layer: WidgetState.shouldOverlayPanel(WidgetState.notifOpen || WidgetState.notifIsHovered) ? WlrLayer.Overlay : WlrLayer.Top
-    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(WidgetState.notifOpen || WidgetState.notifIsHovered) }
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(WidgetState.notifOpen || WidgetState.notifIsHovered); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.namespace: "qs-notification-corner"
     WlrLayershell.keyboardFocus: WidgetState.notifOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

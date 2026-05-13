@@ -24,7 +24,7 @@ PanelWindow {
 
     WlrLayershell.namespace: "qs-unified-launcher-overlay"
     WlrLayershell.layer: WidgetState.shouldOverlayTransient(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
-    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(contentActive) }
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(contentActive); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.keyboardFocus: root.windowOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 

@@ -30,6 +30,7 @@ QtObject {
     // 覆盖层策略: partial(Game) | full(DeskTop) | none(专注模式)
     property string overlayMode: "partial"
     readonly property var overlayModes: ["partial", "full", "none"]
+    property int overlayRemapSerial: 0
 
     function normalizeView(view, views, fallback) {
         return views.indexOf(view) !== -1 ? view : fallback;
@@ -105,14 +106,17 @@ QtObject {
     }
 
     function setOverlayMode(mode) {
-        overlayMode = normalizeOverlayMode(mode);
+        const nextMode = normalizeOverlayMode(mode);
+        if (overlayMode !== nextMode) {
+            overlayMode = nextMode;
+            overlayRemapSerial += 1;
+        }
         return overlayMode;
     }
 
     function nextOverlayMode() {
         const index = overlayModes.indexOf(overlayMode);
-        overlayMode = overlayModes[(index + 1 + overlayModes.length) % overlayModes.length];
-        return overlayMode;
+        return setOverlayMode(overlayModes[(index + 1 + overlayModes.length) % overlayModes.length]);
     }
 
     function toggleOverlayMode() {

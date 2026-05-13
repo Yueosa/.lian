@@ -9,12 +9,13 @@ Item {
 
     property var window: null
     property bool active: false
+    property int remapSerial: 0
     property bool _completed: false
     property bool _restoring: false
 
     Component.onCompleted: _completed = true
 
-    onActiveChanged: {
+    onRemapSerialChanged: {
         if (_completed && active)
             remap()
     }

@@ -55,6 +55,7 @@ Variants {
         LayerSurfaceRemapper {
             window: islandWindow
             active: WidgetState.shouldOverlayIsland(!root.isCollapsedMode)
+            remapSerial: WidgetState.overlayRemapSerial
         }
 
         WlrLayershell.keyboardFocus: root.showHub

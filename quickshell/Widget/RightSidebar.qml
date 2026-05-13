@@ -19,7 +19,7 @@ PanelWindow {
     readonly property bool contentActive: WidgetState.qsOpen || qsShadow.x < root.offScreenX
 
     WlrLayershell.layer: WidgetState.shouldOverlayPanel(contentActive) ? WlrLayer.Overlay : WlrLayer.Top
-    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive) }
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPanel(contentActive); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.namespace: "qs-unified-sidebar"
     WlrLayershell.keyboardFocus: WidgetState.qsOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

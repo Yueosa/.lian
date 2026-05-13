@@ -9,7 +9,7 @@ PanelWindow {
     id: root
     
     WlrLayershell.layer: WidgetState.shouldOverlayPersistent() ? WlrLayer.Overlay : WlrLayer.Top
-    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPersistent() }
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayPersistent(); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.namespace: "qs-hotcorner-bottom-right"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

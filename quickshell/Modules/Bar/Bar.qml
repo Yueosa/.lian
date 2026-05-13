@@ -34,6 +34,7 @@ Variants {
         LayerSurfaceRemapper {
             window: barWindow
             active: WidgetState.shouldOverlayPersistent()
+            remapSerial: WidgetState.overlayRemapSerial
         }
 
         // --- 内容容器 ---
