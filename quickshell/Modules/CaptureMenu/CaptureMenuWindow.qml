@@ -109,6 +109,16 @@ PanelWindow {
         return "RECORD_TRIGGERED"
     }
 
+    onVisibleChanged: {
+        if (visible && scope === "region")
+            selectionFrame.resetGeometry()
+    }
+
+    onScopeChanged: {
+        if (visible && scope === "region")
+            selectionFrame.resetGeometry()
+    }
+
     function triggerForceStop() {
         Quickshell.execDetached(["bash", captureScriptPath, "force-stop"])
         hideWindow()
@@ -222,10 +232,10 @@ PanelWindow {
         Rectangle {
             id: selectionFrame
             visible: root.scope === "region"
-            width: Math.round(root.width * 0.44)
-            height: Math.round(root.height * 0.42)
-            x: Math.round((root.width - width) / 2)
-            y: Math.round((root.height - height) / 2)
+            width: 0
+            height: 0
+            x: 0
+            y: 0
             color: Qt.rgba(Colorscheme.primary.r, Colorscheme.primary.g, Colorscheme.primary.b, 0.08)
             border.width: 2
             border.color: Colorscheme.primary
@@ -246,6 +256,19 @@ PanelWindow {
             property real dragStartY: 0
             property real dragStartMouseX: 0
             property real dragStartMouseY: 0
+
+            Component.onCompleted: resetGeometry()
+
+            function resetGeometry() {
+                if (root.width <= 0 || root.height <= 0)
+                    return
+
+                width = Math.round(root.width * 0.44)
+                height = Math.round(root.height * 0.42)
+                x = Math.round((root.width - width) / 2)
+                y = Math.round((root.height - height) / 2)
+                clampInBounds()
+            }
 
             function clampInBounds() {
                 if (x < 0)

@@ -425,7 +425,7 @@ Variants {
                         return 0
                     }
 
-                    function _toggleHubTab(index: int) {
+                    function _toggleHubTab(index: int): bool {
                         if (root.showHub && root.hubTabIndex === index) {
                             root.showHub = false
                             return false

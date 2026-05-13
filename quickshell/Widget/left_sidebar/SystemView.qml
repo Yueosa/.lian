@@ -524,9 +524,9 @@ Item {
                         anchors.right: parent.right
                         spacing: Sizes.spacing.sm
                         
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.iconTxt; font.family: Sizes.fontIcon; color: parent.parent.acc; font.pixelSize: Sizes.font.xl }
+                        Text { Layout.alignment: Qt.AlignVCenter; text: parent.parent.iconTxt; font.family: Sizes.fontIcon; color: parent.parent.acc; font.pixelSize: Sizes.font.xl }
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
+                            Layout.alignment: Qt.AlignVCenter
                             text: parent.parent.title + ":"
                             color: Colorscheme.on_surface_variant
                             font.pixelSize: Sizes.font.md
@@ -534,7 +534,7 @@ Item {
                             elide: Text.ElideRight
                         }
                         Text { 
-                            anchors.verticalCenter: parent.verticalCenter
+                            Layout.alignment: Qt.AlignVCenter
                             text: parent.parent.val
                             Layout.fillWidth: true
                             Layout.minimumWidth: 0
@@ -1294,7 +1294,7 @@ Item {
                                             Text {
                                                 width: parent.width
                                                 visible: !loadingDetail && !!detail && !!detail.state
-                                                text: "状态: " + detail.state + "    EXE: " + (detail.exePath || "--")
+                                                text: detail && detail.state ? "状态: " + detail.state + "    EXE: " + (detail.exePath || "--") : ""
                                                 color: Colorscheme.on_surface_variant
                                                 font.pixelSize: Sizes.font.xsm
                                                 font.family: Sizes.fontFamilyMono

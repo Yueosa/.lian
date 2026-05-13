@@ -30,6 +30,33 @@ Item {
     property bool _layoutQueued: false
     property bool _finalRenderQueued: false
 
+    Timer {
+        id: finalRenderTimer
+        interval: 0
+        repeat: false
+        onTriggered: {
+            cell._finalRenderQueued = false;
+            if (cell._streamingPlain)
+                return;
+            cell._rebuild();
+            cell._scheduleLayout();
+        }
+    }
+
+    Timer {
+        id: layoutTimer
+        interval: 0
+        repeat: false
+        onTriggered: {
+            cell._layoutQueued = false;
+            if (!ListView.view)
+                return;
+            ListView.view.forceLayout();
+            if (cell.live || ListView.view.atYEnd)
+                ListView.view.positionViewAtEnd();
+        }
+    }
+
     readonly property bool isUser:     kind === "user"
     readonly property bool isReply:    kind === "reply"
     readonly property bool isThinking: kind === "thinking"
@@ -65,27 +92,14 @@ Item {
         if (_streamingPlain || _finalRenderQueued)
             return;
         _finalRenderQueued = true;
-        Qt.callLater(function() {
-            _finalRenderQueued = false;
-            if (_streamingPlain)
-                return;
-            _rebuild();
-            _scheduleLayout();
-        });
+        finalRenderTimer.restart();
     }
 
     function _scheduleLayout() {
         if (!ListView.view || _layoutQueued)
             return;
         _layoutQueued = true;
-        Qt.callLater(function() {
-            _layoutQueued = false;
-            if (!ListView.view)
-                return;
-            ListView.view.forceLayout();
-            if (cell.live || ListView.view.atYEnd)
-                ListView.view.positionViewAtEnd();
-        });
+        layoutTimer.restart();
     }
 
     readonly property color bubbleBg: {
