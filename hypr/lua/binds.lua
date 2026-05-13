@@ -14,7 +14,22 @@ local function bind(keys, dispatcher, opts)
     hl.bind(keys, dispatcher, opts)
 end
 
-bind(mainMod .. " + S", sh("state_file=/tmp/hypr_layout_state; current=$(cat \"$state_file\" 2>/dev/null || echo \"dwindle\"); if [ \"$current\" = \"dwindle\" ]; then hyprctl keyword general:layout scrolling && echo scrolling > \"$state_file\" && notify-send \"->  切换到 scrolling 布局\"; else hyprctl keyword general:layout dwindle && echo dwindle > \"$state_file\" && notify-send \"[]  切换到 dwindle 布局\"; fi"))
+bind(mainMod .. " + S", function()
+    local currentLayout = hl.get_config("general.layout")
+    local nextLayout = currentLayout == "dwindle" and "scrolling" or "dwindle"
+
+    hl.config({
+        general = {
+            layout = nextLayout,
+        },
+    })
+
+    if nextLayout == "scrolling" then
+        hl.exec_cmd("notify-send '<>  切换到 scrolling 布局'")
+    else
+        hl.exec_cmd("notify-send '[-]  切换到 dwindle 布局'")
+    end
+end)
 
 bind(mainMod .. " + Q", hl.dsp.window.close())
 bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
