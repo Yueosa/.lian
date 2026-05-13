@@ -133,6 +133,12 @@ QtObject {
         return "游戏模式";
     }
 
+    function overlayModeShortLabel() {
+        if (overlayMode === "full") return "桌面";
+        if (overlayMode === "none") return "专注";
+        return "游戏";
+    }
+
     function shouldOverlayTransient(active) {
         if (overlayMode === "none") return false;
         if (overlayMode === "full") return true;

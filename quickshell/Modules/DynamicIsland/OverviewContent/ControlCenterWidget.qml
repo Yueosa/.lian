@@ -601,11 +601,15 @@ Item {
                 width: rowMid.otherWidth
                 height: rowMid.height
                 compact: rowMid.otherWidth < 88
-                icon: ""
-                title: "重载"
-                accentColor: Colorscheme.secondary
-                iconActiveColor: Colorscheme.on_secondary
-                onClicked: Quickshell.execDetached(["qs", "reload"])
+                icon: WidgetState.overlayMode === "full" ? "" : (WidgetState.overlayMode === "none" ? "" : "")
+                title: WidgetState.overlayModeShortLabel()
+                active: WidgetState.overlayMode !== "none"
+                accentColor: WidgetState.overlayMode === "full" ? Colorscheme.primary : (WidgetState.overlayMode === "none" ? Colorscheme.on_surface_variant : Colorscheme.tertiary)
+                iconActiveColor: WidgetState.overlayMode === "full" ? Colorscheme.on_primary : Colorscheme.on_tertiary
+                onClicked: {
+                    WidgetState.nextOverlayMode()
+                    Quickshell.execDetached(["notify-send", "显示模式", WidgetState.overlayModeLabel()])
+                }
 
                 Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
             }
@@ -1130,6 +1134,13 @@ Item {
                 bgColor: Qt.alpha(Colorscheme.on_surface, 0.08)
                 fgColor: Colorscheme.on_surface
                 onClicked: Quickshell.execDetached(["qs", "ipc", "call", "clipboard", "toggle"])
+            }
+
+            CornerBtn {
+                icon: ""
+                bgColor: Qt.alpha(Colorscheme.tertiary, 0.12)
+                fgColor: Colorscheme.tertiary
+                onClicked: Quickshell.execDetached(["qs", "ipc", "call", "capturemenu", "toggle"])
             }
 
             Item { Layout.fillWidth: true }
