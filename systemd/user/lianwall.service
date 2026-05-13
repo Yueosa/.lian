@@ -1,12 +1,11 @@
 [Unit]
-Description=Lianwall wallpaper daemon
+Description=Lianwall wallpaper GUI
 PartOf=hyprland-session.target
 After=hyprland-session.target
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/lianwall start
+Type=simple
+ExecStart=/usr/bin/lianwall-gui
 ExecStop=/usr/bin/lianwall stop
 
 [Install]
