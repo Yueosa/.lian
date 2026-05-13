@@ -5,6 +5,7 @@ import qs.config
 
 import qs.Modules.DynamicIsland.OverviewContent
 import qs.Modules.DynamicIsland.Media
+import qs.Modules.DynamicIsland.WallpaperContent
 import qs.Modules.DynamicIsland.WeatherContent
 import qs.Modules.DynamicIsland.SwitcherContent
 
@@ -19,12 +20,12 @@ FocusScope {
     Keys.priority: Keys.BeforeItem
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Tab) {
-            root.currentIndex = (root.currentIndex + 1) % 4
+            root.currentIndex = (root.currentIndex + 1) % 5
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Backtab) {
-            root.currentIndex = (root.currentIndex + 3) % 4
+            root.currentIndex = (root.currentIndex + 4) % 5
             event.accepted = true
         }
     }
@@ -34,14 +35,15 @@ FocusScope {
             root.forceActiveFocus()
     }
     
-    // 4 Tab 布局：Overview / Media / Weather / Switcher
-    implicitWidth: currentIndex === 0 ? Sizes.island.overviewWidth : (currentIndex === 3 ? 900 : 760)
+    // 5 Tab 布局：Overview / Media / Wallpaper / Weather / Switcher
+    implicitWidth: currentIndex === 0 ? Sizes.island.overviewWidth : (currentIndex === 4 ? 900 : (currentIndex === 2 ? 860 : 760))
     Behavior on implicitWidth { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
     
     implicitHeight: Sizes.island.hubTabBarHeight + Sizes.island.hubContentGap + (
         currentIndex === 0 ? Sizes.island.overviewHeight : 
         currentIndex === 1 ? 480 : 
         currentIndex === 2 ? 540 :
+        currentIndex === 3 ? 540 :
         540
     )
     Behavior on implicitHeight { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
@@ -106,8 +108,9 @@ FocusScope {
 
         TabBtn { icon: ""; title: "Overview"; index: 0 }
         TabBtn { icon: ""; title: "Media"; index: 1 }
-        TabBtn { icon: ""; title: "Weather"; index: 2 }        
-        TabBtn { icon: "\uf2d2"; title: "Switcher"; index: 3 }
+        TabBtn { icon: ""; title: "Wallpaper"; index: 2 }
+        TabBtn { icon: ""; title: "Weather"; index: 3 }
+        TabBtn { icon: "\uf2d2"; title: "Switcher"; index: 4 }
     }
 
     Item {
@@ -142,17 +145,28 @@ FocusScope {
         WeatherContent {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.currentIndex === 2
-            enabled: root.currentIndex === 2
+            visible: root.currentIndex === 3
+            enabled: root.currentIndex === 3
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }
         }
 
+        WallpaperContent {
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.currentIndex === 2
+            enabled: root.currentIndex === 2
+            z: enabled ? 1 : 0
+            opacity: enabled ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 300 } }
+            onCloseRequested: root.closeRequested()
+        }
+
         SwitcherContent {
             anchors.fill: parent
-            visible: root.currentIndex === 3
-            enabled: root.currentIndex === 3
+            visible: root.currentIndex === 4
+            enabled: root.currentIndex === 4
             z: enabled ? 1 : 0
             opacity: enabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }

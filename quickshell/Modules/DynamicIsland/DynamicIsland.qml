@@ -420,7 +420,7 @@ Variants {
                     }
 
                     function _resolveHubDefaultTab() {
-                        if (root.hubLastOpenIndex === 1 || root.hubLastOpenIndex === 2)
+                        if (root.hubLastOpenIndex === 1 || root.hubLastOpenIndex === 2 || root.hubLastOpenIndex === 3)
                             return root.hubLastOpenIndex
                         // 上次是 switcher 或未知，ALT+TAB 重定向到 overview
                         return 0
@@ -442,7 +442,13 @@ Variants {
                     }
 
                     function switcher() {
-                        return _toggleHubTab(3) ? "SWITCHER_OPENED" : "SWITCHER_CLOSED"
+                        _openHubTab(4)
+                        return "SWITCHER_OPENED"
+                    }
+
+                    function wallpaper() {
+                        _openHubTab(2)
+                        return "WALLPAPER_OPENED"
                     }
 
                     function notifytest(preset: string) {
