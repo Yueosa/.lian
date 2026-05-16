@@ -5,6 +5,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io          // 【新增】：必须引入 IO 模块以支持命令行 Process
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 
 PanelWindow {
@@ -22,6 +23,7 @@ PanelWindow {
     
     WlrLayershell.namespace: "rofi-launcher-overlay"
     WlrLayershell.layer: WidgetState.shouldOverlayTransient(root.visible) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(root.visible); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive 
     WlrLayershell.exclusionMode: ExclusionMode.Ignore 
 

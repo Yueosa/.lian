@@ -1,6 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
+import qs.config
 import qs.Modules.Clipboard
 
 PanelWindow {
@@ -18,6 +20,7 @@ PanelWindow {
 
     WlrLayershell.namespace: "clipboard-overlay"
     WlrLayershell.layer: WidgetState.shouldOverlayTransient(root.visible) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(root.visible); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 

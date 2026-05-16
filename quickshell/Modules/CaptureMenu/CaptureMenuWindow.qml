@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.config
 
 PanelWindow {
@@ -19,6 +20,7 @@ PanelWindow {
 
     WlrLayershell.namespace: "qs-capture-menu-overlay"
     WlrLayershell.layer: WidgetState.shouldOverlayTransient(root.visible) ? WlrLayer.Overlay : WlrLayer.Top
+    LayerSurfaceRemapper { window: root; active: WidgetState.shouldOverlayTransient(root.visible); remapSerial: WidgetState.overlayRemapSerial }
     WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 

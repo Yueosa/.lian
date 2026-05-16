@@ -16,7 +16,7 @@ Item {
     Component.onCompleted: _completed = true
 
     onRemapSerialChanged: {
-        if (_completed && active)
+        if (_completed)
             remap()
     }
 

@@ -28,6 +28,7 @@ QtObject {
     property bool hotCornerEnabled: true
 
     // 覆盖层策略: partial(Game) | full(DeskTop) | none(专注模式)
+    // partial 预置可唤起窗口到 Overlay，避免打开瞬间重建 layer surface 造成卡顿。
     property string overlayMode: "partial"
     readonly property var overlayModes: ["partial", "full", "none"]
     property int overlayRemapSerial: 0
@@ -142,7 +143,7 @@ QtObject {
     function shouldOverlayTransient(active) {
         if (overlayMode === "none") return false;
         if (overlayMode === "full") return true;
-        return !!active;
+        return true;
     }
 
     function shouldOverlayPanel(active) {
