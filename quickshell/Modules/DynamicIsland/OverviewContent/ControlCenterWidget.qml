@@ -59,6 +59,10 @@ Item {
         return 0
     }
 
+    function runMemoryCleanup(mode) {
+        Quickshell.execDetached(["bash", Quickshell.shellDir + "/scripts/qs_memory_cleanup.sh", mode])
+    }
+
     component ControlTile : Rectangle {
         id: tile
         property string icon: ""
@@ -725,6 +729,99 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.pageIndex = 1
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+                                radius: Sizes.rounding.chip
+                                color: quickCleanupArea.containsMouse
+                                    ? Qt.alpha(Colorscheme.secondary, 0.20)
+                                    : Qt.alpha(Colorscheme.secondary, 0.12)
+                                scale: quickCleanupArea.pressed ? 0.97 : (quickCleanupArea.containsMouse ? 1.01 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 180 } }
+                                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: 8
+
+                                    Text {
+                                        text: ""
+                                        color: Colorscheme.secondary
+                                        font.family: Sizes.fontAwesome
+                                        font.pixelSize: Sizes.controlCenter.prefsChipIconFont
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "轻量清理"
+                                        color: Colorscheme.on_surface
+                                        font.pixelSize: Sizes.controlCenter.prefsChipLabelFont
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: quickCleanupArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.runMemoryCleanup("quick")
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+                                radius: Sizes.rounding.chip
+                                color: deepCleanupArea.containsMouse
+                                    ? Qt.alpha(Colorscheme.tertiary, 0.20)
+                                    : Qt.alpha(Colorscheme.tertiary, 0.12)
+                                scale: deepCleanupArea.pressed ? 0.97 : (deepCleanupArea.containsMouse ? 1.01 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 180 } }
+                                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: 8
+
+                                    Text {
+                                        text: ""
+                                        color: Colorscheme.tertiary
+                                        font.family: Sizes.fontAwesome
+                                        font.pixelSize: Sizes.controlCenter.prefsChipIconFont
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "深度回收"
+                                        color: Colorscheme.on_surface
+                                        font.pixelSize: Sizes.controlCenter.prefsChipLabelFont
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: deepCleanupArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.runMemoryCleanup("deep")
+                                }
                             }
                         }
 
