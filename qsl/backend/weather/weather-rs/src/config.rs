@@ -18,8 +18,11 @@ pub fn forecast_cache_file() -> String { format!("{}/forecast.json", cache_dir()
 /// 用户指定位置（优先于 IP 定位，通过 geocode 命令设置）
 pub fn location_file() -> String { format!("{}/location.json", cache_dir()) }
 
-/// 命令管道（tmpfs，接收 QML 端的 refresh/geocode 命令）
+/// 命令管道（tmpfs，接收 QML 端命令）
 pub fn cmd_pipe() -> String { format!("{}/qsl/weather_cmd", runtime_dir()) }
+
+/// 搜索结果缓存（持久化，跨 QML/weatherd 通信）
+pub fn geocode_results_file() -> String { format!("{}/geocode_results.json", cache_dir()) }
 
 /// 天气数据刷新间隔（秒）
 pub const REFRESH_INTERVAL: u64 = 15 * 60;

@@ -21,15 +21,28 @@ pub fn run() {
                 match cmd.as_str() {
                     "refresh" => { eprintln!("weatherd: 收到 refresh"); break; }
                     s if s.starts_with("geocode ") => {
+                        // 搜索城市 → 写结果文件 → QML 展示列表
                         let query = &s[8..];
                         eprintln!("weatherd: 搜索城市: {}", query);
-                        if let Ok(results) = api::geocode::search(query) {
-                            if let Some(r) = results.first() {
-                                lat = r.latitude; lon = r.longitude; name = r.label.clone();
-                                save_location(lat, lon, &name);
-                                eprintln!("weatherd: 切换到 {} 并保存", name);
-                                break;
+                        match api::geocode::search(query) {
+                            Ok(results) => {
+                                let json = serde_json::to_string(&results).unwrap_or_else(|_| "[]".into());
+                                let _ = fs::write(config::geocode_results_file(), &json);
+                                eprintln!("weatherd: 找到 {} 个结果", results.len());
                             }
+                            Err(e) => eprintln!("weatherd: 搜索失败: {}", e),
+                        }
+                    }
+                    s if s.starts_with("set_location ") => {
+                        // QML 选择了搜索结果 → 保存位置 → 立即刷新
+                        let args: Vec<&str> = s[13..].splitn(3, ' ').collect();
+                        if args.len() >= 3 {
+                            lat = args[0].parse().unwrap_or(lat);
+                            lon = args[1].parse().unwrap_or(lon);
+                            name = args[2].to_string();
+                            save_location(lat, lon, &name);
+                            eprintln!("weatherd: 切换到 {} 并保存", name);
+                            break;
                         }
                     }
                     s if s == "reset_location" => {
