@@ -50,7 +50,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("qs")
 
     -- 4. 一次性命令
-    hl.exec_cmd("hyprctl setcursor BreezeX-RosePineDawn-Linux 24")
     hl.exec_cmd("mkdir -p " .. screenshotDir)
 
     -- 5. Layer 3 GUI 应用
