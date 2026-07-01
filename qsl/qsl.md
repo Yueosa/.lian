@@ -41,6 +41,27 @@ ui ← data ← core
 - 非 QML 文件 / 根文档：kebab-case（`shell.qml`, `weather.py`）
 - 目录名：全小写（`quicksettings/`, `data/service/`）
 - QML id：camelCase，有意义（`volumeSlider` 而非 `vs`）
+
+### 数据模块注释规范
+
+每个 `data/` 下的模块必须在文件头包含"对外接口一览"：
+
+```qml
+-- ============================================================
+-- 模块名 — EnglishName
+-- ============================================================
+-- 一句话职责描述。
+-- 关键实现细节（依赖、精度、更新频率）。
+-- ============================================================
+-- 对外接口一览：
+--
+-- 属性（readonly）：
+--   propName  type     说明          例值
+--
+-- 方法：
+--   funcName(params)   说明
+-- ============================================================
+```
 - 属性/函数：camelCase
 - 注释：中文 + 关键说明
 
@@ -64,19 +85,19 @@ qsl/
 │
 ├── data/                      # 数据层：纯逻辑，零 UI，零 import ui/
 │   ├── state/                 #   全局状态（配色、尺寸、开关）
-│   │   ├── color.qml          #     Colorscheme
-│   │   ├── size.qml           #     Sizes
-│   │   └── widget.qml         #     WidgetState
+│   │   ├── Color.qml           #     Colorscheme
+│   │   ├── Size.qml            #     Sizes
+│   │   └── Widget.qml          #     WidgetState
 │   │
 │   └── service/               #   数据服务（网络、蓝牙、媒体…）
-│       ├── network.qml        #     网络状态 + WiFi 控制
-│       ├── bluetooth.qml      #     蓝牙设备管理
-│       ├── media.qml          #     媒体播放器管理
-│       ├── volume.qml         #     音量 + 静音
-│       ├── package.qml        #     系统更新
-│       ├── notification.qml   #     通知管理
-│       ├── time.qml           #     时钟
-│       └── cava.qml           #     音频频谱
+│       ├── Network.qml         #     网络状态 + WiFi 控制
+│       ├── Bluetooth.qml       #     蓝牙设备管理
+│       ├── Media.qml           #     媒体播放器管理
+│       ├── Volume.qml          #     音量 + 静音
+│       ├── Package.qml         #     系统更新
+│       ├── Notification.qml    #     通知管理
+│       ├── Time.qml            #     时钟
+│       └── Cava.qml            #     音频频谱
 │
 ├── ui/                        # UI 层：所有窗口/面板
 │   ├── bar/                   #   顶栏
