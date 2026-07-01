@@ -97,6 +97,7 @@ qsl/
 │       ├── Network.qml         #     网络状态 + WiFi（Quickshell.Networking）
 │       ├── Bluetooth.qml       #     蓝牙设备（Quickshell.Bluetooth）
 │       ├── Battery.qml         #     电池/电源（Quickshell.UPower）★ 新
+│       ├── Calendar.qml       #     节假日日历
 │       └── # PowerProfiles      #     电源模式——TUXEDO 笔记本走 tuxedo-control-center，
 │                                #     台式机未来可用 Quickshell.UPower PowerProfiles
 │
@@ -120,8 +121,7 @@ qsl/
 │   ├── cava/                  #   音频频谱（Rust 重写，最高优先级）
 │   ├── weather/               #   天气 + 地理编码（C++ 保留，收编 Python 泄漏）
 │   ├── sysmon/                #   系统监控（C++ 保留，调整构建路径）
-│   ├── lyrics/                #   歌词获取（Rust 重写）
-│   └── calendar/              #   日历/节假日（可降级为纯 QML）
+│   └── lyrics/                #   歌词获取（Rust 重写）
 │
 ├── script/                    # 外部脚本（UI 辅助，非数据源）
 │   ├── capture.sh

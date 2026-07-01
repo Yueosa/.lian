@@ -63,17 +63,6 @@
 
 **迁移方向：** 功能简单，HTTP GET + JSON 解析。Rust 改写，编译为独立二进制，通过 `data/service/Lyrics.qml` 调用。
 
-### 5. calendar — 日历/节假日
-
-| 项 | 值 |
-|---|---|
-| 数据来源 | 内置 JSON（中国法定节假日数据） |
-| 更新频率 | 年更（每年换 JSON 文件） |
-| 提供数据 | 公历/农历日期、节假日、工作日/休息日、节气 |
-| 现状 | C++ QML 插件 `Clavis.Calendar` |
-
-**迁移方向：** 数据是静态 JSON，QML 的 `JSON.parse()` 完全能处理。可以考虑从 C++ 降级为纯 QML 数据服务——但留待最后决定。如果性能没问题，`data/service/Calendar.qml` 直接读 JSON 更简单。
-
 ---
 
 ## 迁移顺序
@@ -86,4 +75,4 @@
 | 2 | weather | UI 层直接 Process 调 Python 脚本 |
 | 3 | sysmon | C++ 代码完好，主要做构建路径调整 |
 | 4 | lyrics | 轻量 HTTP，快速完成 |
-| 5 | calendar | 最低优先级，可降级为纯 QML |
+| ~~5~~ | ~~calendar~~ | — | **降级为 QML**：纯静态 JSON，data/service/Calendar.qml |
