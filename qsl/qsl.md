@@ -116,9 +116,12 @@ qsl/
 │   ├── widget-panel.qml
 │   └── ...
 │
-├── backend/                   # 编译型数据源（Quickshell 无原生 D-Bus 绑定的）
-│   ├── cava/                  #   音频频谱（将来 Rust）
-│   └── sysmon/                #   系统监控（原 Clavis.Sysmon，留待研究）
+├── backend/                   # 编译型数据源（详细见 backend/README.md）
+│   ├── cava/                  #   音频频谱（Rust 重写，最高优先级）
+│   ├── weather/               #   天气 + 地理编码（C++ 保留，收编 Python 泄漏）
+│   ├── sysmon/                #   系统监控（C++ 保留，调整构建路径）
+│   ├── lyrics/                #   歌词获取（Rust 重写）
+│   └── calendar/              #   日历/节假日（可降级为纯 QML）
 │
 ├── script/                    # 外部脚本（UI 辅助，非数据源）
 │   ├── capture.sh
