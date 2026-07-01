@@ -1,1 +1,20 @@
--- Placeholder for layout-specific rules. The active scrolling options live in appearance.lua.
+-- 显示器布局配置
+--     控制显示器输出、分辨率、位置与缩放
+--     纯视觉外观（圆角/边框/模糊/阴影）见 appearance.lua
+
+
+-- ============================================================
+-- 显示器默认配置
+--     output = ""  匹配所有显示器
+--     mode = "preferred"  使用原生分辨率
+--     position = "auto"  自动排列（从左到右）
+--     scale = "auto"  自动缩放（根据分辨率推断）
+--     如果有外接显示器需要特殊分辨率/缩放，在下面追加 hl.monitor({output="DP-1", ...})
+-- ============================================================
+
+hl.monitor({
+    output = "",
+    mode = "preferred",
+    position = "auto",
+    scale = "auto",
+})
