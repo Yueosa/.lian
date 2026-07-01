@@ -225,9 +225,9 @@ PanelWindow {
                         Image {
                             anchors.fill: parent
                             fillMode: Image.PreserveAspectCrop
-                            source: root.previewImage
+                            source: root.contentActive ? root.previewImage : ""
                             asynchronous: false
-                            cache: true
+                            cache: false
                             smooth: true
                             sourceSize.width: root.previewPaneWidth
                             sourceSize.height: root.frameHeight

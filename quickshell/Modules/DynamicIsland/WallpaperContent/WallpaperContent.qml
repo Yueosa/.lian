@@ -301,12 +301,12 @@ FocusScope {
 
                                 Image {
                                     anchors.fill: parent
-                                    source: card.thumbnailSource
-                                    sourceSize.width: 360
-                                    sourceSize.height: 240
+                                    source: (root.visible && card.hasThumbnail) ? card.thumbnailSource : ""
+                                    sourceSize.width: 256
+                                    sourceSize.height: 160
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
-                                    cache: true
+                                    cache: false
                                     visible: card.hasThumbnail
                                 }
 

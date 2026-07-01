@@ -10,6 +10,7 @@ import qs.config
 Item {
     id: root
     property var context: null
+    readonly property bool heavyAssetsActive: root.visible && root.opacity > 0
 
     anchors.fill: parent
 
@@ -31,9 +32,12 @@ Item {
         id: wallpaper
         anchors.fill: parent
         z: 0
-        source: "file://" + Quickshell.env("HOME") + "/.cache/wallpaper_rofi/current"
+        source: root.heavyAssetsActive
+            ? ("file://" + Quickshell.env("HOME") + "/.cache/wallpaper_rofi/current")
+            : ""
         fillMode: Image.PreserveAspectCrop
         visible: false 
+        cache: false
     }
     
     MultiEffect {
@@ -108,7 +112,9 @@ Item {
 
             Image {
                 id: lockIconSource
-                source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/icons/lock.svg"
+                source: lockIconContainer.visible
+                    ? ("file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/icons/lock.svg")
+                    : ""
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectFit
                 visible: false 
@@ -189,11 +195,13 @@ Item {
                         Image {
                             id: avatarImg
                             anchors.fill: parent
-                            source: "file://" + Quickshell.env("HOME") + "/.lian/hypr/avatar.jpg"
+                            source: mainContent.visible
+                                ? ("file://" + Quickshell.env("HOME") + "/.lian/hypr/avatar.jpg")
+                                : ""
                             sourceSize: Qt.size(180, 180)
                             fillMode: Image.PreserveAspectCrop
                             visible: false
-                            cache: true
+                            cache: false
                         }
                         Rectangle {
                             id: mask

@@ -182,12 +182,13 @@ PanelWindow {
                     Image {
                         id: rawPreviewForBlur
                         anchors.fill: parent
-                        source: root.previewImage
+                        source: root.visible ? root.previewImage : ""
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         visible: false
-                        sourceSize.width: 640
-                        sourceSize.height: 360
+                        cache: false
+                        sourceSize.width: 480
+                        sourceSize.height: 270
                     }
 
                     FastBlur {
@@ -205,10 +206,11 @@ PanelWindow {
                     Image {
                         anchors.fill: parent
                         fillMode: Image.PreserveAspectCrop
-                        source: root.previewImage
+                        source: root.visible ? root.previewImage : ""
                         asynchronous: true
-                        sourceSize.width: 960
-                        sourceSize.height: 540
+                        cache: false
+                        sourceSize.width: 720
+                        sourceSize.height: 405
                     }
 
 
