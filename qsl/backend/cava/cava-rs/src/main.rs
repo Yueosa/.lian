@@ -19,9 +19,18 @@ use std::time::Duration;
 
 const BAR_COUNT: usize = 30;
 const FRAMERATE: u32 = 60;
-const OUTPUT_FILE: &str = "/dev/shm/qsl_cava.bin";
+
+fn output_file() -> String {
+    let runtime = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".into());
+    format!("{}/qsl/cava.bin", runtime)
+}
 
 fn main() {
+    let out = output_file();
+    if let Some(parent) = std::path::Path::new(&out).parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
     let config_path = match write_cava_config() {
         Ok(p) => p,
         Err(e) => {
@@ -57,10 +66,10 @@ fn main() {
     loop {
         match reader.read_exact(&mut frame) {
             Ok(()) => {
-                // 原子写入：先写临时文件，再 rename（POSIX 保证 rename 原子性）
-                let tmp = format!("{}.tmp", OUTPUT_FILE);
+                // 原子写入：先写临时文件，再 rename
+                let tmp = format!("{}.tmp", out);
                 if fs::write(&tmp, &frame).is_ok() {
-                    let _ = fs::rename(&tmp, OUTPUT_FILE);
+                    let _ = fs::rename(&tmp, &out);
                 }
             }
             Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
@@ -95,7 +104,7 @@ fn main() {
 
     let _ = child.kill();
     let _ = child.wait();
-    let _ = fs::remove_file(OUTPUT_FILE);
+    let _ = fs::remove_file(&out);
 }
 
 fn write_cava_config() -> io::Result<PathBuf> {
