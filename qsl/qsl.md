@@ -97,7 +97,8 @@ qsl/
 │       ├── Network.qml         #     网络状态 + WiFi（Quickshell.Networking）
 │       ├── Bluetooth.qml       #     蓝牙设备（Quickshell.Bluetooth）
 │       ├── Battery.qml         #     电池/电源（Quickshell.UPower）★ 新
-│       └── PowerProfiles.qml   #     电源模式切换 ★ 新
+│       └── # PowerProfiles      #     电源模式——TUXEDO 笔记本走 tuxedo-control-center，
+│                                #     台式机未来可用 Quickshell.UPower PowerProfiles
 │
 ├── ui/                        # UI 层：所有窗口/面板
 │   ├── bar/                   #   顶栏
