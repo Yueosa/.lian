@@ -15,6 +15,9 @@ pub fn cache_dir() -> String {
 /// 天气预报缓存（持久化到磁盘，重启后复用）
 pub fn forecast_cache_file() -> String { format!("{}/forecast.json", cache_dir()) }
 
+/// 用户指定位置（优先于 IP 定位，通过 geocode 命令设置）
+pub fn location_file() -> String { format!("{}/location.json", cache_dir()) }
+
 /// 命令管道（tmpfs，接收 QML 端的 refresh/geocode 命令）
 pub fn cmd_pipe() -> String { format!("{}/qsl/weather_cmd", runtime_dir()) }
 

@@ -15,7 +15,10 @@ JSON 结构见 `weather-rs/src/model.rs` 的 `WeatherSnapshot`。
 | 命令 | 行为 |
 |---|---|
 | `refresh` | 立即拉取最新数据 |
-| `geocode 北京` | 搜索城市 → 切换到该城市坐标 → 立即拉取 |
+| `geocode 北京` | 搜索城市 → 切换到该城市坐标 → 持久化 → 立即拉取 |
+| `reset_location` | 清除手动位置 → 恢复 IP 定位 |
+
+位置持久化到 `~/.cache/qsl/location.json`，重启后优先使用保存的位置。
 
 QML 端 `data/service/Weather.qml` 读 JSON，按需向管道发命令。
 
