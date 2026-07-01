@@ -89,15 +89,15 @@ qsl/
 │   │   ├── Size.qml            #     Sizes
 │   │   └── Widget.qml          #     WidgetState
 │   │
-│   └── service/               #   数据服务（网络、蓝牙、媒体…）
-│       ├── Network.qml         #     网络状态 + WiFi 控制
-│       ├── Bluetooth.qml       #     蓝牙设备管理
-│       ├── Media.qml           #     媒体播放器管理
-│       ├── Volume.qml          #     音量 + 静音
-│       ├── Package.qml         #     系统更新
-│       ├── Notification.qml    #     通知管理
+│   └── service/               #   数据服务（Quickshell 原生 D-Bus 绑定 + 薄封装）
 │       ├── Time.qml            #     时钟
-│       └── Cava.qml            #     音频频谱
+│       ├── Volume.qml          #     音量 + 静音
+│       ├── Media.qml           #     媒体播放器管理
+│       ├── Notification.qml    #     通知管理
+│       ├── Network.qml         #     网络状态 + WiFi（Quickshell.Networking）
+│       ├── Bluetooth.qml       #     蓝牙设备（Quickshell.Bluetooth）
+│       ├── Battery.qml         #     电池/电源（Quickshell.UPower）★ 新
+│       └── PowerProfiles.qml   #     电源模式切换 ★ 新
 │
 ├── ui/                        # UI 层：所有窗口/面板
 │   ├── bar/                   #   顶栏
@@ -115,16 +115,11 @@ qsl/
 │   ├── widget-panel.qml
 │   └── ...
 │
-├── core/                      # C++ 插件（Qt6 QML 插件 + 静态库）
-│   ├── sysmon/                #   Clavis.Sysmon
-│   ├── weather/               #   Clavis.Weather
-│   ├── clipboard/             #   Clavis.Clipboard
-│   ├── notif/                 #   Clavis.Notif
-│   ├── calendar/              #   Clavis.Calendar
-│   ├── lianwall/              #   Clavis.Lianwall
-│   └── lianclaw/              #   Clavis.LianClaw
+├── backend/                   # 编译型数据源（Quickshell 无原生 D-Bus 绑定的）
+│   ├── cava/                  #   音频频谱（将来 Rust）
+│   └── sysmon/                #   系统监控（原 Clavis.Sysmon，留待研究）
 │
-├── script/                    # 外部脚本（Bash/Python → 将来迁 Rust）
+├── script/                    # 外部脚本（UI 辅助，非数据源）
 │   ├── capture.sh
 │   ├── weather.py
 │   └── ...
@@ -143,16 +138,18 @@ qsl/
 
 | 优先级 | 模块 | 估计工作量 | 状态 |
 |---|---|---|---|
-| 1 | data/service/time | 5 分钟 | 待开始 |
-| 2 | data/service/volume | 5 分钟 | 待开始 |
-| 3 | data/service/media | 10 分钟 | 待开始 |
-| 4 | data/state/* | 15 分钟 | 待开始 |
-| 5 | data/service/package | 15 分钟 | 待开始 |
-| 6 | data/service/notification | 15 分钟 | 待开始 |
-| 7 | data/service/cava | 15 分钟 | 待开始 |
-| 8 | component/* | 30 分钟 | 待开始 |
-| 9 | data/service/network | 1 小时 | 待开始（需抽象 Process 模式） |
-| 10 | data/service/bluetooth | 1 小时 | 待开始（共享 network 的抽象） |
+| 1 | data/service/Time | ✅ 已完成 |
+| 2 | data/service/Volume | ✅ 已完成 |
+| 3 | data/service/Media | ✅ 已完成 |
+| 4 | data/service/Notification | ✅ 已完成 |
+| ~~5~~ | ~~data/service/Package~~ | — | **删除** |
+| 6 | data/service/Network | 30 分钟 | 使用 Quickshell.Networking |
+| 7 | data/service/Bluetooth | 30 分钟 | 使用 Quickshell.Bluetooth |
+| 8 | data/service/Battery | 20 分钟 | ★ 新，使用 Quickshell.UPower |
+| 9 | data/service/PowerProfiles | 20 分钟 | ★ 新 |
+| 10 | data/state/* | 15 分钟 | 待开始 |
+| 11 | component/* | 30 分钟 | 待开始 |
+| 12 | backend/* | 待定 | Cava / Sysmon |
 | 11 | core/ | 2 小时 | 待开始（改构建路径） |
 | 12 | ui/bar | 2 小时 | 待开始 |
 | 13 | ui/island | 4 小时 | 待开始 |
