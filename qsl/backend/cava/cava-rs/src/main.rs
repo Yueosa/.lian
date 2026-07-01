@@ -48,9 +48,6 @@ fn main() {
         }
     };
 
-    // cava 已读取配置，可以删除
-    let _ = fs::remove_file(&config_path);
-
     let stdout = match child.stdout.take() {
         Some(s) => s,
         None => {
@@ -73,25 +70,20 @@ fn main() {
                 }
             }
             Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                // cava 进程退出，尝试重启
+                // cava 进程退出，尝试重启（配置文件已存在，直接复用）
                 eprintln!("cava-relay: cava 退出，1 秒后重试...");
                 let _ = child.wait();
                 thread::sleep(Duration::from_secs(1));
 
-                // 重新生成配置（/dev/shm 在 tmpfs 上，之前的应该已被删除）
-                match write_cava_config() {
-                    Ok(p) => match spawn_cava(&p) {
-                        Ok(c) => {
-                            child = c;
-                            let _ = fs::remove_file(&p);
-                            if let Some(s) = child.stdout.take() {
-                                reader = io::BufReader::new(s);
-                                continue;
-                            }
+                match spawn_cava(&config_path) {
+                    Ok(c) => {
+                        child = c;
+                        if let Some(s) = child.stdout.take() {
+                            reader = io::BufReader::new(s);
+                            continue;
                         }
-                        Err(e2) => eprintln!("cava-relay: 重启失败: {}", e2),
-                    },
-                    Err(e2) => eprintln!("cava-relay: 配置写入失败: {}", e2),
+                    }
+                    Err(e2) => eprintln!("cava-relay: 重启失败: {}", e2),
                 }
                 break;
             }
@@ -134,7 +126,7 @@ fn write_cava_config() -> io::Result<PathBuf> {
         bars = BAR_COUNT,
     );
 
-    let path = PathBuf::from(format!("/dev/shm/qsl_cava_config_{}.tmp", std::process::id()));
+    let path = PathBuf::from(format!("{}/qsl_cava.conf", std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".into())));
     fs::write(&path, &config)?;
     Ok(path)
 }
