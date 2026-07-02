@@ -1,11 +1,9 @@
-// FreeWindow — 通用弹出窗口壳
-//     21:9 宽高比，左(60%)壁纸预览 + 右(40%)内容区
-//     三个页面复用：app/clip/key，每次只实例化一个
+// FreeWindow — 弹出窗口壳
 //
-// 用法: FreeWindow { contentComponent: myPage; onClosed: ... }
+// 统一：颜色 / 圆角 / 动画
+// 21:9 卡牌从底部滑入，fastIn 曲线
 
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qsl.data.state
@@ -18,109 +16,88 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
 
     WlrLayershell.namespace: "qsl-freewindow"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: windowOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    // === 几何 (21:9) ===
+    // ============================================================
+    // 几何 (21:9)
+    // ============================================================
+
     readonly property int frameWidth:  Math.min(width  - 80,  Math.max(1200, Math.round(frameHeight * 21 / 9)))
-    readonly property int frameHeight: Math.min(700, Math.max(580,  height - 100))
-    readonly property int paneWidth:   Math.round(frameWidth * 0.6)
-    readonly property int closedOffset: Math.round(height * 0.5 + frameHeight * 0.5 + 48)
+    readonly property int frameHeight: Math.min(700, Math.max(560,  height - 100))
+    readonly property int closedOffset: Math.round(height * 0.5 + frameHeight * 0.5 + 40)
 
-    // === 状态 ===
-    property bool windowOpen: false
-    property var contentComponent
+    // ============================================================
+    // 状态
+    // ============================================================
 
-    signal closed()
+    property bool open: false
+    property bool fadingOut: false   // Enter 启动应用时的退场动画状态
 
-    function open()  { windowOpen = true  }
-    function close() { windowOpen = false; closed() }
+    function toggle()  { open ? closeWindow() : openWindow() }
+    function openWindow()   { open = true  }
+    function closeWindow()  { open = false; fadingOut = false }
+    function quickClose()   { fadingOut = true }  // Enter 启动 → 渐变消失
 
-    // === 动画 ===
-    property int slideOffset: closedOffset
+    // ============================================================
+    // 动画 — fastIn (cubic-bezier(0.16, 1, 0.3, 1))
+    //
+    // 入场: 从底部滑入
+    // 退场 (Esc): 从上方滑出
+    // 退场 (Enter): 渐变消失 (fadingOut)
+    // ============================================================
+
+    property int slide: -closedOffset   // 入场前在屏幕上方（负偏移）
+
     states: [
-        State { name: "open";   PropertyChanges { target: root; slideOffset: 0              } },
-        State { name: "closed"; PropertyChanges { target: root; slideOffset: root.closedOffset } }
+        State { name: "open";   PropertyChanges { target: root; slide: 0               } },
+        State { name: "closed"; PropertyChanges { target: root; slide: -root.closedOffset } }
     ]
     transitions: [
-        Transition { from: "closed"; to: "open";
-            NumberAnimation { target: root; property: "slideOffset"; duration: Size.anim.smooth; easing.type: Easing.OutBack; easing.overshoot: 0.3 } },
-        Transition { from: "open"; to: "closed";
-            NumberAnimation { target: root; property: "slideOffset"; duration: Size.anim.normal; easing.type: Easing.InBack; easing.overshoot: 0.1 } }
+        Transition {
+            from: "closed"; to: "open"
+            NumberAnimation { target: root; property: "slide"; duration: Size.anim.smooth; easing: Size.anim.fastIn }
+        },
+        Transition {
+            from: "open"; to: "closed"
+            NumberAnimation { target: root; property: "slide"; duration: Size.anim.normal; easing: Size.anim.fastIn }
+        }
     ]
 
-    // === 点击背景关闭 ===
-    MouseArea { anchors.fill: parent; enabled: root.windowOpen; onClicked: root.close() }
+    // ============================================================
+    // Esc 关闭
+    // ============================================================
 
-    // === Esc 关闭 ===
-    FocusScope { anchors.fill: parent; enabled: root.windowOpen; focus: root.windowOpen
+    FocusScope {
+        anchors.fill: parent
+        enabled: root.open; focus: root.open
         Keys.priority: Keys.BeforeItem
-        Keys.onPressed: e => { if (e.key === Qt.Key_Escape) { root.close(); e.accepted = true } }
+        Keys.onPressed: e => { if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true } }
     }
 
-    // === 主卡片 ===
+    // ============================================================
+    // 卡牌容器 — 子 Item 自动成为此 Rectangle 的子元素
+    // ============================================================
+
+    default property alias content: card.data
+
     Rectangle {
+        id: card
         width: root.frameWidth; height: root.frameHeight
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: root.slideOffset
-        color: "transparent"
+        anchors.verticalCenterOffset: root.slide
+        color: Qt.rgba(Color.surfaceHigh.r, Color.surfaceHigh.g, Color.surfaceHigh.b, 0.95)
         radius: Size.rounding.xl
         clip: true
+        opacity: root.fadingOut ? 0 : 1
 
-        RowLayout {
-            anchors.fill: parent
-            spacing: 0
-
-            // 左：壁纸预览
-            Rectangle {
-                Layout.preferredWidth: root.paneWidth
-                Layout.fillHeight: true
-                color: Color.surfaceHigh
-                radius: Size.rounding.xl
-                layer.enabled: true; layer.effect: null  // placeholder for mask
-
-                Image {
-                    anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    source: ""  // wallpaper — TODO
-                    asynchronous: true; cache: false
-                }
-
-                // 渐变遮罩
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, 0.08) }
-                        GradientStop { position: 0.45; color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, 0.18) }
-                        GradientStop { position: 1.0; color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, 0.48) }
-                    }
-                }
-            }
-
-            // 右：内容区
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: Qt.rgba(Color.surfaceHigh.r, Color.surfaceHigh.g, Color.surfaceHigh.b, 0.9)
-                clip: true
-
-                Loader {
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    active: root.windowOpen
-                    sourceComponent: root.contentComponent
-                }
-            }
+        Behavior on opacity {
+            enabled: root.fadingOut
+            NumberAnimation { duration: Size.anim.normal; easing: Size.anim.fastIn }
         }
 
-        // 边框
-        Rectangle {
-            anchors.fill: parent
-            color: "transparent"
-            border.color: Color.outlineVariant
-            border.width: 2
-            radius: Size.rounding.xl
-        }
+        border.color: Color.outlineVariant
+        border.width: 1
     }
 }
