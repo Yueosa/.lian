@@ -1,46 +1,47 @@
 pragma Singleton
 
--- ============================================================
--- 配色方案 — Color
--- ============================================================
--- 全局颜色真源。三种模式：
---   auto  → 从 matugen 生成的 JSON 读取（壁纸驱动）
---   light → 内置浅色调色板
---   dark  → 内置深色调色板
--- ============================================================
--- 对外接口一览：
---
--- 模式（可读写）：
---   mode       string   "auto" / "light" / "dark"
---
--- 品牌色：
---   primary          color   主色（按钮/强调）
---   onPrimary        color   主色上的文字
---
--- 表面色（从低到高四层）：
---   background       color   最底层背景
---   surface          color   卡片/面板背景
---   surfaceHigh      color   悬浮层
---   surfaceHighest   color   顶层弹窗
---
--- 内容色：
---   onBackground     color   背景上的文字
---   onSurface        color   表面上的文字
---   onSurfaceVariant color   次要文字/图标
---
--- 强调色：
---   secondary        color   辅助色
---   tertiary         color   第三色
---   error            color   错误/警告
---
--- 装饰色：
---   outline          color   边框
---   outlineVariant   color   弱边框
---   shadow           color   阴影
--- ============================================================
+// ============================================================
+// 配色方案 — Color
+// ============================================================
+// 全局颜色真源。三种模式：
+//   auto  → 从 matugen 生成的 JSON 读取（壁纸驱动）
+//   light → 内置浅色调色板
+//   dark  → 内置深色调色板
+// ============================================================
+// 对外接口一览：
+//
+// 模式（可读写）：
+//   mode       string   "auto" / "light" / "dark"
+//
+// 品牌色：
+//   primary          color   主色（按钮/强调）
+//   onPrimary        color   主色上的文字
+//
+// 表面色（从低到高四层）：
+//   background       color   最底层背景
+//   surface          color   卡片/面板背景
+//   surfaceHigh      color   悬浮层
+//   surfaceHighest   color   顶层弹窗
+//
+// 内容色：
+//   onBackground     color   背景上的文字
+//   onSurface        color   表面上的文字
+//   onSurfaceVariant color   次要文字/图标
+//
+// 强调色：
+//   secondary        color   辅助色
+//   tertiary         color   第三色
+//   error            color   错误/警告
+//
+// 装饰色：
+//   outline          color   边框
+//   outlineVariant   color   弱边框
+//   shadow           color   阴影
+// ============================================================
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root

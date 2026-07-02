@@ -6,7 +6,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qsl.data.state
+import qs.data.state
 
 PanelWindow {
     id: root
@@ -42,28 +42,19 @@ PanelWindow {
 
     // ============================================================
     // 动画 — fastIn (cubic-bezier(0.16, 1, 0.3, 1))
-    //
-    // 入场: 从底部滑入
-    // 退场 (Esc): 从上方滑出
-    // 退场 (Enter): 渐变消失 (fadingOut)
-    // ============================================================
+    //     Behavior on slide 替代 states/transitions（PanelWindow 不支持 transitions）
 
-    property int slide: -closedOffset   // 入场前在屏幕上方（负偏移）
+    property int slide: -closedOffset
 
-    states: [
-        State { name: "open";   PropertyChanges { target: root; slide: 0               } },
-        State { name: "closed"; PropertyChanges { target: root; slide: -root.closedOffset } }
-    ]
-    transitions: [
-        Transition {
-            from: "closed"; to: "open"
-            NumberAnimation { target: root; property: "slide"; duration: Size.anim.smooth; easing: Size.anim.fastIn }
-        },
-        Transition {
-            from: "open"; to: "closed"
-            NumberAnimation { target: root; property: "slide"; duration: Size.anim.normal; easing: Size.anim.fastIn }
-        }
-    ]
+    Behavior on slide {
+        enabled: !root.fadingOut
+        NumberAnimation { duration: root.slide === 0 ? Size.anim.smooth : Size.anim.normal; easing: Size.anim.fastIn }
+    }
+
+    onOpenChanged: {
+        if (open) slide = 0
+        else if (!fadingOut) slide = -closedOffset
+    }
 
     // ============================================================
     // Esc 关闭

@@ -1,37 +1,37 @@
 pragma Singleton
 
--- ============================================================
--- 蓝牙服务 — Bluetooth
--- ============================================================
--- 通过 Quickshell.Bluetooth 原生绑定与 BlueZ D-Bus 通信。
--- 提供蓝牙开关、设备扫描、连接/断开、配对/取消配对、设备详情。
--- ============================================================
--- 对外接口一览：
---
--- 属性（readonly）：
---   enabled              bool       蓝牙是否开启
---   discovering          bool       是否正在扫描设备
---   discoverable         bool       是否可被其他设备发现
---   connectedDevices     array      已连接设备列表
---   pairedDevices        array      已配对（未连接）设备列表
---   scannedDevices       array      未配对设备列表
---   lastError            string     最近错误信息（5 秒自动清）
---
--- 属性（可读写）：
---   discoverable         bool       允许被其他设备发现
---
--- 方法：
---   toggle()                        切换蓝牙开关
---   startScan() / stopScan()        控制设备扫描
---   connectDevice(device)           连接设备
---   disconnectDevice(device)        断开设备
---   pairDevice(device)              配对设备
---   forgetDevice(device)            删除设备
---
--- 每个 BluetoothDevice 自带以下属性（无需额外 requestDeviceInfo）：
---   address, name, deviceName, icon, connected, paired, bonded,
---   battery, trusted, blocked, state
--- ============================================================
+// ============================================================
+// 蓝牙服务 — Bluetooth
+// ============================================================
+// 通过 Quickshell.Bluetooth 原生绑定与 BlueZ D-Bus 通信。
+// 提供蓝牙开关、设备扫描、连接/断开、配对/取消配对、设备详情。
+// ============================================================
+// 对外接口一览：
+//
+// 属性（readonly）：
+//   enabled              bool       蓝牙是否开启
+//   discovering          bool       是否正在扫描设备
+//   discoverable         bool       是否可被其他设备发现
+//   connectedDevices     array      已连接设备列表
+//   pairedDevices        array      已配对（未连接）设备列表
+//   scannedDevices       array      未配对设备列表
+//   lastError            string     最近错误信息（5 秒自动清）
+//
+// 属性（可读写）：
+//   discoverable         bool       允许被其他设备发现
+//
+// 方法：
+//   toggle()                        切换蓝牙开关
+//   startScan() / stopScan()        控制设备扫描
+//   connectDevice(device)           连接设备
+//   disconnectDevice(device)        断开设备
+//   pairDevice(device)              配对设备
+//   forgetDevice(device)            删除设备
+//
+// 每个 BluetoothDevice 自带以下属性（无需额外 requestDeviceInfo）：
+//   address, name, deviceName, icon, connected, paired, bonded,
+//   battery, trusted, blocked, state
+// ============================================================
 
 import QtQuick
 import Quickshell

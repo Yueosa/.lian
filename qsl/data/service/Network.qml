@@ -1,32 +1,32 @@
 pragma Singleton
 
--- ============================================================
--- 网络服务 — Network
--- ============================================================
--- 通过 Quickshell.Networking 原生绑定与 NetworkManager D-Bus 通信。
--- 提供 WiFi / 以太网的状态、扫描、连接、密码认证。
--- ============================================================
--- 对外接口一览：
---
--- 属性（readonly）：
---   wifiEnabled          bool       WiFi 是否开启（硬件+软件）
---   wifiHardwareEnabled  bool       硬件开关状态
---   wifiScanning         bool       是否正在扫描网络
---   wifiNetworks         model      可用 WiFi 网络列表（已排序：已连接 > 信号强）
---   ethernetConnected    bool       以太网是否连接
---   ethernetName         string     以太网连接名（空 = 未连接）
---   ethernetLinkSpeed    int        以太网链路速率（Mbps）
---   activeConnection     string     当前连接类型："wifi" / "ethernet" / ""
---   lastError            string     最近错误信息（5 秒自动清）
---
--- 方法：
---   toggleWifi()                    切换 WiFi 开关
---   scanWifi()                      重新扫描网络
---   connectToWifi(network)          连接指定 WiFi（已知密码自动连）
---   connectWithPassword(network, psk) 带密码连接
---   disconnectWifi()                断开当前 WiFi
---   openPublicWifiPortal()          打开强制门户网页
--- ============================================================
+// ============================================================
+// 网络服务 — Network
+// ============================================================
+// 通过 Quickshell.Networking 原生绑定与 NetworkManager D-Bus 通信。
+// 提供 WiFi / 以太网的状态、扫描、连接、密码认证。
+// ============================================================
+// 对外接口一览：
+//
+// 属性（readonly）：
+//   wifiEnabled          bool       WiFi 是否开启（硬件+软件）
+//   wifiHardwareEnabled  bool       硬件开关状态
+//   wifiScanning         bool       是否正在扫描网络
+//   wifiNetworks         model      可用 WiFi 网络列表（已排序：已连接 > 信号强）
+//   ethernetConnected    bool       以太网是否连接
+//   ethernetName         string     以太网连接名（空 = 未连接）
+//   ethernetLinkSpeed    int        以太网链路速率（Mbps）
+//   activeConnection     string     当前连接类型："wifi" / "ethernet" / ""
+//   lastError            string     最近错误信息（5 秒自动清）
+//
+// 方法：
+//   toggleWifi()                    切换 WiFi 开关
+//   scanWifi()                      重新扫描网络
+//   connectToWifi(network)          连接指定 WiFi（已知密码自动连）
+//   connectWithPassword(network, psk) 带密码连接
+//   disconnectWifi()                断开当前 WiFi
+//   openPublicWifiPortal()          打开强制门户网页
+// ============================================================
 
 import QtQuick
 import Quickshell
@@ -67,7 +67,7 @@ Singleton {
 
     property string _lastError: ""
 
-    -- 已排序的 WiFi 网络列表：已连接优先，然后按信号强度降序
+    // 已排序的 WiFi 网络列表：已连接优先，然后按信号强度降序
     readonly property var wifiNetworks: {
         if (!_wifiDevice || !_wifiDevice.networks) return []
         const arr = []

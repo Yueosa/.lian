@@ -6,7 +6,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import qsl.data.state
+import qs.data.state
+import qs.ui.freewindow
 
 FreeWindow {
     id: root

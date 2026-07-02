@@ -1,27 +1,27 @@
 pragma Singleton
 
--- ============================================================
--- 日历服务 — Calendar
--- ============================================================
--- 中国法定节假日日历。数据来自 asset/calendar/<year>.json。
--- 每年更新 JSON 文件即可，无需编译。
--- ============================================================
--- 对外接口一览：
---
--- 属性（readonly）：
---   displayYear    int      当前显示年份
---   displayMonth   int      当前显示月份（1-12）
---   monthTitle     string   月份标题  "2026 / 7"
---   sourceTitle    string   数据来源标题
---   sourceUrl      string   数据来源 URL
---   days           model    当月日期列表 [{year,month,day,weekday,label,isHoliday,isWorkday,isToday}]
---
--- 方法：
---   setMonth(year, month)   设置显示月份
---   previousMonth()         上个月
---   nextMonth()             下个月
---   resetToToday()          回到本月
--- ============================================================
+// ============================================================
+// 日历服务 — Calendar
+// ============================================================
+// 中国法定节假日日历。数据来自 asset/calendar/<year>.json。
+// 每年更新 JSON 文件即可，无需编译。
+// ============================================================
+// 对外接口一览：
+//
+// 属性（readonly）：
+//   displayYear    int      当前显示年份
+//   displayMonth   int      当前显示月份（1-12）
+//   monthTitle     string   月份标题  "2026 / 7"
+//   sourceTitle    string   数据来源标题
+//   sourceUrl      string   数据来源 URL
+//   days           model    当月日期列表 [{year,month,day,weekday,label,isHoliday,isWorkday,isToday}]
+//
+// 方法：
+//   setMonth(year, month)   设置显示月份
+//   previousMonth()         上个月
+//   nextMonth()             下个月
+//   resetToToday()          回到本月
+// ============================================================
 
 import QtQuick
 import Quickshell

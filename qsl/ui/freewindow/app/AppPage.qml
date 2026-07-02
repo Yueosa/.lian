@@ -5,8 +5,8 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import qsl.data.state
-import qsl.data.free-window.app
+import qs.data.state
+import qs.data.freewindow.app
 
 Item {
     id: root
