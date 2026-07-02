@@ -53,10 +53,10 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("mkdir -p " .. screenshotDir)
 
     -- 5. Layer 3 GUI 应用
-    hl.exec_cmd("kanshi")                            -- 多显示器自动配置
-    hl.exec_cmd("mihomo-party")                      -- 代理客户端
-    hl.exec_cmd("lianclaw")                          -- 自研工具
-    hl.exec_cmd("tuxedo-control-center --tray")      -- TUXEDO 硬件控制托盘
+    hl.exec_cmd("kanshi")                               -- 多显示器自动配置
+    hl.exec_cmd("mihomo-party")                         -- 代理客户端
+    hl.exec_cmd("/home/Sakurine/.local/bin/lianclaw")   -- 自研工具
+    hl.exec_cmd("tuxedo-control-center --tray")         -- TUXEDO 硬件控制托盘
 end)
 
 
