@@ -1,7 +1,7 @@
 // FreeWindow — 弹出窗口壳
 //
-// 统一：颜色 / 圆角 / 动画
-// 21:9 卡牌从底部滑入，fastIn 曲线
+// 统一：颜色 / 圆角 / 动画 / 焦点管理
+// 原 qs Launcher 的动画曲线：入场 OutBack(0.3) / 退场 InBack(0.1)
 
 import QtQuick
 import Quickshell
@@ -21,40 +21,36 @@ PanelWindow {
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
     // ============================================================
-    // 几何 (21:9)
+    // 几何 (16:9)
     // ============================================================
 
-    readonly property int frameWidth:  Math.min(width  - 80,  Math.max(1200, Math.round(frameHeight * 21 / 9)))
-    readonly property int frameHeight: Math.min(700, Math.max(560,  height - 100))
-    readonly property int closedOffset: Math.round(height * 0.5 + frameHeight * 0.5 + 40)
+    readonly property int frameWidth:  Math.min(width  - 80, Math.max(1100, Math.round(frameHeight * 16 / 9)))
+    readonly property int frameHeight: Math.min(700, Math.max(620,  height - 120))
+    readonly property int closedOffset: Math.round(height * 0.5 + frameHeight * 0.5 + 48)
 
     // ============================================================
     // 状态
     // ============================================================
 
     property bool open: false
-    property bool fadingOut: false   // Enter 启动应用时的退场动画状态
 
-    function toggle()  { open ? closeWindow() : openWindow() }
-    function openWindow()   { open = true  }
-    function closeWindow()  { open = false; fadingOut = false }
-    function quickClose()   { fadingOut = true }  // Enter 启动 → 渐变消失
+    function toggle()        { open ? closeWindow() : openWindow() }
+    function openWindow()    { open = true }
+    function closeWindow()   { open = false }
 
     // ============================================================
-    // 动画 — fastIn (cubic-bezier(0.16, 1, 0.3, 1))
-    //     Behavior on slide 替代 states/transitions（PanelWindow 不支持 transitions）
+    // 动画 — 原 qs Launcher 曲线
+    //     入场: 从下方滑入, OutBack overshoot=0.3
+    //     退场: 向下方滑出, InBack overshoot=0.1
+    // ============================================================
 
-    property int slide: -closedOffset
+    property int slide: closedOffset
 
     Behavior on slide {
-        enabled: !root.fadingOut
-        NumberAnimation { duration: root.slide === 0 ? Size.anim.smooth : Size.anim.normal; easing: Size.anim.fastIn }
+        NumberAnimation { duration: open ? 500 : 350; easing.type: open ? Easing.OutBack : Easing.InBack; easing.overshoot: open ? 0.3 : 0.1 }
     }
 
-    onOpenChanged: {
-        if (open) slide = 0
-        else if (!fadingOut) slide = -closedOffset
-    }
+    onOpenChanged: slide = open ? 0 : closedOffset
 
     // ============================================================
     // Esc 关闭
@@ -68,7 +64,7 @@ PanelWindow {
     }
 
     // ============================================================
-    // 卡牌容器 — 子 Item 自动成为此 Rectangle 的子元素
+    // 卡牌容器（子元素自动成为 card 的子元素）
     // ============================================================
 
     default property alias content: card.data
@@ -81,12 +77,6 @@ PanelWindow {
         color: Qt.rgba(Color.surfaceHigh.r, Color.surfaceHigh.g, Color.surfaceHigh.b, 0.95)
         radius: Size.rounding.xl
         clip: true
-        opacity: root.fadingOut ? 0 : 1
-
-        Behavior on opacity {
-            enabled: root.fadingOut
-            NumberAnimation { duration: Size.anim.normal; easing: Size.anim.fastIn }
-        }
 
         border.color: Color.outlineVariant
         border.width: 1
