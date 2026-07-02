@@ -101,16 +101,28 @@ qsl/
 │       └── # PowerProfiles      #     电源模式——TUXEDO 笔记本走 tuxedo-control-center，
 │                                #     台式机未来可用 Quickshell.UPower PowerProfiles
 │
-├── ui/                        # UI 层：所有窗口/面板
-│   ├── bar/                   #   顶栏
-│   ├── island/                #   灵动岛（Hub/Switcher/Lyrics...）
-│   ├── launcher/              #   启动器（应用 + Emoji）
-│   ├── lock/                  #   锁屏
-│   ├── sidebar/               #   左侧栏（系统 + 天气）
-│   ├── quicksettings/         #   右侧快捷设置
-│   ├── clipboard/             #   剪贴板
-│   ├── capture/               #   截图/录制菜单
-│   └── notif/                 #   通知弹出
+├── ui/                        # UI 层：按视觉嵌套层级组织
+│   ├── bar/                   #   L1 顶栏
+│   ├── launcher/              #   L1 启动器
+│   ├── left-dock/             #   L2 左停靠区（工作区/窗口）
+│   ├── right-dock/            #   L2 右停靠区（Tray）
+│   ├── left-sidebar/          #   L3 左侧栏
+│   │   ├── lianclaw/
+│   │   ├── sysmon/
+│   │   └── weather/
+│   ├── right-sidebar/         #   L3 右侧栏
+│   │   ├── network/
+│   │   ├── bluetooth/
+│   │   └── audio/
+│   ├── notif-panel/           #   L3 通知面板
+│   ├── island/                #   L5 灵动岛
+│   │   ├── overview/
+│   │   ├── media/
+│   │   ├── wallpaper/
+│   │   ├── weather/
+│   │   └── switcher/
+│   ├── lock/                  #   锁屏（独立）
+│   └── capture/               #   截图/录制（独立）
 │
 ├── component/                 # 可复用 QML 组件
 │   ├── svg-icon.qml
