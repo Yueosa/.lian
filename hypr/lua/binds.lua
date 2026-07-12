@@ -173,6 +173,8 @@ hl.bind(mainMod .. " + SHIFT + left", sh(workspaceTool .. " down"))
 hl.bind(mainMod .. " + SHIFT + right", sh(workspaceTool .. " up"))
 -- 下一个空工作区
 hl.bind(mainMod .. " + SHIFT + down", sh(workspaceTool .. " empty"))
+-- 上一个空工作区
+hl.bind(mainMod .. " + SHIFT + up", sh(workspaceTool .. " empty-max"))
 
 -- Super+数字键 → 跳到工作区 N（Super+0 = 工作区 10）
 -- Super+Shift+数字键 → 移动窗口到工作区 N

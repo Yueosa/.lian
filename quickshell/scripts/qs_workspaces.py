@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Hyprland 工作区滚轮切换 / 跳到最小空 workspace。
+"""Hyprland 工作区滚轮切换 / 跳到最小或最大空 workspace。
 
-用法：qs_workspaces [up|down|empty]
-- up/down：在「有窗口的工作区 + 当前工作区」中循环切换
-- empty：  跳到 1..10 中数值最小的空工作区
+用法：qs_workspaces [up|down|empty|empty-max]
+- up/down：   在「有窗口的工作区 + 当前工作区」中循环切换
+- empty：     跳到 1..10 中数值最小的空工作区
+- empty-max： 跳到 1..10 中数值最大的空工作区
 
 外部依赖：hyprctl。无任何配置文件 / 环境变量。
 """
@@ -47,7 +48,7 @@ def main() -> int:
 
     active_id = int(active.get("id") or 0)
 
-    if direction == "empty":
+    if direction in ("empty", "empty-max"):
         occupied: set[int] = set()
         for w in workspaces:
             try:
@@ -56,7 +57,8 @@ def main() -> int:
                 continue
             if wid > 0:
                 occupied.add(wid)
-        for candidate in range(1, 11):
+        candidates = range(1, 11) if direction == "empty" else range(10, 0, -1)
+        for candidate in candidates:
             if candidate not in occupied:
                 _switch_workspace(candidate)
                 return 0
