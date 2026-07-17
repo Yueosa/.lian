@@ -13,12 +13,8 @@ FreeWindow {
     shellNamespace: "qsl-app"
 
     onOpenChanged: {
-        if (open) {
-            Qt.callLater(function() {
-                if (appPage.forceSearchFocus)
-                    appPage.forceSearchFocus()
-            })
-        }
+        if (open)
+            Qt.callLater(function() { appPage.reset() })
     }
 
     Rectangle {

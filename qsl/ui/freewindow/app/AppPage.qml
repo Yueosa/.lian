@@ -1,6 +1,7 @@
 // AppPage — 应用搜索列表（FreeWindow 右栏）
 // 视觉沿用旧 UnifiedLauncher AppPage；无底部按键提示
-// 动画：高亮移动 / 列表过渡 / 选中缩放 / Enter 脉冲
+// 动画：高亮移动 / 列表过渡 / 选中缩放
+//       Enter：选中项留下放大，其余项右滑淡出
 
 import QtQuick
 import QtQuick.Layouts
@@ -19,15 +20,39 @@ Item {
     readonly property int itemHeight: 56
     readonly property int searchHeight: 40
     readonly property int iconSize: 36
+    readonly property int exitSlide: 72
+    readonly property int launchAnimMs: 180
     readonly property int visibleCount: appList.height > 0
         ? Math.max(1, Math.floor(appList.height / itemHeight))
         : 10
+
+    // 启动动画中：禁止重复触发 / 方向键
+    property bool launching: false
+    property int launchIndex: -1
+    // reset 时关掉 Behavior，避免再打开时看到回弹
+    property bool animEnabled: true
 
     function forceSearchFocus() {
         searchInput.forceActiveFocus()
     }
 
+    // 每次打开窗口：清空搜索、恢复完整列表、选中第一项
+    function reset() {
+        animEnabled = false
+        launching = false
+        launchIndex = -1
+        if (searchInput.text !== "")
+            searchInput.text = ""
+        else
+            refresh("")
+        appList.currentIndex = 0
+        forceSearchFocus()
+        Qt.callLater(function() { root.animEnabled = true })
+    }
+
     function refresh(query) {
+        if (launching)
+            return
         searchText = query || ""
         filteredModel = Apps.search(searchText)
         appList.currentIndex = 0
@@ -44,6 +69,8 @@ Item {
     }
 
     function runSelectedApp() {
+        if (launching)
+            return
         if (filteredModel.length === 0 || appList.currentIndex < 0)
             return
 
@@ -51,8 +78,10 @@ Item {
         if (!appData || !appData.appObj)
             return
 
-        // Enter 脉冲后再启动，避免动画被关窗掐断
-        enterPulse.targetIndex = appList.currentIndex
+        launching = true
+        launchIndex = appList.currentIndex
+        // 退场动画播完再真正启动
+        enterPulse.targetIndex = launchIndex
         enterPulse.restart()
     }
 
@@ -104,7 +133,7 @@ Item {
     Timer {
         id: enterPulse
         property int targetIndex: -1
-        interval: 130
+        interval: root.launchAnimMs
         repeat: false
         onTriggered: root.launchAt(targetIndex)
     }
@@ -153,11 +182,27 @@ Item {
                     onTextChanged: root.refresh(text)
                     Keys.onReturnPressed: (event) => { root.runSelectedApp(); event.accepted = true }
                     Keys.onEnterPressed: (event) => { root.runSelectedApp(); event.accepted = true }
-                    Keys.onUpPressed: (event) => { appList.prev(); event.accepted = true }
-                    Keys.onDownPressed: (event) => { appList.next(); event.accepted = true }
-                    Keys.onLeftPressed: (event) => { appList.pageUp(); event.accepted = true }
-                    Keys.onRightPressed: (event) => { appList.pageDown(); event.accepted = true }
-                    Keys.onEscapePressed: (event) => { root.closeRequested(); event.accepted = true }
+                    Keys.onUpPressed: (event) => {
+                        if (!root.launching) appList.prev()
+                        event.accepted = true
+                    }
+                    Keys.onDownPressed: (event) => {
+                        if (!root.launching) appList.next()
+                        event.accepted = true
+                    }
+                    Keys.onLeftPressed: (event) => {
+                        if (!root.launching) appList.pageUp()
+                        event.accepted = true
+                    }
+                    Keys.onRightPressed: (event) => {
+                        if (!root.launching) appList.pageDown()
+                        event.accepted = true
+                    }
+                    Keys.onEscapePressed: (event) => {
+                        if (!root.launching)
+                            root.closeRequested()
+                        event.accepted = true
+                    }
                 }
 
                 Text {
@@ -234,11 +279,26 @@ Item {
                 height: root.itemHeight
 
                 readonly property bool current: ListView.isCurrentItem
-                readonly property bool pulsing: enterPulse.running && enterPulse.targetIndex === index
-                readonly property real contentScale: pulsing ? 1.12 : (current ? 1.06 : 1.0)
+                readonly property bool chosen: root.launching && index === root.launchIndex
+                readonly property bool exiting: root.launching && index !== root.launchIndex
+                readonly property real contentScale: chosen ? 1.12 : (current && !root.launching ? 1.06 : 1.0)
+
+                // 未选中项：向右滑出并淡出
+                opacity: exiting ? 0 : 1
+                x: exiting ? root.exitSlide : 0
+
+                Behavior on opacity {
+                    enabled: root.animEnabled
+                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                }
+                Behavior on x {
+                    enabled: root.animEnabled
+                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                }
 
                 MouseArea {
                     anchors.fill: parent
+                    enabled: !root.launching
                     onClicked: {
                         appList.currentIndex = index
                         root.runSelectedApp()
@@ -255,6 +315,7 @@ Item {
                     transformOrigin: Item.Left
 
                     Behavior on scale {
+                        enabled: root.animEnabled
                         NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
                     }
 
