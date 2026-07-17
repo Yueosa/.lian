@@ -129,15 +129,15 @@ hl.bind(mainMod .. " + N", qs("notif", "toggle"))
 -- 截图 / 录制
 -- ============================================================
 
--- 区域截图
-hl.bind("CTRL + ALT + A", qs("island", "captureshot region"))
+local captureSh = "$HOME/.lian/qsl/scripts/capture.sh"
+
+-- 区域截图（不经 qs，零常驻开销）
+hl.bind("CTRL + ALT + A", sh("bash " .. captureSh .. " shot region"))
 -- 全屏截图
-hl.bind("CTRL + ALT + Q", qs("island", "captureshot full"))
--- 全屏录制 开始/停止
+hl.bind("CTRL + ALT + Q", sh("bash " .. captureSh .. " shot full"))
+-- 录制 / 菜单：仍走生产 qs island，待废弃，不迁 qsl（有 OBS 了）
 hl.bind("CTRL + ALT + R", qs("island", "capturerecordtoggle video full"))
--- 录制状态键（空闲→菜单 / 录制中→暂停 / 暂停→恢复）
 hl.bind("CTRL + ALT + S", qs("island", "capturestatekey"))
--- 强制停止录制并保存
 hl.bind("CTRL + ALT + SHIFT + S", qs("island", "captureforcestop"))
 
 
