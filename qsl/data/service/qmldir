@@ -3,6 +3,7 @@ singleton Bluetooth 1.0 Bluetooth.qml
 singleton Calendar 1.0 Calendar.qml
 singleton Cava 1.0 Cava.qml
 singleton Hotkeys 1.0 Hotkeys.qml
+singleton Lianwall 1.0 Lianwall.qml
 singleton Lyrics 1.0 Lyrics.qml
 singleton Media 1.0 Media.qml
 singleton Network 1.0 Network.qml

@@ -4,9 +4,10 @@ EarCanvas 1.0 EarCanvas.qml
 HubContent 1.0 HubContent.qml
 HubPlaceholder 1.0 HubPlaceholder.qml
 LyricsContent 1.0 LyricsContent.qml
+MediaPage 1.0 MediaPage.qml
 NotifToastContent 1.0 NotifToastContent.qml
 OverviewCalendar 1.0 OverviewCalendar.qml
 OverviewPage 1.0 OverviewPage.qml
+WallpaperPage 1.0 WallpaperPage.qml
 WeatherIcon 1.0 WeatherIcon.qml
 WeatherPage 1.0 WeatherPage.qml
-MediaPage 1.0 MediaPage.qml

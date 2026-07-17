@@ -194,7 +194,7 @@ FocusScope {
     }
     Component {
         id: wallpaperComp
-        HubPlaceholder { title: "Wallpaper"; hint: "待从旧 qs 搬迁" }
+        WallpaperPage {}
     }
     Component {
         id: weatherComp
