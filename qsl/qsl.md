@@ -183,7 +183,7 @@ qsl/
 
 `Color` / `Size` 是 App 的前置依赖，先恢复，再写 UI。
 
-- `Color`：继续 matugen / light / dark；App 只用语义色
+- `Color`：只跟 matugen JSON；挂了用硬编码兜底（无 light/dark 切换）
   - 卡片：`surfaceHigh`
   - 搜索框：`surfaceHighest` / `surfaceVariant` 半透明
   - 高亮：`primary` + `onPrimary`

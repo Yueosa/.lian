@@ -12,8 +12,8 @@ config.md
 plan.md
 architecture-rfc.md
 
-# TODO.md：仓库整理计划（本地草稿）
-TODO.md
+# TODO.md：仓库根目录整理计划（本地草稿）；qsl/TODO.md 可入库
+/TODO.md
 
 # FEATURES.md：功能速记（本地草稿）
 FEATURES.md

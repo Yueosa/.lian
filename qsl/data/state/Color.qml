@@ -3,18 +3,19 @@ pragma Singleton
 // ============================================================
 // 配色方案 — Color
 // ============================================================
-// auto 模式读取 ~/.cache/quickshell_colors.json（lianwall → update_theme_from_wallpaper.sh）
+// 只吃 matugen 产物：~/.cache/quickshell_colors.json
+// （lianwall → update_theme_from_wallpaper.sh）
+// 无 light/dark 切换；JSON 缺失或损坏时用硬编码兜底。
 //
 // 注意：不要用 onSurface / onPrimary 这种属性名。
 // QML 会把 onXxx 当成 Xxx 的信号处理器，导致颜色读到默认黑。
 // ============================================================
-// 对外接口一览：
-//
-// 模式：mode = "auto" / "light" / "dark"
-// 文本：text / textMuted / textOnPrimary
-// 表面：background / surface / surfaceHigh / surfaceHighest
-// 品牌：primary / secondary / tertiary / error
-// 装饰：outline / outlineVariant / secondaryFixed / shadow
+// 对外接口：
+//   text / textMuted / textOnPrimary / textOnBackground
+//   background / surface / surfaceHigh / surfaceHighest
+//   primary / secondary / tertiary / error
+//   outline / outlineVariant / secondaryFixed / shadow
+//   withAlpha(base, alpha)
 // ============================================================
 
 import QtQuick
@@ -24,28 +25,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property string mode: "auto"
-
-    readonly property var _lightPalette: ({
-        primary: "#b53f80",
-        on_primary: "#ffffff",
-        background: "#f7f8ff",
-        surface: "#fbf8ff",
-        surface_container_high: "#efecf7",
-        surface_container_highest: "#e8e6f2",
-        on_background: "#1b1d2a",
-        on_surface: "#1b1d2a",
-        on_surface_variant: "#44485c",
-        secondary: "#4d5ba7",
-        tertiary: "#8a4d84",
-        error: "#ba1a1a",
-        outline: "#74788d",
-        outline_variant: "#c4c7dc",
-        secondary_fixed: "#d879b2",
-        shadow: "#d879b2",
-    })
-
-    readonly property var _darkPalette: ({
+    // matugen 挂掉时的唯一兜底（非可切换主题）
+    readonly property var _fallbackPalette: ({
         primary: "#88d0ec",
         on_primary: "#003544",
         background: "#0f1416",
@@ -64,7 +45,7 @@ Singleton {
         shadow: "#000000",
     })
 
-    property var _palette: root._darkPalette
+    property var _palette: root._fallbackPalette
     property int revision: 0
 
     readonly property color primary: _c("primary")
@@ -80,7 +61,6 @@ Singleton {
     readonly property color secondaryFixed: _c("secondary_fixed")
     readonly property color shadow: _c("shadow")
 
-    // 文本色：避开 onXxx 命名
     readonly property color text: _c("on_surface")
     readonly property color textMuted: _c("on_surface_variant")
     readonly property color textOnPrimary: _c("on_primary")
@@ -105,15 +85,11 @@ Singleton {
         revision += 1
     }
 
-    function reloadFromMode() {
-        if (mode === "light") {
-            applyPalette(_lightPalette)
-            return
-        }
-        if (mode === "dark") {
-            applyPalette(_darkPalette)
-            return
-        }
+    function applyFallback() {
+        applyPalette(_fallbackPalette)
+    }
+
+    function reloadColors() {
         _colorFile.reload()
     }
 
@@ -127,23 +103,24 @@ Singleton {
         path: root._colorFilePath
         watchChanges: true
         onLoaded: {
-            if (root.mode !== "auto")
-                return
             try {
                 const text = _colorFile.text()
-                if (!text)
+                if (!text) {
+                    root.applyFallback()
                     return
+                }
                 const parsed = JSON.parse(text)
-                if (!parsed || Object.keys(parsed).length < 5)
+                if (!parsed || Object.keys(parsed).length < 5) {
+                    root.applyFallback()
                     return
+                }
                 root.applyPalette(parsed)
-            } catch (e) {}
+            } catch (e) {
+                root.applyFallback()
+            }
         }
         onFileChanged: reload()
-        onLoadFailed: {
-            if (root.mode === "auto")
-                root.applyPalette(root._darkPalette)
-        }
+        onLoadFailed: root.applyFallback()
     }
 
     FileView {
@@ -157,12 +134,8 @@ Singleton {
         id: colorSettle
         interval: 600
         repeat: false
-        onTriggered: {
-            if (root.mode === "auto")
-                _colorFile.reload()
-        }
+        onTriggered: root.reloadColors()
     }
 
-    onModeChanged: reloadFromMode()
-    Component.onCompleted: reloadFromMode()
+    Component.onCompleted: root.reloadColors()
 }
