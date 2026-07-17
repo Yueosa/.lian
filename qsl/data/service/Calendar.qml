@@ -76,7 +76,7 @@ Singleton {
                 root._holidays = h
                 root._workdays = w
                 root._festivals = f
-                root._allDates = Object.keys({...h, ...w, ...f}).sort()
+                root._allDates = Object.keys(Object.assign({}, h, w, f)).sort()
 
                 resetToToday()
             } catch (e) {}

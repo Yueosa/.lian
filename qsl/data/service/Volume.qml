@@ -65,7 +65,7 @@ Singleton {
     readonly property real sinkVolume: Pipewire.defaultAudioSink
         ? Pipewire.defaultAudioSink.audio.volume : 0
 
-    function setSinkVolume(volume: real) {
+    function setSinkVolume(volume) {
         const safe = Math.max(0.0, Math.min(1.0, volume))
         if (Pipewire.defaultAudioSink) {
             Pipewire.defaultAudioSink.audio.volume = safe
@@ -74,14 +74,16 @@ Singleton {
         }
     }
 
-    function volumeUp(step: real = 0.05) {
+    function volumeUp(step) {
+        const s = step === undefined ? 0.05 : step
         if (Pipewire.defaultAudioSink)
-            setSinkVolume((Pipewire.defaultAudioSink.audio.volume || 0) + step)
+            setSinkVolume((Pipewire.defaultAudioSink.audio.volume || 0) + s)
     }
 
-    function volumeDown(step: real = 0.05) {
+    function volumeDown(step) {
+        const s = step === undefined ? 0.05 : step
         if (Pipewire.defaultAudioSink)
-            setSinkVolume((Pipewire.defaultAudioSink.audio.volume || 0) - step)
+            setSinkVolume((Pipewire.defaultAudioSink.audio.volume || 0) - s)
     }
 
     function toggleSinkMute() {
@@ -99,7 +101,7 @@ Singleton {
     readonly property real sourceVolume: Pipewire.defaultAudioSource
         ? Pipewire.defaultAudioSource.audio.volume : 0
 
-    function setSourceVolume(volume: real) {
+    function setSourceVolume(volume) {
         const safe = Math.max(0.0, Math.min(1.0, volume))
         if (Pipewire.defaultAudioSource) {
             Pipewire.defaultAudioSource.audio.volume = safe
