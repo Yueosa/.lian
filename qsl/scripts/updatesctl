@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+# updatesctl — qsl 系统更新检查（轻量，仅用户触发）
+# 用法：
+#   updatesctl check   拉取官方+AUR → 写 ~/.cache/qsl/updates.json → stdout JSON
+#   updatesctl show    只读缓存 → stdout（无缓存则空成功态）
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "qsl"
+CACHE_FILE = CACHE_DIR / "updates.json"
+PACMAN_LOG = Path("/var/log/pacman.log")
+PKG_LIMIT = 100
+
+
+def humanize_ago(ts: int, now: int) -> str:
+    if ts <= 0:
+        return "从未"
+    delta = max(0, now - ts)
+    if delta < 60:
+        return f"{delta} 秒前"
+    if delta < 3600:
+        return f"{delta // 60} 分钟前"
+    if delta < 86400:
+        return f"{delta // 3600} 小时前"
+    return f"{delta // 86400} 天前"
+
+
+def run_capture(timeout_s: float, cmd: list[str]) -> tuple[int, str]:
+    try:
+        r = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            check=False,
+        )
+        return r.returncode, r.stdout or ""
+    except FileNotFoundError:
+        return 127, ""
+    except subprocess.TimeoutExpired:
+        return 124, ""
+
+
+def parse_pkg_line(line: str) -> dict | None:
+    # checkupdates / paru: "name old -> new" 或仅 "name"
+    s = line.strip()
+    if not s:
+        return None
+    parts = s.split()
+    if not parts:
+        return None
+    name = parts[0]
+    entry: dict = {"name": name}
+    if "->" in parts:
+        i = parts.index("->")
+        if i >= 2:
+            entry["from"] = parts[i - 1]
+        if i + 1 < len(parts):
+            entry["to"] = parts[i + 1]
+    return entry
+
+
+def parse_pkg_lines(raw: str, limit: int = PKG_LIMIT) -> list[dict]:
+    out: list[dict] = []
+    for line in raw.splitlines():
+        pkg = parse_pkg_line(line)
+        if pkg:
+            out.append(pkg)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def which(name: str) -> bool:
+    return shutil.which(name) is not None
+
+
+def fetch_official() -> tuple[bool, list[dict]]:
+    # 返回 (ok, packages)
+    if which("checkupdates"):
+        rc, out = run_capture(30, ["checkupdates"])
+        # 0 = 有更新；2 = 无更新（pacman-contrib）
+        if rc in (0, 2):
+            return True, parse_pkg_lines(out)
+
+    if which("paru"):
+        rc, out = run_capture(30, ["paru", "-Qu", "--repo"])
+        if rc in (0, 1):
+            return True, parse_pkg_lines(out)
+
+    if which("pacman"):
+        rc, out = run_capture(15, ["pacman", "-Qu"])
+        if rc in (0, 1):
+            return True, parse_pkg_lines(out)
+
+    return False, []
+
+
+def fetch_aur() -> tuple[bool, list[dict]]:
+    if not which("paru"):
+        # 无 paru：AUR 计 0，不算失败
+        return True, []
+    rc, out = run_capture(30, ["paru", "-Qua"])
+    if rc in (0, 1):
+        return True, parse_pkg_lines(out)
+    return False, []
+
+
+def parse_log_epoch(line: str) -> int:
+    try:
+        if not line.startswith("["):
+            return 0
+        end = line.find("]")
+        if end <= 1:
+            return 0
+        return int(datetime.fromisoformat(line[1:end]).timestamp())
+    except Exception:
+        return 0
+
+
+def parse_last_transaction(path: Path = PACMAN_LOG) -> tuple[int, int]:
+    last_ts = 0
+    last_count = 0
+    tx_active = False
+    tx_ts = 0
+    tx_count = 0
+    try:
+        with path.open(encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if "[ALPM] transaction started" in line:
+                    tx_active = True
+                    tx_ts = parse_log_epoch(line)
+                    tx_count = 0
+                    continue
+                if not tx_active:
+                    continue
+                if "[ALPM] transaction completed" in line:
+                    done_ts = parse_log_epoch(line)
+                    last_ts = done_ts or tx_ts
+                    last_count = tx_count
+                    tx_active = False
+                    continue
+                if any(
+                    tag in line
+                    for tag in (
+                        "[ALPM] upgraded ",
+                        "[ALPM] installed ",
+                        "[ALPM] downgraded ",
+                        "[ALPM] reinstalled ",
+                    )
+                ):
+                    tx_count += 1
+    except OSError:
+        pass
+    return last_count, last_ts
+
+
+def empty_payload(now: int) -> dict:
+    return {
+        "ok": True,
+        "official": 0,
+        "aur": 0,
+        "total": 0,
+        "updated_at": 0,
+        "last_error_at": 0,
+        "official_packages": [],
+        "aur_packages": [],
+        "last_applied_count": 0,
+        "last_applied_at": 0,
+        "updated_ago": "从未",
+        "error_ago": "",
+        "last_applied_ago": "",
+    }
+
+
+def with_ago(data: dict, now: int | None = None) -> dict:
+    now = int(time.time()) if now is None else now
+    out = dict(data)
+    updated_at = int(out.get("updated_at", 0) or 0)
+    last_error_at = int(out.get("last_error_at", 0) or 0)
+    last_applied_at = int(out.get("last_applied_at", 0) or 0)
+    out["updated_ago"] = humanize_ago(updated_at, now)
+    out["error_ago"] = humanize_ago(last_error_at, now) if last_error_at > 0 else ""
+    out["last_applied_ago"] = (
+        humanize_ago(last_applied_at, now) if last_applied_at > 0 else ""
+    )
+    return out
+
+
+def write_cache(data: dict) -> None:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    # 磁盘只存核心字段，ago 每次 stdout 现算
+    disk = {
+        "ok": bool(data.get("ok", True)),
+        "official": int(data.get("official", 0)),
+        "aur": int(data.get("aur", 0)),
+        "total": int(data.get("total", 0)),
+        "updated_at": int(data.get("updated_at", 0)),
+        "last_error_at": int(data.get("last_error_at", 0)),
+        "official_packages": data.get("official_packages") or [],
+        "aur_packages": data.get("aur_packages") or [],
+        "last_applied_count": int(data.get("last_applied_count", 0)),
+        "last_applied_at": int(data.get("last_applied_at", 0)),
+    }
+    tmp = CACHE_FILE.with_suffix(f".tmp.{os.getpid()}")
+    try:
+        tmp.write_text(json.dumps(disk, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, CACHE_FILE)
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def read_cache() -> dict | None:
+    try:
+        return json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def cmd_check() -> int:
+    now = int(time.time())
+    off_ok, off_pkgs = fetch_official()
+    aur_ok, aur_pkgs = fetch_aur()
+    ok = off_ok and aur_ok
+    official = len(off_pkgs) if off_ok else 0
+    aur = len(aur_pkgs) if aur_ok else 0
+    last_applied_count, last_applied_at = parse_last_transaction()
+
+    data = {
+        "ok": ok,
+        "official": official,
+        "aur": aur,
+        "total": official + aur,
+        "updated_at": now if ok else int((read_cache() or {}).get("updated_at", 0) or 0),
+        "last_error_at": 0 if ok else now,
+        "official_packages": off_pkgs if off_ok else [],
+        "aur_packages": aur_pkgs if aur_ok else [],
+        "last_applied_count": last_applied_count,
+        "last_applied_at": last_applied_at,
+    }
+    # 失败时尽量保留上次成功的包列表
+    if not ok:
+        prev = read_cache()
+        if prev and not off_ok:
+            data["official"] = int(prev.get("official", 0) or 0)
+            data["official_packages"] = prev.get("official_packages") or []
+        if prev and not aur_ok:
+            data["aur"] = int(prev.get("aur", 0) or 0)
+            data["aur_packages"] = prev.get("aur_packages") or []
+        data["total"] = int(data["official"]) + int(data["aur"])
+
+    write_cache(data)
+    print(json.dumps(with_ago(data, now), ensure_ascii=False))
+    return 0
+
+
+def cmd_show() -> int:
+    now = int(time.time())
+    data = read_cache()
+    if data is None:
+        print(json.dumps(empty_payload(now), ensure_ascii=False))
+        return 0
+    print(json.dumps(with_ago(data, now), ensure_ascii=False))
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2 or argv[1] in ("-h", "--help", "help"):
+        print("usage: updatesctl check|show", file=sys.stderr)
+        return 2
+    cmd = argv[1]
+    if cmd == "check":
+        return cmd_check()
+    if cmd == "show":
+        return cmd_show()
+    print(f"unknown command: {cmd}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

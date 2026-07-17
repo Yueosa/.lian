@@ -5,4 +5,5 @@ singleton Media 1.0 Media.qml
 singleton Network 1.0 Network.qml
 singleton Notification 1.0 Notification.qml
 singleton Time 1.0 Time.qml
+singleton Updates 1.0 Updates.qml
 singleton Volume 1.0 Volume.qml

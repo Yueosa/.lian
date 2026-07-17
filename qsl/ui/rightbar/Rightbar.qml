@@ -382,9 +382,6 @@ PanelWindow {
     }
     Component {
         id: updatesPage
-        PlaceholderPage {
-            viewId: "updates"
-            hint: "包列表按需拉取；打开本页或手动刷新时才检查更新。"
-        }
+        UpdatesPage {}
     }
 }

@@ -62,7 +62,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] **Network** — 接 `data/service/Network`（开关 / 扫描 / 列表 / 密码展开 / nmtui）
 - [x] **Bluetooth** — 接 `data/service/Bluetooth`（开关 / 扫描 / 已连接·已配对·附近 / 忘记 / blueman）
 - [x] **Audio** — 接 `data/service/Volume`（总输出/麦克风/应用混音；设备路由 → pavucontrol）
-- [ ] **Updates** — 新建轻量 `updatesctl` + 缓存 JSON；**仅打开页/手动刷新**时拉取；ListView 展示 repo/AUR；关页 release
+- [x] **Updates** — `updatesctl` + 缓存 JSON；开页/手动刷新拉取；列表 repo/AUR；齿轮 `tcr`→Syu
 
 ### Bar 右侧（Rightbar 页面可用后再做）
 
@@ -97,5 +97,5 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 |---|---|
 | Network / Bluetooth / Volume / Battery / Media / Time / Calendar / Notification | service 已有 |
 | Color | 只跟 matugen JSON；无 mode 切换 |
-| Updates | **还没有** service / backend，做 Updates 页时再补 |
+| Updates | `updatesctl` + `data/service/Updates`；按需拉取 |
 | Battery | 有 service，但不进 Rightbar |
