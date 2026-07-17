@@ -374,10 +374,7 @@ PanelWindow {
     }
     Component {
         id: btPage
-        PlaceholderPage {
-            viewId: "bluetooth"
-            hint: "设备扫描、配对与连接将接 Bluetooth service。"
-        }
+        BluetoothPage {}
     }
     Component {
         id: audioPage
