@@ -308,6 +308,9 @@ PanelWindow {
                                 const p = modelData.imagePath || ""
                                 if (!p)
                                     return ""
+                                // qsimage 句柄随进程失效；DB/缓存里残留的直接丢掉走 fallback 字标
+                                if (p.indexOf("image://qsimage") === 0)
+                                    return ""
                                 if (p.startsWith("file://") || p.startsWith("image://"))
                                     return p
                                 if (p.startsWith("/"))
@@ -461,8 +464,11 @@ PanelWindow {
                                         font.pixelSize: Size.fontSize.sm
                                         elide: Text.ElideRight
                                         maximumLineCount: 1
-                                        visible: (modelData.body || "").length > 0
-                                        height: visible ? implicitHeight : 0
+                                        wrapMode: Text.NoWrap
+                                        // 单行高度用字号推算，避开 height↔implicitHeight 环
+                                        //（elide 时 Text 的 implicitHeight 会跟 height 互相拉）
+                                        height: text.length > 0 ? Math.ceil(font.pixelSize * 1.35) : 0
+                                        visible: text.length > 0
                                     }
                                 }
 
