@@ -1,6 +1,6 @@
 // Workspaces — 左上角工作区指示器
 // 非活动：灰点 / 有窗短胶囊；活动：缺口甜甜圈慢转
-// 切入时加速 + 缺口变大，再缓回稳定
+// 切入时缺口张开 + 约 300ms 快转一整圈，再缓回日常转速
 //
 // 性能：最多 1 个活动项 ~30fps 轻量 stroke arc；无齿轮、无辉光层
 
@@ -125,31 +125,58 @@ Item {
                     visible: delegateRoot.active
 
                     property real spinAngle: 0
-                    property real gapDeg: 78
-                    property real spinDegPerSec: 0
-                    readonly property real idleSpeed: 42
-                    readonly property real burstSpeed: 420
-                    readonly property real idleGap: 78
-                    readonly property real burstGap: 155
+                    property real gapDeg: 70
+                    property bool flipping: false
+                    // 日常稍快；切换时另做 +360° 快转一圈
+                    readonly property real idleSpeed: 78
+                    readonly property real idleGap: 70
+                    readonly property real burstGap: 168
+                    property real spinDegPerSec: idleSpeed
+
+                    Component.onCompleted: {
+                        ring.requestPaint()
+                        if (visible)
+                            playBurst()
+                    }
 
                     onVisibleChanged: {
                         if (visible)
-                            donut.playBurst()
+                            playBurst()
                         else {
                             settleAnim.stop()
-                            spinTick.stop()
-                            spinDegPerSec = 0
+                            flipAnim.stop()
+                            flipping = false
+                            spinDegPerSec = idleSpeed
                             gapDeg = idleGap
                         }
                     }
 
                     function playBurst() {
                         settleAnim.stop()
+                        flipAnim.stop()
                         gapDeg = burstGap
-                        spinDegPerSec = burstSpeed
-                        spinTick.restart()
+                        // 从当前角快转一整圈（与 idle tick 互斥，避免抢 spinAngle）
+                        const from = ((spinAngle % 360) + 360) % 360
+                        spinAngle = from
+                        flipping = true
+                        flipAnim.from = from
+                        flipAnim.to = from + 360
+                        flipAnim.start()
                         settleAnim.start()
                         ring.requestPaint()
+                    }
+
+                    NumberAnimation {
+                        id: flipAnim
+                        target: donut
+                        property: "spinAngle"
+                        duration: 300
+                        easing.type: Easing.OutCubic
+                        onStopped: {
+                            donut.flipping = false
+                            donut.spinAngle = ((donut.spinAngle % 360) + 360) % 360
+                            donut.spinDegPerSec = donut.idleSpeed
+                        }
                     }
 
                     ParallelAnimation {
@@ -158,23 +185,17 @@ Item {
                             target: donut
                             property: "gapDeg"
                             to: donut.idleGap
-                            duration: 1000
-                            easing.type: Easing.OutCubic
-                        }
-                        NumberAnimation {
-                            target: donut
-                            property: "spinDegPerSec"
-                            to: donut.idleSpeed
-                            duration: 1200
+                            duration: 900
                             easing.type: Easing.OutCubic
                         }
                     }
 
+                    // 快转一圈期间停 tick，避免和 flipAnim 抢角度
                     Timer {
                         id: spinTick
                         interval: 33
                         repeat: true
-                        running: false
+                        running: donut.visible && !donut.flipping
                         onTriggered: {
                             const step = donut.spinDegPerSec * 0.033
                             if (step < 0.05)
@@ -188,6 +209,13 @@ Item {
                         id: ring
                         anchors.fill: parent
                         antialiasing: true
+
+                        // flipAnim 驱动 spinAngle 时也要重绘
+                        Connections {
+                            target: donut
+                            function onSpinAngleChanged() { ring.requestPaint() }
+                            function onGapDegChanged() { ring.requestPaint() }
+                        }
 
                         onPaint: {
                             const ctx = getContext("2d")
@@ -208,7 +236,6 @@ Item {
                             const pg = Color.primary.g
                             const pb = Color.primary.b
 
-                            // 实心软核，无外围半透明辉光
                             ctx.beginPath()
                             ctx.arc(cx, cy, 3.4, 0, Math.PI * 2)
                             ctx.fillStyle = Qt.rgba(pr, pg, pb, 1.0)
