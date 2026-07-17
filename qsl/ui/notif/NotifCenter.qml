@@ -151,7 +151,8 @@ PanelWindow {
             anchors.bottomMargin: 16 - anim.slide
             visible: root.contentActive
             radius: Size.rounding.xl
-            color: Color.withAlpha(Color.surfaceHigh, 0.94)
+            // 半透明会显得「浅」；略抬不透明度，边角更干净
+            color: Color.withAlpha(Color.surfaceHigh, 0.97)
             border.width: 2
             border.color: Color.secondaryFixed
             clip: true
@@ -184,7 +185,7 @@ PanelWindow {
                     // 免打扰
                     Rectangle {
                         width: 32; height: 32
-                        radius: Size.rounding.sm
+                        radius: Size.rounding.full
                         color: dndMa.containsMouse
                             ? Color.withAlpha(Color.primary, 0.18)
                             : "transparent"
@@ -208,7 +209,7 @@ PanelWindow {
                     // 清空
                     Rectangle {
                         width: 32; height: 32
-                        radius: Size.rounding.sm
+                        radius: Size.rounding.full
                         color: clearMa.containsMouse
                             ? Color.withAlpha(Color.error, 0.18)
                             : "transparent"
@@ -230,30 +231,7 @@ PanelWindow {
                             onClicked: root.clearAllAnimated()
                         }
                     }
-
-                    // 关闭
-                    Rectangle {
-                        width: 32; height: 32
-                        radius: Size.rounding.sm
-                        color: closeMa.containsMouse
-                            ? Color.withAlpha(Color.text, 0.1)
-                            : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf00d"
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.md
-                            color: Color.text
-                        }
-                        MouseArea {
-                            id: closeMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.closeWindow()
-                        }
-                    }
+                    // 关窗：Esc / 点外侧（与 Rightbar 一致，无 X）
                 }
 
                 Item {
@@ -381,7 +359,7 @@ PanelWindow {
                                 id: body
                                 width: parent.width
                                 height: root.rowHeight
-                                radius: Size.rounding.md
+                                radius: Size.rounding.lg
                                 color: rowMa.containsMouse
                                     ? Color.withAlpha(Color.surfaceHighest, 0.7)
                                     : Color.withAlpha(Color.surfaceHighest, 0.35)
@@ -396,7 +374,7 @@ PanelWindow {
                                     anchors.left: parent.left
                                     anchors.leftMargin: body.pad
                                     anchors.verticalCenter: parent.verticalCenter
-                                    radius: Size.rounding.sm
+                                    radius: Size.rounding.md
                                     color: Color.withAlpha(Color.primary, 0.15)
                                     clip: true
 

@@ -1,8 +1,12 @@
 // AppWindow — 应用启动器（Super+A）
 // 左 60% 壁纸预览 + 右 40% AppPage；无 Tab / 无按键提示 / 无左下角文案
+//
+// 圆角：右侧实心 Rectangle 自带半径即可；左侧 Image 必须 OpacityMask
+//（Item.clip / 父级 radius 都裁不住 Image）。仅 Ready 时开 layer。
 
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import qs.data.state
 import qs.ui.freewindow
@@ -21,8 +25,6 @@ FreeWindow {
         id: frame
         anchors.fill: parent
         color: "transparent"
-        radius: Size.rounding.xl
-        clip: true
 
         RowLayout {
             anchors.fill: parent
@@ -38,40 +40,56 @@ FreeWindow {
                     id: previewPaneBg
                     anchors.fill: parent
                     color: Color.surfaceHigh
-                    topLeftRadius: Size.rounding.xl
-                    bottomLeftRadius: Size.rounding.xl
+                    topLeftRadius: Size.rounding.xxl
+                    bottomLeftRadius: Size.rounding.xxl
 
-                    Image {
-                        id: wallpaperImage
+                    Item {
+                        id: wallpaperClip
                         anchors.fill: parent
-                        fillMode: Image.PreserveAspectCrop
-                        // Wallpaper.preview 已含真实路径 + ?v=，路径一变必重载
-                        source: Wallpaper.preview
-                        asynchronous: true
-                        // Item 常驻即可预热；禁用全局缓存，避免换壁纸后旧 ?v= 条目累积
-                        cache: false
-                        smooth: true
-                        sourceSize.width: Math.max(1, Math.round(previewPaneBg.width))
-                        sourceSize.height: Math.max(1, Math.round(previewPaneBg.height))
-
-                        onStatusChanged: {
-                            if (status === Image.Error && source.indexOf("current_preview") >= 0)
-                                source = Wallpaper.current
+                        layer.enabled: wallpaperImage.status === Image.Ready
+                        layer.smooth: true
+                        layer.effect: OpacityMask {
+                            maskSource: Item {
+                                width: wallpaperClip.width
+                                height: wallpaperClip.height
+                                Rectangle {
+                                    anchors.fill: parent
+                                    topLeftRadius: Size.rounding.xxl
+                                    bottomLeftRadius: Size.rounding.xxl
+                                    color: "#000000"
+                                }
+                            }
                         }
-                    }
 
-                    // 轻遮罩，只为层次，不再服务文字可读性
-                    Rectangle {
-                        anchors.fill: parent
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Color.withAlpha(Color.shadow, 0.04) }
-                            GradientStop { position: 1.0; color: Color.withAlpha(Color.shadow, 0.16) }
+                        Image {
+                            id: wallpaperImage
+                            anchors.fill: parent
+                            fillMode: Image.PreserveAspectCrop
+                            source: Wallpaper.preview
+                            asynchronous: true
+                            cache: false
+                            smooth: true
+                            sourceSize.width: Math.max(1, Math.round(previewPaneBg.width))
+                            sourceSize.height: Math.max(1, Math.round(previewPaneBg.height))
+
+                            onStatusChanged: {
+                                if (status === Image.Error && source.indexOf("current_preview") >= 0)
+                                    source = Wallpaper.current
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: Color.withAlpha(Color.shadow, 0.04) }
+                                GradientStop { position: 1.0; color: Color.withAlpha(Color.shadow, 0.16) }
+                            }
                         }
                     }
                 }
             }
 
-            // 右 40% — 列表
+            // 右 40% — 列表（实心底，半径自裁）
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -80,9 +98,8 @@ FreeWindow {
                 Rectangle {
                     anchors.fill: parent
                     color: Color.withAlpha(Color.surfaceHigh, 0.9)
-                    topRightRadius: Size.rounding.xl
-                    bottomRightRadius: Size.rounding.xl
-                    clip: true
+                    topRightRadius: Size.rounding.xxl
+                    bottomRightRadius: Size.rounding.xxl
 
                     AppPage {
                         id: appPage
@@ -100,7 +117,7 @@ FreeWindow {
             color: "transparent"
             border.color: Color.secondaryFixed
             border.width: 2
-            radius: Size.rounding.xl
+            radius: Size.rounding.xxl
         }
     }
 }

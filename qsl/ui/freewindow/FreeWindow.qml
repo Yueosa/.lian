@@ -1,7 +1,10 @@
 // FreeWindow — 弹出窗口壳
 //
-// 统一：几何 / 圆角 / 入退场动画 / Esc / 关闭时不挡点击
+// 统一：几何 / 入退场动画 / Esc / 关闭时不挡点击
 // 入场 OutBack(0.3) / 退场 InBack(0.1)
+//
+// 圆角裁切：实心底用 Rectangle.radius 即可；含 Image 的子窗（AppWindow）
+// 自己做 OpacityMask。这里不加全窗 layer，避免 1200×700 常驻离屏纹理。
 
 import QtQuick
 import Quickshell
@@ -138,7 +141,7 @@ PanelWindow {
             // 完全关闭且缓存结束后再藏，滑动过程中保持绘制
             visible: root.contentActive
             color: "transparent"
-            radius: Size.rounding.xl
+            radius: Size.rounding.xxl
             clip: true
         }
     }

@@ -29,8 +29,7 @@ FreeWindow {
         id: frame
         anchors.fill: parent
         color: Color.withAlpha(Color.surfaceHigh, 0.92)
-        radius: Size.rounding.xl
-        clip: true
+        radius: Size.rounding.xxl
 
         ClipboardPage {
             id: clipboardPage
@@ -45,7 +44,7 @@ FreeWindow {
             color: "transparent"
             border.color: Color.secondaryFixed
             border.width: 2
-            radius: Size.rounding.xl
+            radius: Size.rounding.xxl
         }
     }
 }

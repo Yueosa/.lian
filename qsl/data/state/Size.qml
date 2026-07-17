@@ -17,7 +17,7 @@ pragma Singleton
 //   fontSize.xsm ~ hero   8 级
 //
 // 圆角：
-//   rounding.xs ~ full    6 级
+//   rounding.xs ~ xxl / full    7 级
 //
 // 间距：
 //   spacing.xs ~ xl       6 级
@@ -59,15 +59,16 @@ Singleton {
     }
 
     // ============================================================
-    // 圆角（6 级）
+    // 圆角（7 级）— 略偏软，贴近旧 qs 的「圆润」观感
     // ============================================================
 
     readonly property QtObject rounding: QtObject {
-        readonly property int xs:   3     // 小标签
-        readonly property int sm:   6     // 按钮/输入框
-        readonly property int md:   10    // 卡片
-        readonly property int lg:   16    // 面板
-        readonly property int xl:   24    // 大面板
+        readonly property int xs:   4     // 小标签
+        readonly property int sm:   8     // 按钮/输入框
+        readonly property int md:   12    // 卡片内块
+        readonly property int lg:   18    // 列表卡片
+        readonly property int xl:   26    // 侧栏/通知面板
+        readonly property int xxl:  32    // 大弹窗（FreeWindow）
         readonly property int full: 9999  // 胶囊/药丸
     }
 
