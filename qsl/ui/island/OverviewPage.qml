@@ -211,59 +211,55 @@ Item {
                 }
             }
 
-            // 天气轻量占位 → 点进 Weather Tab
+            // 天气轻量预览 → Weather Tab
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Size.rounding.lg
                 color: Color.surfaceHigh
 
-                ColumnLayout {
+                RowLayout {
                     anchors.fill: parent
                     anchors.margins: 18
-                    spacing: Size.spacing.sm
+                    spacing: Size.spacing.md
 
-                    RowLayout {
+                    WeatherIcon {
+                        sourceUrl: Weather.iconSource
+                        pixelSize: 64
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: Size.spacing.sm
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 4
 
                         Text {
-                            text: "\uf185"
-                            color: Color.primary
+                            Layout.fillWidth: true
+                            text: Weather.ready ? Weather.tempText : "--"
+                            color: Color.textOnBackground
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.title
+                            font.pixelSize: 40
+                            font.weight: Font.Black
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: "天气"
-                            color: Color.textOnBackground
-                            font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.lg
-                            font.bold: true
-                        }
-                        Text {
-                            text: "\uf054"
+                            text: Weather.ready
+                                ? (Weather.weatherText + " · " + Weather.locationName)
+                                : "天气加载中…"
                             color: Color.textMuted
-                            font.family: Size.fontMono
+                            font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.md
+                            elide: Text.ElideRight
                         }
                     }
 
-                    Item { Layout.fillHeight: true }
-
                     Text {
-                        Layout.fillWidth: true
-                        text: "轻量预览即将接入"
+                        text: "\uf054"
                         color: Color.textMuted
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.md
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        text: "点击打开 Weather 页"
-                        color: Color.withAlpha(Color.textMuted, 0.7)
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
+                        font.family: Size.fontMono
+                        font.pixelSize: Size.fontSize.lg
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
 
@@ -272,6 +268,8 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Island.hubTabIndex = 3
                 }
+
+                Component.onCompleted: Weather.ensureDaemon()
             }
         }
 

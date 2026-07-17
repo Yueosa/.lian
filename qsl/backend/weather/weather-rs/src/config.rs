@@ -24,8 +24,14 @@ pub fn cmd_pipe() -> String { format!("{}/qsl/weather_cmd", runtime_dir()) }
 /// 搜索结果缓存（持久化，跨 QML/weatherd 通信）
 pub fn geocode_results_file() -> String { format!("{}/geocode_results.json", cache_dir()) }
 
-/// 天气数据刷新间隔（秒）
+/// 天气数据刷新间隔（秒）— 定时主动拉取
 pub const REFRESH_INTERVAL: u64 = 15 * 60;
+
+/// 软刷新最短间隔：缓存未过期则忽略 `refresh`（`refresh force` 除外）
+pub const MIN_REFRESH_SECS: u64 = 10 * 60;
+
+/// 遭遇 429 后推迟下次定时刷新（秒）
+pub const BACKOFF_429_SECS: u64 = 30 * 60;
 
 /// HTTP 请求超时（秒）
 pub const HTTP_TIMEOUT: u64 = 10;

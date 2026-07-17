@@ -132,7 +132,8 @@ Singleton {
         readonly property int wallpaperWidth: 860
         readonly property int wallpaperHeight: 540
         readonly property int weatherWidth: 760
-        readonly property int weatherHeight: 540
+        // 旧 540 塞不下 info(220)+分段+预报卡；Hub Loader 还有 margins
+        readonly property int weatherHeight: 580
         readonly property int switcherWidth: 900
         readonly property int switcherHeight: 540
 

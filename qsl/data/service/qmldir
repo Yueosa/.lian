@@ -9,3 +9,4 @@ singleton Sysmon 1.0 Sysmon.qml
 singleton Time 1.0 Time.qml
 singleton Updates 1.0 Updates.qml
 singleton Volume 1.0 Volume.qml
+singleton Weather 1.0 Weather.qml

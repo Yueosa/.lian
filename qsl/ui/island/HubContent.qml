@@ -198,7 +198,7 @@ FocusScope {
     }
     Component {
         id: weatherComp
-        HubPlaceholder { title: "Weather"; hint: "待从旧 qs 搬迁" }
+        WeatherPage {}
     }
     Component {
         id: switcherComp

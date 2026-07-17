@@ -14,10 +14,13 @@ JSON 结构见 `weather-rs/src/model.rs` 的 `WeatherSnapshot`。
 
 | 命令 | 行为 |
 |---|---|
-| `refresh` | 立即拉取最新数据 |
+| `refresh` | 软刷新：缓存未过期则跳过 |
+| `refresh force` | 强制拉取（UI 刷新按钮） |
 | `geocode 北京` | 搜索城市 → 结果写入 `~/.cache/qsl/geocode_results.json` |
-| `set_location 39.9 116.4 北京,中国` | QML 选择结果后调用 → 持久化 + 立即刷新 |
-| `reset_location` | 清除手动位置 → 恢复 IP 定位 |
+| `set_location 39.9 116.4 北京,中国` | QML 选择结果后调用 → 持久化 + 强制刷新 |
+| `reset_location` | 清除手动位置 → 恢复 IP 定位 + 强制刷新 |
+
+定时拉取默认 15 分钟；遇 429 退避 30 分钟。软刷新最短间隔 10 分钟。
 
 位置保存到 `~/.cache/qsl/location.json`，重启后优先使用。
 

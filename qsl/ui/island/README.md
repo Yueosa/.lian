@@ -47,10 +47,19 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 |---|---|---|
 | 用户 | QQ 头像 + hostname + Arch/uptime | 加大头像与字号 |
 | 时钟 | 问候 + HH:mm（两行） | 日期交给右栏日历 |
-| 天气 | 轻量占位，点击 → Weather Tab | 真数据随 Weather 页一起做 |
+| 天气 | 图标 + 温度 + 短文案 | `Weather` peek；点击进 Weather |
 | 主视觉 | 大日历三缓冲翻页 | prev/curr/next 预加载再滚 |
 
 **状态：已实现**（`OverviewPage` + `OverviewCalendar`）
+
+---
+
+## Weather
+
+- 后端：`weatherd` → `~/.cache/qsl/forecast.json`
+- 定位：点地名搜索（geocode）/ `reset_location` 回 IP
+- 页：`WeatherPage`（对齐旧 Island 四区；天空穹精简今日轨迹）
+- Overview：图标 + 温度轻量预览
 
 ---
 
@@ -60,7 +69,7 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 |---|---|
 | Media | 逻辑照搬；媒体 IPC（toggle/prev/next）走统一 `Media` 服务 |
 | Wallpaper | 照搬 + 轻优化；`lianwall` 封装 |
-| Weather | 照搬 |
+| Weather | **已做**（weatherd） |
 | Switcher | 照搬 + 修滚动/焦点；控制 Screencopy live 范围 |
 
 ---
@@ -108,10 +117,11 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 
 1. **壳**：耳朵 + morph + Hub 壳 + IPC — 已做
 2. **Overview** — 已做
-3. Media（+ 媒体 IPC）
-4. Wallpaper / Weather
-5. Switcher 修 bug
-6. 通知条 / 歌词条接入一级优先级
+3. **Weather** — 已做
+4. Media（+ 媒体 IPC）
+5. Wallpaper
+6. Switcher 修 bug
+7. 通知条 / 歌词条接入一级优先级
 
 ---
 

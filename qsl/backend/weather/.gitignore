@@ -1,0 +1,4 @@
+weather-rs/target/
+weather-rs/target-user/
+build/weatherd
+build/*.tmp

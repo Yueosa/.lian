@@ -5,3 +5,5 @@ HubContent 1.0 HubContent.qml
 HubPlaceholder 1.0 HubPlaceholder.qml
 OverviewCalendar 1.0 OverviewCalendar.qml
 OverviewPage 1.0 OverviewPage.qml
+WeatherIcon 1.0 WeatherIcon.qml
+WeatherPage 1.0 WeatherPage.qml
