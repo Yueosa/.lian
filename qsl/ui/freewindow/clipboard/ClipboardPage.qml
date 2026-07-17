@@ -1,10 +1,11 @@
 // ClipboardPage — 剪贴板列表（全宽 FreeWindow）
 // 文本每条一行；连续图片按一行多列分组
-// 键盘：Up/Down 跨行，Left/Right 图片行内移动，Enter 粘贴并关闭，Esc 关闭
+// 键盘：Up/Down 跨行（图片行尽量保持列），Left/Right 行内移动并在尽头换行
 // 动画：选中项留下，其余项右滑淡出后执行 paste
 //
 // 内存/性能：
-//   - 缩略图 Image cache:false + sourceSize；关窗 release 清内存，JSON 缓存留盘
+//   - 缩略图 Image cache:false + sourceSize(2×cell)；关窗 release 清内存，JSON 缓存留盘
+//   - 显示：PreserveAspectFit 原比例完整可见（letterbox），非 Crop 裁切
 //   - 圆角：cell.layer + OpacityMask（仅 Ready 时开）
 //   - ListView reuseItems；无空态文案（避免关窗闪「剪贴板为空」）
 
@@ -101,26 +102,57 @@ Item {
     }
 
     function moveDown() {
-        if (rows.length === 0)
+        if (rows.length === 0 || currentRow >= rows.length - 1)
             return
-        currentRow = Math.min(currentRow + 1, rows.length - 1)
-        currentCol = 0
+        currentRow++
+        const row = rows[currentRow]
+        if (row && row.type === "images")
+            currentCol = Math.min(currentCol, row.entries.length - 1)
+        else
+            currentCol = 0
     }
+
     function moveUp() {
+        if (rows.length === 0 || currentRow <= 0)
+            return
+        currentRow--
+        const row = rows[currentRow]
+        if (row && row.type === "images")
+            currentCol = Math.min(currentCol, row.entries.length - 1)
+        else
+            currentCol = 0
+    }
+
+    // Left/Right：图片行内移动；到尽头时换到上一行末 / 下一行首（文本行视为单格）
+    function moveLeft() {
         if (rows.length === 0)
             return
-        currentRow = Math.max(currentRow - 1, 0)
-        currentCol = 0
-    }
-    function moveLeft() {
         const row = rows[currentRow]
-        if (row && row.type === "images")
-            currentCol = Math.max(currentCol - 1, 0)
+        if (row && row.type === "images" && currentCol > 0) {
+            currentCol--
+            return
+        }
+        if (currentRow <= 0)
+            return
+        currentRow--
+        const prev = rows[currentRow]
+        currentCol = (prev && prev.type === "images")
+            ? prev.entries.length - 1
+            : 0
     }
+
     function moveRight() {
+        if (rows.length === 0)
+            return
         const row = rows[currentRow]
-        if (row && row.type === "images")
-            currentCol = Math.min(currentCol + 1, row.entries.length - 1)
+        if (row && row.type === "images" && currentCol < row.entries.length - 1) {
+            currentCol++
+            return
+        }
+        if (currentRow >= rows.length - 1)
+            return
+        currentRow++
+        currentCol = 0
     }
 
     function pasteSelected() {
@@ -417,13 +449,17 @@ Item {
                                 Image {
                                     id: thumbImg
                                     anchors.fill: parent
-                                    fillMode: Image.PreserveAspectCrop
+                                    anchors.margins: 4
+                                    // 原比例完整可见；cell 底色做 letterbox
+                                    fillMode: Image.PreserveAspectFit
                                     asynchronous: true
                                     cache: false
                                     smooth: true
+                                    mipmap: true
                                     source: modelData.thumb ? ("file://" + modelData.thumb) : ""
-                                    sourceSize.width: root.imageCellW
-                                    sourceSize.height: root.imageCellH
+                                    // 2× 解码，避免 HiDPI / 缩放发糊（磁盘 thumb 长边 ≤384）
+                                    sourceSize.width: root.imageCellW * 2
+                                    sourceSize.height: root.imageCellH * 2
                                     visible: status === Image.Ready
                                 }
 
