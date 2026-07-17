@@ -263,7 +263,7 @@ PanelWindow {
             anchors.topMargin: 56
             visible: root.contentActive
             radius: Size.rounding.xl
-            color: Color.withAlpha(Color.surfaceHigh, 0.94)
+            color: Color.withAlpha(Color.surfaceHigh, 0.97)
             border.width: 2
             border.color: Color.secondaryFixed
             clip: true
@@ -293,7 +293,7 @@ PanelWindow {
 
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            radius: Size.rounding.md
+                            radius: Size.rounding.full
                             color: selected
                                 ? Color.withAlpha(Color.primary, 0.18)
                                 : (tabMa.containsMouse
@@ -355,6 +355,13 @@ PanelWindow {
                             default: return networkPage
                             }
                         }
+
+                        // 页面请求关闭面板（如打开 nmtui）
+                        Connections {
+                            target: pageLoader.item
+                            ignoreUnknownSignals: true
+                            function onRequestClose() { root.closeWindow() }
+                        }
                     }
                 }
             }
@@ -363,10 +370,7 @@ PanelWindow {
 
     Component {
         id: networkPage
-        PlaceholderPage {
-            viewId: "network"
-            hint: "WiFi / 以太网列表与连接将接 Network service。"
-        }
+        NetworkPage {}
     }
     Component {
         id: btPage

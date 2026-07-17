@@ -3,175 +3,364 @@ pragma Singleton
 // ============================================================
 // 网络服务 — Network
 // ============================================================
-// 通过 Quickshell.Networking 原生绑定与 NetworkManager D-Bus 通信。
-// 提供 WiFi / 以太网的状态、扫描、连接、密码认证。
-// ============================================================
-// 对外接口一览：
-//
-// 属性（readonly）：
-//   wifiEnabled          bool       WiFi 是否开启（硬件+软件）
-//   wifiHardwareEnabled  bool       硬件开关状态
-//   wifiScanning         bool       是否正在扫描网络
-//   wifiNetworks         model      可用 WiFi 网络列表（已排序：已连接 > 信号强）
-//   ethernetConnected    bool       以太网是否连接
-//   ethernetName         string     以太网连接名（空 = 未连接）
-//   ethernetLinkSpeed    int        以太网链路速率（Mbps）
-//   activeConnection     string     当前连接类型："wifi" / "ethernet" / ""
-//   lastError            string     最近错误信息（5 秒自动清）
-//
-// 方法：
-//   toggleWifi()                    切换 WiFi 开关
-//   scanWifi()                      重新扫描网络
-//   connectToWifi(network)          连接指定 WiFi（已知密码自动连）
-//   connectWithPassword(network, psk) 带密码连接
-//   disconnectWifi()                断开当前 WiFi
-//   openPublicWifiPortal()          打开强制门户网页
+// Quickshell.Networking ↔ NetworkManager
+// 详情列表仅在 detailActive 时构造；关页停扫描
 // ============================================================
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Networking
 
 Singleton {
     id: root
 
-    // ============================================================
-    // 设备发现
-    //    从 Networking.devices 中找到 WiFi 和以太网设备
-    // ============================================================
+    property bool detailActive: false
+    property var passwordNetwork: null
+    property var connectTarget: null
+    property string _lastError: ""
+    // 强制列表绑定刷新（ObjectModel 增删时 count 会变；扫描中内容也可能原地更新）
+    property int _netRev: 0
+    // Quickshell 把 SSID 当 UTF-8；GBK 等会变成 U+FFFD。仅详情页按需修显示名。
+    // 开销：偶发短 Process + 很小 JSON map，不常驻扫描。
+    property var _ssidFix: ({})
+    readonly property string _ssidFixScript:
+        Quickshell.shellDir + "/scripts/wifi_ssid_fix.py"
+
+    function _isWifiDev(d) {
+        if (!d)
+            return false
+        // 优先枚举；再兜底用 WifiDevice 特有属性（避免 DeviceType 比较踩坑）
+        if (d.type === DeviceType.Wifi || d.type === 1)
+            return true
+        return typeof d.scannerEnabled === "boolean"
+    }
+
+    function _isWiredDev(d) {
+        if (!d)
+            return false
+        if (d.type === DeviceType.Wired || d.type === 2)
+            return true
+        return typeof d.hasLink === "boolean" || typeof d.linkSpeed === "number"
+    }
+
+    // ObjectModel 用 .values，没有 .count / .get()
+    function _devices() {
+        const m = Networking.devices
+        return (m && m.values) ? m.values : []
+    }
+
+    function _modelItems(model) {
+        if (!model)
+            return []
+        if (model.values)
+            return model.values
+        return []
+    }
 
     readonly property var _wifiDevice: {
-        for (let i = 0; i < Networking.devices.count; i++) {
-            const d = Networking.devices.get(i)
-            if (d && d.type === Networking.WifiDevice) return d
+        void Networking.devices.values
+        void _netRev
+        const list = _devices()
+        for (let i = 0; i < list.length; i++) {
+            if (_isWifiDev(list[i]))
+                return list[i]
         }
         return null
     }
 
     readonly property var _wiredDevice: {
-        for (let i = 0; i < Networking.devices.count; i++) {
-            const d = Networking.devices.get(i)
-            if (d && d.type === Networking.WiredDevice) return d
+        void Networking.devices.values
+        void _netRev
+        const list = _devices()
+        for (let i = 0; i < list.length; i++) {
+            if (_isWiredDev(list[i]))
+                return list[i]
         }
         return null
     }
 
-    // ============================================================
-    // WiFi 状态
-    // ============================================================
-
     readonly property bool wifiEnabled: Networking.wifiEnabled
     readonly property bool wifiHardwareEnabled: Networking.wifiHardwareEnabled
     readonly property bool wifiScanning: _wifiDevice ? _wifiDevice.scannerEnabled : false
+    readonly property bool hasWifiDevice: !!_wifiDevice
     readonly property string lastError: _lastError
 
-    property string _lastError: ""
+    // 直接把 ObjectModel 交给 ListView（比每次 new Array 更跟得上 NM 更新）
+    readonly property var wifiNetworksModel: {
+        void _netRev
+        if (!detailActive || !_wifiDevice)
+            return null
+        return _wifiDevice.networks
+    }
 
-    // 已排序的 WiFi 网络列表：已连接优先，然后按信号强度降序
+    // 仍提供排序数组，供需要排序的 UI 用
     readonly property var wifiNetworks: {
-        if (!_wifiDevice || !_wifiDevice.networks) return []
+        void _netRev
+        const items = _modelItems(wifiNetworksModel)
         const arr = []
-        for (let i = 0; i < _wifiDevice.networks.count; i++) {
-            arr.push(_wifiDevice.networks.get(i))
+        for (let i = 0; i < items.length; i++) {
+            if (items[i])
+                arr.push(items[i])
         }
         arr.sort((a, b) => {
-            if (a.connected && !b.connected) return -1
-            if (!a.connected && b.connected) return 1
-            return b.signalStrength - a.signalStrength
+            if (a.connected && !b.connected)
+                return -1
+            if (!a.connected && b.connected)
+                return 1
+            return (b.signalStrength || 0) - (a.signalStrength || 0)
         })
         return arr
     }
 
-    // ============================================================
-    // 以太网状态
-    // ============================================================
-
     readonly property bool ethernetConnected: _wiredDevice ? _wiredDevice.hasLink : false
     readonly property string ethernetName: {
-        if (!_wiredDevice || !_wiredDevice.network) return ""
+        if (!_wiredDevice || !_wiredDevice.network)
+            return ""
         return _wiredDevice.network.name || ""
     }
     readonly property int ethernetLinkSpeed: _wiredDevice ? _wiredDevice.linkSpeed : 0
 
-    // ============================================================
-    // 综合状态
-    // ============================================================
-
     readonly property string activeConnection: {
-        if (ethernetConnected && ethernetName) return "ethernet"
-        if (wifiEnabled) {
-            for (let i = 0; i < wifiNetworks.length; i++) {
-                if (wifiNetworks[i].connected) return "wifi"
-            }
-        }
+        if (ethernetConnected && ethernetName)
+            return "ethernet"
+        if (!wifiEnabled)
+            return ""
+        if (_wifiDevice && _wifiDevice.connected)
+            return "wifi"
         return ""
     }
 
-    // ============================================================
-    // WiFi 操作
-    // ============================================================
+    function displayName(network) {
+        if (!network)
+            return "未知网络"
+        const n = network.name || ""
+        if (!n)
+            return "隐藏网络"
+        const fixed = _ssidFix[n]
+        if (fixed)
+            return fixed
+        return n
+    }
+
+    function isSecure(network) {
+        if (!network)
+            return false
+        return network.security !== WifiSecurityType.Open
+            && network.security !== WifiSecurityType.Unknown
+    }
+
+    function needsPsk(network) {
+        if (!network)
+            return false
+        const s = network.security
+        return s === WifiSecurityType.WpaPsk
+            || s === WifiSecurityType.Wpa2Psk
+            || s === WifiSecurityType.Sae
+    }
+
+    function setDetailActive(active) {
+        detailActive = !!active
+        if (!detailActive) {
+            stopScan()
+            passwordNetwork = null
+            connectTarget = null
+            _ssidFix = ({})
+            return
+        }
+        _netRev++
+        if (wifiEnabled)
+            scanWifi()
+        _scheduleSsidFix()
+    }
 
     function toggleWifi() {
-        if (wifiEnabled)
-            Networking.wifiEnabled = false
-        else
-            Networking.wifiEnabled = true
+        Networking.wifiEnabled = !Networking.wifiEnabled
     }
 
     function scanWifi() {
-        if (_wifiDevice && wifiEnabled)
-            _wifiDevice.scannerEnabled = true
+        if (!_wifiDevice) {
+            _setError("未找到 WiFi 设备")
+            _netRev++
+            return
+        }
+        if (!wifiEnabled) {
+            _setError("WiFi 已关闭")
+            return
+        }
+        // 先关再开，强制触发一次扫描刷新
+        _wifiDevice.scannerEnabled = false
+        Qt.callLater(() => {
+            if (root._wifiDevice && root.wifiEnabled)
+                root._wifiDevice.scannerEnabled = true
+            root._netRev++
+            root._scheduleSsidFix()
+        })
+    }
+
+    function stopScan() {
+        if (_wifiDevice)
+            _wifiDevice.scannerEnabled = false
     }
 
     function connectToWifi(network) {
-        if (!network) return
-        // 已连接 → 断开
+        if (!network)
+            return
         if (network.connected) {
-            disconnectWifi()
+            network.disconnect()
+            cancelPassword()
+            connectTarget = null
             return
         }
-        // 已知网络 → 尝试直接连接
-        if (network.known) {
-            network.connectWithPsk("")
+        if (passwordNetwork === network) {
+            cancelPassword()
             return
         }
-        // 开放网络 → 直接连接
-        if (network.security === 0) {
-            network.connectWithPsk("")
-            return
-        }
-        // 加密网络 → 需要密码，UI 应弹出密码输入框
-        // WifiNetwork 有 requestConnectWithPsk 信号可以监听
+        cancelPassword()
+        connectTarget = network
+        network.connect()
     }
 
-    function connectWithPassword(network, psk) {
-        if (!network) return
+    function submitPassword(network, psk) {
+        if (!network || !psk)
+            return
+        passwordNetwork = null
+        connectTarget = network
         network.connectWithPsk(psk)
     }
 
-    function disconnectWifi() {
-        if (!_wifiDevice) return
-        const arr = []
-        for (let i = 0; i < _wifiDevice.networks.count; i++) {
-            arr.push(_wifiDevice.networks.get(i))
-        }
-        for (const n of arr) {
-            if (n.connected && n.known) {
-                // NetworkManager 原生断开方式
-                n.connectWithPsk("") // 传空 PSK 触发断开
-                return
-            }
-        }
+    function cancelPassword() {
+        passwordNetwork = null
     }
 
     function openPublicWifiPortal() {
         Quickshell.execDetached(["xdg-open", "https://nmcheck.gnome.org/"])
     }
 
+    function openNmtui() {
+        Quickshell.execDetached(["kitty", "-e", "nmtui"])
+    }
+
     function _setError(message) {
-        if (!message) return
+        if (!message)
+            return
         _lastError = message
         _errorClearTimer.restart()
+    }
+
+    function _bumpNet() {
+        _netRev++
+        if (detailActive)
+            _scheduleSsidFix()
+    }
+
+    function _needsSsidFix() {
+        const arr = wifiNetworks
+        for (let i = 0; i < arr.length; i++) {
+            const n = arr[i] && arr[i].name
+            if (!n || n.indexOf("\uFFFD") < 0)
+                continue
+            if (!_ssidFix[n])
+                return true
+        }
+        return false
+    }
+
+    function _scheduleSsidFix() {
+        if (!detailActive || !_needsSsidFix())
+            return
+        _ssidFixDebounce.restart()
+    }
+
+    function _runSsidFix() {
+        if (!detailActive || !_needsSsidFix())
+            return
+        if (_ssidFixProc.running)
+            return
+        _ssidFixProc.running = true
+    }
+
+    Timer {
+        id: _ssidFixDebounce
+        interval: 350
+        repeat: false
+        onTriggered: root._runSsidFix()
+    }
+
+    Process {
+        id: _ssidFixProc
+        command: ["python3", root._ssidFixScript]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const raw = text.trim()
+                if (!raw)
+                    return
+                try {
+                    const map = JSON.parse(raw)
+                    if (!map || typeof map !== "object")
+                        return
+                    // 合并，避免扫描间隙丢掉已修好的项
+                    const next = Object.assign({}, root._ssidFix)
+                    for (const k of Object.keys(map))
+                        next[k] = map[k]
+                    root._ssidFix = next
+                    root._netRev++
+                } catch (e) {
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: root._wifiDevice
+        ignoreUnknownSignals: true
+        function onScannerEnabledChanged() { root._bumpNet() }
+        function onConnectedChanged() { root._bumpNet() }
+    }
+
+    Connections {
+        target: root._wifiDevice ? root._wifiDevice.networks : null
+        ignoreUnknownSignals: true
+        function onValuesChanged() { root._bumpNet() }
+    }
+
+    Connections {
+        target: Networking.devices
+        ignoreUnknownSignals: true
+        function onValuesChanged() { root._bumpNet() }
+    }
+
+    // 扫描期间轻量刷新，避免 ObjectModel 原地改信号强度却不通知
+    Timer {
+        interval: 800
+        running: root.detailActive && root.wifiEnabled
+        repeat: true
+        onTriggered: root._bumpNet()
+    }
+
+    Connections {
+        target: root.connectTarget
+        ignoreUnknownSignals: true
+
+        function onConnectionFailed(reason) {
+            if (!root.connectTarget)
+                return
+            if (reason === ConnectionFailReason.NoSecrets) {
+                root.passwordNetwork = root.connectTarget
+                return
+            }
+            const name = root.connectTarget.name || "网络"
+            root._setError("连接失败: " + name)
+            root.connectTarget = null
+        }
+
+        function onConnectedChanged() {
+            if (root.connectTarget && root.connectTarget.connected) {
+                root.connectTarget = null
+                root.passwordNetwork = null
+                root._bumpNet()
+            }
+        }
     }
 
     Timer {
