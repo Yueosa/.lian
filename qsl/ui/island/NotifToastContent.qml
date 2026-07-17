@@ -56,28 +56,36 @@ Item {
                     ? Qt.rgba(accent.r, accent.g, accent.b, 0.88)
                     : Color.textMuted
 
-                readonly property bool isIconName:
-                    imagePath.indexOf("icon:") === 0
-                    || imagePath.indexOf("image://icon/") === 0
-                readonly property string iconName: {
-                    if (imagePath.indexOf("icon:") === 0)
-                        return imagePath.substring(5)
-                    if (imagePath.indexOf("image://icon/") === 0)
-                        return imagePath.substring(13)
-                    return ""
+                // icon:xxx / image://icon/xxx / 无路径裸名 → 主题图标
+                // 绝对路径 / file:// / 其它 image:// → 文件或句柄
+                readonly property bool isThemeIcon: {
+                    const p = imagePath
+                    if (p.length === 0)
+                        return false
+                    if (p.indexOf("icon:") === 0 || p.indexOf("image://icon/") === 0)
+                        return true
+                    if (p.indexOf("image://") === 0 || p.indexOf("file://") === 0)
+                        return false
+                    if (p.indexOf("/") >= 0)
+                        return false
+                    // co.anysphere.cursor、dialog-information 等
+                    return true
                 }
-                readonly property string fileSource: {
-                    if (isIconName || imagePath.length === 0)
+                readonly property string iconSource: {
+                    const p = imagePath
+                    if (p.length === 0)
                         return ""
-                    if (imagePath.indexOf("image://") === 0 || imagePath.indexOf("file://") === 0)
-                        return imagePath
-                    if (imagePath.indexOf("/") === 0)
-                        return "file://" + imagePath
-                    return imagePath
+                    if (p.indexOf("icon:") === 0)
+                        return "image://icon/" + p.substring(5)
+                    if (p.indexOf("image://icon/") === 0 || p.indexOf("image://") === 0
+                        || p.indexOf("file://") === 0)
+                        return p
+                    if (p.indexOf("/") === 0)
+                        return "file://" + p
+                    if (isThemeIcon)
+                        return "image://icon/" + p
+                    return p
                 }
-                readonly property string iconSource: iconName.length > 0
-                    ? ("image://icon/" + iconName)
-                    : fileSource
 
                 Timer {
                     interval: Island.notifToastMs
@@ -101,9 +109,9 @@ Item {
                         Image {
                             id: iconImage
                             anchors.fill: parent
-                            anchors.margins: row.isIconName ? 6 : 0
+                            anchors.margins: row.isThemeIcon ? 6 : 0
                             source: row.iconSource
-                            fillMode: row.isIconName
+                            fillMode: row.isThemeIcon
                                 ? Image.PreserveAspectFit
                                 : Image.PreserveAspectCrop
                             asynchronous: true

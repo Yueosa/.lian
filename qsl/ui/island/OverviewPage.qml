@@ -232,7 +232,7 @@ Item {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        spacing: 4
+                        spacing: 2
 
                         Text {
                             Layout.fillWidth: true
@@ -244,13 +244,23 @@ Item {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: Weather.ready
-                                ? (Weather.weatherText + " · " + Weather.locationName)
-                                : "天气加载中…"
+                            visible: Weather.ready && Weather.weatherText.length > 0
+                            text: Weather.weatherText
                             color: Color.textMuted
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.md
                             elide: Text.ElideRight
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: Weather.ready
+                                ? (Weather.locationName || "未知地点")
+                                : "天气加载中…"
+                            color: Color.textMuted
+                            font.family: Size.fontSans
+                            font.pixelSize: Size.fontSize.sm
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
                         }
                     }
 
