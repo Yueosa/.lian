@@ -7,7 +7,7 @@ import qs.data.state
 import qs.data.service
 
 Item {
-    id: root
+    id: lyricsRoot
 
     readonly property var player: Media.active
     readonly property bool isMusic: Media.isMusicPlayer(player)
@@ -29,14 +29,47 @@ Item {
     implicitHeight: Size.island.lyricsH
 
     property var smoothValues: [0, 0, 0, 0, 0, 0]
+    // toast/悬停切回时 bump，强制当前行重算跑马灯（避免卡在半动画）
+    property int marqueeEpoch: 0
 
     function updateTextWidth(implicitTextW) {
+        const raw = Number(implicitTextW) || 0
+        // 排版未就绪时别把已算好的岛宽压回去
+        if (raw <= 0)
+            return
         const w = Math.max(
-            root.defaultTextW,
-            Math.min(Math.ceil(Number(implicitTextW) || 0) + 16, root.maxTextW)
+            lyricsRoot.defaultTextW,
+            Math.min(Math.ceil(raw) + 16, lyricsRoot.maxTextW)
         )
-        if (w !== root.textW)
-            root.textW = w
+        if (w !== lyricsRoot.textW)
+            lyricsRoot.textW = w
+    }
+
+    function kickVisible() {
+        if (lyricsRoot.player)
+            Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
+        const i = Lyrics.currentIndex
+        if (i >= 0)
+            lyricsView.positionViewAtIndex(i, ListView.Beginning)
+        // 等岛宽 morph（350ms）后再重算居中/跑马灯
+        remountTimer.restart()
+    }
+
+    Timer {
+        id: remountTimer
+        interval: 380
+        repeat: false
+        onTriggered: {
+            if (lyricsRoot.visible)
+                marqueeEpoch++
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible)
+            Qt.callLater(kickVisible)
+        else
+            remountTimer.stop()
     }
 
     Component.onCompleted: {
@@ -53,7 +86,7 @@ Item {
         if (!player) {
             // 不 clear 全局缓存：Hub Media 可能仍在用
             Lyrics.setPlaceholder("")
-            root.textW = root.defaultTextW
+            lyricsRoot.textW = lyricsRoot.defaultTextW
             return
         }
         if (!isMusic) {
@@ -70,26 +103,26 @@ Item {
 
     Connections {
         target: Media
-        function onActiveChanged() { root.refresh() }
+        function onActiveChanged() { lyricsRoot.refresh() }
     }
     Connections {
-        target: root.player
-        enabled: !!root.player
-        function onTrackTitleChanged() { root.refresh() }
-        function onTrackArtistChanged() { root.refresh() }
+        target: lyricsRoot.player
+        enabled: !!lyricsRoot.player
+        function onTrackTitleChanged() { lyricsRoot.refresh() }
+        function onTrackArtistChanged() { lyricsRoot.refresh() }
         function onPositionChanged() {
-            if (root.player)
-                Lyrics.syncPosition(Number(root.player.position) || 0)
+            if (lyricsRoot.player)
+                Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
         }
     }
 
     Timer {
         interval: 100
-        running: root.visible && !!root.player && Lyrics.lines.length > 1
+        running: lyricsRoot.visible && !!lyricsRoot.player && Lyrics.lines.length > 1
         repeat: true
         onTriggered: {
-            if (root.player)
-                Lyrics.syncPosition(Number(root.player.position) || 0)
+            if (lyricsRoot.player)
+                Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
         }
     }
 
@@ -97,10 +130,10 @@ Item {
     Item {
         id: coverBox
         anchors.left: parent.left
-        anchors.leftMargin: root.pad
+        anchors.leftMargin: lyricsRoot.pad
         anchors.verticalCenter: parent.verticalCenter
-        width: root.coverSize
-        height: root.coverSize
+        width: lyricsRoot.coverSize
+        height: lyricsRoot.coverSize
 
         Rectangle {
             anchors.fill: parent
@@ -110,7 +143,7 @@ Item {
 
             Image {
                 anchors.fill: parent
-                source: root.artUrl
+                source: lyricsRoot.artUrl
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize: Qt.size(64, 64)
@@ -118,7 +151,7 @@ Item {
             }
             Text {
                 anchors.centerIn: parent
-                visible: !root.artUrl.length
+                visible: !lyricsRoot.artUrl.length
                 text: "\uf001"
                 color: Color.textMuted
                 font.family: Size.fontMono
@@ -131,15 +164,15 @@ Item {
     Item {
         id: spectrumBox
         anchors.right: parent.right
-        anchors.rightMargin: root.pad
+        anchors.rightMargin: lyricsRoot.pad
         anchors.verticalCenter: parent.verticalCenter
-        width: root.spectrumW
+        width: lyricsRoot.spectrumW
         height: 16
 
         Timer {
             interval: 33
             // Loader 隐藏时停画，悬停看时钟不白烧 CPU
-            running: root.visible
+            running: lyricsRoot.visible
             repeat: true
             onTriggered: {
                 const r = Cava.values
@@ -164,13 +197,13 @@ Item {
                 targets[3] = regionMax(3, 5)
                 const beat = Math.max(targets[2], targets[3])
 
-                const s = root.smoothValues.slice()
+                const s = lyricsRoot.smoothValues.slice()
                 for (let i = 0; i < 6; i++) {
                     const finalTarget = Math.min(1, targets[i] * 0.8 + beat * 0.2)
                     const diff = finalTarget - s[i]
                     s[i] += (diff > 0 ? 0.85 : 0.08) * diff
                 }
-                root.smoothValues = s
+                lyricsRoot.smoothValues = s
                 spectrumCanvas.requestPaint()
             }
         }
@@ -181,7 +214,7 @@ Item {
             onPaint: {
                 const ctx = getContext("2d")
                 ctx.clearRect(0, 0, width, height)
-                const s = root.smoothValues
+                const s = lyricsRoot.smoothValues
                 ctx.beginPath()
                 ctx.lineCap = "round"
                 ctx.lineWidth = 2.5
@@ -202,9 +235,9 @@ Item {
     Item {
         id: lyricsSection
         anchors.left: coverBox.right
-        anchors.leftMargin: root.gap
+        anchors.leftMargin: lyricsRoot.gap
         anchors.right: spectrumBox.left
-        anchors.rightMargin: root.gap
+        anchors.rightMargin: lyricsRoot.gap
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         clip: true
@@ -233,25 +266,51 @@ Item {
                 required property var modelData
                 required property int index
                 width: ListView.view.width
-                height: root.rowH
+                height: lyricsRoot.rowH
                 clip: true
 
                 readonly property bool isCurrent: index === Lyrics.currentIndex
                 readonly property real scrollDistance: Math.max(0, lyricText.implicitWidth - width)
 
+                // 用 Timer 代替 callLater，避免销毁后回调打到空对象
+                Timer {
+                    id: marqueeKick
+                    interval: 1
+                    repeat: false
+                    onTriggered: {
+                        if (!row.isCurrent)
+                            return
+                        lyricsRoot.updateTextWidth(lyricText.implicitWidth)
+                        if (row.scrollDistance > 0) {
+                            lyricText.x = 0
+                            marqueeDelay.restart()
+                        } else {
+                            lyricText.x = Math.max(0, (row.width - lyricText.implicitWidth) / 2)
+                        }
+                    }
+                }
+
                 onIsCurrentChanged: {
                     scrollAnim.stop()
                     marqueeDelay.stop()
-                    if (isCurrent) {
-                        Qt.callLater(() => {
-                            root.updateTextWidth(lyricText.implicitWidth)
-                            if (row.scrollDistance > 0) {
-                                lyricText.x = 0
-                                marqueeDelay.restart()
-                            } else {
-                                lyricText.x = Math.max(0, (row.width - lyricText.implicitWidth) / 2)
-                            }
-                        })
+                    if (isCurrent)
+                        marqueeKick.restart()
+                }
+
+                Connections {
+                    target: lyricsRoot
+                    enabled: row.isCurrent
+                    function onMarqueeEpochChanged() {
+                        scrollAnim.stop()
+                        marqueeDelay.stop()
+                        marqueeKick.restart()
+                    }
+                    function onVisibleChanged() {
+                        if (!lyricsRoot.visible) {
+                            scrollAnim.stop()
+                            marqueeDelay.stop()
+                            marqueeKick.stop()
+                        }
                     }
                 }
 
@@ -260,7 +319,7 @@ Item {
                     target: lyricText
                     enabled: row.isCurrent
                     function onImplicitWidthChanged() {
-                        root.updateTextWidth(lyricText.implicitWidth)
+                        lyricsRoot.updateTextWidth(lyricText.implicitWidth)
                         if (row.isCurrent && row.scrollDistance <= 0)
                             lyricText.x = Math.max(0, (row.width - lyricText.implicitWidth) / 2)
                     }

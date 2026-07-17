@@ -6,7 +6,7 @@ pragma Singleton
 // 接收：Quickshell NotificationServer（D-Bus）
 // 持久化：notifctl + SQLite（~/.local/state/qsl/notif.db）
 // 秒开：~/.cache/qsl/notif-list.json
-// DnD = 免打扰：仍入库，标记 suppressPopup 给日后 Island toast 用
+// DnD = 免打扰：仍入库，不发 toastRequested（一级岛不弹）
 // ============================================================
 // 对外接口：
 //   trackedNotifications / hasNotifications / count / dndEnabled
@@ -19,6 +19,8 @@ pragma Singleton
 //   dismissAll()      清空
 //   toggleDnd()
 //   release()         关面板清展示数组（server 保持轻量常驻）
+//   signal toastRequested(var payload)  // 一级岛 toast；DnD 时不发
+//     payload: { notifId, title, body, appName, desktopEntry, imagePath }
 // ============================================================
 
 import QtQuick
@@ -43,6 +45,9 @@ Singleton {
     property bool dndEnabled: false
     property var entries: []
     property bool loading: false
+
+    // 一级岛 toast：与面板 entries 无关；payload 一次拷贝字符串
+    signal toastRequested(var payload)
 
     function hydrate() {
         listCache.reload()
@@ -170,7 +175,17 @@ Singleton {
             root.persistIngest(notification)
             if (root.uiActive)
                 root.prependLive(notification)
-        }
+            // DnD 仍入库，只压制岛上 toast
+            if (!root.dndEnabled) {
+                root.toastRequested({
+                    notifId: notification.id,
+                    title: notification.summary || "",
+                    body: notification.body || "",
+                    appName: notification.appName || "",
+                    desktopEntry: notification.desktopEntry || "",
+                    imagePath: root.pickImagePath(notification)
+                })
+            }        }
     }
 
     FileView {

@@ -6,7 +6,8 @@ pragma Singleton
 // 避免每个 PanelWindow 各挂 IpcHandler 导致 Alt/Super+Tab 竞态。
 // UI（ui/island/IslandShell.qml）只读这里的属性做 morph。
 // ============================================================
-// 模式优先级（高→低）：Hub > 手动/自动歌词 > 通知 toast > 时钟
+// 模式优先级（高→低）：Hub > 手动歌词 > 通知 toast > 自动歌词 > 时钟
+// 通知 toast：最多堆叠 3 条（对齐旧 DI popupModel）
 // 无 L2 媒体卡、无音量 OSD。
 // ============================================================
 
@@ -27,17 +28,36 @@ Singleton {
     property bool autoLyrics: false
     property bool lyricsHoverRestore: false
 
-    // 通知 toast（一级；接入后再填 payload）
-    property bool notifToast: false
-    property string notifTitle: ""
-    property string notifBody: ""
+    // 通知 toast 队列（最新在前；≤3；ListModel 保条目身份 → Timer 不重置）
+    readonly property int notifToastLimit: 3
+    readonly property int notifToastMs: 5000
+    property int _toastSeq: 0
+
+    ListModel {
+        id: notifModel
+    }
+
+    readonly property alias notifToasts: notifModel
+    readonly property int notifCount: notifModel.count
+    // 旧 DI：notifH = count*70 + 20（高度本身不再乘 islandScale）
+    readonly property int notifH: notifCount > 0 ? (notifCount * 70 + 20) : 0
 
     readonly property bool isHubMode: showHub
-    readonly property bool isLyricsMode: (showLyrics || autoLyrics) && !lyricsHoverRestore && !showHub
-    readonly property bool isNotifMode: notifToast && !isLyricsMode && !showHub
+    // 手动歌词压 toast；自动歌词让路给 toast（对齐旧 DI）
+    readonly property bool isNotifMode: notifCount > 0 && !showLyrics && !showHub
+    readonly property bool isLyricsMode:
+        (showLyrics || (autoLyrics && !lyricsHoverRestore))
+        && !showHub && !isNotifMode
     readonly property bool isCollapsedMode: !showHub && !isLyricsMode && !isNotifMode
 
     onHubTabIndexChanged: hubLastOpenIndex = hubTabIndex
+
+    Connections {
+        target: Notification
+        function onToastRequested(payload) {
+            root.pushNotifToast(payload)
+        }
+    }
 
     function syncAutoLyrics() {
         // 有播放中的曲目 → 一级歌词优先于时钟
@@ -127,15 +147,37 @@ Singleton {
         return "MEDIA_OPENED"
     }
 
-    function clearNotifToast() {
-        notifToast = false
-        notifTitle = ""
-        notifBody = ""
+    function clearNotifIndex(i) {
+        const idx = Number(i)
+        if (idx >= 0 && idx < notifModel.count)
+            notifModel.remove(idx)
     }
 
-    function pushNotifToast(title, body) {
-        notifTitle = String(title || "")
-        notifBody = String(body || "")
-        notifToast = true
+    function clearNotifAt(id) {
+        const target = Number(id)
+        for (let i = 0; i < notifModel.count; i++) {
+            if (Number(notifModel.get(i).toastId) === target) {
+                notifModel.remove(i)
+                return
+            }
+        }
+    }
+
+    // payload: { notifId, title, body, appName, desktopEntry, imagePath }
+    function pushNotifToast(payload) {
+        const p = payload || {}
+        lyricsHoverRestore = false
+        _toastSeq++
+        notifModel.insert(0, {
+            toastId: _toastSeq,
+            notifId: p.notifId !== undefined ? Number(p.notifId) : _toastSeq,
+            title: String(p.title || ""),
+            body: String(p.body || ""),
+            appName: String(p.appName || ""),
+            desktopEntry: String(p.desktopEntry || ""),
+            imagePath: String(p.imagePath || "")
+        })
+        while (notifModel.count > notifToastLimit)
+            notifModel.remove(notifModel.count - 1)
     }
 }

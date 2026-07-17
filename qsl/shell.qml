@@ -57,6 +57,10 @@ ShellRoot {
         function toggle() { notifCenter.toggle() }
         function open() { notifCenter.openWindow() }
         function close() { notifCenter.closeWindow() }
+        function dnd() {
+            Notification.toggleDnd()
+            return Notification.dndEnabled ? "DND_ON" : "DND_OFF"
+        }
     }
 
     IpcHandler {

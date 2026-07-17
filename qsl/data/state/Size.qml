@@ -116,7 +116,7 @@ Singleton {
         readonly property int lyricsW: Math.round(420 * root.islandScale)
         readonly property int lyricsH: Math.round(42 * root.islandScale)
         readonly property int notifW: Math.round(380 * root.islandScale)
-        readonly property int notifH: Math.round(70 * root.islandScale)
+        // 高度见 Island.notifH（count*70+20）
 
         readonly property int hubTabBarHeight: 80
         readonly property int hubContentGap: 10

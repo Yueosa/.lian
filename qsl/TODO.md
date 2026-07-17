@@ -14,7 +14,7 @@
 |---|---|---|
 | `free-window-app` | `toggle` / `open` / `close` | 启动器 Super+A |
 | `free-window-clipboard` | `toggle` / `open` / `close` | 剪贴板 Super+Z |
-| `notif` | `toggle` / `open` / `close` | 通知中心 Super+N |
+| `notif` | `toggle` / `open` / `close` / `dnd` | 通知中心 Super+N；`dnd` 切换免打扰 |
 | `rightbar` | `toggle` | 右侧栏开关 Super+V |
 | `rightbar` | `open <view>` | `network` / `bluetooth` / `audio` / `updates` |
 | `rightbar` | `next` / `prev` | Tab 切换 |
@@ -75,7 +75,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] **Weather** — weatherd + Island 页；Overview 图标/温度预览
 - [ ] **Switcher** — 照搬 + 修滚动/焦点
 - [x] 一级：歌词条（播放中封面+歌词+cava；悬停还原时钟）
-- [ ] 一级：通知 toast 接入优先级
+- [x] 一级：通知 toast（≤3 堆叠 / 进度条 / DnD / Hub·手动歌词 > toast > 自动歌词）
 
 ---
 

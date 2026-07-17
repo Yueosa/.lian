@@ -63,11 +63,11 @@ Variants {
         mask: Region { item: hitBoxRegion }
 
         // 窗口级按键（必须在根上，不能埋在 Loader 里）
+        // 注意：不能 enabled: showHub，否则一级 toast/悬停全部收不到指针
         FocusScope {
             id: keyScope
             anchors.fill: parent
             focus: Island.showHub && islandWindow.isKeyOwner
-            enabled: Island.showHub && islandWindow.isKeyOwner
 
             Keys.priority: Keys.BeforeItem
             Keys.onPressed: (event) => {
@@ -155,6 +155,7 @@ Variants {
                 samples: 25
                 color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, islandWindow.shadowSoft)
                 cached: false
+                z: 0
             }
 
             // ---------- 可视岛 ----------
@@ -164,6 +165,7 @@ Variants {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: body.width + islandWindow.earRadius * 2
                 height: body.height
+                z: 1
 
                 EarCanvas {
                     anchors.right: body.left
@@ -225,7 +227,7 @@ Variants {
                     readonly property int targetH: Island.isHubMode
                         ? (hubLoader.item ? hubLoader.item.implicitHeight : hubFallbackH)
                         : Island.isLyricsMode ? Size.island.lyricsH
-                        : Island.isNotifMode ? Size.island.notifH
+                        : Island.isNotifMode ? Island.notifH
                         : (Size.island.collapsedH + hoverGrowH)
 
                     readonly property int targetR: (Island.isHubMode || Island.isLyricsMode || Island.isNotifMode)
@@ -272,6 +274,7 @@ Variants {
                     MouseArea {
                         id: islandMouse
                         anchors.fill: parent
+                        enabled: !Island.isNotifMode
                         hoverEnabled: true
                         acceptedButtons: Qt.NoButton
                         onContainsMouseChanged: {
@@ -288,44 +291,51 @@ Variants {
                         sourceComponent: ClockContent {}
                     }
 
-                    Item {
-                        anchors.fill: parent
+                    // 通知堆叠：≤3 + 进度条（对齐旧 DI）
+                    Loader {
+                        id: notifLoader
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
                         anchors.margins: 10
+                        height: Math.max(0, Island.notifH - 20)
+                        z: 300
+                        active: Island.notifCount > 0 && !Island.showHub
                         visible: Island.isNotifMode
+                        sourceComponent: NotifToastContent {}
+                    }
 
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            spacing: 2
-
-                            Text {
-                                width: parent.width
-                                text: Island.notifTitle || "通知"
-                                color: Color.textOnBackground
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.md
-                                font.bold: true
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                width: parent.width
-                                text: Island.notifBody
-                                color: Color.textMuted
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.sm
-                                elide: Text.ElideRight
-                            }
+                    // 点通知关：挂在 Loader 之上，不依赖 delegate 内 MouseArea
+                    MouseArea {
+                        anchors.fill: notifLoader
+                        enabled: Island.isNotifMode
+                        z: 301
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: (mouse) => {
+                            const spacing = Math.round(10 * Size.islandScale)
+                            const pitch = 60 + spacing
+                            let idx = Math.floor(mouse.y / pitch)
+                            if (idx < 0)
+                                idx = 0
+                            if (idx >= Island.notifCount)
+                                idx = Island.notifCount - 1
+                            Island.clearNotifIndex(idx)
                         }
                     }
 
-                    // 歌词条：悬停时仍保持加载（只藏 UI），避免 Cava 反复启停
+                    // 歌词条：按 implicitWidth 定宽（勿 fill，否则 toast 会压扁导致切回后歪/溢出）
+                    // 悬停/toast 时仍保持加载（只藏 UI），避免 Cava 反复启停
                     Loader {
                         id: lyricsLoader
-                        anchors.fill: parent
-                        anchors.margins: 4
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: item ? Math.round(item.implicitWidth) : Size.island.lyricsW
+                        height: Size.island.lyricsH
+                        z: 1
                         active: (Island.showLyrics || Island.autoLyrics) && !Island.showHub
                         visible: Island.isLyricsMode
+                        // 隐藏时禁用，防止挡 toast 点击
+                        enabled: Island.isLyricsMode
                         sourceComponent: LyricsContent {}
                     }
 
