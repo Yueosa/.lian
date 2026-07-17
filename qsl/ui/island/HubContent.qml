@@ -173,6 +173,8 @@ FocusScope {
         anchors.topMargin: Size.island.hubContentGap
         anchors.margins: 12
         active: true
+        // 让子页能抢到键盘（Enter/方向键）；否则焦点停在 Hub FocusScope
+        focus: true
         sourceComponent: {
             switch (root.currentIndex) {
             case 0: return overviewComp
@@ -181,6 +183,13 @@ FocusScope {
             case 3: return weatherComp
             default: return switcherComp
             }
+        }
+        onLoaded: {
+            if (item && typeof item.forceActiveFocus === "function")
+                Qt.callLater(() => {
+                    if (pageLoader.item)
+                        pageLoader.item.forceActiveFocus()
+                })
         }
     }
 
@@ -202,6 +211,6 @@ FocusScope {
     }
     Component {
         id: switcherComp
-        HubPlaceholder { title: "Switcher"; hint: "待从旧 qs 搬迁" }
+        SwitcherPage {}
     }
 }

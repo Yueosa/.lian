@@ -13,6 +13,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import qs.data.service
 
 Singleton {
@@ -92,6 +93,98 @@ Singleton {
 
     function closeHub() {
         showHub = false
+    }
+
+    // —— Switcher 跳窗 ——
+    // 焦点目标写在单例：壳层 Enter 可用；Timer 也必须在单例（closeHub 会拆掉页面）。
+    property var switcherWsId: null
+    property string switcherAddr: ""
+    property var switcherToplevel: null
+
+    property var _pendingWsId: null
+    property string _pendingAddr: ""
+    property var _pendingToplevel: null
+    property bool _activating: false
+
+    function _normAddr(addr) {
+        let a = String(addr || "")
+        if (a.length > 0 && !a.startsWith("0x"))
+            a = "0x" + a
+        return a
+    }
+
+    function _normWsId(wsId) {
+        if (wsId === undefined || wsId === null || isNaN(Number(wsId)))
+            return null
+        return Number(wsId)
+    }
+
+    function setSwitcherTarget(wsId, addr, toplevel) {
+        switcherWsId = _normWsId(wsId)
+        switcherAddr = _normAddr(addr)
+        switcherToplevel = toplevel || null
+    }
+
+    function clearSwitcherTarget() {
+        switcherWsId = null
+        switcherAddr = ""
+        switcherToplevel = null
+    }
+
+    function activateSwitcherFocus() {
+        activateWindow(switcherWsId, switcherAddr, switcherToplevel)
+    }
+
+    function activateWindow(wsId, addr, toplevel) {
+        const id = _normWsId(wsId)
+        const a = _normAddr(addr)
+        const top = toplevel || null
+
+        if (id === null && a.length === 0 && !top)
+            return
+        // 忽略销毁期空参二次调用，避免盖掉有效 pending
+        if (_activating && a.length === 0 && !top)
+            return
+
+        _pendingWsId = id
+        _pendingAddr = a
+        _pendingToplevel = top
+        _activating = true
+        showHub = false
+        activateDispatch.restart()
+    }
+
+    Timer {
+        id: activateDispatch
+        interval: 100
+        repeat: false
+        onTriggered: {
+            const t = root._pendingToplevel
+            if (t) {
+                try {
+                    if (t.wayland)
+                        t.wayland.activate()
+                    else if (t.activate)
+                        t.activate()
+                } catch (e) {}
+            }
+            if (root._pendingWsId !== null)
+                Hyprland.dispatch("workspace " + root._pendingWsId)
+            if (root._pendingAddr.length > 0)
+                Hyprland.dispatch("focuswindow address:" + root._pendingAddr)
+
+            root._pendingWsId = null
+            root._pendingAddr = ""
+            root._pendingToplevel = null
+            root._activating = false
+            root.clearSwitcherTarget()
+        }
+    }
+
+    onShowHubChanged: {
+        // 非跳窗关岛时丢掉焦点目标，避免持有 HyprlandToplevel 引用
+        if (!showHub && !_activating)
+            clearSwitcherTarget()
     }
 
     function closeTransient() {

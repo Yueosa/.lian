@@ -80,7 +80,7 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 | Media | **已做**（瘦身 Hub） |
 | Wallpaper | 照搬 + 轻优化；`lianwall` 封装 |
 | Weather | **已做**（weatherd） |
-| Switcher | 照搬 + 修滚动/焦点；控制 Screencopy live 范围 |
+| Switcher | **已做**（视口静帧 / 焦点 live；ListView 定位；Island 延迟 dispatch 跳转） |
 
 ---
 
@@ -130,8 +130,8 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 3. **Weather** — 已做
 4. **Media** — 已做（瘦身 Hub + L1 歌词条）
 5. Wallpaper
-6. Switcher 修 bug
-7. 通知条接入一级优先级
+6. Switcher — 已做
+7. 通知条接入一级优先级 — 已做
 
 ---
 

@@ -8,6 +8,7 @@ MediaPage 1.0 MediaPage.qml
 NotifToastContent 1.0 NotifToastContent.qml
 OverviewCalendar 1.0 OverviewCalendar.qml
 OverviewPage 1.0 OverviewPage.qml
+SwitcherPage 1.0 SwitcherPage.qml
 WallpaperPage 1.0 WallpaperPage.qml
 WeatherIcon 1.0 WeatherIcon.qml
 WeatherPage 1.0 WeatherPage.qml

@@ -76,6 +76,13 @@ Variants {
                     event.accepted = true
                     return
                 }
+                // Switcher：Enter 在壳层处理，避免子页 Keys/Shortcut 双触
+                if (Island.showHub && Island.hubTabIndex === 4
+                    && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                    Island.activateSwitcherFocus()
+                    event.accepted = true
+                    return
+                }
                 // Tab 切页：转发给 Hub（若已加载）
                 if (hubLoader.item) {
                     if (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ControlModifier)) {
@@ -292,6 +299,8 @@ Variants {
                     }
 
                     // 通知堆叠：≤3 + 进度条（对齐旧 DI）
+                    // active 不跟 showHub 绑死——Hub 打开时若卸掉 Loader，Timer 停转，
+                    // 关岛后旧 toast 会「复活」并卡住倒计时。
                     Loader {
                         id: notifLoader
                         anchors.top: parent.top
@@ -300,7 +309,7 @@ Variants {
                         anchors.margins: 10
                         height: Math.max(0, Island.notifH - 20)
                         z: 300
-                        active: Island.notifCount > 0 && !Island.showHub
+                        active: Island.notifCount > 0
                         visible: Island.isNotifMode
                         sourceComponent: NotifToastContent {}
                     }

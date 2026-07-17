@@ -73,7 +73,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] **Media** — 瘦身 Hub 页 + Media/Cava/Lyrics 服务（IPC 已通）
 - [x] **Wallpaper** — next/prev/mode + 网格（LianWall thumb）+ 齿轮开 gui
 - [x] **Weather** — weatherd + Island 页；Overview 图标/温度预览
-- [ ] **Switcher** — 照搬 + 修滚动/焦点
+- [x] **Switcher** — 视口静帧 + 焦点 live；ListView 定位；Island 延迟 Hyprland.dispatch 跳转
 - [x] 一级：歌词条（播放中封面+歌词+cava；悬停还原时钟）
 - [x] 一级：通知 toast（≤3 堆叠 / 进度条 / DnD / Hub·手动歌词 > toast > 自动歌词）
 
