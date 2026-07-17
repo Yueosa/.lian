@@ -4,11 +4,9 @@ pragma Singleton
 // 配色方案 — Color
 // ============================================================
 // 只吃 matugen 产物：~/.cache/quickshell_colors.json
-// （lianwall → update_theme_from_wallpaper.sh）
-// 无 light/dark 切换；JSON 缺失或损坏时用硬编码兜底。
+// 换壁纸时对各 color 属性做 ColorAnimation，避免整表闪切
 //
 // 注意：不要用 onSurface / onPrimary 这种属性名。
-// QML 会把 onXxx 当成 Xxx 的信号处理器，导致颜色读到默认黑。
 // ============================================================
 // 对外接口：
 //   text / textMuted / textOnPrimary / textOnBackground
@@ -25,7 +23,6 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // matugen 挂掉时的唯一兜底（非可切换主题）
     readonly property var _fallbackPalette: ({
         primary: "#88d0ec",
         on_primary: "#003544",
@@ -47,31 +44,98 @@ Singleton {
 
     property var _palette: root._fallbackPalette
     property int revision: 0
+    // 首帧 / 首次落盘不动画，之后换壁纸才渐变
+    property bool _animateColors: false
 
-    readonly property color primary: _c("primary")
-    readonly property color background: _c("background")
-    readonly property color surface: _c("surface")
-    readonly property color surfaceHigh: _c("surface_container_high")
-    readonly property color surfaceHighest: _c("surface_container_highest")
-    readonly property color secondary: _c("secondary")
-    readonly property color tertiary: _c("tertiary")
-    readonly property color error: _c("error")
-    readonly property color outline: _c("outline")
-    readonly property color outlineVariant: _c("outline_variant")
-    readonly property color secondaryFixed: _c("secondary_fixed")
-    readonly property color shadow: _c("shadow")
+    property color primary: "#88d0ec"
+    property color background: "#0f1416"
+    property color surface: "#0f1416"
+    property color surfaceHigh: "#1b2023"
+    property color surfaceHighest: "#252b2d"
+    property color secondary: "#b3cad5"
+    property color tertiary: "#c3c3eb"
+    property color error: "#ffb4ab"
+    property color outline: "#8a9296"
+    property color outlineVariant: "#40484c"
+    property color secondaryFixed: "#88d0ec"
+    property color shadow: "#000000"
+    property color text: "#dee3e6"
+    property color textMuted: "#bfc8cc"
+    property color textOnPrimary: "#003544"
+    property color textOnBackground: "#dee3e6"
 
-    readonly property color text: _c("on_surface")
-    readonly property color textMuted: _c("on_surface_variant")
-    readonly property color textOnPrimary: _c("on_primary")
-    readonly property color textOnBackground: _c("on_background")
+    readonly property int _colorAnimMs: 420
 
-    function _c(snakeKey) {
-        void revision
+    Behavior on primary {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on background {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on surface {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on surfaceHigh {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on surfaceHighest {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on secondary {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on tertiary {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on error {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on outline {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on outlineVariant {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on secondaryFixed {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on shadow {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on text {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on textMuted {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on textOnPrimary {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+    Behavior on textOnBackground {
+        enabled: root._animateColors
+        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+    }
+
+    function _colorOf(snakeKey) {
         const raw = (_palette || {})[snakeKey]
         if (raw === undefined || raw === null || raw === "")
-            return "#00000000"
-        return String(raw)
+            return Qt.rgba(0, 0, 0, 0)
+        return Qt.color(String(raw))
     }
 
     function withAlpha(base, alpha) {
@@ -83,6 +147,26 @@ Singleton {
             return
         _palette = Object.assign({}, obj)
         revision += 1
+
+        primary = _colorOf("primary")
+        background = _colorOf("background")
+        surface = _colorOf("surface")
+        surfaceHigh = _colorOf("surface_container_high")
+        surfaceHighest = _colorOf("surface_container_highest")
+        secondary = _colorOf("secondary")
+        tertiary = _colorOf("tertiary")
+        error = _colorOf("error")
+        outline = _colorOf("outline")
+        outlineVariant = _colorOf("outline_variant")
+        secondaryFixed = _colorOf("secondary_fixed")
+        shadow = _colorOf("shadow")
+        text = _colorOf("on_surface")
+        textMuted = _colorOf("on_surface_variant")
+        textOnPrimary = _colorOf("on_primary")
+        textOnBackground = _colorOf("on_background")
+
+        if (!_animateColors)
+            Qt.callLater(() => { root._animateColors = true })
     }
 
     function applyFallback() {

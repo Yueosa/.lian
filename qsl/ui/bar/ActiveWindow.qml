@@ -1,9 +1,11 @@
 // ActiveWindow — 活动窗口名药丸
-// displayWidth 弹性动画；文字宽度跟当前 displayWidth，避免标题抢跑撑破容器
+// 布局对齐旧 quickshell：RowLayout 自然测宽，标题只设 maximumWidth+elide
+// 外层 displayWidth：变长立刻撑开，变短再收拢；收拢时 clip 裁切，不把 Text.width 掐死
 //
-// 性能：TextMetrics 测宽；无 MultEffect；无图片
+// 性能：无 MultiEffect；无 TextMetrics；无图片
 
 import QtQuick
+import QtQuick.Layouts
 import Quickshell.Hyprland
 import qs.data.state
 
@@ -12,9 +14,7 @@ Item {
 
     readonly property int pillHeight: 36
     readonly property int hPad: 12
-    readonly property int iconSize: Size.fontSize.md
     readonly property int titleMax: 250
-    readonly property int gap: Size.spacing.md
 
     implicitHeight: pillHeight
     implicitWidth: displayWidth
@@ -22,18 +22,32 @@ Item {
     height: pillHeight
     clip: true
 
-    property real displayWidth: targetWidth
-    readonly property real targetWidth: {
-        const titleW = Math.min(titleMetrics.width, titleMax)
-        return hPad + iconSize + gap + titleW + hPad
-    }
+    // 内容真实宽度（与旧版 layout.width + 24 同构）
+    readonly property real contentWidth: layout.implicitWidth + hPad * 2
 
-    Behavior on displayWidth {
-        NumberAnimation {
-            duration: Size.anim.slow
-            easing.type: Easing.OutCubic
+    property real displayWidth: contentWidth
+
+    onContentWidthChanged: {
+        if (contentWidth >= displayWidth - 0.5) {
+            widthAnim.stop()
+            displayWidth = contentWidth
+        } else {
+            widthAnim.stop()
+            widthAnim.from = displayWidth
+            widthAnim.to = contentWidth
+            widthAnim.start()
         }
     }
+
+    NumberAnimation {
+        id: widthAnim
+        target: root
+        property: "displayWidth"
+        duration: Size.anim.slow
+        easing.type: Easing.OutCubic
+    }
+
+    Component.onCompleted: displayWidth = contentWidth
 
     function workspaceIdOf(obj) {
         if (!obj)
@@ -97,42 +111,35 @@ Item {
         return activeWindow.title || "Desktop"
     }
 
-    TextMetrics {
-        id: titleMetrics
-        font.family: Size.fontMono
-        font.pixelSize: Size.fontSize.md
-        text: root.activeTitle
-    }
-
     Rectangle {
         anchors.fill: parent
         radius: height / 2
         color: Color.background
     }
 
-    Text {
-        id: icon
+    RowLayout {
+        id: layout
         anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: root.hPad
-        anchors.verticalCenter: parent.verticalCenter
-        text: ""
-        color: Color.primary
-        font.family: Size.fontMono
-        font.pixelSize: root.iconSize
-    }
+        spacing: Size.spacing.md
 
-    Text {
-        id: windowTitle
-        anchors.left: icon.right
-        anchors.leftMargin: root.gap
-        anchors.verticalCenter: parent.verticalCenter
-        // 可见宽度跟当前药丸，不跟完整标题 preferredWidth
-        width: Math.max(0, root.displayWidth - root.hPad - root.iconSize - root.gap - root.hPad)
-        text: root.activeTitle
-        font.family: Size.fontMono
-        font.pixelSize: Size.fontSize.md
-        color: Color.primary
-        elide: Text.ElideRight
-        clip: true
+        Text {
+            text: ""
+            color: Color.primary
+            font.family: Size.fontMono
+            font.pixelSize: Size.fontSize.md
+            Layout.alignment: Qt.AlignVCenter
+        }
+
+        Text {
+            text: root.activeTitle
+            color: Color.primary
+            font.family: Size.fontMono
+            font.pixelSize: Size.fontSize.md
+            Layout.maximumWidth: root.titleMax
+            Layout.alignment: Qt.AlignVCenter
+            elide: Text.ElideRight
+        }
     }
 }
