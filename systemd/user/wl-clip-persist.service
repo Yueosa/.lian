@@ -1,0 +1,13 @@
+[Unit]
+Description=Persist Wayland clipboard after source apps exit
+PartOf=hyprland-session.target
+After=hyprland-session.target
+
+[Service]
+Type=simple
+# 只接管 regular selection，不动 primary，避免中键粘贴被改写
+ExecStart=/usr/bin/wl-clip-persist --clipboard regular
+Restart=on-failure
+
+[Install]
+WantedBy=hyprland-session.target

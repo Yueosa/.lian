@@ -4,10 +4,15 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import qs.ui.freewindow.app
+import qs.ui.freewindow.clipboard
 
 ShellRoot {
     AppWindow {
         id: appWindow
+    }
+
+    ClipboardWindow {
+        id: clipboardWindow
     }
 
     IpcHandler {
@@ -15,5 +20,12 @@ ShellRoot {
         function toggle() { appWindow.toggle() }
         function open() { appWindow.openWindow() }
         function close() { appWindow.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "free-window-clipboard"
+        function toggle() { clipboardWindow.toggle() }
+        function open() { clipboardWindow.openWindow() }
+        function close() { clipboardWindow.closeWindow() }
     }
 }

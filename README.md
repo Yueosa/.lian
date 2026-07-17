@@ -577,6 +577,13 @@ exec-once = systemctl --user start hyprland-session.target
 exec-shutdown = systemctl --user stop hyprland-session.target
 ```
 
+##### 依赖（剪贴板相关）
+
+```bash
+sudo pacman -S wl-clipboard cliphist
+paru -S wl-clip-persist
+```
+
 ##### 部署软链
 
 ```bash
@@ -590,6 +597,8 @@ systemctl --user enable \
     fcitx5.service \
     lianwall.service \
     cliphist-watch.service \
+    cliphist-watch-image.service \
+    wl-clip-persist.service \
     stalk-hypr.service \
     hysp.service \
     tuxedo-tray.service \
@@ -603,7 +612,9 @@ systemctl --user enable \
 | `hyprland-session.target` | 把所有“跟随 Hyprland 会话”的服务挂到这个 target 下，登出时一起停 |
 | `fcitx5.service` | 输入法 |
 | `lianwall.service` | 我自己写的壁纸守护（在 [Github](https://github.com/Yueosa) 主页可以找到） |
-| `cliphist-watch.service` | 后台监听 `wl-paste`，写入 cliphist 历史；quickshell 剪贴板从这里读 |
+| `cliphist-watch.service` | 后台监听 `wl-paste --type text`，写入 cliphist 文本历史；剪贴板 UI 从这里读 |
+| `cliphist-watch-image.service` | 后台监听 `wl-paste --type image`，写入 cliphist 图片历史（text/image 双路避免 MIME 抢占） |
+| `wl-clip-persist.service` | 接管 regular selection，源应用退出后剪贴板内容仍可粘贴（不动 primary） |
 | `stalk-hypr.service` | 我自己写的 Hyprland 状态记录器 |
 | `hysp.service` | 我自己写的小工具 |
 | `tuxedo-tray.service` | TUXEDO 笔记本控制中心托盘 |

@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch Wayland image clipboard with cliphist
+PartOf=hyprland-session.target
+After=hyprland-session.target
+
+[Service]
+Type=simple
+# 图片走独立 watcher（Hyprland 推荐的 text/image 双路）
+ExecStart=/usr/bin/wl-paste --type image --watch /usr/bin/cliphist store
+Restart=on-failure
+
+[Install]
+WantedBy=hyprland-session.target

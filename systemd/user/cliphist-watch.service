@@ -1,11 +1,12 @@
 [Unit]
-Description=Watch Wayland clipboard with cliphist
+Description=Watch Wayland text clipboard with cliphist
 PartOf=hyprland-session.target
 After=hyprland-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/wl-paste --watch /usr/bin/cliphist store
+# 文本走独立 watcher，避免与图片 MIME 抢占同一次 selection
+ExecStart=/usr/bin/wl-paste --type text --watch /usr/bin/cliphist store
 Restart=on-failure
 
 [Install]
