@@ -248,7 +248,13 @@ Singleton {
         _errorClearTimer.restart()
     }
 
+    // 只推列表刷新（排序 / 增删）；不牵动 SSID 修复
     function _bumpNet() {
+        _netRev++
+    }
+
+    // 网络成员变化（增删）时才需要重扫 SSID 名 + 重排
+    function _onNetworksChanged() {
         _netRev++
         if (detailActive)
             _scheduleSsidFix()
@@ -318,22 +324,24 @@ Singleton {
         function onConnectedChanged() { root._bumpNet() }
     }
 
+    // 网络增删 → 重排 + 按需修 SSID 名（信号强度靠 delegate 绑 net.signalStrength 自更新）
     Connections {
         target: root._wifiDevice ? root._wifiDevice.networks : null
         ignoreUnknownSignals: true
-        function onValuesChanged() { root._bumpNet() }
+        function onValuesChanged() { root._onNetworksChanged() }
     }
 
     Connections {
         target: Networking.devices
         ignoreUnknownSignals: true
-        function onValuesChanged() { root._bumpNet() }
+        function onValuesChanged() { root._onNetworksChanged() }
     }
 
-    // 扫描期间轻量刷新，避免 ObjectModel 原地改信号强度却不通知
+    // 慢速重排：仅扫描进行中且开着页面时跑；信号强度本身是响应式，
+    // 这里只为偶尔按新强度重新排序，5s 一次足够，扫描停即停。
     Timer {
-        interval: 800
-        running: root.detailActive && root.wifiEnabled
+        interval: 5000
+        running: root.detailActive && root.wifiScanning
         repeat: true
         onTriggered: root._bumpNet()
     }
