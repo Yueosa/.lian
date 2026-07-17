@@ -6,6 +6,7 @@ import QtQuick
 import qs.ui.bar
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
+import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
 
@@ -22,6 +23,10 @@ ShellRoot {
 
     NotifCenter {
         id: notifCenter
+    }
+
+    Leftbar {
+        id: leftbar
     }
 
     Rightbar {
@@ -56,5 +61,14 @@ ShellRoot {
         function next() { rightbar.next() }
         function prev() { rightbar.prev() }
         function close() { rightbar.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "sidebar"
+        function toggle() { leftbar.toggle() }
+        function open(view: string) { leftbar.openView(view) }
+        function next() { leftbar.next() }
+        function prev() { leftbar.prev() }
+        function close() { leftbar.closeWindow() }
     }
 }

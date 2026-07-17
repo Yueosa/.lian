@@ -19,12 +19,17 @@
 | `rightbar` | `open <view>` | `network` / `bluetooth` / `audio` / `updates` |
 | `rightbar` | `next` / `prev` | Tab 切换 |
 | `rightbar` | `close` | 关栏 |
+| `sidebar` | `toggle` | 左侧栏开关 Super+C |
+| `sidebar` | `open <view>` | `time` / `sys` / `weather` |
+| `sidebar` | `next` / `prev` | Tab 切换 |
+| `sidebar` | `close` | 关栏 |
 
 示例：
 
 ```bash
 qs -p ~/.lian/qsl ipc call notif toggle
 qs -p ~/.lian/qsl ipc call rightbar open network
+qs -p ~/.lian/qsl ipc call sidebar open time
 qs -p ~/.lian/qsl ipc call free-window-app toggle
 ```
 
@@ -37,46 +42,46 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] 截图脚本（Ctrl+Alt+A/Q）
 - [x] 通知中心 NotifCenter（Super+N / IPC `notif`）
 - [x] Bar 左：工作区（缺口甜甜圈）+ 窗口名
+- [x] Rightbar（Super+V）四页 + Bar 右 Tray/芯片
 
 ---
 
-## 接下来：Rightbar（Super+V）+ Bar 右
+## 接下来：Leftbar（Super+C）
 
 原则：
 
-- **先做右侧栏页面，再挂 Bar 芯片**（芯片只是入口 + 摘要）
-- 无 gooey；关窗停扫描 / `release` 清展示数据
-- IPC：`rightbar`（对齐生产 `qs ipc call rightbar …`）
-- **不做** light/dark 主题切换；配色只吃 matugen，挂了用硬编码兜底
-- **不做** Rightbar 电源页（Tuxedo + 左栏 system 已够）
+- **先写壳，再一页一页打磨**（与 Rightbar 同套路）
+- 无 gooey；关窗 `Loader.active=false` 销毁页面
+- IPC：`sidebar`（对齐生产 `qs ipc call sidebar …` / hypr Super+C）
+- **整棵 LianClaw 砍掉**（会话列表 / 消息 / RPC / SessionDrawer）
+- 原 LianClaw 欢迎页只留：**时间环 + 日期问候 + 一言**
 
-### Rightbar 壳
+### Leftbar 壳
 
-- [x] `ui/rightbar/` 面板壳（右滑、Esc、IPC toggle/open/close/next/prev）
-- [x] `view` 状态：`network` / `bluetooth` / `audio` / `updates`
-- [x] 单 Loader + 旧页淡出/新页滑入；关窗销毁页面
-- [x] 挂到 `shell.qml`；hypr 仍用 `qs("rightbar", …)`，不改 `-p`
+- [x] `ui/leftbar/` 面板壳（左滑、Esc、IPC toggle/open/close/next/prev）
+- [x] `view`：`time` / `sys` / `weather`
+- [x] 单 Loader + 页切换淡出/滑入；关窗销毁
+- [x] 挂到 `shell.qml`；hypr 仍用 `qs("sidebar", …)`，不改 `-p`
 
 ### 页面（一个一个打磨）
 
-- [x] **Network** — 接 `data/service/Network`（开关 / 扫描 / 列表 / 密码展开 / nmtui）
-- [x] **Bluetooth** — 接 `data/service/Bluetooth`（开关 / 扫描 / 已连接·已配对·附近 / 忘记 / blueman）
-- [x] **Audio** — 接 `data/service/Volume`（总输出/麦克风/应用混音；设备路由 → pavucontrol）
-- [x] **Updates** — `updatesctl` + 缓存 JSON；开页/手动刷新拉取；列表 repo/AUR；齿轮 `tcr`→Syu
+- [x] **Time** — 环形时钟 / 日期问候 / 一言（点卡片刷新）；无会话 UI
+- [ ] **System** — 占位 → 再拆（见下调查）
+- [ ] **Weather** — 占位 → 再拆（见下调查）
 
-### Bar 右侧（Rightbar 页面可用后再做）
+### 调查备忘（先别深挖实现）
 
-- [x] Tray（SystemTray；无 MultiEffect）
-- [x] WiFi / BT / Audio 芯片 — 悬停展开摘要；仅 Audio 滚轮调音量；**无点击开栏**；不做 Updates 芯片
-- [ ] ~~主题按钮~~（已砍）
-- [ ] ~~芯片打开 qsView~~（已砍：Super+V / IPC 进 Rightbar）
+| 页 | 旧实现体量 | 数据 | 首版策略 |
+|---|---|---|---|
+| Time | `LcWelcomeView` ~258 行 | `Time` service + hitokoto XHR | 已搬；全高栏；分钟节流 + 关页 abort |
+| System | `SystemView` ~1400 行 + Canvas | `SysmonPlugin` | 太重；先占位，再按块迁（表盘→图→进程） |
+| Weather | `WeatherView` ~940 + 背景 ~1240 + 一堆卡片 | `WeatherPlugin` + geocode | 最重；先占位，再定「只要当前+日预报」还是全量 |
 
 ---
 
 ## 更后面（先别做）
 
 - [ ] Dynamic Island
-- [ ] 左侧栏（含 system / 电源详情）
 - [ ] Lock / HotCorner / 录制菜单等
 
 ---
@@ -88,7 +93,8 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 | light/dark 主题切换与状态机 | 几乎不用、切换卡、占逻辑；matugen 挂了用硬编码兜底即可 |
 | Rightbar 电源页 | Tuxedo 管策略；左栏 system 可看电量 |
 | Updates 后台定时轮询 | 旧实现太重；改为打开/手动刷新 |
-| Rightbar gooey blur | 只留给 Island |
+| Rightbar / Leftbar gooey blur | 只留给 Island |
+| **LianClaw 整棵**（会话/消息/RPC） | 左栏只要时间/一言展示；AI 会话另议 |
 
 ---
 
@@ -97,6 +103,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 | 能力 | 状态 |
 |---|---|
 | Network / Bluetooth / Volume / Battery / Media / Time / Calendar / Notification | service 已有 |
-| Color | 只跟 matugen JSON；无 mode 切换 |
+| Color | 只跟 matugen JSON；换色有渐变 |
 | Updates | `updatesctl` + `data/service/Updates`；按需拉取 |
 | Battery | 有 service，但不进 Rightbar |
+| Sysmon / Weather | 旧在 Clavis 插件；qsl 未迁，System/Weather 页再说 |
