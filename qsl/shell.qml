@@ -3,11 +3,14 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.ui.bar
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
 import qs.ui.notif
 
 ShellRoot {
+    Bar {}
+
     AppWindow {
         id: appWindow
     }
