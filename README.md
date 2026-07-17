@@ -510,10 +510,10 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 
 | 快捷键 | 动作 |
 |---|---|
-| `SUPER + A` | 应用启动器：`qs ipc call launcher toggle` |
+| `SUPER + A` | 应用启动器：`qs ipc call free-window-app toggle` |
 | `ALT  + TAB` | 灵动岛 Hub（Overview）：`qs ipc call island hub` |
 | `SUPER + TAB` | 灵动岛 Switcher（窗口）：`qs ipc call island switcher` |
-| `SUPER + Z` | 剪贴板：`qs ipc call clipboard toggle` |
+| `SUPER + Z` | 剪贴板：`qs ipc call free-window-clipboard toggle` |
 | `SUPER + C` | 左侧边栏：`qs ipc call sidebar toggle` |
 | `SUPER + V` | 右侧边栏：`qs ipc call rightbar toggle` |
 | `SUPER + N` | 通知中心：`qs ipc call notif toggle` |

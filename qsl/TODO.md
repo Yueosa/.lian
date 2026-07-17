@@ -1,14 +1,15 @@
 # qsl 待办清单
 
 > 给记性差的自己：按模块慢慢打磨，做完一项勾一项。
-> 开发用 `qs -p ~/.lian/qsl`；生产仍是默认 `qs`，IPC 名对齐即可。
+> 生产：`~/.config/quickshell` → `~/.lian/qsl`，直接 `qs` 即可。
+> 切链（若尚未）：`bash ~/.lian/qsl/scripts/switch-default-config.sh`（需写 `~/.config`；链属 root 时加 sudo）
+> 对照旧壳：`qs -p ~/.lian/quickshell`。
 
 ---
 
-## IPC 速查（开发）
+## IPC 速查
 
-前缀一律：`qs -p ~/.lian/qsl ipc call <target> <fn> [args…]`  
-（生产去掉 `-p ~/.lian/qsl`，target/fn 相同。）
+前缀：`qs ipc call <target> <fn> [args…]`
 
 | target | 命令 | 说明 |
 |---|---|---|
@@ -33,11 +34,11 @@
 示例：
 
 ```bash
-qs -p ~/.lian/qsl ipc call notif toggle
-qs -p ~/.lian/qsl ipc call rightbar open network
-qs -p ~/.lian/qsl ipc call sidebar open sys
-qs -p ~/.lian/qsl ipc call island hub
-qs -p ~/.lian/qsl ipc call free-window-app toggle
+qs ipc call notif toggle
+qs ipc call rightbar open network
+qs ipc call sidebar open sys
+qs ipc call island hub
+qs ipc call free-window-app toggle
 ```
 
 ---
@@ -73,7 +74,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] **Media** — 瘦身 Hub 页 + Media/Cava/Lyrics 服务（IPC 已通）
 - [x] **Wallpaper** — next/prev/mode + 网格（LianWall thumb）+ 齿轮开 gui
 - [x] **Weather** — weatherd + Island 页；Overview 图标/温度预览
-- [x] **Switcher** — 视口静帧 + 焦点 live；ListView 定位；Island 延迟 Hyprland.dispatch 跳转
+- [x] **Switcher** — 视口静帧 + 焦点 live；ListView 定位；hyprctl eval + hl.dsp 跳转
 - [x] 一级：歌词条（播放中封面+歌词+cava；悬停还原时钟）
 - [x] 一级：通知 toast（≤3 堆叠 / 进度条 / DnD / Hub·手动歌词 > toast > 自动歌词）
 

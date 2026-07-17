@@ -89,6 +89,8 @@ PanelWindow {
     function openWindow(v) {
         if (v !== undefined && v !== null && String(v).length > 0)
             view = normalizeView(v)
+        if (!open)
+            Island.captureFocus()
         open = true
     }
 
@@ -96,6 +98,7 @@ PanelWindow {
         if (!open)
             return
         open = false
+        Island.restoreFocus()
     }
 
     // 与旧 IPC 对齐：指定页打开；同页再开则关闭
@@ -108,6 +111,7 @@ PanelWindow {
         if (open)
             switchTo(target)
         else {
+            Island.captureFocus()
             view = target
             open = true
         }
@@ -123,6 +127,7 @@ PanelWindow {
         if (open)
             switchTo(n)
         else {
+            Island.captureFocus()
             view = n
             open = true
         }

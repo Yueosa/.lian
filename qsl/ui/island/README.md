@@ -1,7 +1,7 @@
 # Dynamic Island（qsl）
 
 > 状态机 + 耳朵 morph 壳先立住，页面按 Overview → Media → Wallpaper → Weather → Switcher 逐页搬。
-> 开发：`qs -p ~/.lian/qsl`；IPC 与生产同名 `island`。
+> 生产：默认 `qs`（`~/.config/quickshell` → qsl）；IPC target `island`。
 
 ---
 
@@ -30,7 +30,7 @@
 | 键 | IPC | 行为 |
 |---|---|---|
 | Alt+Tab | `island hub` | toggle Hub；默认 Overview，或恢复上次 Media/Wallpaper/Weather |
-| Super+Tab | `island switcher` | 强制打开 Switcher（不 toggle 关） |
+| Super+Tab | `island switcher` | toggle Switcher（已开则关） |
 
 五页：`overview` / `media` / `wallpaper` / `weather` / `switcher`  
 Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
@@ -101,7 +101,7 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 
 - **Esc**（窗口级 FocusScope，主屏抢键）
 - **点岛外空白**
-- 应急：`qs -p ~/.lian/qsl ipc call island close`
+- 应急：`qs ipc call island close`
 
 ---
 
@@ -138,11 +138,11 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 ## IPC（开发）
 
 ```bash
-qs -p ~/.lian/qsl ipc call island hub
-qs -p ~/.lian/qsl ipc call island media
-qs -p ~/.lian/qsl ipc call island switcher
-qs -p ~/.lian/qsl ipc call island wallpaper
-qs -p ~/.lian/qsl ipc call island mediatoggle
-qs -p ~/.lian/qsl ipc call island mediaprevious
-qs -p ~/.lian/qsl ipc call island medianext
+qs ipc call island hub
+qs ipc call island media
+qs ipc call island switcher
+qs ipc call island wallpaper
+qs ipc call island mediatoggle
+qs ipc call island mediaprevious
+qs ipc call island medianext
 ```

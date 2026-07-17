@@ -53,11 +53,15 @@ PanelWindow {
     readonly property bool contentActive: open || anim.slide !== closedOffset
 
     function toggle() { open ? closeWindow() : openWindow() }
-    function openWindow() { open = true }
+    function openWindow() {
+        Island.captureFocus()
+        open = true
+    }
     function closeWindow() {
         if (!open)
             return
         open = false
+        Island.restoreFocus()
     }
 
     // 关闭时清零 mask，避免挡桌面点击

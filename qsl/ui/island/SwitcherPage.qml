@@ -135,11 +135,20 @@ FocusScope {
         if (!win)
             return "image://icon/application-x-executable"
         const wl = win.wayland
+        let id = ""
         if (wl && wl.appId)
-            return "image://icon/" + String(wl.appId)
+            id = String(wl.appId)
         const ipc = win.lastIpcObject
-        if (ipc && ipc.class)
-            return "image://icon/" + String(ipc.class)
+        if (!id && ipc && ipc.class)
+            id = String(ipc.class)
+        const lower = id.toLowerCase()
+        // 常见 class ≠ 主题图标名
+        if (lower === "splayer")
+            return "file:///usr/share/icons/hicolor/512x512/apps/SPlayer.png"
+        if (lower === "cursor")
+            return "image://icon/co.anysphere.cursor"
+        if (id.length > 0)
+            return "image://icon/" + id
         return "image://icon/application-x-executable"
     }
 
@@ -312,29 +321,10 @@ FocusScope {
                                     visible: hasContent
                                     smooth: true
 
-                                    onCaptureSourceChanged: {
-                                        if (captureSource && !live)
-                                            Qt.callLater(captureOnce)
-                                    }
-                                    onLiveChanged: {
-                                        if (!live && captureSource && !hasContent)
-                                            Qt.callLater(captureOnce)
-                                    }
-                                    Component.onCompleted: {
-                                        if (captureSource && !live)
-                                            Qt.callLater(captureOnce)
-                                    }
-
-                                    function captureOnce() {
-                                        if (!captureSource || live)
-                                            return
-                                        captureFrame()
-                                        retry.restart()
-                                    }
-
+                                    // 等 recording context 就绪再抓帧，避免 spam WARN
                                     Timer {
-                                        id: retry
-                                        interval: 180
+                                        id: stillDelay
+                                        interval: 80
                                         repeat: false
                                         onTriggered: {
                                             if (thumb.captureSource && !thumb.live
@@ -342,6 +332,30 @@ FocusScope {
                                                 thumb.captureFrame()
                                         }
                                     }
+                                    Timer {
+                                        id: retry
+                                        interval: 220
+                                        repeat: false
+                                        onTriggered: {
+                                            if (thumb.captureSource && !thumb.live
+                                                    && !thumb.hasContent)
+                                                thumb.captureFrame()
+                                        }
+                                    }
+
+                                    function scheduleStill() {
+                                        if (!captureSource || live || hasContent)
+                                            return
+                                        stillDelay.restart()
+                                        retry.restart()
+                                    }
+
+                                    onCaptureSourceChanged: scheduleStill()
+                                    onLiveChanged: {
+                                        if (!live)
+                                            scheduleStill()
+                                    }
+                                    Component.onCompleted: scheduleStill()
                                 }
                             }
                         }
@@ -354,7 +368,13 @@ FocusScope {
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             cache: true
-                            visible: !thumbLoader.item || !thumbLoader.item.hasContent
+                            visible: (!thumbLoader.item || !thumbLoader.item.hasContent)
+                                && status !== Image.Error
+                            onStatusChanged: {
+                                if (status === Image.Error
+                                        && source !== "image://icon/application-x-executable")
+                                    source = "image://icon/application-x-executable"
+                            }
                         }
                     }
 

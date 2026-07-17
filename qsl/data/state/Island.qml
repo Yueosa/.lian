@@ -92,7 +92,71 @@ Singleton {
     }
 
     function closeHub() {
+        if (!showHub)
+            return
         showHub = false
+        // 跳窗走 activateWindow，不要把焦点抢回原窗
+        if (!_activating)
+            restoreFocus()
+    }
+
+    // —— Exclusive 层焦点归还 ——
+    // Hypr 卸 layer Exclusive 后不会自动 focus 回 client
+    property string _focusRestoreAddr: ""
+
+    function captureFocus() {
+        const t = Hyprland.activeToplevel
+        let a = t ? String(t.address || "") : ""
+        if (!a.length && t && t.lastIpcObject && t.lastIpcObject.address)
+            a = String(t.lastIpcObject.address)
+        if (a.length > 0 && !a.startsWith("0x"))
+            a = "0x" + a
+        _focusRestoreAddr = a
+    }
+
+    function clearFocusCapture() {
+        _focusRestoreAddr = ""
+        focusRestoreDelay.stop()
+        focusRestoreDelay.addr = ""
+    }
+
+    function restoreFocus() {
+        if (!_focusRestoreAddr.length)
+            return
+        focusRestoreDelay.addr = _focusRestoreAddr
+        _focusRestoreAddr = ""
+        focusRestoreDelay.restart()
+    }
+
+    // Hyprland Lua：Hyprland.dispatch("focuswindow …") 会变成
+    // hl.dispatch(focuswindow …) 无引号而炸；走 hyprctl eval + hl.dsp
+    function hyprEval(luaExpr) {
+        Quickshell.execDetached(["hyprctl", "eval", luaExpr])
+    }
+
+    function hyprFocusWindow(addr) {
+        const a = _normAddr(addr)
+        if (!a.length)
+            return
+        hyprEval("hl.dispatch(hl.dsp.focus({window='" + a + "'}))")
+    }
+
+    function hyprFocusWorkspace(wsId) {
+        if (wsId === null || wsId === undefined || isNaN(Number(wsId)))
+            return
+        hyprEval("hl.dispatch(hl.dsp.focus({workspace=" + Number(wsId) + "}))")
+    }
+
+    Timer {
+        id: focusRestoreDelay
+        property string addr: ""
+        interval: 60
+        repeat: false
+        onTriggered: {
+            if (addr.length > 0)
+                root.hyprFocusWindow(addr)
+            addr = ""
+        }
     }
 
     // —— Switcher 跳窗 ——
@@ -150,6 +214,7 @@ Singleton {
         _pendingAddr = a
         _pendingToplevel = top
         _activating = true
+        clearFocusCapture()
         showHub = false
         activateDispatch.restart()
     }
@@ -169,9 +234,9 @@ Singleton {
                 } catch (e) {}
             }
             if (root._pendingWsId !== null)
-                Hyprland.dispatch("workspace " + root._pendingWsId)
+                root.hyprFocusWorkspace(root._pendingWsId)
             if (root._pendingAddr.length > 0)
-                Hyprland.dispatch("focuswindow address:" + root._pendingAddr)
+                root.hyprFocusWindow(root._pendingAddr)
 
             root._pendingWsId = null
             root._pendingAddr = ""
@@ -195,6 +260,7 @@ Singleton {
     function openHubTab(index) {
         const i = Math.max(0, Math.min(4, Number(index) || 0))
         if (!showHub) {
+            captureFocus()
             closeTransient()
             hubTabIndex = i
             showHub = true
@@ -207,7 +273,7 @@ Singleton {
     function toggleHubTab(index) {
         const i = Math.max(0, Math.min(4, Number(index) || 0))
         if (showHub && hubTabIndex === i) {
-            showHub = false
+            closeHub()
             return false
         }
         openHubTab(i)
@@ -226,8 +292,7 @@ Singleton {
     }
 
     function switcher() {
-        openHubTab(4)
-        return "SWITCHER_OPENED"
+        return toggleHubTab(4) ? "SWITCHER_OPENED" : "SWITCHER_CLOSED"
     }
 
     function wallpaper() {

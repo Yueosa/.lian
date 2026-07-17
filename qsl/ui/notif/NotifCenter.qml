@@ -45,6 +45,8 @@ PanelWindow {
     function openWindow() {
         clearFinish.stop()
         clearing = false
+        if (!open)
+            Island.captureFocus()
         open = true
         Notification.uiActive = true
         Notification.hydrate()
@@ -55,6 +57,7 @@ PanelWindow {
             return
         open = false
         Notification.uiActive = false
+        Island.restoreFocus()
     }
 
     // 清空：只让前 clearAnimMax 条错开右滑，其余直接随 dismissAll 消失

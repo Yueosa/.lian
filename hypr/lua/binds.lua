@@ -18,7 +18,7 @@ local function sh(command)
     return hl.dsp.exec_cmd(command)
 end
 
--- 调用 quickshell IPC 接口（qs ipc call）
+-- 调用 qsl IPC 接口（qs ipc call；默认配置已指 ~/.lian/qsl）
 local function qs(mod, action)
     return hl.dsp.exec_cmd("qs ipc call " .. mod .. " " .. action)
 end
@@ -82,8 +82,8 @@ hl.bind(mainMod .. " + B", sh(browser))
 -- 快捷面板
 -- ============================================================
 
-hl.bind(mainMod .. " + A", qs("launcher", "toggle"))
-hl.bind(mainMod .. " + Z", qs("clipboard", "toggle"))
+hl.bind(mainMod .. " + A", qs("free-window-app", "toggle"))
+hl.bind(mainMod .. " + Z", qs("free-window-clipboard", "toggle"))
 
 
 -- ============================================================

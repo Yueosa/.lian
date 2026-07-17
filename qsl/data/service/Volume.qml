@@ -182,6 +182,8 @@ Singleton {
         if (shellIcon && binary && binary !== "chromium" && binary !== "chrome"
                 && binary !== "electron" && binary !== "google-chrome")
             name = binary
+        if (name === "cursor")
+            name = "co.anysphere.cursor"
 
         if (name.startsWith("file://") || name.startsWith("/"))
             return name.startsWith("/") ? ("file://" + name) : name
