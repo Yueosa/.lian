@@ -5,7 +5,7 @@
 // 性能：
 //   - 壳常驻，页面按需创建/销毁
 //   - 切换动画串行，禁止双 Loader 交叉淡化
-//   - Sys/Weather 占位不碰 Sysmon/Weather
+//   - Sys 按需；Keys 只读 JSON；无 Weather
 
 import QtQuick
 import QtQuick.Layouts
@@ -49,20 +49,21 @@ PanelWindow {
     property string pendingView: ""
     property int panelSlide: closedOffset
 
-    readonly property var views: ["time", "sys", "weather"]
+    readonly property var views: ["time", "sys", "keys"]
     readonly property var viewMeta: ({
-        time:    { title: "时间",   icon: "\uf017" },
-        sys:     { title: "系统",   icon: "\uf233" },
-        weather: { title: "天气",   icon: "\uf6c4" }
+        time: { title: "时间", icon: "\uf017" },
+        sys:  { title: "系统", icon: "\uf233" },
+        keys: { title: "键位", icon: "\uf11c" }
     })
 
     function normalizeView(v) {
         if (!v)
             return views[0]
         const key = String(v).toLowerCase()
-        // 旧 IPC / 习惯：lianclaw → time
         if (key === "lianclaw")
             return "time"
+        if (key === "weather" || key === "hotkeys" || key === "shortcuts")
+            return "keys"
         for (let i = 0; i < views.length; i++) {
             if (views[i] === key)
                 return views[i]
@@ -354,7 +355,7 @@ PanelWindow {
                         sourceComponent: {
                             switch (root.view) {
                             case "sys": return sysPage
-                            case "weather": return weatherPage
+                            case "keys": return keysPage
                             default: return timePage
                             }
                         }
@@ -376,16 +377,10 @@ PanelWindow {
     }
     Component {
         id: sysPage
-        PlaceholderPage {
-            viewId: "sys"
-            hint: "系统页待打磨（旧 SystemView 太重，按块再迁）"
-        }
+        SystemPage {}
     }
     Component {
-        id: weatherPage
-        PlaceholderPage {
-            viewId: "weather"
-            hint: "天气页待打磨（先定范围再迁）"
-        }
+        id: keysPage
+        KeysPage {}
     }
 }

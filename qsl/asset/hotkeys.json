@@ -1,0 +1,124 @@
+{
+  "groups": [
+    {
+      "id": "hypr",
+      "title": "Hypr",
+      "sections": [
+        {
+          "id": "layout",
+          "title": "布局管理",
+          "items": [
+            { "keys": "Super+S", "desc": "切换 dwindle / scrolling" }
+          ]
+        },
+        {
+          "id": "window",
+          "title": "窗口管理",
+          "items": [
+            { "keys": "Super+Q", "desc": "关闭当前窗口" },
+            { "keys": "Super+W", "desc": "切换浮动" },
+            { "keys": "Super+M", "desc": "退出 Hyprland" }
+          ]
+        },
+        {
+          "id": "power",
+          "title": "电源管理",
+          "items": [
+            { "keys": "Super+Space", "desc": "电源菜单" }
+          ]
+        },
+        {
+          "id": "apps",
+          "title": "应用启动",
+          "items": [
+            { "keys": "Super+T", "desc": "终端" },
+            { "keys": "Super+E", "desc": "文件管理器" },
+            { "keys": "Super+B", "desc": "浏览器" }
+          ]
+        },
+        {
+          "id": "panels",
+          "title": "快捷面板",
+          "items": [
+            { "keys": "Super+A", "desc": "应用启动器" },
+            { "keys": "Super+Z", "desc": "剪贴板" }
+          ]
+        },
+        {
+          "id": "sidebar",
+          "title": "侧栏与通知",
+          "items": [
+            { "keys": "Super+C", "desc": "左侧栏" },
+            { "keys": "Super+V", "desc": "右侧栏" },
+            { "keys": "Super+N", "desc": "通知中心" }
+          ]
+        },
+        {
+          "id": "island",
+          "title": "灵动岛",
+          "items": [
+            { "keys": "Alt+Tab", "desc": "Hub 主视图" },
+            { "keys": "Super+Tab", "desc": "窗口切换器" }
+          ]
+        },
+        {
+          "id": "capture",
+          "title": "屏幕截图",
+          "items": [
+            { "keys": "Ctrl+Alt+A", "desc": "区域截图" },
+            { "keys": "Ctrl+Alt+Q", "desc": "全屏截图" }
+          ]
+        },
+        {
+          "id": "media",
+          "title": "媒体控制",
+          "items": [
+            { "keys": "Ctrl+Alt+D", "desc": "播放 / 暂停" },
+            { "keys": "Ctrl+Alt+Left", "desc": "上一首" },
+            { "keys": "Ctrl+Alt+Right", "desc": "下一首" }
+          ]
+        },
+        {
+          "id": "wallpaper",
+          "title": "壁纸控制",
+          "items": [
+            { "keys": "Ctrl+Alt+N", "desc": "下一张壁纸" },
+            { "keys": "Ctrl+Alt+P", "desc": "上一张壁纸" },
+            { "keys": "Ctrl+Alt+S", "desc": "切换 image / video 模式" }
+          ]
+        },
+        {
+          "id": "workspace",
+          "title": "工作区跳转",
+          "items": [
+            { "keys": "Super+Shift+Left", "desc": "上一个非空工作区" },
+            { "keys": "Super+Shift+Right", "desc": "下一个非空工作区" },
+            { "keys": "Super+Shift+Down", "desc": "下一个空工作区" },
+            { "keys": "Super+Shift+Up", "desc": "上一个空工作区" },
+            { "keys": "Super+1..0", "desc": "聚焦工作区 1–10（0=10）" }
+          ]
+        },
+        {
+          "id": "focus-move",
+          "title": "焦点与移动",
+          "items": [
+            { "keys": "Super+Shift+1..0", "desc": "窗口移到工作区 1–10" },
+            { "keys": "Super+Left/Right/Up/Down", "desc": "移动焦点" },
+            { "keys": "Super+Alt+Left/Right/Up/Down", "desc": "移动窗口" },
+            { "keys": "Super+R", "desc": "进入键盘调大小模式" },
+            { "keys": "←→↑↓（调大小时）", "desc": "调整窗口大小" },
+            { "keys": "Esc / Enter / Super+R", "desc": "退出调大小模式" }
+          ]
+        },
+        {
+          "id": "mouse",
+          "title": "鼠标操作",
+          "items": [
+            { "keys": "Super+左键", "desc": "拖拽窗口" },
+            { "keys": "Super+右键", "desc": "调整窗口大小" }
+          ]
+        }
+      ]
+    }
+  ]
+}

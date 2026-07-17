@@ -17,6 +17,10 @@ pub struct Memory {
     pub used_gb: f64,
     pub total_gb: f64,
     pub percent: f64,
+    /// 应用占用（不含可回收 cache），用于双色条深色段
+    pub app_gb: f64,
+    /// Buffers+Cached+SReclaimable，双色条浅色段
+    pub cache_gb: f64,
     pub swap_used_gb: f64,
     pub swap_total_gb: f64,
 }

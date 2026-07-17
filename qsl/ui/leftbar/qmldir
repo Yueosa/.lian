@@ -1,3 +1,4 @@
 Leftbar 1.0 Leftbar.qml
-PlaceholderPage 1.0 PlaceholderPage.qml
+KeysPage 1.0 KeysPage.qml
+SystemPage 1.0 SystemPage.qml
 TimePage 1.0 TimePage.qml

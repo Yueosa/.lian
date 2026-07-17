@@ -9,7 +9,7 @@ pragma Singleton
 // 对外接口一览：
 //
 // 属性（readonly）：
-//   percentage      double   电量百分比（0-100）
+//   percentage      double   电量百分比（0-100；UPower 常为 0..1，已归一化）
 //   onBattery       bool     是否在用电池（拔了电源）
 //   charging        bool     是否正在充电
 //   discharging     bool     是否正在放电
@@ -31,15 +31,22 @@ Singleton {
 
     readonly property var _device: UPower.displayDevice
 
-    readonly property double percentage: _device ? _device.percentage : 0
+    // Quickshell/UPower 的 percentage 多为 0..1；少数环境可能已是 0..100
+    readonly property double percentage: {
+        if (!_device)
+            return 0
+        const p = Number(_device.percentage) || 0
+        if (p <= 0)
+            return 0
+        return p <= 1.0 ? (p * 100.0) : p
+    }
     readonly property bool onBattery: UPower.onBattery
     readonly property bool isPresent: _device ? _device.isPresent : false
 
     // 充放电状态（changeRate > 0 = 充电, < 0 = 放电, ≈ 0 = 满电/空闲）
     readonly property bool charging: _device ? _device.changeRate > 0.5 : false
     readonly property bool discharging: _device ? _device.changeRate < -0.5 : false
-    readonly property bool fullyCharged: _device
-        ? (_device.percentage >= 99 && !charging && !discharging) : false
+    readonly property bool fullyCharged: percentage >= 99 && !charging && !discharging
 
     readonly property double timeToEmpty: _device ? _device.timeToEmpty : 0
     readonly property double timeToFull: _device ? _device.timeToFull : 0
