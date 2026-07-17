@@ -14,13 +14,13 @@ pragma Singleton
 //   monthTitle     string   月份标题  "2026 / 7"
 //   sourceTitle    string   数据来源标题
 //   sourceUrl      string   数据来源 URL
-//   days           model    当月日期列表 [{year,month,day,weekday,label,isHoliday,isWorkday,isToday}]
+//   days           model    当月日期列表（兼容其它消费者）
 //
 // 方法：
-//   setMonth(year, month)   设置显示月份
-//   previousMonth()         上个月
-//   nextMonth()             下个月
-//   resetToToday()          回到本月
+//   setMonth(year, month, rebuildDays=true)
+//   buildDays(year, month)  → 42 格数组（Overview 轮转用）
+//   shiftMonth(y, m, delta) → { year, month }
+//   previousMonth / nextMonth / resetToToday
 // ============================================================
 
 import QtQuick
@@ -85,7 +85,7 @@ Singleton {
 
     function _resolveDataPath() {
         const year = new Date().getFullYear()
-        const base = Qt.resolvedUrl("../../asset/calendar/")
+        const base = String(Qt.resolvedUrl("../../asset/calendar/"))
         return base.replace("file://", "") + year + ".json"
     }
 
@@ -101,20 +101,75 @@ Singleton {
     }
 
     // ---- 构建当月日历 ----
-    function setMonth(year, month) {
+    function shiftMonth(year, month, delta) {
+        let y = Number(year) || 0
+        let m = Number(month) || 1
+        let d = Number(delta) || 0
+        m += d
+        while (m > 12) { m -= 12; y += 1 }
+        while (m < 1) { m += 12; y -= 1 }
+        return { year: y, month: m }
+    }
+
+    // 纯函数：任意月 42 格，供 Overview 预缓存相邻月
+    function buildDays(year, month) {
+        const y0 = Number(year) || 0
+        const m0 = Number(month) || 1
+        if (y0 <= 0 || m0 < 1 || m0 > 12)
+            return []
+
+        const today = new Date()
+        const todayKey = _key(today.getFullYear(), today.getMonth() + 1, today.getDate())
+        const first = new Date(y0, m0 - 1, 1)
+        const startDay = new Date(first)
+        startDay.setDate(startDay.getDate() - first.getDay())
+
+        const out = []
+        for (let w = 0; w < 6; w++) {
+            for (let d = 0; d < 7; d++) {
+                const date = new Date(startDay)
+                date.setDate(date.getDate() + w * 7 + d)
+                const y = date.getFullYear()
+                const m = date.getMonth() + 1
+                const day = date.getDate()
+                const key = _key(y, m, day)
+                const inMonth = (m === m0)
+                let label = ""
+                if (_holidays[key]) label = _holidays[key]
+                else if (_workdays[key]) label = _workdays[key]
+                else if (_festivals[key]) label = _festivals[key][0]
+                const weekday = date.getDay()
+                out.push({
+                    year: y, month: m, day: day,
+                    weekday: weekday,
+                    inMonth: inMonth,
+                    label: label,
+                    isHoliday: !!_holidays[key],
+                    isWorkday: !!_workdays[key],
+                    isToday: key === todayKey,
+                    isWeekend: weekday === 0 || weekday === 6
+                })
+            }
+        }
+        return out
+    }
+
+    // rebuildDays=false：只改显示年月（Overview 轮转每步调用，避免白刷 ListModel）
+    function setMonth(year, month, rebuildDays) {
         displayYear = year
         displayMonth = month
-        _rebuild()
+        if (rebuildDays !== false)
+            _rebuild()
     }
 
     function previousMonth() {
-        if (displayMonth === 1) setMonth(displayYear - 1, 12)
-        else setMonth(displayYear, displayMonth - 1)
+        const p = shiftMonth(displayYear, displayMonth, -1)
+        setMonth(p.year, p.month)
     }
 
     function nextMonth() {
-        if (displayMonth === 12) setMonth(displayYear + 1, 1)
-        else setMonth(displayYear, displayMonth + 1)
+        const p = shiftMonth(displayYear, displayMonth, 1)
+        setMonth(p.year, p.month)
     }
 
     function resetToToday() {
@@ -124,43 +179,8 @@ Singleton {
 
     function _rebuild() {
         _daysModel.clear()
-        const today = new Date()
-        const todayKey = _key(today.getFullYear(), today.getMonth()+1, today.getDate())
-
-        // 当月第一天
-        const first = new Date(displayYear, displayMonth - 1, 1)
-        const last = new Date(displayYear, displayMonth, 0) // 当月最后一天
-
-        // 从上周日开始填充（补齐前导空白）
-        const startDay = new Date(first)
-        startDay.setDate(startDay.getDate() - first.getDay())
-
-        // 生成 6 周 × 7 天 = 42 天
-        for (let w = 0; w < 6; w++) {
-            for (let d = 0; d < 7; d++) {
-                const date = new Date(startDay)
-                date.setDate(date.getDate() + w * 7 + d)
-                const y = date.getFullYear()
-                const m = date.getMonth() + 1
-                const day = date.getDate()
-                const key = _key(y, m, day)
-                const inMonth = (m === displayMonth)
-
-                let label = ""
-                if (_holidays[key]) label = _holidays[key]
-                else if (_workdays[key]) label = _workdays[key]
-                else if (_festivals[key]) label = _festivals[key][0]
-
-                _daysModel.append({
-                    year: y, month: m, day: day,
-                    weekday: date.getDay(),
-                    inMonth: inMonth,
-                    label: label,
-                    isHoliday: !!_holidays[key],
-                    isWorkday: !!_workdays[key],
-                    isToday: key === todayKey
-                })
-            }
-        }
+        const built = buildDays(displayYear, displayMonth)
+        for (let i = 0; i < built.length; i++)
+            _daysModel.append(built[i])
     }
 }

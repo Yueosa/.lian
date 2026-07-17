@@ -3,3 +3,5 @@ ClockContent 1.0 ClockContent.qml
 EarCanvas 1.0 EarCanvas.qml
 HubContent 1.0 HubContent.qml
 HubPlaceholder 1.0 HubPlaceholder.qml
+OverviewCalendar 1.0 OverviewCalendar.qml
+OverviewPage 1.0 OverviewPage.qml

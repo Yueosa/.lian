@@ -45,13 +45,12 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 
 | 块 | 内容 | 备注 |
 |---|---|---|
-| 用户 | QQ 头像 + hostname | 头像：`https://q1.qlogo.cn/g?b=qq&nk=1303028790&s=640`（可配置） |
-| 标识 | Arch logo | 资源放 `asset/` |
-| 时长 | uptime | 低频刷新 |
-| 主视觉 | 大日历 | 复用 `Calendar` service |
-| 摘要 | 系统摘要若干行 | 与 hostname/uptime 同级补白；**字段名单后定**（可来自 Sysmon / fastfetch 缓存） |
+| 用户 | QQ 头像 + hostname + Arch/uptime | 加大头像与字号 |
+| 时钟 | 问候 + HH:mm（两行） | 日期交给右栏日历 |
+| 天气 | 轻量占位，点击 → Weather Tab | 真数据随 Weather 页一起做 |
+| 主视觉 | 大日历三缓冲翻页 | prev/curr/next 预加载再滚 |
 
-明确不做：WiFi/BT 开关、电源策略、麦克风滑条、控制中心、三模式、事件偏好页。
+**状态：已实现**（`OverviewPage` + `OverviewCalendar`）
 
 ---
 
@@ -77,7 +76,13 @@ notifToast 活跃 ────────────────────�
 否则 ────────────────────────────────────→ 时钟（一级默认）
 ```
 
-Hub 打开时压制一级展示内容（岛体放大到 Hub 尺寸）。
+## 关岛（务必可用）
+
+Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠岛内退出：
+
+- **Esc**（窗口级 FocusScope，主屏抢键）
+- **点岛外空白**
+- 应急：`qs -p ~/.lian/qsl ipc call island close`
 
 ---
 
@@ -101,8 +106,8 @@ Hub 打开时压制一级展示内容（岛体放大到 Hub 尺寸）。
 
 ## 落地顺序
 
-1. **壳**（本阶段）：耳朵 + morph + 一级时钟占位 + Hub 壳 + IPC
-2. Overview 瘦身页
+1. **壳**：耳朵 + morph + Hub 壳 + IPC — 已做
+2. **Overview** — 已做
 3. Media（+ 媒体 IPC）
 4. Wallpaper / Weather
 5. Switcher 修 bug

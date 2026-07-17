@@ -48,6 +48,13 @@ FocusScope {
         }
     }
 
+    // Keys 依赖焦点；Shortcut 不依赖，和壳层 Esc 双保险
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.visible
+        onActivated: root.closeRequested()
+    }
+
     onVisibleChanged: {
         if (visible)
             forceActiveFocus()
@@ -179,10 +186,7 @@ FocusScope {
 
     Component {
         id: overviewComp
-        HubPlaceholder {
-            title: "Overview"
-            hint: "用户 · 日历 · 系统摘要（待做）"
-        }
+        OverviewPage {}
     }
     Component {
         id: mediaComp

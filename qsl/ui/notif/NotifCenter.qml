@@ -1,4 +1,5 @@
 // NotifCenter — 右下角通知中心（轻量版）
+// 开栏全屏 mask：点空白关闭；关栏 mask=0
 // 无 gooey；圆角卡片 + 面板 slide；单条右滑淡出
 // 清空：仅前 clearAnimMax 条错开滑出，其余随 dismissAll 消失
 // 无空态文案（关窗 release 时不闪「没有新通知」）
@@ -18,13 +19,14 @@ PanelWindow {
     color: "transparent"
     visible: true
 
+    // 开栏铺满，点空白关闭；关栏 mask=0
     anchors {
+        left: true
         right: true
+        top: true
         bottom: true
     }
 
-    implicitWidth: panelWidth + 32
-    implicitHeight: Math.min(640, Screen.height - 48)
     exclusiveZone: 0
 
     WlrLayershell.namespace: "qsl-notif"
@@ -36,7 +38,7 @@ PanelWindow {
     property bool clearing: false
     readonly property int panelWidth: 420
     readonly property int rowHeight: 72
-    readonly property int closedOffset: Math.round(implicitHeight + 80)
+    readonly property int closedOffset: Math.round(Math.min(640, Screen.height - 48) + 80)
     readonly property bool contentActive: open || anim.slide !== closedOffset
 
     function toggle() { open ? closeWindow() : openWindow() }
@@ -88,11 +90,8 @@ PanelWindow {
 
     Item {
         id: inputMask
-        // 只挡面板区域，关窗为 0
-        x: root.width - root.panelWidth - 16
-        y: root.open ? (root.height - card.height - 16) : root.height
-        width: root.open ? root.panelWidth : 0
-        height: root.open ? card.height : 0
+        width: root.open ? root.width : 0
+        height: root.open ? root.height : 0
     }
     mask: Region { item: inputMask }
 
@@ -144,7 +143,7 @@ PanelWindow {
         Rectangle {
             id: card
             width: root.panelWidth
-            height: Math.min(root.implicitHeight - 24, Math.max(280, listCol.implicitHeight + 88))
+            height: Math.min(Math.min(640, root.height - 48) - 24, Math.max(280, listCol.implicitHeight + 88))
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.rightMargin: 16

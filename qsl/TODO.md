@@ -68,7 +68,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 
 ### 页面（一个一个打磨）
 
-- [ ] **Overview** — QQ 头像 / hostname / Arch logo / uptime / 大日历 / 系统摘要
+- [x] **Overview** — 身份/时钟/天气入口 + 三格轮转日历
 - [ ] **Media** — 照搬旧逻辑 + 统一 Media 服务
 - [ ] **Wallpaper** — lianwall 封装
 - [ ] **Weather** — 照搬

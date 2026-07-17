@@ -1,5 +1,6 @@
 // Rightbar — 右侧设置栏壳（Super+V）
 // 单 Loader：任一时刻只有一页；Tab 切换 = 旧页右滑淡出 → 换页 → 新页滑入
+// 开栏全屏 mask：点空白关闭；关栏 mask=0
 // 无 gooey；关窗后 Loader.active=false，页面销毁
 //
 // 性能：
@@ -19,9 +20,12 @@ PanelWindow {
     color: "transparent"
     visible: true
 
+    // 开栏铺满，点空白关闭；关栏 mask=0
     anchors {
+        left: true
         right: true
         top: true
+        bottom: true
     }
 
     readonly property int panelWidth: 380
@@ -29,8 +33,6 @@ PanelWindow {
     readonly property int closedOffset: panelWidth + 48
     readonly property bool contentActive: open || panelSlide !== closedOffset
 
-    implicitWidth: panelWidth + 24
-    implicitHeight: panelHeight + 80
     exclusiveZone: 0
 
     WlrLayershell.namespace: "qsl-rightbar"
@@ -217,10 +219,8 @@ PanelWindow {
 
     Item {
         id: inputMask
-        x: root.open ? (root.width - root.panelWidth - 12) : root.width
-        y: 56
-        width: root.open ? root.panelWidth : 0
-        height: root.open ? root.panelHeight : 0
+        width: root.open ? root.width : 0
+        height: root.open ? root.height : 0
     }
     mask: Region { item: inputMask }
 

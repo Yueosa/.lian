@@ -1,5 +1,6 @@
 // Leftbar — 左侧栏壳（Super+C / IPC sidebar）
 // 单 Loader：任一时刻只有一页；Tab 切换 = 旧页左滑淡出 → 换页 → 新页滑入
+// 开栏全屏 mask：点空白关闭；关栏 mask=0
 // 无 gooey；关窗后 Loader.active=false，页面销毁
 //
 // 性能：
@@ -19,9 +20,10 @@ PanelWindow {
     color: "transparent"
     visible: true
 
-    // 与旧 left sidebar 同思路：贴左、顶底拉满，卡片几乎占满屏高
+    // 开栏时铺满屏幕，才能点空白关闭；关栏 mask=0 不挡桌面
     anchors {
         left: true
+        right: true
         top: true
         bottom: true
     }
@@ -34,7 +36,6 @@ PanelWindow {
     readonly property int closedOffset: -(panelWidth + 48)
     readonly property bool contentActive: open || panelSlide !== closedOffset
 
-    implicitWidth: panelWidth + 24
     exclusiveZone: 0
 
     // 关栏时卸键盘焦点，避免 Overlay 层空抢键
@@ -224,10 +225,9 @@ PanelWindow {
 
     Item {
         id: inputMask
-        x: root.open ? 12 : -root.panelWidth
-        y: root.panelTop
-        width: root.open ? root.panelWidth : 0
-        height: root.open ? root.panelHeight : 0
+        // 开栏全屏可点空白关；关栏清零
+        width: root.open ? root.width : 0
+        height: root.open ? root.height : 0
     }
     mask: Region { item: inputMask }
 

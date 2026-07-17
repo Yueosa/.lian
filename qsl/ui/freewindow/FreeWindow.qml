@@ -125,7 +125,7 @@ PanelWindow {
             }
         }
 
-        // 点卡牌外关窗；卡牌子内容在上层会先吃到点击
+        // 点卡牌外关窗；卡牌本体吞点击，避免点内容穿透关闭
         MouseArea {
             anchors.fill: parent
             enabled: root.open
@@ -143,6 +143,12 @@ PanelWindow {
             color: "transparent"
             radius: Size.rounding.xxl
             clip: true
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                onClicked: {}
+            }
         }
     }
 }
