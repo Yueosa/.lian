@@ -5,6 +5,31 @@
 
 ---
 
+## IPC 速查（开发）
+
+前缀一律：`qs -p ~/.lian/qsl ipc call <target> <fn> [args…]`  
+（生产去掉 `-p ~/.lian/qsl`，target/fn 相同。）
+
+| target | 命令 | 说明 |
+|---|---|---|
+| `free-window-app` | `toggle` / `open` / `close` | 启动器 Super+A |
+| `free-window-clipboard` | `toggle` / `open` / `close` | 剪贴板 Super+Z |
+| `notif` | `toggle` / `open` / `close` | 通知中心 Super+N |
+| `rightbar` | `toggle` | 右侧栏开关 Super+V |
+| `rightbar` | `open <view>` | `network` / `bluetooth` / `audio` / `updates` |
+| `rightbar` | `next` / `prev` | Tab 切换 |
+| `rightbar` | `close` | 关栏 |
+
+示例：
+
+```bash
+qs -p ~/.lian/qsl ipc call notif toggle
+qs -p ~/.lian/qsl ipc call rightbar open network
+qs -p ~/.lian/qsl ipc call free-window-app toggle
+```
+
+---
+
 ## 已完成
 
 - [x] FreeWindow App（Super+A）
@@ -34,7 +59,7 @@
 
 ### 页面（一个一个打磨）
 
-- [ ] **Network** — 接 `data/service/Network`（开关 / 扫描 / 列表 / 连接）
+- [x] **Network** — 接 `data/service/Network`（开关 / 扫描 / 列表 / 密码展开 / nmtui）
 - [ ] **Bluetooth** — 接 `data/service/Bluetooth`（开关 / 扫描 / 已配对 / 连接）
 - [ ] **Audio** — 接 `data/service/Volume`（输出/输入音量、静音；以后可补设备列表）
 - [ ] **Updates** — 新建轻量 `updatesctl` + 缓存 JSON；**仅打开页/手动刷新**时拉取；ListView 展示 repo/AUR；关页 release
