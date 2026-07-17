@@ -47,7 +47,7 @@ hl.on("hyprland.start", function()
 
     -- 3. Quickshell 必须最先启动
     --    托盘 clients 依赖它的 StatusNotifierWatcher 才能正常显示图标
-    hl.exec_cmd("qs")
+    hl.exec_cmd("QSG_RENDER_LOOP=basic qs")
 
     -- 4. 一次性命令
     hl.exec_cmd("mkdir -p " .. screenshotDir)
