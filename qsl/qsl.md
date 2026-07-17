@@ -1,176 +1,282 @@
-# qsl — Quickshell Lian
+# qsl 重构计划
 
-> 个人桌面 Shell 第二代。从 `quickshell/` 重构而来。
-> 核心原则：自己设计架构，不继承别人的思维。
-
----
-
-## 架构哲学
-
-### Import 铁律（不可违反）
-
-```
-ui ← data ← core
- │      │
- └── component (被 ui 消费)
- └── asset (被 ui 消费)
- └── script (被 data 消费)
-
-规则：
-1. data/ 绝不 import ui/
-2. ui/ 可以 import data/, component/, asset/
-3. core/ (C++ 插件) 只能被 data/ import
-4. 同级模块不应互相依赖
-5. shell.qml 只做组装，不写逻辑
-```
-
-### ui/ 和 component/ 的边界（待最终确认）
-
-当前定义：
-- **ui/** = 屏幕/窗口/面板，应用级组件。每个套一个 `PanelWindow`，在 `shell.qml` 中实例化一次。
-- **component/** = 可复用 QML 组件。不创建窗口，可以在一处或多处使用。
-
-性能考量：
-- QML 文件拆分开销极小（每个 ~1ms 解析）
-- 真正的性能瓶颈是 `Item` 树深度、绑定链长度、属性变更通知风暴
-- **拆分文件不会带来显著性能损失，深度嵌套 Item + 过多活跃 Binding 才会**
-
-### 命名约定
-
-- QML 类型文件（Singleton/Component）：PascalCase（`Time.qml`, `SvgIcon.qml`）— QML 要求类型名首字母大写
-- 非 QML 文件 / 根文档：kebab-case（`shell.qml`, `weather.py`）
-- 目录名：全小写（`quicksettings/`, `data/service/`）
-- QML id：camelCase，有意义（`volumeSlider` 而非 `vs`）
-
-### 数据模块注释规范
-
-每个 `data/` 下的模块必须在文件头包含"对外接口一览"：
-
-```qml
--- ============================================================
--- 模块名 — EnglishName
--- ============================================================
--- 一句话职责描述。
--- 关键实现细节（依赖、精度、更新频率）。
--- ============================================================
--- 对外接口一览：
---
--- 属性（readonly）：
---   propName  type     说明          例值
---
--- 方法：
---   funcName(params)   说明
--- ============================================================
-```
-- 属性/函数：camelCase
-- 注释：中文 + 关键说明
-
-### 从 quickshell/ 迁移过来的变化
-
-| 旧 | 新 | 理由 |
-|---|---|---|
-| import qs.xxx | import qsl.xxx | 命名空间统一 |
-| Clavis.Sysmon 等 | Clavis.* (不变) | C++ 插件保持 |
-| `// 【新增】` `// FIXME` | 无这类注释 | 代码即文档，不留开发笔记 |
-| `pragma Singleton` QML | data/ 下的 Singleton | 明确单例范围 |
-| 混用的 `Item` / `Singleton` | data 层全用 Singleton，ui 层全用 PanelWindow | 类型明确 |
+> `qsl` 是 `quickshell/` 的第二代实现。目标不是平移旧代码，而是以 UI 为单位重写：
+> 数据层换成更轻的 Rust/backend 或 Quickshell 原生绑定，UI 只保留真正需要的部分。
 
 ---
 
-## 目录结构
+## 当前状态
 
-```
-qsl/
-├── shell.qml                  # 入口，组装所有 ui/ 模块
-│
-├── data/                      # 数据层：纯逻辑，零 UI，零 import ui/
-│   ├── state/                 #   全局状态（配色、尺寸、开关）
-│   │   ├── Color.qml           #     Colorscheme
-│   │   ├── Size.qml            #     Sizes
-│   │   └── Widget.qml          #     WidgetState
-│   │
-│   └── service/               #   数据服务（Quickshell 原生 D-Bus 绑定 + 薄封装）
-│       ├── Time.qml            #     时钟
-│       ├── Volume.qml          #     音量 + 静音
-│       ├── Media.qml           #     媒体播放器管理
-│       ├── Notification.qml    #     通知管理
-│       ├── Network.qml         #     网络状态 + WiFi（Quickshell.Networking）
-│       ├── Bluetooth.qml       #     蓝牙设备（Quickshell.Bluetooth）
-│       ├── Battery.qml         #     电池/电源（Quickshell.UPower）★ 新
-│       ├── Calendar.qml       #     节假日日历
-│       └── # PowerProfiles      #     电源模式——TUXEDO 笔记本走 tuxedo-control-center，
-│                                #     台式机未来可用 Quickshell.UPower PowerProfiles
-│
-├── ui/                        # UI 层：按视觉嵌套层级组织
-│   ├── bar/                   #   L1 顶栏
-│   ├── launcher/              #   L1 启动器
-│   ├── left-dock/             #   L2 左停靠区（工作区/窗口）
-│   ├── right-dock/            #   L2 右停靠区（Tray）
-│   ├── left-sidebar/          #   L3 左侧栏
-│   │   ├── lianclaw/
-│   │   ├── sysmon/
-│   │   └── weather/
-│   ├── right-sidebar/         #   L3 右侧栏
-│   │   ├── network/
-│   │   ├── bluetooth/
-│   │   └── audio/
-│   ├── notif-panel/           #   L3 通知面板
-│   ├── island/                #   L5 灵动岛
-│   │   ├── overview/
-│   │   ├── media/
-│   │   ├── wallpaper/
-│   │   ├── weather/
-│   │   └── switcher/
-│   ├── lock/                  #   锁屏（独立）
-│   └── capture/               #   截图/录制（独立）
-│
-├── component/                 # 可复用 QML 组件
-│   ├── svg-icon.qml
-│   ├── widget-panel.qml
-│   └── ...
-│
-├── backend/                   # 编译型数据源（详细见 backend/README.md）
-│   ├── cava/                  #   音频频谱（Rust 重写，最高优先级）
-│   ├── weather/               #   天气 + 地理编码（C++ 保留，收编 Python 泄漏）
-│   ├── sysmon/                #   系统监控（C++ 保留，调整构建路径）
-│   └── lyrics/                #   歌词获取（Rust 重写）
-│
-├── script/                    # 外部脚本（UI 辅助，非数据源）
-│   ├── capture.sh
-│   ├── weather.py
-│   └── ...
-│
-└── asset/                     # 静态资源
-    ├── icon/                  #   图标
-    ├── font/                  #   字体
-    └── app-logo/              #   应用 logo
-```
+- 日用 shell 仍然是 `quickshell/`。
+- `qsl/backend/` 保留，作为新数据层的基础。
+- 旧的 `qsl` QML 脚手架已经删除，UI 从空目录重新开始。
+- `data/service` 暂不提前补齐；迁移某个 UI 时，只写它实际需要的服务封装。
 
 ---
 
-## 迁移路线
+## 核心目标
 
-按复杂度递增：
+1. 降低 Quickshell 进程里的长期内存占用。
+2. 把 `/proc`、HTTP、60fps 文本解析、外部命令轮询这类脏活移出 QML。
+3. UI 按窗口/模块迁移，顺手砍掉旧版里不再需要的功能。
+4. 数据契约稳定后再接 UI，不为了兼容旧 shell 堆 shim。
+5. 保持个人桌面优先：只服务当前机器和当前工作流。
 
-| 优先级 | 模块 | 估计工作量 | 状态 |
+---
+
+## 目标架构
+
+```text
+system / dbus / http / pipewire
+        |
+        v
+backend/                 Quickshell native bindings
+Rust daemon / CLI         Network / Bluetooth / UPower / Mpris / PipeWire ...
+        |                                |
+        v                                v
+data/service/  ------------------>  ui/
+薄封装、缓存、单位换算              PanelWindow / Item tree
+```
+
+### 规则
+
+- `ui/` 可以 import `data/`、`component/`、`asset/`。
+- `data/` 不 import `ui/`。
+- `backend/` 不依赖 QML 引擎。
+- `shell.qml` 只组装窗口，不写业务逻辑。
+- 同级 UI 模块之间不直接依赖；共享状态进 `data/`。
+
+---
+
+## backend 数据层
+
+`qsl/backend/` 是当前已经成型的部分。
+
+| 模块 | 形式 | 输出/接口 | 状态 |
 |---|---|---|---|
-| 1 | data/service/Time | ✅ 已完成 |
-| 2 | data/service/Volume | ✅ 已完成 |
-| 3 | data/service/Media | ✅ 已完成 |
-| 4 | data/service/Notification | ✅ 已完成 |
-| ~~5~~ | ~~data/service/Package~~ | — | **删除** |
-| 6 | data/service/Network | 30 分钟 | 使用 Quickshell.Networking |
-| 7 | data/service/Bluetooth | 30 分钟 | 使用 Quickshell.Bluetooth |
-| 8 | data/service/Battery | 20 分钟 | ★ 新，使用 Quickshell.UPower |
-| 9 | data/service/PowerProfiles | 20 分钟 | ★ 新 |
-| 10 | data/state/* | 15 分钟 | 待开始 |
-| 11 | component/* | 30 分钟 | 待开始 |
-| 12 | backend/* | 待定 | Cava / Sysmon |
-| 11 | core/ | 2 小时 | 待开始（改构建路径） |
-| 12 | ui/bar | 2 小时 | 待开始 |
-| 13 | ui/island | 4 小时 | 待开始 |
-| 14 | ui/sidebar | 6 小时 | 待开始（最大模块） |
-| 15 | ui/lock | 3 小时 | 待开始 |
-| 16 | ui/launcher | 2 小时 | 待开始 |
-| 17 | ui/其他 | 各 1~2 小时 | 待开始 |
-| 18 | script → Rust | 按需 | 待讨论 |
+| `sysmon` | `sysmond` daemon | `$XDG_RUNTIME_DIR/qsl/sysmon.json` + cmd 文件 | 已实现，继续打磨 |
+| `cava` | `cava-relay` daemon | `$XDG_RUNTIME_DIR/qsl/cava.bin` | 已实现，仍依赖系统 `cava` |
+| `weather` | `weatherd` daemon | `~/.cache/qsl/forecast.json` + cmd 文件 | 已实现，继续打磨 |
+| `lyrics` | `lyrics-fetch` CLI | stdout JSON | 已实现，待 UI 需要时接 |
+
+### 质量要求
+
+- 输出文件使用原子写入。
+- daemon 不做无意义高频写入。
+- 网络/磁盘/进程等字段必须名字和单位一致。
+- 外部 API 响应异常时不能 panic。
+- 命令文件读取尽量避免清空时吞掉新命令。
+- 日志写 stderr，保持 stdout 可作为机器输出。
+
+---
+
+## data 层策略
+
+不再一次性提前写完整 `data/service`。
+
+迁移某个 UI 时：
+
+1. 列出它实际需要的数据。
+2. 先看 Quickshell 是否已有原生绑定。
+3. 原生绑定足够时，写薄 QML singleton。
+4. 原生绑定不够时，接 `backend/` 的 Rust 输出。
+5. 服务接口稳定后再写 UI。
+
+`data/service` 文件头需要写清：
+
+- 对外属性和方法。
+- 数据来源。
+- 刷新频率。
+- 单位。
+- 可能触发的外部进程或文件监听。
+
+---
+
+## UI 分层
+
+桌面 UI 按交互面分成七层：
+
+| # | 层 | 内容 | 触发 / 位置 |
+|---|---|---|---|
+| 1 | **FreeWindow** | SUPER+A / Z / X 唤出的三个独立页面 | 快捷键弹出 |
+| 2 | **Left Sidebar** | LianClaw、System（sysmon）、Weather | 左侧滑出 |
+| 3 | **Right Sidebar** | 网络、蓝牙、音频、Update | 右侧滑出 |
+| 4 | **Notification Center** | 通知中心 | 右下角 |
+| 5 | **Left Bar** | 工作区 + 当前窗口名 | 左上角 |
+| 6 | **Right Bar** | Tray + 状态栏 | 右上角 |
+| 7 | **Dynamic Island** | 展开后含系统信息、壁纸、天气、窗口、媒体等页 | 屏幕中央 |
+
+### UI 原则
+
+- 以 UI 为单位迁移，不以旧文件为单位搬运。
+- 旧 UI 的视觉可以参考，但结构不照抄。
+- 每个顶层 UI 默认是一个 `PanelWindow` 或明确的窗口边界。
+- 复杂模块用 `Loader` 控制生命周期，默认不常驻。
+- 高频变化避免长 Binding 链，必要时集中计算后暴露简单属性。
+- `ListView` delegate 数量要可控，避免大模型全量实例化。
+- 图片资源默认考虑缓存和异步解码成本。
+
+---
+
+## 实现顺序
+
+按 `1 → 5 → 6 → 7 → 2 → 3 → 4`：
+
+1. **FreeWindow** — SUPER+A / Z / X 三个页面
+2. **Left Bar** — 工作区 + 当前窗口名
+3. **Right Bar** — Tray + 状态栏
+4. **Dynamic Island** — 系统信息 / 壁纸 / 天气 / 窗口 / 媒体等展开页
+5. **Left Sidebar** — LianClaw / System / Weather
+6. **Right Sidebar** — 网络 / 蓝牙 / 音频 / Update
+7. **Notification Center** — 右下角通知中心
+
+当前起点是第 1 层 FreeWindow，且先只做 **App（Super+A）**。
+
+---
+
+## 第 1 层计划：FreeWindow / App（Super+A）
+
+### 目标产品
+
+三页面彻底拆开。本阶段只做 App 启动器：
+
+- 视觉：沿用旧 `quickshell` UnifiedLauncher 的 App 页（左 60% 壁纸预览 + 右 40% 搜索/列表）。
+- 删除：顶部三 Tab 图标、`Tab 切页 · Esc 关闭` 按键提醒。
+- 保留/增强动画：
+  - 窗口入场 OutBack / 退场 InBack（已删 FreeWindow 壳）
+  - 列表 Up/Down 选中高亮移动动画
+  - 选中 / Enter 时图标与文字的放大动画
+- 不迁 Clipboard / Emoji；它们之后各自独立 FreeWindow。
+
+### 参考来源
+
+| 来源 | 取什么 | 不取什么 |
+|---|---|---|
+| `quickshell/Modules/Launcher/UnifiedLauncherWindow.qml` | 16:9 几何、60/40 布局、壁纸预览、左边标题文案、圆角边框 | Tab bar、Tab 快捷键、三页 Loader、Overlay remapper（先按需） |
+| `quickshell/Modules/Launcher/AppPage.qml` | 搜索框、列表 delegate、启动逻辑、图标兜底 | 底部 `Up/Down · Enter` 提示可删；50ms 轮询等旧脏逻辑 |
+| `quickshell/JS/AppManager.js` | fuzzy 搜索、usage 排序、图标 normalize、IM 资源映射、结果上限 50 | 直接依赖 `qs.config` |
+| 已删 `qsl/ui/freewindow/*` | FreeWindow 壳动画、事件驱动 DesktopEntries、ListView transition、Usage 落盘思路 | 简化过头的搜索/排序、底部按键提示、与旧 UI 不一致的细节 |
+
+### 目录草案
+
+```text
+qsl/
+├── shell.qml
+├── data/
+│   ├── state/
+│   │   ├── Color.qml          # 从已删版本恢复并作为颜色真源
+│   │   └── Size.qml           # 从已删版本恢复并作为尺寸真源
+│   └── freewindow/
+│       └── app/
+│           ├── Apps.qml       # DesktopEntries + usage + 搜索/排序对外接口
+│           └── AppSearch.js   # 从 AppManager.js 迁过来的纯函数
+├── ui/
+│   └── freewindow/
+│       ├── FreeWindow.qml     # 共用弹出壳：几何/动画/Esc/焦点
+│       └── app/
+│           ├── AppWindow.qml  # Super+A 窗口：壁纸 + AppPage
+│           └── AppPage.qml    # 搜索 + 列表 + 选中动画
+└── asset/                     # 已有 app-logo 可复用
+```
+
+### 样式层
+
+`Color` / `Size` 是 App 的前置依赖，先恢复，再写 UI。
+
+- `Color`：继续 matugen / light / dark；App 只用语义色
+  - 卡片：`surfaceHigh`
+  - 搜索框：`surfaceHighest` / `surfaceVariant` 半透明
+  - 高亮：`primary` + `onPrimary`
+  - 正文/次要：`onSurface` / `onSurfaceVariant`
+  - 边框/阴影：`outlineVariant` / `shadow`
+- `Size`：圆角、间距、字号、字体家族全部从 token 取，禁止硬编码散落。
+- 壁纸预览：短期直接读 `~/.cache/wallpaper_rofi/current(_preview)`；等后面做 Island/壁纸模块时再抽到 `data/state` 或 service。
+
+性能注意：
+
+- 壁纸 `Image` 设 `sourceSize`，避免原图解码进 qs。
+- 关闭窗口后可用短缓存（旧版 15s）避免反复 Loader 重建，但不要长期常驻整棵树。
+
+### 数据层
+
+不要把搜索/排序塞进 UI。建议拆成：
+
+1. **`data/freewindow/app/Apps.qml`**
+   - 源：`DesktopEntries.applications`
+   - usage：`~/.cache/qsl/app_usage.json`
+   - 字段建议保留旧版 `count`，并吸收 FreeWindow 的 `last`（可选展示“多久前”）
+   - 对外：`ready`、`allApps`、`usageMap`、`recordLaunch(name)`、`search(query) -> list`
+   - 事件驱动重建；禁止旧 AppPage 的 50ms 轮询 Timer
+
+2. **`data/freewindow/app/AppSearch.js`**
+   - 从 `AppManager.js` 迁：
+     - `fuzzySearch`
+     - usage 优先 + 名称 A-Z
+     - `normalizeIconMeta`
+     - bundled app-logo 检测（telegram/wechat/discord/qq）
+     - 结果截断 50
+   - UI 只消费已经整理好的 `{ name, icon, fallbackIcon, forceGlyph, materialGlyph, assetAppId, appObj }`
+
+3. **启动**
+   - 优先 `appObj.execute()`
+   - fallback `execString` / `gtk-launch desktopId`
+   - 成功后 `recordLaunch`，再关窗
+
+### UI 层拆分
+
+1. **`FreeWindow.qml`**
+   - 全屏透明 PanelWindow
+   - 16:9 card、slide 动画、Esc、exclusive keyboard focus
+   - `default property` 承载内容
+   - 只做壳，不感知 App/Clipboard/Emoji
+
+2. **`AppWindow.qml`**
+   - 左壁纸 + 标题文案（固定“启动器”，不再随 Tab 变）
+   - 右 `AppPage`
+   - open 时聚焦搜索框；launch/Esc 关窗
+   - 点击遮罩关窗
+
+3. **`AppPage.qml`**
+   - 视觉跟旧 AppPage
+   - 删掉顶部 Tab 区（本来就不在 AppPage，而在外壳）
+   - 删掉底部按键提示
+   - 动画：
+     - `highlightMoveDuration` > 0
+     - 列表 add/remove/displaced transition
+     - 当前项图标/文字 `scale` Behavior；Enter 时可短促 scale pulse
+   - 键盘：Up/Down 选择，Enter 启动，Esc 关窗；左右翻页可选保留
+
+### 实现步骤
+
+1. 恢复 `data/state/Color.qml` + `Size.qml`，补 qmldir。
+2. 迁 `AppSearch.js` + 写 `Apps.qml`，先不接 UI 也能验证搜索/排序。
+3. 写 `FreeWindow.qml` 壳，用空内容验证开合动画与 Esc。
+4. 写 `AppWindow` + `AppPage`：旧布局 − Tab/提示 + 新动画。
+5. `shell.qml` 只装 AppWindow；Hyprland bind Super+A → `qs ipc` / 等价入口。
+6. 跑通后再开 Clipboard / Emoji 两个独立 FreeWindow。
+
+### 本阶段明确不做
+
+- 不复刻 UnifiedLauncher 三合一
+- 不提前写 Clipboard/Emoji 页
+- 不接 sysmon/weather/cava
+- 不把 Color/Size 做成“兼容旧 Colorscheme 全字段”的巨型 shim；只保留 qsl 语义 token
+
+---
+
+## 明确可砍方向
+
+- 只为“看起来完整”存在的页面可以删。
+- 旧 UI 中重复展示同一数据的入口可以合并。
+- 需要常驻大量 delegate 或图片缓存的模块必须重新设计。
+- 依赖 Python/Bash 采集数据的路径优先删除或收进 backend。
+- 没有日常使用场景的实验性窗口不迁。
+
+---
+
+## 下一步
+
+1. 确认本计划后，从 FreeWindow App 开工。
+2. 先补 `Color` / `Size` / `Apps`，再写窗口壳与 AppPage。
+3. `shell.qml` 只实例化 AppWindow。
+4. App 稳定后再做 Super+Z / Super+X。

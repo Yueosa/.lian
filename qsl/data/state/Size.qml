@@ -41,6 +41,7 @@ Singleton {
     readonly property string fontSans: "Noto Sans CJK SC"
     readonly property string fontMono: "JetBrainsMono Nerd Font"
     readonly property string fontIcon: "Material Symbols Outlined"
+    readonly property string fontIconRounded: "Material Symbols Rounded"
 
     // ============================================================
     // 字体尺寸（8 级，覆盖 90% 使用场景）
