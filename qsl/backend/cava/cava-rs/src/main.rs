@@ -1,14 +1,14 @@
 // cava-relay — 将 cava 的二进制频谱数据中继到共享内存文件
 //
 // 数据流：
-//   PipeWire → cava (binary stdout) → 本程序读取 → /dev/shm/qsl_cava.bin
+//   PipeWire → cava (binary stdout) → 本程序读取 → $XDG_RUNTIME_DIR/qsl/cava.bin
 //
-// QML 端通过 data/service/Cava.qml 读取 /dev/shm/qsl_cava.bin，
+// QML 端通过 data/service/Cava.qml 读取 $XDG_RUNTIME_DIR/qsl/cava.bin，
 // 每帧 30 字节（每字节一个柱，0-255），零解析开销。
 //
 // 生命周期：
 //   由 QML/Quickshell 通过 Process 启动和终止。
-//   退出时 OS 自动清理 /dev/shm/qsl_cava.bin（tmpfs）。
+//   退出时删除 cava.bin；runtime dir 本身由会话生命周期清理。
 
 use std::fs;
 use std::io::{self, Read};
@@ -126,7 +126,10 @@ fn write_cava_config() -> io::Result<PathBuf> {
         bars = BAR_COUNT,
     );
 
-    let path = PathBuf::from(format!("{}/qsl_cava.conf", std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".into())));
+    let path = PathBuf::from(format!(
+        "{}/qsl_cava.conf",
+        std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".into())
+    ));
     fs::write(&path, &config)?;
     Ok(path)
 }

@@ -1,6 +1,9 @@
 // 守护进程主循环 — 定时刷新 + 命令管道 + 位置持久化
-use crate::{config, api, cache, enrich, model::*};
-use std::{fs, thread, time::{SystemTime, UNIX_EPOCH, Duration, Instant}};
+use crate::{api, cache, config, enrich, model::*};
+use std::{
+    fs, thread,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 
 pub fn run() {
     let (mut lat, mut lon, mut name) = load_location();
@@ -10,7 +13,10 @@ pub fn run() {
     if let Some(parent) = std::path::Path::new(&cmd_file).parent() {
         fs::create_dir_all(parent).ok();
     }
-    let _ = fs::OpenOptions::new().create(true).write(true).open(&cmd_file);
+    let _ = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(&cmd_file);
 
     loop {
         do_refresh(lat, lon, &name);
@@ -19,14 +25,18 @@ pub fn run() {
         while Instant::now() < deadline {
             if let Some(cmd) = read_command(&cmd_file) {
                 match cmd.as_str() {
-                    "refresh" => { eprintln!("weatherd: 收到 refresh"); break; }
+                    "refresh" => {
+                        eprintln!("weatherd: 收到 refresh");
+                        break;
+                    }
                     s if s.starts_with("geocode ") => {
                         // 搜索城市 → 写结果文件 → QML 展示列表
                         let query = &s[8..];
                         eprintln!("weatherd: 搜索城市: {}", query);
                         match api::geocode::search(query) {
                             Ok(results) => {
-                                let json = serde_json::to_string(&results).unwrap_or_else(|_| "[]".into());
+                                let json =
+                                    serde_json::to_string(&results).unwrap_or_else(|_| "[]".into());
                                 let _ = fs::write(config::geocode_results_file(), &json);
                                 eprintln!("weatherd: 找到 {} 个结果", results.len());
                             }
@@ -45,17 +55,17 @@ pub fn run() {
                             break;
                         }
                     }
-                    s if s == "reset_location" => {
-                        match api::location::detect() {
-                            Ok(loc) => {
-                                lat = loc.latitude; lon = loc.longitude; name = loc.name;
-                                let _ = fs::remove_file(config::location_file());
-                                eprintln!("weatherd: 重置为 IP 定位 -> {}", name);
-                                break;
-                            }
-                            Err(e) => eprintln!("weatherd: IP 定位失败: {}", e),
+                    s if s == "reset_location" => match api::location::detect() {
+                        Ok(loc) => {
+                            lat = loc.latitude;
+                            lon = loc.longitude;
+                            name = loc.name;
+                            let _ = fs::remove_file(config::location_file());
+                            eprintln!("weatherd: 重置为 IP 定位 -> {}", name);
+                            break;
                         }
-                    }
+                        Err(e) => eprintln!("weatherd: IP 定位失败: {}", e),
+                    },
                     _ => {}
                 }
             }
@@ -87,38 +97,76 @@ fn load_location() -> (f64, f64, String) {
 }
 
 fn save_location(lat: f64, lon: f64, name: &str) {
-    let json = format!(r#"{{"latitude":{},"longitude":{},"name":"{}"}}"#, lat, lon, name);
-    let _ = fs::write(config::location_file(), &json);
+    let path = config::location_file();
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let json = serde_json::json!({
+        "latitude": lat,
+        "longitude": lon,
+        "name": name,
+    });
+    if let Err(e) = fs::write(&path, json.to_string()) {
+        eprintln!("weatherd: 保存位置失败: {}", e);
+    }
 }
 
 fn do_refresh(lat: f64, lon: f64, name: &str) {
     let result = (|| -> Result<WeatherSnapshot, String> {
         let fc = api::forecast::fetch(lat, lon)?;
         let aq = api::air_quality::fetch(lat, lon)?;
-        let (current, hourly, daily) = enrich::forecast(&fc);
+        let (current, hourly, daily) = enrich::forecast(&fc)?;
         let air_quality = enrich::air_quality(&aq);
         Ok(WeatherSnapshot {
-            status: "fresh".into(), location_name: name.into(),
-            latitude: lat, longitude: lon,
+            status: "fresh".into(),
+            location_name: name.into(),
+            latitude: lat,
+            longitude: lon,
             last_updated: now_ts(),
-            current, hourly, daily, air_quality,
+            current,
+            hourly,
+            daily,
+            air_quality,
         })
     })();
 
     match result {
-        Ok(snap) => { if let Err(e) = cache::save(&snap) { eprintln!("weatherd: 缓存写入失败: {}", e); } }
+        Ok(snap) => {
+            if let Err(e) = cache::save(&snap) {
+                eprintln!("weatherd: 缓存写入失败: {}", e);
+            }
+        }
         Err(e) => {
             eprintln!("weatherd: 刷新失败: {}", e);
-            if let Some(mut old) = cache::load() { old.status = "stale".into(); let _ = cache::save(&old); }
+            if let Some(mut old) = cache::load() {
+                old.status = "stale".into();
+                let _ = cache::save(&old);
+            }
         }
     }
 }
 
 fn read_command(path: &str) -> Option<String> {
-    match fs::read_to_string(path) {
-        Ok(s) if !s.trim().is_empty() => { let _ = fs::write(path, ""); Some(s.trim().to_string()) }
-        _ => None,
+    let pending = format!("{}.pending", path);
+    if fs::rename(path, &pending).is_err() {
+        return None;
+    }
+
+    let _ = fs::OpenOptions::new().create(true).append(true).open(path);
+    let command = fs::read_to_string(&pending).unwrap_or_default();
+    let _ = fs::remove_file(&pending);
+
+    let command = command.trim().to_string();
+    if command.is_empty() {
+        None
+    } else {
+        Some(command)
     }
 }
 
-fn now_ts() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() }
+fn now_ts() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
