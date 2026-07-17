@@ -27,9 +27,10 @@
 
 ### Rightbar 壳
 
-- [ ] `ui/rightbar/` 面板壳（右滑、Esc、IPC toggle/open/close/next/prev）
-- [ ] `qsView` 状态：`network` / `bluetooth` / `audio` / `updates`
-- [ ] 挂到 `shell.qml`；hypr 仍用 `qs("rightbar", …)`，不改 `-p`
+- [x] `ui/rightbar/` 面板壳（右滑、Esc、IPC toggle/open/close/next/prev）
+- [x] `view` 状态：`network` / `bluetooth` / `audio` / `updates`
+- [x] 单 Loader + 旧页淡出/新页滑入；关窗销毁页面
+- [x] 挂到 `shell.qml`；hypr 仍用 `qs("rightbar", …)`，不改 `-p`
 
 ### 页面（一个一个打磨）
 
