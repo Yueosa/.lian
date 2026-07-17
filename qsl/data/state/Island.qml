@@ -12,6 +12,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.data.service
 
 Singleton {
     id: root
@@ -37,6 +38,37 @@ Singleton {
     readonly property bool isCollapsedMode: !showHub && !isLyricsMode && !isNotifMode
 
     onHubTabIndexChanged: hubLastOpenIndex = hubTabIndex
+
+    function syncAutoLyrics() {
+        // 有播放中的曲目 → 一级歌词优先于时钟
+        const p = Media.active
+        autoLyrics = !!(p && p.isPlaying)
+        if (!autoLyrics)
+            lyricsHoverRestore = false
+    }
+
+    Connections {
+        target: Media
+        function onActiveChanged() {
+            root.syncAutoLyrics()
+            if (Media.active)
+                playConn.target = Media.active
+            else
+                playConn.target = null
+        }
+    }
+
+    Connections {
+        id: playConn
+        target: Media.active
+        function onIsPlayingChanged() { root.syncAutoLyrics() }
+    }
+
+    Component.onCompleted: {
+        if (Media.active)
+            playConn.target = Media.active
+        syncAutoLyrics()
+    }
 
     function closeHub() {
         showHub = false
@@ -88,6 +120,11 @@ Singleton {
     function wallpaper() {
         openHubTab(2)
         return "WALLPAPER_OPENED"
+    }
+
+    function media() {
+        openHubTab(1)
+        return "MEDIA_OPENED"
     }
 
     function clearNotifToast() {

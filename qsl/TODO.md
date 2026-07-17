@@ -26,6 +26,7 @@
 | `island` | `hub` | Alt+Tab：toggle Hub |
 | `island` | `switcher` | Super+Tab：打开 Switcher |
 | `island` | `wallpaper` | 打开 Wallpaper 页 |
+| `island` | `media` | 打开 Media 页 |
 | `island` | `mediatoggle` / `mediaprevious` / `medianext` | 媒体控制 |
 | `island` | `close` | 关 Hub |
 
@@ -69,11 +70,12 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 ### 页面（一个一个打磨）
 
 - [x] **Overview** — 身份/时钟/天气入口 + 三格轮转日历
-- [ ] **Media** — 照搬旧逻辑 + 统一 Media 服务
+- [x] **Media** — 瘦身 Hub 页 + Media/Cava/Lyrics 服务（IPC 已通）
 - [ ] **Wallpaper** — lianwall 封装
 - [x] **Weather** — weatherd + Island 页；Overview 图标/温度预览
 - [ ] **Switcher** — 照搬 + 修滚动/焦点
-- [ ] 一级：通知 toast / 歌词条接入优先级
+- [x] 一级：歌词条（播放中封面+歌词+cava；悬停还原时钟）
+- [ ] 一级：通知 toast 接入优先级
 
 ---
 
@@ -107,6 +109,6 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 | Updates | `updatesctl` + `data/service/Updates`；按需拉取 |
 | Sysmon | `sysmond` + `data/service/Sysmon`；开 System 页自启 daemon |
 | Weather | `weatherd` + `data/service/Weather`；Island 页 + Overview peek |
+| Media / Cava / Lyrics | MPRIS + cava-relay + lyrics-fetch；Hub MediaPage；L1 歌词 UI 待做 |
 | Hotkeys | `asset/hotkeys.json` + `Hotkeys.qml` |
 | Island | `data/state/Island` 状态机；壳在 `ui/island/` |
-| Weather | Leftbar 不做；Island 再说 |

@@ -63,11 +63,21 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 
 ---
 
+## Media（瘦身）
+
+- IPC：`mediatoggle` / `prev` / `next` → `Media.active`（已通）
+- 服务：`Media`（选播放器 + isMusicPlayer）、`Cava`（cava-relay + refCount）、`Lyrics`（lyrics-fetch）
+- Hub：`MediaPage` — 封面 / 进度 / 传输 / 切播放器 / 12 柱小频谱 / 歌词列表
+- **不做**：圆形 cava 环、FastBlur 底、L1 展开卡
+- L1：`LyricsContent` — 播放中自动抢占；悬停 → 时钟；跑马灯 + 6 柱频谱
+
+---
+
 ## 其它页策略
 
 | 页 | 策略 |
 |---|---|
-| Media | 逻辑照搬；媒体 IPC（toggle/prev/next）走统一 `Media` 服务 |
+| Media | **已做**（瘦身 Hub） |
 | Wallpaper | 照搬 + 轻优化；`lianwall` 封装 |
 | Weather | **已做**（weatherd） |
 | Switcher | 照搬 + 修滚动/焦点；控制 Screencopy live 范围 |
@@ -118,10 +128,10 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 1. **壳**：耳朵 + morph + Hub 壳 + IPC — 已做
 2. **Overview** — 已做
 3. **Weather** — 已做
-4. Media（+ 媒体 IPC）
+4. **Media** — 已做（瘦身 Hub + L1 歌词条）
 5. Wallpaper
 6. Switcher 修 bug
-7. 通知条 / 歌词条接入一级优先级
+7. 通知条接入一级优先级
 
 ---
 
@@ -129,6 +139,7 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 
 ```bash
 qs -p ~/.lian/qsl ipc call island hub
+qs -p ~/.lian/qsl ipc call island media
 qs -p ~/.lian/qsl ipc call island switcher
 qs -p ~/.lian/qsl ipc call island wallpaper
 qs -p ~/.lian/qsl ipc call island mediatoggle

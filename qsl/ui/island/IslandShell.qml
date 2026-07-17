@@ -215,7 +215,10 @@ Variants {
 
                     readonly property int targetW: Island.isHubMode
                         ? (hubLoader.item ? hubLoader.item.implicitWidth : hubFallbackW)
-                        : Island.isLyricsMode ? Size.island.lyricsW
+                        : Island.isLyricsMode
+                            ? (lyricsLoader.item
+                                ? Math.round(lyricsLoader.item.implicitWidth)
+                                : Size.island.lyricsW)
                         : Island.isNotifMode ? Size.island.notifW
                         : (Size.island.collapsedW + hoverGrowW)
 
@@ -281,6 +284,7 @@ Variants {
                         anchors.fill: parent
                         anchors.margins: 6
                         active: Island.isCollapsedMode
+                        visible: Island.isCollapsedMode
                         sourceComponent: ClockContent {}
                     }
 
@@ -315,17 +319,14 @@ Variants {
                         }
                     }
 
-                    Text {
+                    // 歌词条：悬停时仍保持加载（只藏 UI），避免 Cava 反复启停
+                    Loader {
+                        id: lyricsLoader
                         anchors.fill: parent
-                        anchors.margins: 12
+                        anchors.margins: 4
+                        active: (Island.showLyrics || Island.autoLyrics) && !Island.showHub
                         visible: Island.isLyricsMode
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "歌词（待接入）"
-                        color: Color.textOnBackground
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.md
-                        elide: Text.ElideRight
+                        sourceComponent: LyricsContent {}
                     }
 
                     Loader {

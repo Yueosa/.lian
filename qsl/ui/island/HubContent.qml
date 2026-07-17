@@ -190,7 +190,7 @@ FocusScope {
     }
     Component {
         id: mediaComp
-        HubPlaceholder { title: "Media"; hint: "待从旧 qs 搬迁" }
+        MediaPage {}
     }
     Component {
         id: wallpaperComp
