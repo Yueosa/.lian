@@ -101,4 +101,42 @@ Singleton {
         readonly property int smooth: 200   // 面板弹出/窗口打开
         readonly property int slow:   250   // 工作区切换
     }
+
+    // ============================================================
+    // 灵动岛几何（对齐旧 qs，略收）
+    // ============================================================
+
+    readonly property real islandScale: 0.92
+
+    readonly property QtObject island: QtObject {
+        readonly property int earRadius: 16
+
+        readonly property int collapsedW: Math.round(220 * root.islandScale)
+        readonly property int collapsedH: Math.round(48 * root.islandScale)
+        readonly property int lyricsW: Math.round(420 * root.islandScale)
+        readonly property int lyricsH: Math.round(42 * root.islandScale)
+        readonly property int notifW: Math.round(380 * root.islandScale)
+        readonly property int notifH: Math.round(70 * root.islandScale)
+
+        readonly property int hubTabBarHeight: 80
+        readonly property int hubContentGap: 10
+        readonly property int hubTabSpacing: 15
+        readonly property int hubTabIndicatorWidth: 40
+        readonly property int hubTabIndicatorHeight: 3
+
+        readonly property int overviewWidth: 860
+        readonly property int overviewHeight: 520
+
+        readonly property int mediaWidth: 760
+        readonly property int mediaHeight: 480
+        readonly property int wallpaperWidth: 860
+        readonly property int wallpaperHeight: 540
+        readonly property int weatherWidth: 760
+        readonly property int weatherHeight: 540
+        readonly property int switcherWidth: 900
+        readonly property int switcherHeight: 540
+
+        // Overview 用户头像（QQ）
+        readonly property string avatarUrl: "https://q1.qlogo.cn/g?b=qq&nk=1303028790&s=640"
+    }
 }

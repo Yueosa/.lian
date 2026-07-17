@@ -3,15 +3,20 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.data.state
+import qs.data.service
 import qs.ui.bar
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
+import qs.ui.island
 import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
 
 ShellRoot {
     Bar {}
+
+    IslandShell {}
 
     AppWindow {
         id: appWindow
@@ -70,5 +75,29 @@ ShellRoot {
         function next() { leftbar.next() }
         function prev() { leftbar.prev() }
         function close() { leftbar.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "island"
+        function hub() { return Island.hub() }
+        function switcher() { return Island.switcher() }
+        function wallpaper() { return Island.wallpaper() }
+        function close() { Island.closeHub(); return "CLOSED" }
+
+        function mediatoggle() {
+            if (Media.active)
+                Media.active.togglePlaying()
+            return "OK"
+        }
+        function mediaprevious() {
+            if (Media.active)
+                Media.active.previous()
+            return "OK"
+        }
+        function medianext() {
+            if (Media.active)
+                Media.active.next()
+            return "OK"
+        }
     }
 }

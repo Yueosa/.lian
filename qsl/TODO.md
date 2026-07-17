@@ -23,6 +23,11 @@
 | `sidebar` | `open <view>` | `time` / `sys` / `keys` |
 | `sidebar` | `next` / `prev` | Tab 切换 |
 | `sidebar` | `close` | 关栏 |
+| `island` | `hub` | Alt+Tab：toggle Hub |
+| `island` | `switcher` | Super+Tab：打开 Switcher |
+| `island` | `wallpaper` | 打开 Wallpaper 页 |
+| `island` | `mediatoggle` / `mediaprevious` / `medianext` | 媒体控制 |
+| `island` | `close` | 关 Hub |
 
 示例：
 
@@ -30,6 +35,7 @@
 qs -p ~/.lian/qsl ipc call notif toggle
 qs -p ~/.lian/qsl ipc call rightbar open network
 qs -p ~/.lian/qsl ipc call sidebar open sys
+qs -p ~/.lian/qsl ipc call island hub
 qs -p ~/.lian/qsl ipc call free-window-app toggle
 ```
 
@@ -43,54 +49,36 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 - [x] 通知中心 NotifCenter（Super+N / IPC `notif`）
 - [x] Bar 左：工作区（缺口甜甜圈）+ 窗口名
 - [x] Rightbar（Super+V）四页 + Bar 右 Tray/芯片
-- [x] Leftbar 壳 + Time 页（Super+C）
+- [x] Leftbar 壳 + Time / System / Keys（Super+C）
+- [x] Island **壳**（耳朵 + morph + Hub 占位 + IPC）
 
 ---
 
-## 接下来：Leftbar（Super+C）
+## 接下来：Dynamic Island
 
-原则：
+详见 [`ui/island/README.md`](ui/island/README.md)。
 
-- **先写壳，再一页一页打磨**（与 Rightbar 同套路）
-- 无 gooey；关窗 `Loader.active=false` 销毁页面
-- IPC：`sidebar`（对齐生产 `qs ipc call sidebar …` / hypr Super+C）
-- **整棵 LianClaw 砍掉**（会话列表 / 消息 / RPC / SessionDrawer）
-- 原 LianClaw 欢迎页只留：**时间环 + 日期问候 + 一言**
+### 壳（已做）
 
-### Leftbar 壳
-
-- [x] `ui/leftbar/` 面板壳（左滑、Esc、IPC toggle/open/close/next/prev）
-- [x] `view`：`time` / `sys` / `keys`（Weather 已砍）
-- [x] 单 Loader + 页切换淡出/滑入；关窗销毁
-- [x] 挂到 `shell.qml`；hypr 仍用 `qs("sidebar", …)`，不改 `-p`
+- [x] `data/state/Island` 单例状态机（多屏共享 IPC）
+- [x] 耳朵 + DropShadow + 尺寸 morph；无 L2 / 无一级点击
+- [x] Hub 五 Tab + 单 Loader 占位页；Tab 与 `Island` 双向同步
+- [x] 耳朵抽成 `EarCanvas`；一级时钟按需 Loader
+- [x] IPC：`hub` / `switcher` / `wallpaper` / media* / `close`
 
 ### 页面（一个一个打磨）
 
-- [x] **Time** — 环形时钟 / 日期问候 / 一言（点卡片刷新）；无会话 UI
-- [x] **System** — 条形仪表盘 + 轻量进程表（CPU/MEM 排序、杀进程、齿轮 htop）；`sysmond` 开页自启
-- [x] **Keys** — `asset/hotkeys.json` 速查；分组芯片 + 列表（hypr 条目待填）
-- [ ] ~~Weather~~ → 留给 Island，Leftbar 不做
-
-### System 首版范围（已砍）
-
-- 无双弧 Canvas、无 Net/RAM/Load 曲线
-- 无进程展开 / smaps / 复制全家桶
-- 进程列仅 CPU + MEM（无进程级 NET）
-- 电池用 UPower `Battery`；监控用 `sysmond` → `Sysmon.qml`
-
-### 调查备忘
-
-| 页 | 策略 |
-|---|---|
-| Time / System | 已做 |
-| Keys | 页已做；JSON 条目按表填写 |
-| Weather | **不做**（Island） |
+- [ ] **Overview** — QQ 头像 / hostname / Arch logo / uptime / 大日历 / 系统摘要
+- [ ] **Media** — 照搬旧逻辑 + 统一 Media 服务
+- [ ] **Wallpaper** — lianwall 封装
+- [ ] **Weather** — 照搬
+- [ ] **Switcher** — 照搬 + 修滚动/焦点
+- [ ] 一级：通知 toast / 歌词条接入优先级
 
 ---
 
 ## 更后面（先别做）
 
-- [ ] Dynamic Island
 - [ ] Lock / HotCorner / 录制菜单等
 
 ---
@@ -102,10 +90,11 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 | light/dark 主题切换与状态机 | 几乎不用、切换卡、占逻辑；matugen 挂了用硬编码兜底即可 |
 | Rightbar 电源页 | Tuxedo 管策略；左栏 system 可看电量 |
 | Updates 后台定时轮询 | 旧实现太重；改为打开/手动刷新 |
-| Rightbar / Leftbar gooey blur | 只留给 Island |
+| Rightbar / Leftbar gooey blur | 岛也不做真 gooey；岛灵魂是耳朵 + morph + 阴影 |
 | **LianClaw 整棵**（会话/消息/RPC） | 左栏只要时间/一言展示；AI 会话另议 |
 | System 曲线 / 双弧 / 进程展开 | 重且收益低；htop 齿轮兜底 |
 | Leftbar Weather | 太重；留给 Island |
+| Island L2 媒体卡 / 一级点击 / 音量 OSD | 状态机瘦身；媒体只走 Hub + IPC |
 
 ---
 
@@ -118,4 +107,5 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 | Updates | `updatesctl` + `data/service/Updates`；按需拉取 |
 | Sysmon | `sysmond` + `data/service/Sysmon`；开 System 页自启 daemon |
 | Hotkeys | `asset/hotkeys.json` + `Hotkeys.qml` |
+| Island | `data/state/Island` 状态机；壳在 `ui/island/` |
 | Weather | Leftbar 不做；Island 再说 |
