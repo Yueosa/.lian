@@ -1,3 +1,10 @@
 Bar 1.0 Bar.qml
 Workspaces 1.0 Workspaces.qml
 ActiveWindow 1.0 ActiveWindow.qml
+Tray 1.0 Tray.qml
+TrayItem 1.0 TrayItem.qml
+TrayMenu 1.0 TrayMenu.qml
+StatusChips 1.0 StatusChips.qml
+WifiChip 1.0 WifiChip.qml
+BluetoothChip 1.0 BluetoothChip.qml
+AudioChip 1.0 AudioChip.qml

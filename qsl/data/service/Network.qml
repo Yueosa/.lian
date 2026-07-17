@@ -86,6 +86,53 @@ Singleton {
     readonly property bool hasWifiDevice: !!_wifiDevice
     readonly property string lastError: _lastError
 
+    // Bar 芯片用：不依赖 detailActive / 扫描
+    readonly property bool wifiConnected: !!(wifiEnabled && _wifiDevice && _wifiDevice.connected)
+
+    readonly property var _activeWifiNetwork: {
+        void Networking.devices.values
+        void _netRev
+        if (!_wifiDevice || !_wifiDevice.connected)
+            return null
+        const items = _modelItems(_wifiDevice.networks)
+        for (let i = 0; i < items.length; i++) {
+            if (items[i] && items[i].connected)
+                return items[i]
+        }
+        return null
+    }
+
+    readonly property int wifiSignalStrength: {
+        const n = _activeWifiNetwork
+        return n ? (n.signalStrength || 0) : 0
+    }
+
+    // Bar 悬停文案
+    readonly property string chipLabel: {
+        if (ethernetConnected)
+            return ethernetName || "以太网"
+        if (!wifiEnabled)
+            return "已关闭"
+        if (wifiConnected) {
+            const n = _activeWifiNetwork
+            return n ? displayName(n) : "已连接"
+        }
+        return "未连接"
+    }
+
+    readonly property string chipIcon: {
+        if (ethernetConnected)
+            return "settings_ethernet"
+        if (!wifiEnabled || !wifiConnected)
+            return "wifi_off"
+        const s = wifiSignalStrength
+        if (s >= 75)
+            return "wifi"
+        if (s >= 40)
+            return "network_wifi_3_bar"
+        return "network_wifi_1_bar"
+    }
+
     // 直接把 ObjectModel 交给 ListView（比每次 new Array 更跟得上 NM 更新）
     readonly property var wifiNetworksModel: {
         void _netRev

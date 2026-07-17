@@ -10,6 +10,7 @@ pragma Singleton
 // 对外接口：
 //   detailActive / setDetailActive(bool)
 //   enabled / discovering / hasAdapter / lastError
+//   chipLabel / chipConnected     Bar 轻量摘要（不建列表）
 //   connectedDevices / pairedDevices / scannedDevices / flatRows
 //   toggle / startScan / stopScan / toggleScan
 //   connectDevice / disconnectDevice / pairDevice / forgetDevice
@@ -74,6 +75,36 @@ Singleton {
         if (section === "paired")
             return "已配对"
         return "附近"
+    }
+
+    // Bar 芯片：只扫一遍找首个已连，不建数组；关页也可用
+    readonly property bool chipConnected: {
+        void _devRev
+        if (!adapter || !enabled)
+            return false
+        void adapter.devices.values
+        const list = _devices()
+        for (let i = 0; i < list.length; i++) {
+            if (list[i] && list[i].connected)
+                return true
+        }
+        return false
+    }
+
+    readonly property string chipLabel: {
+        void _devRev
+        if (!enabled)
+            return "已关闭"
+        if (!adapter)
+            return "已关闭"
+        void adapter.devices.values
+        const list = _devices()
+        for (let i = 0; i < list.length; i++) {
+            const d = list[i]
+            if (d && d.connected)
+                return displayName(d)
+        }
+        return "已开启"
     }
 
     // 仅详情页构建；关页 []，避免后台绑定
@@ -334,6 +365,14 @@ Singleton {
     Timer {
         interval: 2000
         running: root.detailActive && root.enabled
+        repeat: true
+        onTriggered: root._bumpDev()
+    }
+
+    // 栏芯片：页关着时慢对账已连态（3s）；开销仅扫 devices 找 connected
+    Timer {
+        interval: 3000
+        running: root.enabled && !root.detailActive
         repeat: true
         onTriggered: root._bumpDev()
     }

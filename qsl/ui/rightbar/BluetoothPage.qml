@@ -237,6 +237,16 @@ Item {
                 anchors.centerIn: parent
                 visible: Bluetooth.enabled
                     && deviceList.count === 0
+                    && Bluetooth.discovering
+                text: "正在扫描…"
+                color: Color.textMuted
+                font.pixelSize: Size.fontSize.md
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: Bluetooth.enabled
+                    && deviceList.count === 0
                     && !Bluetooth.discovering
                 text: "附近没有设备"
                 color: Color.textMuted

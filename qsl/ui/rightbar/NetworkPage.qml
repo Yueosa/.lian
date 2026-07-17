@@ -424,6 +424,15 @@ Item {
                                     inputMethodHints: Qt.ImhSensitiveData
                                     onAccepted: Network.submitPassword(row.net, text)
 
+                                    // reuseItems 时换网展开，清掉上一行残留密码
+                                    Connections {
+                                        target: row
+                                        function onAskingChanged() {
+                                            if (row.asking)
+                                                passInput.text = ""
+                                        }
+                                    }
+
                                     Text {
                                         anchors.fill: parent
                                         verticalAlignment: Text.AlignVCenter

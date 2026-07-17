@@ -66,9 +66,10 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 
 ### Bar 右侧（Rightbar 页面可用后再做）
 
-- [ ] Tray（SystemTray）
-- [ ] WiFi / BT / Volume / Updates 芯片 → 打开对应 `qsView`
+- [x] Tray（SystemTray；无 MultiEffect）
+- [x] WiFi / BT / Audio 芯片 — 悬停展开摘要；仅 Audio 滚轮调音量；**无点击开栏**；不做 Updates 芯片
 - [ ] ~~主题按钮~~（已砍）
+- [ ] ~~芯片打开 qsView~~（已砍：Super+V / IPC 进 Rightbar）
 
 ---
 

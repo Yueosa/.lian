@@ -21,7 +21,7 @@ Item {
         anchors.fill: parent
         spacing: Size.spacing.sm
 
-        // 工具行：[升级] [刷新]
+        // 工具行：[升级 tcr→Syu] [刷新]
         RowLayout {
             Layout.fillWidth: true
             spacing: Size.spacing.sm
@@ -30,19 +30,19 @@ Item {
                 width: 36
                 height: 36
                 radius: Size.rounding.md
-                color: gearMa.containsMouse
+                color: upgradeMa.containsMouse
                     ? Color.withAlpha(Color.text, 0.08)
                     : "transparent"
 
                 Text {
                     anchors.centerIn: parent
-                    text: "settings"
+                    text: "system_update"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.fontSize.xl
                     color: Color.textMuted
                 }
                 MouseArea {
-                    id: gearMa
+                    id: upgradeMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
@@ -239,7 +239,7 @@ Item {
                             return Color.secondary
                         return Color.textMuted
                     }
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.sm
                     font.bold: true
                 }
 

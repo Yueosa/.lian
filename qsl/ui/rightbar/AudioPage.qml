@@ -1,12 +1,11 @@
 // AudioPage — Rightbar 声音页
 // 视觉对齐 Network/Bluetooth：工具行 = 图标钮 + 右开关；百分比只在各卡片/行显示一次
 //
-// 性能：进页 detailActive；销毁停追踪；行内 PwObjectTracker；无轮询
+// 性能：进页 detailActive；销毁停追踪；应用节点由 Volume Instantiator 订阅；无轮询
 
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Services.Pipewire
 import qs.data.state
 import qs.data.service
 
@@ -295,7 +294,7 @@ Item {
             Layout.fillHeight: true
             clip: true
             spacing: Size.spacing.sm
-            reuseItems: false
+            reuseItems: true
             model: Volume.appLinkGroups
 
             delegate: Rectangle {
@@ -316,10 +315,6 @@ Item {
                 color: Color.withAlpha(Color.text, 0.04)
                 clip: true
                 opacity: nodeReady ? 1 : 0.55
-
-                PwObjectTracker {
-                    objects: row.appNode ? [row.appNode] : []
-                }
 
                 ColumnLayout {
                     anchors.fill: parent

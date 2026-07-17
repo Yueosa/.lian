@@ -1,7 +1,7 @@
-// Bar — 顶部状态栏（首版仅左侧：工作区 + 窗口名）
-// 每屏一条 PanelWindow；右侧 Tray / QuickSettings 以后再挂
+// Bar — 顶部状态栏
+// 左：工作区 + 窗口名；右：Tray + WiFi/BT/Audio 芯片
 //
-// 性能：无 MultiEffect 阴影、无 gooey；子组件各自轻量动画
+// 性能：无 MultiEffect 阴影、无 gooey；芯片无点击开栏
 
 import Quickshell
 import Quickshell.Wayland
@@ -54,6 +54,18 @@ Variants {
                 }
 
                 ActiveWindow {}
+            }
+
+            RowLayout {
+                anchors {
+                    right: parent.right
+                    rightMargin: 10
+                    verticalCenter: parent.verticalCenter
+                }
+                spacing: Size.spacing.sm
+
+                Tray {}
+                StatusChips {}
             }
         }
     }
