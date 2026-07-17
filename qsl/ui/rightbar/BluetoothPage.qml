@@ -274,33 +274,6 @@ Item {
                     font.bold: true
                 }
 
-                // ----- device row：主行固定高度槽位 + centerIn（同 NotifCenter） -----
-                Rectangle {
-                    id: body
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    height: row.askingForget ? row.baseH + row.forgetH : row.baseH
-                    visible: !row.isHeader
-                    radius: Size.rounding.md
-                    clip: false
-                    color: {
-                        if (!row.dev)
-                            return "transparent"
-                        if (row.dev.connected || row.askingForget)
-                            return Color.withAlpha(Color.primary, 0.12)
-                        if (rowMa.containsMouse)
-                            return Color.withAlpha(Color.text, 0.08)
-                        return "transparent"
-                    }
-
-                    Behavior on height {
-                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on color { ColorAnimation { duration: 140 } }
-
-                    readonly property int pad: 12
-
                 // ----- device row：对齐 NetworkPage — ColumnLayout + AlignVCenter -----
                 Rectangle {
                     id: body

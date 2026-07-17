@@ -1,4 +1,9 @@
-/* GTK colors generated with Matugen */
+/* GTK3 colors generated with Matugen
+ *
+ * 同时写 libadwaita 风格名 + 经典 Adwaita theme_*，
+ * 避免 gsettings color-scheme 与壁纸明暗短暂不同步时
+ * （prefer-dark + 浅色 window 背景）出现浅字浅底。
+ */
 
 @define-color accent_color {{colors.primary.default.hex}};
 @define-color accent_fg_color {{colors.on_primary.default.hex}};
@@ -24,11 +29,45 @@
 @define-color overview_bg_color {{colors.surface_container_lowest.default.hex}};
 @define-color overview_fg_color {{colors.on_surface.default.hex}};
 
+/* 经典 GTK3 / Adwaita 控件读这些 */
+@define-color theme_bg_color @window_bg_color;
+@define-color theme_fg_color @window_fg_color;
+@define-color theme_base_color @view_bg_color;
+@define-color theme_text_color @view_fg_color;
+@define-color theme_selected_bg_color @accent_bg_color;
+@define-color theme_selected_fg_color @accent_fg_color;
+@define-color insensitive_bg_color {{colors.surface_variant.default.hex}};
+@define-color insensitive_fg_color {{colors.outline.default.hex}};
+@define-color insensitive_base_color {{colors.surface_container.default.hex}};
+@define-color theme_unfocused_fg_color @window_fg_color;
+@define-color theme_unfocused_text_color @view_fg_color;
+@define-color theme_unfocused_bg_color @window_bg_color;
+@define-color theme_unfocused_base_color @view_bg_color;
+
 * {
   caret-color: @accent_color;
 }
 
-window {
-  background: @window_bg_color;
+window,
+.background {
+  background-color: @window_bg_color;
   color: @window_fg_color;
+}
+
+view,
+textview,
+textview text,
+treeview,
+list,
+list row,
+label,
+.view {
+  color: @theme_text_color;
+}
+
+notebook,
+notebook > header,
+headerbar,
+.titlebar {
+  color: @headerbar_fg_color;
 }

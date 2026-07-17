@@ -378,10 +378,7 @@ PanelWindow {
     }
     Component {
         id: audioPage
-        PlaceholderPage {
-            viewId: "audio"
-            hint: "输出 / 输入音量与静音将接 Volume service。"
-        }
+        AudioPage {}
     }
     Component {
         id: updatesPage

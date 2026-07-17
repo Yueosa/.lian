@@ -61,7 +61,7 @@ qs -p ~/.lian/qsl ipc call free-window-app toggle
 
 - [x] **Network** — 接 `data/service/Network`（开关 / 扫描 / 列表 / 密码展开 / nmtui）
 - [x] **Bluetooth** — 接 `data/service/Bluetooth`（开关 / 扫描 / 已连接·已配对·附近 / 忘记 / blueman）
-- [ ] **Audio** — 接 `data/service/Volume`（输出/输入音量、静音；以后可补设备列表）
+- [x] **Audio** — 接 `data/service/Volume`（总输出/麦克风/应用混音；设备路由 → pavucontrol）
 - [ ] **Updates** — 新建轻量 `updatesctl` + 缓存 JSON；**仅打开页/手动刷新**时拉取；ListView 展示 repo/AUR；关页 release
 
 ### Bar 右侧（Rightbar 页面可用后再做）
