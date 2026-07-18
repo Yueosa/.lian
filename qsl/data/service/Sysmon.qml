@@ -20,7 +20,7 @@ pragma Singleton
 //   diskPercent / diskUsedGB / diskTotalGB
 //   uptimeSecs / uptimeText
 //   processes  // 原始 top50 数组（UI 侧筛选排序）
-//   ensureDaemon() / refreshProcesses() / openHtop()
+//   ensureDaemon() / refreshProcesses() / openBtop()
 //   killProcess(pid, force)
 // ============================================================
 
@@ -98,8 +98,8 @@ Singleton {
         cmdProc.running = true
     }
 
-    function openHtop() {
-        Quickshell.execDetached(["kitty", "-e", "htop"])
+    function openBtop() {
+        Quickshell.execDetached(["kitty", "-e", "btop"])
     }
 
     function killProcess(pid, force) {

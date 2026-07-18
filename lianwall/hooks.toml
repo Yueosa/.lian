@@ -135,7 +135,8 @@ enabled = true
 [[hook]]
 name = "quickshell-theme-refresh"
 on = "wallpaper_changed"
-command = "if [ -x \"$HOME/.config/quickshell/scripts/update_theme_from_wallpaper.sh\" ]; then bash \"$HOME/.config/quickshell/scripts/update_theme_from_wallpaper.sh\" \"$LIANWALL_PATH\"; fi"
+# 走仓库内 qsl 脚本（不依赖 ~/.config/quickshell 软链目标）
+command = "bash \"$HOME/.lian/qsl/scripts/update_theme_from_wallpaper.sh\" \"$LIANWALL_PATH\""
 enabled = true
 
 [[hook]]

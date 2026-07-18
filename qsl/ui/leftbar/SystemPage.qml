@@ -1,6 +1,6 @@
 // SystemPage — 轻量系统页
 // 大胶囊进度（CPU/GPU/MEM/磁盘/电池）+ 2×2 信息卡 + 胶囊进程行
-// 无 Canvas / 无曲线；进页 Sysmon.detailActive；齿轮 → kitty htop
+// 无 Canvas / 无曲线；进页 Sysmon.detailActive；齿轮 → kitty btop
 //
 // 性能：关页停进程轮询；ListView reuseItems + Layout.fillHeight；无展开 smaps
 
@@ -289,7 +289,7 @@ Item {
                 width: 40
                 height: 40
                 radius: Size.rounding.md
-                color: htopMa.containsMouse
+                color: btopMa.containsMouse
                     ? Color.withAlpha(Color.text, 0.08)
                     : "transparent"
                 Text {
@@ -300,12 +300,12 @@ Item {
                     color: Color.textMuted
                 }
                 MouseArea {
-                    id: htopMa
+                    id: btopMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Sysmon.openHtop()
+                        Sysmon.openBtop()
                         root.requestClose()
                     }
                 }

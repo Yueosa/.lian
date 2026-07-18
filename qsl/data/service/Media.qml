@@ -3,8 +3,9 @@ pragma Singleton
 // ============================================================
 // 媒体服务 — Media
 // ============================================================
-// 只做「选哪个播放器」+ 展示名 / 是否音乐型；曲目字段直接用 MprisPlayer。
-// IPC mediatoggle/prev/next 走 active。
+// 选播放器：手动指定可被「另一路新开播」抢占；
+// 自动：播放中的音乐 > 播放中的其它 > 最近开播 > 列表首项。
+// 必须监听每个 player 的 isPlaying（不能只依赖 list 引用）。
 // ============================================================
 
 import QtQuick
@@ -18,25 +19,110 @@ Singleton {
     readonly property int count: list.length
 
     property var manualActive: null
+    // dbusName → 最近变为 playing 的时间戳
+    property var _playStartedAt: ({})
+    property int _selectGen: 0
 
     readonly property MprisPlayer active: {
-        if (manualActive)
-            return manualActive
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].isPlaying)
-                return list[i]
+        void _selectGen
+        const players = list
+        if (!players || players.length === 0)
+            return null
+
+        if (manualActive && _playerInList(manualActive)) {
+            let otherPlaying = false
+            for (let i = 0; i < players.length; i++) {
+                if (players[i] !== manualActive && players[i].isPlaying) {
+                    otherPlaying = true
+                    break
+                }
+            }
+            // 手动项仍在播，或没有别人在播 → 保留手动
+            if (manualActive.isPlaying || !otherPlaying)
+                return manualActive
         }
-        return list.length > 0 ? list[0] : null
+
+        let best = null
+        let bestScore = -1
+        let bestTime = -1
+        for (let i = 0; i < players.length; i++) {
+            const p = players[i]
+            const score = _score(p)
+            const t = _startedAt(p)
+            if (score > bestScore || (score === bestScore && t >= bestTime)) {
+                best = p
+                bestScore = score
+                bestTime = t
+            }
+        }
+        return best
     }
 
     readonly property string activeIdentity: getIdentity(active)
     readonly property string activeIdentityIcon: getIdentityIcon(active)
+
+    function _playerKey(player) {
+        if (!player)
+            return ""
+        return String(player.dbusName || player.identity || player.desktopEntry || "")
+    }
+
+    function _playerInList(player) {
+        if (!player)
+            return false
+        for (let i = 0; i < list.length; i++) {
+            if (list[i] === player)
+                return true
+        }
+        return false
+    }
+
+    function _startedAt(player) {
+        const k = _playerKey(player)
+        if (!k)
+            return 0
+        return Number(root._playStartedAt[k]) || 0
+    }
+
+    // 分数越高越优先：播放中音乐 ≫ 播放中非音乐 ≫ 静止音乐 ≫ 其它
+    function _score(player) {
+        if (!player)
+            return -1
+        let s = 0
+        if (player.isPlaying)
+            s += 100
+        if (isMusicPlayer(player))
+            s += 40
+        return s
+    }
+
+    function _bump() {
+        _selectGen++
+    }
+
+    function _notePlaying(player) {
+        if (!player)
+            return
+        const k = _playerKey(player)
+        if (!k)
+            return
+        if (player.isPlaying) {
+            const next = Object.assign({}, root._playStartedAt)
+            next[k] = Date.now()
+            root._playStartedAt = next
+            // 另一路开播 → 清手动，让自动抢占
+            if (root.manualActive && root.manualActive !== player)
+                root.manualActive = null
+        }
+        root._bump()
+    }
 
     function nextPlayer() {
         if (list.length <= 1)
             return
         const idx = list.indexOf(active)
         manualActive = list[(idx + 1) % list.length]
+        _bump()
     }
 
     function previousPlayer() {
@@ -44,10 +130,12 @@ Singleton {
             return
         const idx = list.indexOf(active)
         manualActive = list[(idx - 1 + list.length) % list.length]
+        _bump()
     }
 
     function selectPlayer(player) {
         manualActive = player || null
+        _bump()
     }
 
     function getIdentity(player) {
@@ -129,20 +217,27 @@ Singleton {
         return ""
     }
 
+    // 每个 MPRIS 播放器单独盯 isPlaying，否则 active 绑不住抢占
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            function onIsPlayingChanged() { root._notePlaying(modelData) }
+            function onTrackTitleChanged() { root._bump() }
+            Component.onCompleted: {
+                if (modelData && modelData.isPlaying)
+                    root._notePlaying(modelData)
+            }
+        }
+    }
+
     Connections {
         target: Mpris.players
         function onValuesChanged() {
-            if (!root.manualActive)
-                return
-            let stillExists = false
-            for (let i = 0; i < root.list.length; i++) {
-                if (root.list[i] === root.manualActive) {
-                    stillExists = true
-                    break
-                }
-            }
-            if (!stillExists)
+            if (root.manualActive && !root._playerInList(root.manualActive))
                 root.manualActive = null
+            root._bump()
         }
     }
 }

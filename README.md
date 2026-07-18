@@ -809,7 +809,7 @@ paru -S matugen
 
 ###### 触发方式
 
-由 [lianwall](#lianwall) 的 `quickshell-theme-refresh` hook 在每次壁纸切换后调用 [quickshell/scripts/update_theme_from_wallpaper.sh](quickshell/scripts/update_theme_from_wallpaper.sh)，里面会跑：
+由 [lianwall](#lianwall) 的 `quickshell-theme-refresh` hook 在每次壁纸切换后调用 [qsl/scripts/update_theme_from_wallpaper.sh](qsl/scripts/update_theme_from_wallpaper.sh)，里面会跑：
 
 ```bash
 matugen image "$WALLPAPER" --source-color-index 0 --mode <auto|dark|light> --json hex --old-json-output

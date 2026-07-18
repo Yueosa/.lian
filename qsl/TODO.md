@@ -95,7 +95,7 @@ qs ipc call free-window-app toggle
 | Updates 后台定时轮询 | 旧实现太重；改为打开/手动刷新 |
 | Rightbar / Leftbar gooey blur | 岛也不做真 gooey；岛灵魂是耳朵 + morph + 阴影 |
 | **LianClaw 整棵**（会话/消息/RPC） | 左栏只要时间/一言展示；AI 会话另议 |
-| System 曲线 / 双弧 / 进程展开 | 重且收益低；htop 齿轮兜底 |
+| System 曲线 / 双弧 / 进程展开 | 重且收益低；btop 齿轮兜底 |
 | Leftbar Weather | 太重；留给 Island |
 | Island L2 媒体卡 / 一级点击 / 音量 OSD | 状态机瘦身；媒体只走 Hub + IPC |
 

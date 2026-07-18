@@ -119,6 +119,123 @@
           ]
         }
       ]
+    },
+    {
+      "id": "nvim",
+      "title": "Neovim",
+      "sections": [
+        {
+          "id": "search",
+          "title": "搜索（Leader=Space）",
+          "items": [
+            { "keys": "Space+ff", "desc": "搜索文件 (Telescope)" },
+            { "keys": "Space+fg", "desc": "全文搜索" },
+            { "keys": "Space+fb", "desc": "切换 Buffer" },
+            { "keys": "Space+fh", "desc": "搜索帮助" }
+          ]
+        },
+        {
+          "id": "tree",
+          "title": "文件树",
+          "items": [
+            { "keys": "Space+w", "desc": "开关文件树" },
+            { "keys": "Space+e", "desc": "文件树 ↔ 编辑区焦点" },
+            { "keys": "v（树内）", "desc": "竖分屏打开文件" }
+          ]
+        },
+        {
+          "id": "lsp",
+          "title": "LSP / 诊断",
+          "items": [
+            { "keys": "K", "desc": "悬停文档" },
+            { "keys": "Space+dd", "desc": "诊断浮窗" },
+            { "keys": "]d", "desc": "下一处诊断" },
+            { "keys": "[d", "desc": "上一处诊断" }
+          ]
+        },
+        {
+          "id": "edit",
+          "title": "补全",
+          "items": [
+            { "keys": "Tab", "desc": "补全下一项" },
+            { "keys": "Shift+Tab", "desc": "补全上一项" },
+            { "keys": "Enter", "desc": "确认补全" },
+            { "keys": "Ctrl+Space", "desc": "手动触发补全" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kitty",
+      "title": "Kitty",
+      "sections": [
+        {
+          "id": "splits",
+          "title": "分屏",
+          "items": [
+            { "keys": "Ctrl+Shift+Enter", "desc": "上下分屏" },
+            { "keys": "Ctrl+Shift+\\", "desc": "左右分屏" },
+            { "keys": "Ctrl+Shift+W", "desc": "关闭当前 split" },
+            { "keys": "Ctrl+Shift+Z", "desc": "切换 splits ↔ stack" }
+          ]
+        },
+        {
+          "id": "nav",
+          "title": "焦点",
+          "items": [
+            { "keys": "Ctrl+Shift+Left", "desc": "焦点左移" },
+            { "keys": "Ctrl+Shift+Right", "desc": "焦点右移" },
+            { "keys": "Ctrl+Shift+Up", "desc": "焦点上移" },
+            { "keys": "Ctrl+Shift+Down", "desc": "焦点下移" }
+          ]
+        },
+        {
+          "id": "resize",
+          "title": "调大小（焦点在 Kitty 时）",
+          "items": [
+            { "keys": "Ctrl+Alt+Left", "desc": "加宽" },
+            { "keys": "Ctrl+Alt+Right", "desc": "变窄" },
+            { "keys": "Ctrl+Alt+Up", "desc": "加高" },
+            { "keys": "Ctrl+Alt+Down", "desc": "变矮" },
+            { "keys": "Ctrl+Alt+R", "desc": "重置窗口大小" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fcitx5",
+      "title": "输入法",
+      "sections": [
+        {
+          "id": "switch",
+          "title": "切换",
+          "items": [
+            { "keys": "Ctrl+Space", "desc": "激活 / 关闭输入法" },
+            { "keys": "CapsLock", "desc": "清组并切英文（已禁 Shift 切 ASCII）" }
+          ]
+        },
+        {
+          "id": "candidates",
+          "title": "候选 / 翻页",
+          "items": [
+            { "keys": "Tab", "desc": "下一候选" },
+            { "keys": "Shift+Tab", "desc": "上一候选" },
+            { "keys": "↑ / ↓", "desc": "上一页 / 下一页" },
+            { "keys": "Ctrl+Alt+P", "desc": "切换预编辑" }
+          ]
+        },
+        {
+          "id": "rime",
+          "title": "Rime",
+          "items": [
+            { "keys": "F4", "desc": "方案选单" },
+            { "keys": "Ctrl+`", "desc": "方案选单" },
+            { "keys": "Ctrl+Shift+3", "desc": "中英标点切换" },
+            { "keys": "Ctrl+Shift+4", "desc": "简繁切换" },
+            { "keys": "Ctrl+.", "desc": "半角标点开关" }
+          ]
+        }
+      ]
     }
   ]
 }
