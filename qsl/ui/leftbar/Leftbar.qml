@@ -61,8 +61,10 @@ PanelWindow {
         if (!v)
             return views[0]
         const key = String(v).toLowerCase()
-        if (key === "lianclaw")
+        if (key === "lianclaw" || key === "clock" || key === "date")
             return "time"
+        if (key === "system" || key === "sysmon" || key === "monitor")
+            return "sys"
         if (key === "weather" || key === "hotkeys" || key === "shortcuts")
             return "keys"
         for (let i = 0; i < views.length; i++) {
