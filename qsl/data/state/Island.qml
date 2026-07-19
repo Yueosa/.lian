@@ -24,6 +24,11 @@ Singleton {
     property int hubTabIndex: 0
     property int hubLastOpenIndex: 0
 
+    // 一级岛层级：默认 Top（Hyprland 全屏窗口会盖住 Top、盖不住 Overlay）。
+    // 开启后收起态也提到 Overlay，全屏游戏时歌词/通知仍浮在最上层（Ctrl+G 切换）。
+    // 开销：仅影响 layer-shell 挂载层，无绘制/内存变化。
+    property bool overlayLayer: false
+
     // 歌词（一级）
     property bool showLyrics: false
     property bool autoLyrics: false
@@ -303,6 +308,11 @@ Singleton {
     function media() {
         openHubTab(1)
         return "MEDIA_OPENED"
+    }
+
+    function toggleLayer() {
+        overlayLayer = !overlayLayer
+        return overlayLayer ? "OVERLAY_ON" : "OVERLAY_OFF"
     }
 
     function clearNotifIndex(i) {

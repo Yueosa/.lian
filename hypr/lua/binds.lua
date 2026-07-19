@@ -95,6 +95,7 @@ hl.bind(mainMod .. " + TAB", qs("island", "switcher"))
 hl.bind(mainMod .. " + C", qs("sidebar", "toggle"))
 hl.bind(mainMod .. " + V", qs("rightbar", "toggle"))
 hl.bind(mainMod .. " + N", qs("notif", "toggle"))
+hl.bind("CTRL + G", qs("island", "togglelayer"))       -- 一级岛置顶开关（全屏游戏时看歌词/通知）
 
 
 -- ============================================================

@@ -88,6 +88,7 @@ ShellRoot {
         function wallpaper() { return Island.wallpaper() }
         function media() { return Island.media() }
         function close() { Island.closeHub(); return "CLOSED" }
+        function togglelayer() { return Island.toggleLayer() }
 
         function mediatoggle() {
             if (Media.active)

@@ -46,7 +46,7 @@ Variants {
         exclusiveZone: -1
 
         WlrLayershell.namespace: "qsl-island"
-        WlrLayershell.layer: Island.showHub ? WlrLayer.Overlay : WlrLayer.Top
+        WlrLayershell.layer: (Island.showHub || Island.overlayLayer) ? WlrLayer.Overlay : WlrLayer.Top
         WlrLayershell.keyboardFocus: (Island.showHub && isKeyOwner)
             ? WlrKeyboardFocus.Exclusive
             : WlrKeyboardFocus.None
