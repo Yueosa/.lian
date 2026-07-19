@@ -146,17 +146,37 @@ resolve_mode() {
   esac
 }
 
+# GTK3/4 应用（thunar、blueman、pavucontrol…）的明暗变体看 settings.ini 的
+# gtk-application-prefer-dark-theme；只设 gsettings color-scheme 不够，
+# settings.ini 里的旧值会强制 Adwaita 用浅色变体 → 深色壁纸下浅字白底看不清。
+set_gtk_prefer_dark() {
+  local want="${1:-1}"
+  local f
+  for f in "${HOME}/.config/gtk-3.0/settings.ini" "${HOME}/.config/gtk-4.0/settings.ini"; do
+    [[ -f "${f}" ]] || continue
+    if grep -q '^gtk-application-prefer-dark-theme=' "${f}"; then
+      sed -i "s/^gtk-application-prefer-dark-theme=.*/gtk-application-prefer-dark-theme=${want}/" "${f}"
+    elif grep -q '^\[Settings\]' "${f}"; then
+      sed -i "/^\[Settings\]/a gtk-application-prefer-dark-theme=${want}" "${f}"
+    else
+      printf '[Settings]\ngtk-application-prefer-dark-theme=%s\n' "${want}" >> "${f}"
+    fi
+  done
+}
+
 sync_gtk_color_scheme() {
   local mode="${1:-dark}"
   local scheme="prefer-dark"
+  local prefer_dark=1
   case "${mode}" in
-    light) scheme="prefer-light" ;;
-    dark) scheme="prefer-dark" ;;
+    light) scheme="prefer-light"; prefer_dark=0 ;;
+    dark) scheme="prefer-dark"; prefer_dark=1 ;;
   esac
 
   if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface color-scheme "${scheme}" >/dev/null 2>&1 || true
   fi
+  set_gtk_prefer_dark "${prefer_dark}"
 }
 
 SOURCE_IMAGE="${WALLPAPER_PATH}"
