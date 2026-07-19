@@ -47,7 +47,11 @@ hl.on("hyprland.start", function()
 
     -- 3. Quickshell 必须最先启动
     --    托盘 clients 依赖它的 StatusNotifierWatcher 才能正常显示图标
-    hl.exec_cmd("QSG_RENDER_LOOP=basic qs")
+    --    MALLOC_CONF: qs 自带 jemalloc，但默认不开后台 purge 线程，
+    --    桌面空闲时不主动把 free 掉的页还给 OS（实测静置 360MB 挂 swap 不回落）。
+    --    background_thread 让它按 decay 周期自动 purge；5s decay = 操作完的空档才回收，
+    --    不影响连续操作流畅，也不销毁任何 UI（纯 C 层，图标/缓存/页面全不受影响）。
+    hl.exec_cmd("MALLOC_CONF=background_thread:true,dirty_decay_ms:5000,muzzy_decay_ms:5000 QSG_RENDER_LOOP=basic qs")
 
     -- 4. 一次性命令
     hl.exec_cmd("mkdir -p " .. screenshotDir)
