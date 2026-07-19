@@ -59,7 +59,7 @@
             "format": "\u001b[95m╭────────────────────󰚭 Statistics 󰚭───────────────────╮"
         },
         { "type": "command", "key": "  OS Age ", "keyColor": "magenta", "text": "~/.config/fastfetch/scripts/fastfetch-age.sh" },
-        { "type": "packages", "key": "  ├󰏖 PKG", "keyColor": "magenta", "format": "{1} (pacman)" },
+        { "type": "packages", "key": "  ├󰏖 PKG", "keyColor": "magenta", "format": "{pacman} (pacman)" },
         { "type": "uptime", "key": "  └󱎫 UPT", "keyColor": "magenta" },
         { "type": "custom", "format": "\u001b[95m╰─────────────────────────────────────────────────────╯" },
         "break",
