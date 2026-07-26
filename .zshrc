@@ -5,16 +5,6 @@ export PATH="$HOME/.local/bin:$PATH"	# 命令位置
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 export PATH="$HOME/.npm-global/bin:$PATH"
 
-# ollama
-export OLLAMA_FLASH_ATTENTION=1     # attention 加速
-export OLLAMA_KV_CACHE_TYPE=q8_0     # KV Cache 量化
-# export OLLAMA_KV_CACHE_TYPE=q4_0   # 更省，但可能轻微质量损失
-
-export OLLAMA_NUM_PARALLEL=1         # 避免争抢 VRAM
-export OLLAMA_MAX_LOADED_MODELS=1    # 只加载一个模型，省资源
-export OLLAMA_KEEP_ALIVE=30m         # 模型在内存中保留 30 分钟，减少反复加载
-
-
 # --- 私密环境变量 ---
 [[ -f "$HOME/.lian/.env" ]] && source "$HOME/.lian/.env"
 
