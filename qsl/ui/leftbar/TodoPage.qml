@@ -16,19 +16,21 @@ Item {
 
     property string activeTag: ""
 
-    // 直接读 Todo.items，保证 binding 依赖跟踪（函数内读属性可能不触发刷新）
+    // revision 强制依赖：完成态会重排，避免 ListView 吃旧 modelData
     readonly property var filteredItems: {
+        void Todo.revision
         const items = Todo.items
         const tag = activeTag
         let list
         if (!tag)
-            list = items
+            list = items.slice()
         else if (tag === "重要")
-            list = items.filter(i => i.starred)
+            list = items.filter(i => i && i.starred)
         else
-            list = items.filter(i => i.tag === tag)
-        return [...list].sort((a, b) => {
-            if (a.done !== b.done) return a.done ? 1 : -1
+            list = items.filter(i => i && i.tag === tag)
+        return list.sort((a, b) => {
+            if (a.done !== b.done)
+                return a.done ? 1 : -1
             return a.priority - b.priority
         })
     }
@@ -177,7 +179,7 @@ Item {
             Layout.fillHeight: true
             clip: true
             spacing: Size.spacing.xs
-            reuseItems: true
+            reuseItems: false
             model: root.filteredItems
             boundsBehavior: Flickable.StopAtBounds
 

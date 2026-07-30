@@ -3,20 +3,9 @@ pragma Singleton
 // ============================================================
 // 待办清单服务 — Todo
 // ============================================================
-// 两级分组模型：标签（tag）+ 优先级（T0/T1/T2）
-// 持久化：FileView + JSON，原子写入 ~/.local/share/qsl/todo.json
-//
-// 对外接口：
-//   items        var[]        全部条目
-//   tags         string[]     所有标签列表（含 "重要"）
-//   add(text, tag, priority)  添加条目
-//   toggle(id)               切换完成状态
-//   remove(id)               删除条目
-//   setTag(id, tag)          修改标签
-//   setPriority(id, pri)     修改优先级
-//   star(id)                 切换「重要」标记
-//   itemsByTag(tag)          按标签过滤（tag="" 返回全部）
-//   count / doneCount        计数
+// 两级分组：标签 + 优先级；持久化 ~/.local/share/qsl/todo.json
+// 写盘用 Process（FileView.setText 不可靠）；suppressLoad 防 onLoaded 回滚
+// revision：强制 UI 刷新（ListView JS 数组 + 完成态重排）
 // ============================================================
 
 import QtQuick
@@ -28,13 +17,35 @@ Singleton {
 
     property var items: []
     property var tags: ["重要", "生活", "开发"]
-    property int count: items.length
-    property int doneCount: items.filter(i => i.done).length
+    property int revision: 0
+    property bool _suppressLoad: false
+    property bool _storeReady: false
+    property bool _dirty: false
 
-    // ---- CRUD ----
+    readonly property int count: {
+        void revision
+        return items.length
+    }
+    readonly property int doneCount: {
+        void revision
+        let n = 0
+        for (let i = 0; i < items.length; i++) {
+            if (items[i] && items[i].done)
+                n++
+        }
+        return n
+    }
+
+    readonly property string _dataDir: Quickshell.env("HOME") + "/.local/share/qsl"
+    readonly property string filePath: _dataDir + "/todo.json"
+
+    function _bump() {
+        revision++
+    }
 
     function add(text, tag, priority) {
-        if (!text) return
+        if (!text)
+            return
         const item = {
             id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
             text: text,
@@ -44,92 +55,144 @@ Singleton {
             starred: false,
             created: Date.now()
         }
-        items = [...items, item]
+        items = items.concat([item])
+        _bump()
         _save()
         return item.id
     }
 
     function toggle(id) {
-        items = items.map(i => i.id === id ? Object.assign({}, i, { done: !i.done }) : i)
+        const next = []
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i]
+            if (!it)
+                continue
+            if (it.id === id) {
+                next.push(Object.assign({}, it, { done: !it.done }))
+            } else {
+                next.push(it)
+            }
+        }
+        items = next
+        _bump()
         _save()
     }
 
     function remove(id) {
-        items = items.filter(i => i.id !== id)
+        items = items.filter(i => i && i.id !== id)
+        _bump()
         _save()
     }
 
     function setTag(id, tag) {
         items = items.map(i => i.id === id ? Object.assign({}, i, { tag: tag }) : i)
+        _bump()
         _save()
     }
 
     function setPriority(id, pri) {
         items = items.map(i => i.id === id ? Object.assign({}, i, { priority: pri }) : i)
+        _bump()
         _save()
     }
 
     function star(id) {
         items = items.map(i => i.id === id ? Object.assign({}, i, { starred: !i.starred }) : i)
+        _bump()
         _save()
     }
 
     function addTag(tag) {
         if (tag && tags.indexOf(tag) === -1) {
-            tags = [...tags, tag]
+            tags = tags.concat([tag])
+            _bump()
             _save()
         }
     }
 
     function removeTag(tag) {
-        if (tag === "重要") return
+        if (tag === "重要")
+            return
         tags = tags.filter(t => t !== tag)
         items = items.map(i => i.tag === tag ? Object.assign({}, i, { tag: "生活" }) : i)
+        _bump()
         _save()
     }
 
     function itemsByTag(tag) {
-        if (!tag || tag === "") return items
-        if (tag === "重要") return items.filter(i => i.starred)
+        void revision
+        if (!tag || tag === "")
+            return items
+        if (tag === "重要")
+            return items.filter(i => i.starred)
         return items.filter(i => i.tag === tag)
     }
 
-    // ---- 持久化 ----
-
     function _save() {
+        if (!_storeReady) {
+            _dirty = true
+            return
+        }
         const payload = JSON.stringify({ tags: tags, items: items }, null, 2)
-        _file.setText(payload)
+        _suppressLoad = true
+        writeFile.command = [
+            "bash", "-c",
+            "python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).write_text(sys.argv[2]+chr(10))' \"$1\" \"$2\"",
+            "_",
+            root.filePath,
+            payload
+        ]
+        writeFile.running = true
+        _dirty = false
     }
 
-    function _load() {
-        const raw = _file.text()
-        if (!raw) return
+    function _loadFromText(raw) {
+        if (_suppressLoad)
+            return
+        if (!raw)
+            return
         try {
             const data = JSON.parse(raw)
             if (Array.isArray(data.tags) && data.tags.length > 0)
                 tags = data.tags
             if (Array.isArray(data.items))
                 items = data.items
-        } catch(e) {
+            _bump()
+        } catch (e) {
             console.warn("[Todo] JSON parse failed:", e)
         }
     }
 
-    readonly property string _dataDir: Quickshell.env("HOME") + "/.local/share/qsl"
-
-    FileView {
-        id: _file
-        path: root._dataDir + "/todo.json"
-        preload: true
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: root._load()
-        onFileChanged: root._load()
+    Process {
+        id: writeFile
+        onExited: (code) => {
+            if (code !== 0)
+                console.warn("[Todo] write failed, code=", code)
+            Qt.callLater(() => {
+                root._suppressLoad = false
+            })
+        }
     }
 
     Process {
         id: _mkdirProc
         command: ["mkdir", "-p", root._dataDir]
         running: true
+        onExited: {
+            root._storeReady = true
+            if (root._dirty)
+                root._save()
+            else
+                _file.reload()
+        }
+    }
+
+    FileView {
+        id: _file
+        path: root.filePath
+        // 不 watch：避免 setText/外部写盘回读把内存态打回旧内容
+        watchChanges: false
+        atomicWrites: true
+        onLoaded: root._loadFromText(text())
     }
 }
