@@ -11,11 +11,16 @@ PopupWindow {
 
     property var rootMenuHandle: null
     property string trayName: ""
-    property string trayItemId: ""
+    property var trayItem: null
+    property string trayKey: ""
+
+    signal pinToggled
 
     readonly property bool itemPinned: {
-        const _ = TrayService.pinnedItems
-        return TrayService.isPinnedId(root.trayItemId)
+        const _ = TrayService.pinSignature
+        if (root.trayItem)
+            return TrayService.isPinned(root.trayItem)
+        return TrayService.isPinnedKey(root.trayKey)
     }
 
     function resolveMenuIconSource(iconValue) {
@@ -186,7 +191,7 @@ PopupWindow {
                     color: pinMa.containsMouse
                         ? Color.withAlpha(Color.primary, 0.15)
                         : "transparent"
-                    visible: root.trayItemId.length > 0
+                    visible: root.trayKey.length > 0
 
                     RowLayout {
                         anchors.fill: parent
@@ -213,8 +218,22 @@ PopupWindow {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            TrayService.togglePin(root.trayItemId)
+                        // 用 pressed 更稳：部分 PopupWindow 上 clicked 会被吃掉
+                        onPressed: event => {
+                            event.accepted = true
+                            const item = root.trayItem
+                            const key = root.trayKey
+                            // 按「当前是否在栏上」显式 set，避免 toggle 方向反了
+                            const wantPinned = item
+                                ? !TrayService.isPinned(item)
+                                : !TrayService.isPinnedKey(key)
+                            let ok = false
+                            if (item)
+                                ok = TrayService.setItemPinned(item, wantPinned)
+                            else if (key.length)
+                                ok = TrayService.setPinned(key, wantPinned)
+                            if (ok)
+                                root.pinToggled()
                             root.visible = false
                         }
                     }
@@ -223,7 +242,7 @@ PopupWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    visible: root.trayItemId.length > 0
+                    visible: root.trayKey.length > 0
                     color: Color.outlineVariant
                     opacity: 0.5
                     Layout.leftMargin: 8

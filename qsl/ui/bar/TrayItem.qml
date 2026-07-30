@@ -4,14 +4,18 @@
 import QtQuick
 import Quickshell
 import qs.data.state
+import qs.data.service
 
 MouseArea {
     id: root
     required property var modelData
 
-    readonly property string trayIconLower: (root.modelData.icon || "").toLowerCase()
-    readonly property string trayIdLower: (root.modelData.id || "").toLowerCase()
-    readonly property string trayTitleLower: (root.modelData.tooltipTitle || "").toLowerCase()
+    signal pinChanged
+
+    readonly property string trayIconLower: (root.modelData && root.modelData.icon || "").toLowerCase()
+    readonly property string trayIdLower: (root.modelData && root.modelData.id || "").toLowerCase()
+    readonly property string trayTitleLower: (root.modelData && root.modelData.tooltipTitle || "").toLowerCase()
+    readonly property string trayKey: root.modelData ? TrayService.itemKey(root.modelData) : ""
 
     implicitWidth: 20
     implicitHeight: 20
@@ -24,7 +28,8 @@ MouseArea {
         const haystack = [
             root.modelData.icon || "",
             root.modelData.id || "",
-            root.modelData.tooltipTitle || ""
+            root.modelData.tooltipTitle || "",
+            root.modelData.title || ""
         ].join(" ").toLowerCase()
 
         if (haystack.indexOf("telegram") >= 0)
@@ -33,7 +38,12 @@ MouseArea {
             return "wechat"
         if (haystack.indexOf("discord") >= 0)
             return "discord"
-        if (haystack.indexOf("linuxqq") >= 0 || haystack.indexOf("tim") >= 0)
+        // Electron QQ：id 常为 chrome_status_icon_*，靠 title/tooltip
+        if (haystack.indexOf("linuxqq") >= 0
+                || haystack.indexOf("腾讯") >= 0
+                || (haystack.indexOf("qq") >= 0 && haystack.indexOf("chrome_status_icon") < 0)
+                || (haystack.indexOf("chrome_status_icon") >= 0
+                    && (String(root.modelData.tooltipTitle || root.modelData.title || "").toLowerCase().indexOf("qq") >= 0)))
             return "qq"
         return ""
     }
@@ -78,14 +88,18 @@ MouseArea {
 
     TrayMenu {
         id: trayMenu
-        rootMenuHandle: root.modelData.menu
-        trayName: root.modelData.tooltipTitle || root.modelData.id || "Menu"
-        trayItemId: root.modelData.id || ""
+        rootMenuHandle: root.modelData ? root.modelData.menu : null
+        trayName: root.modelData
+            ? (root.modelData.tooltipTitle || root.modelData.title || root.modelData.id || "Menu")
+            : "Menu"
+        trayItem: root.modelData
+        trayKey: root.trayKey
         anchor.item: root
         anchor.rect.y: (root.mapToItem(null, 0, 0).y > 500)
             ? -trayMenu.implicitHeight - 5
             : root.height + 5
         anchor.rect.x: 0
+        onPinToggled: root.pinChanged()
     }
 
     Image {

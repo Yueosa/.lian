@@ -69,7 +69,7 @@ Item {
             Behavior on opacity { NumberAnimation { duration: 180 } }
 
             Text {
-                text: "developer_board"
+                text: "speed"
                 color: Color.primary
                 font.family: Size.fontIcon
                 font.pixelSize: Size.fontSize.md
@@ -89,8 +89,9 @@ Item {
             opacity: root.isHovered && Sysmon.gpuAvailable ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 180 } }
 
+            // 与 SystemPage 一致：Outlined 无 graphics_card 字形
             Text {
-                text: "graphics_card"
+                text: "developer_board"
                 color: Color.tertiary
                 font.family: Size.fontIcon
                 font.pixelSize: Size.fontSize.md

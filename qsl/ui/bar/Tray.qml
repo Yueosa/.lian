@@ -1,10 +1,12 @@
 // Tray — 常驻 pin + expand overflow（无 MultiEffect）
-// 性能：overflow 关闭时 PanelWindow.visible=false；栏上只实例化 pinned
+// model 直接用 SystemTray.items；pinSignature 驱动立刻刷新
+// overflow 用 Loader：关闭即销毁
 
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.SystemTray
 import qs.data.state
 import qs.data.service
 
@@ -17,6 +19,15 @@ Item {
     implicitHeight: 36
     implicitWidth: Math.max(36, content.implicitWidth + 24)
 
+    function closeOverflow() {
+        root.trayOverflowOpen = false
+    }
+
+    function relayoutBar() {
+        if (content.forceLayout)
+            content.forceLayout()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Color.background
@@ -28,15 +39,12 @@ Item {
         anchors.centerIn: parent
         spacing: Size.spacing.md
 
-        // expand：有折叠项才显示
         Text {
-            visible: TrayService.unpinnedItems.length > 0
+            visible: TrayService.unpinnedCount > 0
             text: "expand_more"
             font.family: Size.fontIcon
             font.pixelSize: Size.fontSize.lg
-            color: overflowMa.containsMouse || root.trayOverflowOpen
-                ? Color.primary
-                : Color.textMuted
+            color: root.trayOverflowOpen ? Color.primary : Color.textMuted
             rotation: root.trayOverflowOpen ? 180 : 0
             Behavior on rotation {
                 NumberAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
@@ -44,93 +52,58 @@ Item {
             Layout.alignment: Qt.AlignVCenter
 
             MouseArea {
-                id: overflowMa
                 anchors.fill: parent
                 anchors.margins: -4
-                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.trayOverflowOpen = !root.trayOverflowOpen
+                onClicked: {
+                    if (root.trayOverflowOpen)
+                        root.closeOverflow()
+                    else
+                        root.trayOverflowOpen = true
+                }
             }
         }
 
         Repeater {
-            model: TrayService.pinnedItems
-            delegate: TrayItem {
+            model: SystemTray.items
+
+            delegate: Item {
+                id: barSlot
+                required property var modelData
+
+                // 不用函数绑定猜依赖：显式听 pinSignature
+                property bool show: false
+
+                function syncShow() {
+                    barSlot.show = TrayService.isPinned(barSlot.modelData)
+                }
+
+                Component.onCompleted: syncShow()
+                Connections {
+                    target: TrayService
+                    function onPinSignatureChanged() { barSlot.syncShow() }
+                    function onRevisionChanged() { barSlot.syncShow() }
+                }
+
+                visible: show
                 Layout.alignment: Qt.AlignVCenter
-            }
-        }
-    }
+                Layout.preferredWidth: show ? 20 : 0
+                Layout.preferredHeight: show ? 20 : 0
+                Layout.maximumWidth: show ? 20 : 0
+                implicitWidth: show ? 20 : 0
+                implicitHeight: show ? 20 : 0
+                width: show ? 20 : 0
+                height: show ? 20 : 0
+                clip: true
+                opacity: show ? 1 : 0
 
-    // overflow 弹出：仅有 unpinned 且打开时可见
-    PanelWindow {
-        id: overflowPopup
-
-        visible: root.trayOverflowOpen && TrayService.unpinnedItems.length > 0
-        screen: root.screen
-        color: "transparent"
-        exclusiveZone: -1
-
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
-
-        WlrLayershell.namespace: "qsl-tray-overflow"
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-        WlrLayershell.exclusionMode: ExclusionMode.Ignore
-
-        mask: Region { item: overflowMask }
-
-        Item {
-            id: overflowMask
-            anchors.fill: parent
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            enabled: overflowPopup.visible
-            z: -1
-            onClicked: root.trayOverflowOpen = false
-        }
-
-        FocusScope {
-            anchors.fill: parent
-            focus: overflowPopup.visible
-
-            Keys.onEscapePressed: event => {
-                root.trayOverflowOpen = false
-                event.accepted = true
-            }
-
-            // 锚在顶栏右上偏左；简单固定边距，避免复杂 mapToGlobal
-            Rectangle {
-                id: popupBg
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 52
-                anchors.rightMargin: 12
-                width: overflowGrid.implicitWidth + 20
-                height: overflowGrid.implicitHeight + 20
-                radius: Size.rounding.lg
-                color: Color.background
-                border.width: 1
-                border.color: Color.outlineVariant
-
-                GridLayout {
-                    id: overflowGrid
-                    anchors.centerIn: parent
-                    columns: Math.max(1, Math.ceil(Math.sqrt(Math.max(1, TrayService.unpinnedItems.length))))
-                    columnSpacing: Size.spacing.md
-                    rowSpacing: Size.spacing.md
-
-                    Repeater {
-                        model: TrayService.unpinnedItems
-                        delegate: TrayItem {
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        }
+                TrayItem {
+                    anchors.fill: parent
+                    modelData: barSlot.modelData
+                    // 先让栏刷新，再关 overflow（同帧关窗会感觉「没立刻刷新」）
+                    onPinChanged: {
+                        root.relayoutBar()
+                        Qt.callLater(root.closeOverflow)
                     }
                 }
             }
@@ -139,9 +112,130 @@ Item {
 
     Connections {
         target: TrayService
-        function onUnpinnedItemsChanged() {
-            if (TrayService.unpinnedItems.length === 0)
-                root.trayOverflowOpen = false
+        function onPinSignatureChanged() {
+            root.relayoutBar()
+        }
+        function onUnpinnedCountChanged() {
+            if (TrayService.unpinnedCount === 0)
+                root.closeOverflow()
+        }
+    }
+
+    Loader {
+        active: root.trayOverflowOpen && TrayService.unpinnedCount > 0
+        sourceComponent: overflowComp
+    }
+
+    Component {
+        id: overflowComp
+
+        PanelWindow {
+            id: overflowPopup
+
+            screen: root.screen
+            color: "transparent"
+            exclusiveZone: -1
+            visible: true
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            WlrLayershell.namespace: "qsl-tray-overflow"
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.exclusionMode: ExclusionMode.Ignore
+
+            mask: Region { item: overflowMask }
+
+            Item {
+                id: overflowMask
+                anchors.fill: parent
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                onClicked: root.closeOverflow()
+            }
+
+            FocusScope {
+                anchors.fill: parent
+                focus: true
+
+                Keys.onEscapePressed: event => {
+                    root.closeOverflow()
+                    event.accepted = true
+                }
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.topMargin: 52
+                    anchors.rightMargin: 12
+                    width: overflowGrid.implicitWidth + 20
+                    height: overflowGrid.implicitHeight + 20
+                    radius: Size.rounding.lg
+                    color: Color.background
+                    border.width: 1
+                    border.color: Color.outlineVariant
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {}
+                    }
+
+                    GridLayout {
+                        id: overflowGrid
+                        anchors.centerIn: parent
+                        columns: Math.max(1, Math.ceil(Math.sqrt(Math.max(1, TrayService.unpinnedCount))))
+                        columnSpacing: Size.spacing.md
+                        rowSpacing: Size.spacing.md
+
+                        Repeater {
+                            model: SystemTray.items
+
+                            delegate: Item {
+                                id: ovSlot
+                                required property var modelData
+
+                                property bool show: false
+
+                                function syncShow() {
+                                    ovSlot.show = TrayService.inOverflow(ovSlot.modelData)
+                                }
+
+                                Component.onCompleted: syncShow()
+                                Connections {
+                                    target: TrayService
+                                    function onPinSignatureChanged() { ovSlot.syncShow() }
+                                    function onRevisionChanged() { ovSlot.syncShow() }
+                                }
+
+                                visible: show
+                                Layout.preferredWidth: show ? 20 : 0
+                                Layout.preferredHeight: show ? 20 : 0
+                                Layout.maximumWidth: show ? 20 : 0
+                                width: show ? 20 : 0
+                                height: show ? 20 : 0
+                                clip: true
+
+                                TrayItem {
+                                    anchors.fill: parent
+                                    modelData: ovSlot.modelData
+                                    onPinChanged: {
+                                        root.relayoutBar()
+                                        Qt.callLater(root.closeOverflow)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
