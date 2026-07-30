@@ -18,7 +18,12 @@ Singleton {
     property bool detailActive: false
     property var passwordNetwork: null
     property var connectTarget: null
+    // 密码框提示：需要密码 / 密码错误（改密常见）
+    property string passwordHint: ""
     property string _lastError: ""
+    // 本次 connect 是否走了 connectWithPsk（区分「要密码」与「密码错」）
+    property bool _connectWithPsk: false
+    property bool _stateWasChanging: false
     // 强制列表绑定刷新（ObjectModel 增删时 count 会变；扫描中内容也可能原地更新）
     property int _netRev: 0
     // Quickshell 把 SSID 当 UTF-8；GBK 等会变成 U+FFFD。仅详情页按需修显示名。
@@ -178,6 +183,98 @@ Singleton {
         return ""
     }
 
+    // 连通性（NM connectivity check；未启用时多为 Unknown）
+    readonly property bool internetAvailable:
+        Networking.connectivity === NetworkConnectivity.Full
+    readonly property bool captivePortal:
+        Networking.connectivity === NetworkConnectivity.Portal
+    readonly property bool limitedConnectivity:
+        Networking.connectivity === NetworkConnectivity.Limited
+
+    readonly property string connectivityLabel: {
+        const c = Networking.connectivity
+        if (c === NetworkConnectivity.Full)
+            return "已联网"
+        if (c === NetworkConnectivity.Portal)
+            return "需门户登录"
+        if (c === NetworkConnectivity.Limited)
+            return "受限连接"
+        if (c === NetworkConnectivity.None)
+            return "无网络"
+        return ""
+    }
+
+    // 摘要卡主标题 / 副标题（详情页用；不建大对象）
+    readonly property string summaryTitle: {
+        void _netRev
+        if (ethernetConnected)
+            return ethernetName || "以太网"
+        if (!wifiEnabled)
+            return "Wi‑Fi 已关闭"
+        if (wifiConnected) {
+            const n = _activeWifiNetwork
+            return n ? displayName(n) : "已连接"
+        }
+        if (!hasWifiDevice)
+            return "未找到 Wi‑Fi 设备"
+        return "未连接"
+    }
+
+    readonly property string summarySubtitle: {
+        void _netRev
+        if (ethernetConnected) {
+            const parts = []
+            if (ethernetLinkSpeed > 0)
+                parts.push(ethernetLinkSpeed + " Mbps")
+            if (connectivityLabel)
+                parts.push(connectivityLabel)
+            return parts.length ? parts.join(" · ") : "有线已连接"
+        }
+        if (!wifiEnabled)
+            return "打开开关以扫描附近网络"
+        if (wifiConnected) {
+            const parts = []
+            const s = wifiSignalStrength
+            if (s > 0)
+                parts.push("信号 " + Math.round(s * 100) + "%")
+            if (connectivityLabel)
+                parts.push(connectivityLabel)
+            return parts.length ? parts.join(" · ") : "无线已连接"
+        }
+        if (wifiScanning)
+            return "正在扫描附近网络…"
+        return "选择下方网络以连接"
+    }
+
+    // 列表扁平行：已保存 / 附近（当前已连的放摘要卡，列表里排除以免重复）
+    // 开销：仅 detailActive 时构数组；条目数 = 扫描结果量级
+    readonly property var wifiFlatRows: {
+        void _netRev
+        if (!detailActive || !wifiEnabled || !_wifiDevice)
+            return []
+        const items = wifiNetworks
+        const saved = []
+        const nearby = []
+        for (let i = 0; i < items.length; i++) {
+            const n = items[i]
+            if (!n || n.connected)
+                continue
+            if (n.known)
+                saved.push(n)
+            else
+                nearby.push(n)
+        }
+        const out = []
+        function pushSection(section, title, list) {
+            out.push({ kind: "header", section: section, title: title, count: list.length })
+            for (let j = 0; j < list.length; j++)
+                out.push({ kind: "network", section: section, network: list[j] })
+        }
+        pushSection("saved", "已保存", saved)
+        pushSection("nearby", "附近网络", nearby)
+        return out
+    }
+
     function displayName(network) {
         if (!network)
             return "未知网络"
@@ -210,8 +307,9 @@ Singleton {
         detailActive = !!active
         if (!detailActive) {
             stopScan()
+            _clearConnectOp()
             passwordNetwork = null
-            connectTarget = null
+            passwordHint = ""
             _ssidFix = ({})
             return
         }
@@ -250,13 +348,26 @@ Singleton {
             _wifiDevice.scannerEnabled = false
     }
 
+    function _clearConnectOp() {
+        connectTarget = null
+        _connectWithPsk = false
+        _stateWasChanging = false
+        _opTimeout.stop()
+    }
+
+    function _askPassword(network, hint) {
+        passwordNetwork = network
+        passwordHint = hint || "密码"
+        _clearConnectOp()
+    }
+
     function connectToWifi(network) {
         if (!network)
             return
         if (network.connected) {
             network.disconnect()
             cancelPassword()
-            connectTarget = null
+            _clearConnectOp()
             return
         }
         if (passwordNetwork === network) {
@@ -264,7 +375,17 @@ Singleton {
             return
         }
         cancelPassword()
+
+        // 未知安全网：先要密码，少依赖 NoSecrets（NM 有时不发）
+        if (!network.known && needsPsk(network)) {
+            _askPassword(network, "需要密码")
+            return
+        }
+
         connectTarget = network
+        _connectWithPsk = false
+        _stateWasChanging = false
+        _opTimeout.restart()
         network.connect()
     }
 
@@ -272,12 +393,44 @@ Singleton {
         if (!network || !psk)
             return
         passwordNetwork = null
+        passwordHint = ""
         connectTarget = network
+        _connectWithPsk = true
+        _stateWasChanging = false
+        _opTimeout.restart()
         network.connectWithPsk(psk)
     }
 
     function cancelPassword() {
         passwordNetwork = null
+        passwordHint = ""
+    }
+
+    function forgetNetwork(network) {
+        if (!network) {
+            _setError("未找到网络")
+            return
+        }
+        if (!network.known) {
+            _setError("该网络没有已保存的配置")
+            return
+        }
+        if (passwordNetwork === network)
+            cancelPassword()
+        if (connectTarget === network)
+            _clearConnectOp()
+        network.forget()
+        _bumpNet()
+    }
+
+    function disconnectActiveWifi() {
+        const n = _activeWifiNetwork
+        if (!n)
+            return
+        n.disconnect()
+        _clearConnectOp()
+        cancelPassword()
+        _bumpNet()
     }
 
     function openPublicWifiPortal() {
@@ -331,6 +484,34 @@ Singleton {
         if (_ssidFixProc.running)
             return
         _ssidFixProc.running = true
+    }
+
+    function _onConnectFailed(reason) {
+        if (!connectTarget)
+            return
+        const authFail = reason === ConnectionFailReason.NoSecrets
+            || reason === ConnectionFailReason.WifiAuthTimeout
+            || reason === ConnectionFailReason.WifiClientFailed
+        if (authFail && needsPsk(connectTarget)) {
+            const hint = _connectWithPsk
+                ? "密码错误或认证超时"
+                : "网络需要密码"
+            // 已保存改密：弹框，并可遗忘后重配
+            if (connectTarget.known)
+                _setError(hint + "（可遗忘后重连）")
+            _askPassword(connectTarget, hint)
+            return
+        }
+        const name = connectTarget.name || "网络"
+        let msg = "连接失败: " + name
+        try {
+            const s = ConnectionFailReason.toString(reason)
+            if (s && s !== "Unknown")
+                msg += "（" + s + "）"
+        } catch (e) {
+        }
+        _setError(msg)
+        _clearConnectOp()
     }
 
     Timer {
@@ -393,27 +574,70 @@ Singleton {
         onTriggered: root._bumpNet()
     }
 
+    // 连接超时兜底：改密后 NM 可能既不 failed 也不成功
+    Timer {
+        id: _opTimeout
+        interval: 45000
+        repeat: false
+        onTriggered: {
+            if (!root.connectTarget)
+                return
+            const n = root.connectTarget
+            if (n.connected) {
+                root._clearConnectOp()
+                return
+            }
+            if (root.needsPsk(n)) {
+                root._setError("连接超时（可重试密码或遗忘网络）")
+                root._askPassword(n, root._connectWithPsk
+                    ? "密码错误或认证超时"
+                    : "网络需要密码")
+                return
+            }
+            root._setError("连接超时: " + (n.name || "网络"))
+            root._clearConnectOp()
+        }
+    }
+
     Connections {
         target: root.connectTarget
         ignoreUnknownSignals: true
 
         function onConnectionFailed(reason) {
-            if (!root.connectTarget)
-                return
-            if (reason === ConnectionFailReason.NoSecrets) {
-                root.passwordNetwork = root.connectTarget
-                return
-            }
-            const name = root.connectTarget.name || "网络"
-            root._setError("连接失败: " + name)
-            root.connectTarget = null
+            root._onConnectFailed(reason)
         }
 
         function onConnectedChanged() {
             if (root.connectTarget && root.connectTarget.connected) {
-                root.connectTarget = null
-                root.passwordNetwork = null
+                root.cancelPassword()
+                root._clearConnectOp()
                 root._bumpNet()
+            }
+        }
+
+        function onStateChangingChanged() {
+            if (root.connectTarget && root.connectTarget.stateChanging)
+                root._stateWasChanging = true
+        }
+
+        function onStateChanged() {
+            if (!root.connectTarget)
+                return
+            // 曾经进入过 changing，又回到 Disconnected → 当作失败（无 failed 信号时）
+            if (root._stateWasChanging
+                    && root.connectTarget.state === ConnectionState.Disconnected
+                    && !root.connectTarget.connected) {
+                if (root.needsPsk(root.connectTarget)) {
+                    root._setError(root._connectWithPsk
+                        ? "密码错误或认证超时"
+                        : "网络需要密码")
+                    root._askPassword(root.connectTarget, root._connectWithPsk
+                        ? "密码错误或认证超时"
+                        : "网络需要密码")
+                    return
+                }
+                root._setError("连接未完成: " + (root.connectTarget.name || "网络"))
+                root._clearConnectOp()
             }
         }
     }

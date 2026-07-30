@@ -1,7 +1,7 @@
 // BluetoothPage — Rightbar 蓝牙页
-// 对齐 NetworkPage：工具行 + 错误条 + 分组列表
+// 对齐 Audio/Updates/Network：工具行 + 摘要卡 + 分区列表
 //
-// 性能：进页 detailActive+扫描；销毁停扫并清列表；ListView reuseItems；无常驻 Timer
+// 性能：进页 detailActive+扫描；销毁停扫；ListView reuseItems；无常驻 Timer
 
 import QtQuick
 import QtQuick.Layouts
@@ -17,9 +17,7 @@ Item {
 
     property var forgetTarget: null
 
-    Component.onCompleted: {
-        Bluetooth.setDetailActive(true)
-    }
+    Component.onCompleted: Bluetooth.setDetailActive(true)
 
     Component.onDestruction: {
         root.forgetTarget = null
@@ -80,6 +78,103 @@ Item {
                     if (wantOn === Bluetooth.enabled)
                         return
                     Bluetooth.toggle()
+                }
+            }
+        }
+
+        // 摘要卡：主连接设备 / 状态
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 72
+            radius: Size.rounding.md
+            color: Bluetooth.connectedDevices.length > 0
+                ? Color.withAlpha(Color.primary, 0.12)
+                : Color.surfaceHigh
+            border.width: Style.border.width
+            border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+            Behavior on color { ColorAnimation { duration: 140 } }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                spacing: Size.spacing.md
+
+                Text {
+                    text: {
+                        const d = Bluetooth.primaryConnected
+                        if (d)
+                            return root.deviceIcon(d)
+                        return Bluetooth.summaryIcon
+                    }
+                    font.family: Size.fontIcon
+                    font.pixelSize: Size.fontSize.xl
+                    color: Bluetooth.connectedDevices.length > 0
+                        ? Color.primary
+                        : Color.textMuted
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: Bluetooth.summaryTitle
+                        font.bold: true
+                        font.pixelSize: Size.fontSize.md
+                        color: Bluetooth.connectedDevices.length > 0
+                            ? Color.primary
+                            : Color.text
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: Bluetooth.summarySubtitle
+                        font.pixelSize: Size.fontSize.xsm
+                        color: Color.textMuted
+                        elide: Text.ElideRight
+                    }
+                }
+
+                // 主设备快捷断开
+                Item {
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 28
+                    visible: !!Bluetooth.primaryConnected
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "link_off"
+                        font.family: Size.fontIcon
+                        font.pixelSize: Size.fontSize.lg
+                        color: Color.textMuted
+                        opacity: sumDiscMa.containsMouse ? 1 : 0.75
+                    }
+                    MouseArea {
+                        id: sumDiscMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (Bluetooth.primaryConnected)
+                                Bluetooth.disconnectDevice(Bluetooth.primaryConnected)
+                        }
+                    }
+                }
+
+                Text {
+                    visible: Bluetooth.connectedDevices.length > 0
+                    text: Bluetooth.connectedDevices.length > 1
+                        ? Bluetooth.connectedDevices.length.toString()
+                        : "check"
+                    font.family: Bluetooth.connectedDevices.length > 1
+                        ? Size.fontMono
+                        : Size.fontIcon
+                    font.bold: Bluetooth.connectedDevices.length > 1
+                    font.pixelSize: Size.fontSize.lg
+                    color: Color.primary
                 }
             }
         }
@@ -205,7 +300,6 @@ Item {
                 readonly property int forgetH: 44
                 readonly property bool busy: Bluetooth.isBusy(dev)
 
-                // ----- section header -----
                 Text {
                     anchors.left: parent.left
                     anchors.leftMargin: 4
@@ -222,7 +316,6 @@ Item {
                     font.bold: true
                 }
 
-                // ----- device row：对齐 NetworkPage — ColumnLayout + AlignVCenter -----
                 Rectangle {
                     id: body
                     anchors.left: parent.left
@@ -239,7 +332,7 @@ Item {
                             return Color.withAlpha(Color.primary, 0.12)
                         if (rowMa.containsMouse)
                             return Color.withAlpha(Color.text, 0.08)
-                        return "transparent"
+                        return Color.withAlpha(Color.text, 0.04)
                     }
 
                     Behavior on height {
@@ -293,7 +386,6 @@ Item {
                                 }
                             }
 
-                            // 固定方格 + 居中字形，避免被裁
                             Item {
                                 Layout.alignment: Qt.AlignVCenter
                                 Layout.preferredWidth: 28

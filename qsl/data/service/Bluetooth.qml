@@ -34,6 +34,56 @@ Singleton {
     readonly property bool discovering: adapter ? adapter.discovering : false
     readonly property string lastError: _lastError
 
+    // 摘要卡（详情页）
+    readonly property var primaryConnected: {
+        void _devRev
+        const list = connectedDevices
+        return list.length > 0 ? list[0] : null
+    }
+
+    readonly property string summaryTitle: {
+        void _devRev
+        if (!hasAdapter)
+            return "未找到适配器"
+        if (!enabled)
+            return "蓝牙已关闭"
+        const n = connectedDevices.length
+        if (n === 1)
+            return displayName(primaryConnected)
+        if (n > 1)
+            return n + " 台已连接"
+        return "已开启"
+    }
+
+    readonly property string summarySubtitle: {
+        void _devRev
+        if (!hasAdapter)
+            return "检查硬件或驱动"
+        if (!enabled)
+            return "打开开关以扫描附近设备"
+        const n = connectedDevices.length
+        if (n === 1 && primaryConnected) {
+            if (primaryConnected.batteryAvailable)
+                return "已连接 · 电量 "
+                    + Math.round((primaryConnected.battery || 0) * 100) + "%"
+            return "已连接"
+        }
+        if (n > 1)
+            return "点按下方设备可断开"
+        if (discovering)
+            return "正在扫描附近设备…"
+        return "选择下方设备以配对或连接"
+    }
+
+    readonly property string summaryIcon: {
+        void _devRev
+        if (!enabled)
+            return "bluetooth_disabled"
+        if (connectedDevices.length > 0)
+            return "bluetooth_connected"
+        return "bluetooth"
+    }
+
     function _devices() {
         if (!adapter || !adapter.devices)
             return []
