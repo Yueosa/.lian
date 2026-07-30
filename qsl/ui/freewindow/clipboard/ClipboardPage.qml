@@ -217,8 +217,8 @@ Item {
                 spacing: Size.spacing.sm
 
                 Text {
-                    text: "\uf002"
-                    font.family: Size.fontMono
+                    text: "search"
+                    font.family: Size.fontIcon
                     font.pixelSize: Size.fontSize.lg
                     color: Color.textMuted
                 }
@@ -277,8 +277,8 @@ Item {
                 }
 
                 Text {
-                    text: "\uf1f8"
-                    font.family: Size.fontMono
+                    text: "delete"
+                    font.family: Size.fontIcon
                     font.pixelSize: Size.fontSize.sm
                     color: Color.textMuted
 

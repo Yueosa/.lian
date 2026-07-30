@@ -147,7 +147,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.searchHeight
             radius: Size.rounding.full
-            color: Color.withAlpha(Color.surfaceHighest, 0.45)
+            color: Color.surfaceHighest
 
             RowLayout {
                 anchors.fill: parent
@@ -156,8 +156,8 @@ Item {
                 spacing: Size.spacing.sm
 
                 Text {
-                    text: "\uf002"
-                    font.family: Size.fontMono
+                    text: "search"
+                    font.family: Size.fontIcon
                     font.pixelSize: Size.fontSize.lg
                     color: Color.textMuted
                 }
@@ -213,8 +213,8 @@ Item {
                 }
 
                 Text {
-                    text: "\uf00d"
-                    font.family: Size.fontMono
+                    text: "close"
+                    font.family: Size.fontIcon
                     font.pixelSize: Size.fontSize.sm
                     color: Color.textMuted
                     visible: searchInput.text.length > 0

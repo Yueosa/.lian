@@ -97,7 +97,7 @@ FreeWindow {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: Color.withAlpha(Color.surfaceHigh, 0.9)
+                    color: Color.background
                     topRightRadius: Size.rounding.xxl
                     bottomRightRadius: Size.rounding.xxl
 

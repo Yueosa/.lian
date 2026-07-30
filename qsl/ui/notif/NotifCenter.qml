@@ -153,8 +153,8 @@ PanelWindow {
             anchors.bottomMargin: 16 - anim.slide
             visible: root.contentActive
             radius: Size.rounding.xl
-            // 半透明会显得「浅」；略抬不透明度，边角更干净
-            color: Color.withAlpha(Color.surfaceHigh, 0.97)
+            // 对齐 Hub：实色 background
+            color: Color.background
             border.width: 2
             border.color: Color.secondaryFixed
             clip: true
