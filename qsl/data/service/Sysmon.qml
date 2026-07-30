@@ -41,6 +41,8 @@ Singleton {
     readonly property string daemonBin: Quickshell.shellDir + "/backend/sysmon/build/sysmond"
 
     property bool detailActive: false
+    // 栏上摘要：只看 snap JSON，不拉进程列表
+    property bool summaryActive: false
     property bool ready: false
     property bool daemonOk: false
 
@@ -84,9 +86,22 @@ Singleton {
             procTimer.stop()
             procKick.stop()
             processes = []
+            if (!summaryActive)
+                ready = false
+        }
+    }
+
+    function setSummaryActive(active) {
+        summaryActive = !!active
+        if (summaryActive) {
+            ensureDaemon()
+            snapReloadDelay.start()
+        } else if (!detailActive) {
             ready = false
         }
     }
+
+    readonly property bool snapWatching: detailActive || summaryActive
 
     function ensureDaemon() {
         ensureProc.running = true
@@ -219,14 +234,14 @@ Singleton {
 
     FileView {
         id: snapView
-        path: root.detailActive ? root.snapPath : ""
-        watchChanges: root.detailActive
+        path: root.snapWatching ? root.snapPath : ""
+        watchChanges: root.snapWatching
         onLoaded: {
-            if (root.detailActive)
+            if (root.snapWatching)
                 root.applySnapText(text())
         }
         onFileChanged: {
-            if (root.detailActive)
+            if (root.snapWatching)
                 reload()
         }
         onLoadFailed: {
@@ -297,7 +312,7 @@ Singleton {
         ]
         onExited: (code) => {
             root.daemonOk = (code === 0)
-            if (root.detailActive) {
+            if (root.snapWatching) {
                 snapReloadDelay.start()
             }
         }
@@ -308,7 +323,7 @@ Singleton {
         interval: 350
         repeat: false
         onTriggered: {
-            if (root.detailActive)
+            if (root.snapWatching)
                 snapView.reload()
         }
     }
