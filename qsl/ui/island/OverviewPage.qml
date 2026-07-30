@@ -79,22 +79,23 @@ Item {
             Layout.fillHeight: true
             spacing: 14
 
-            // 身份卡（加大）
+            // 身份卡：头像+文案整组居中（与时钟卡一致，不用 fillWidth 左贴）
+            // 开销：单 Row + OpacityMask，无额外 Binding
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 168
                 radius: Size.rounding.lg
                 color: Color.surfaceHigh
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 18
+                Row {
+                    id: identityBody
+                    anchors.centerIn: parent
                     spacing: 14
 
                     Item {
-                        Layout.preferredWidth: 100
-                        Layout.preferredHeight: 100
-                        Layout.alignment: Qt.AlignVCenter
+                        width: 100
+                        height: 100
+                        anchors.verticalCenter: parent.verticalCenter
 
                         Rectangle {
                             anchors.fill: parent
@@ -138,27 +139,22 @@ Item {
                         }
                     }
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
 
                         Text {
-                            Layout.fillWidth: true
                             text: root.userName
                             color: Color.textOnBackground
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.xl
                             font.bold: true
-                            elide: Text.ElideRight
                         }
                         Text {
-                            Layout.fillWidth: true
                             text: root.hostname
                             color: Color.textMuted
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.md
-                            elide: Text.ElideRight
                         }
                         Row {
                             spacing: 6
@@ -212,30 +208,30 @@ Item {
             }
 
             // 天气轻量预览 → Weather Tab
+            // 图标+文案整组水平/垂直居中；chevron 贴右不参与居中算宽
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Size.rounding.lg
                 color: Color.surfaceHigh
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 18
+                Row {
+                    id: weatherBody
+                    anchors.centerIn: parent
                     spacing: Size.spacing.md
 
                     WeatherIcon {
                         sourceUrl: Weather.iconSource
                         pixelSize: 64
-                        Layout.alignment: Qt.AlignVCenter
+                        contentScale: 1.28
+                        anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
 
                         Text {
-                            Layout.fillWidth: true
                             text: Weather.ready ? Weather.tempText : "--"
                             color: Color.textOnBackground
                             font.family: Size.fontMono
@@ -243,16 +239,13 @@ Item {
                             font.weight: Font.Black
                         }
                         Text {
-                            Layout.fillWidth: true
                             visible: Weather.ready && Weather.weatherText.length > 0
                             text: Weather.weatherText
                             color: Color.textMuted
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.md
-                            elide: Text.ElideRight
                         }
                         Text {
-                            Layout.fillWidth: true
                             text: Weather.ready
                                 ? (Weather.locationName || "未知地点")
                                 : "天气加载中…"
@@ -261,16 +254,20 @@ Item {
                             font.pixelSize: Size.fontSize.sm
                             wrapMode: Text.WordWrap
                             maximumLineCount: 2
+                            // 限制过长地名，避免整组偏宽破坏居中
+                            width: Math.min(implicitWidth, 180)
                         }
                     }
+                }
 
-                    Text {
-                        text: "\uf054"
-                        color: Color.textMuted
-                        font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.lg
-                        Layout.alignment: Qt.AlignVCenter
-                    }
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\uf054"
+                    color: Color.textMuted
+                    font.family: Size.fontMono
+                    font.pixelSize: Size.fontSize.lg
                 }
 
                 MouseArea {
