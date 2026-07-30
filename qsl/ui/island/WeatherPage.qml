@@ -242,28 +242,38 @@ Item {
                         }
                     }
 
-                    // 弹簧区：显式最小高度，避免 ColumnLayout 把 fillHeight 收成 0
-                    Item {
+                    // 主视觉 4:6 — 左图标格居中，右文字格居中
+                    RowLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.minimumHeight: 120
+                        spacing: 0
 
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 4
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 4
 
                             WeatherIcon {
+                                anchors.centerIn: parent
                                 sourceUrl: Weather.iconSource
-                                pixelSize: 128
-                                contentScale: 1.4
-                                anchors.verticalCenter: parent.verticalCenter
+                                // 图标格宽约卡宽 40%，边长取格高主导，略放大抵消 SVG 留白
+                                pixelSize: Math.round(Math.min(parent.width, parent.height) * 0.92)
+                                contentScale: 1.35
                             }
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 6
 
                             Column {
-                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.centerIn: parent
                                 spacing: 2
 
                                 Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.currentTemp
                                     font.family: Size.fontMono
                                     font.pixelSize: 52
@@ -271,15 +281,17 @@ Item {
                                     color: Color.text
                                 }
                                 Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.currentDesc
                                     font.family: Size.fontSans
                                     font.pixelSize: Size.fontSize.md
                                     font.bold: true
                                     color: Color.text
                                     elide: Text.ElideRight
-                                    width: Math.min(implicitWidth, 150)
+                                    width: Math.min(implicitWidth, parent.parent.width - 8)
                                 }
                                 Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                     text: "↑" + root.todayHigh + "  ↓" + root.todayLow
                                     font.family: Size.fontMono
                                     font.pixelSize: Size.fontSize.sm
