@@ -28,7 +28,7 @@
 - [x] `Components/QslCard.qml`
 - [x] `Components/QslShadow.qml`（纯 Rectangle 多层阴影；禁入 ListView）
 - [x] `data/state/Style.qml`
-- [ ] 左栏/右栏/岛页面逐步迁移到 QslCard（归入 P2）
+- [x] 左栏/右栏壳 + App/Clipboard 轻量对齐 Style / 自绘控件（详见 #9；岛页仍逐步）
 
 ### P1（紧随其后）
 
@@ -66,12 +66,14 @@
 - 岛内：录屏时右上角 pop 出小红圆 + 计时，点击停止
 - 「细胞分裂」动画：ScaleAnimation + 位移
 
-#### 9. 左栏/右栏 UI 重构
-- 用 QslCard 替换现有半透明 Rectangle
-- 统一图标用 Material Symbols 字体
-- Slider/Switch/Button 用自绘组件替代
-- app 页面同样重构
-- 剪贴板保持半透明
+#### 9. 左栏/右栏 UI 重构 — 基本完成（视觉收口：对齐 Hub）
+- [x] 原子控件：`QslSwitch`（**禁命名 scale**，用 `sizeScale`）/ `QslSlider` / `QslIconButton` / `QslChip` / `QslHubTab`
+- [x] 面板底：`Color.background` **实色**（左/右栏、App 右栏、NotifCenter），去掉 sidebarAlpha/panelAlpha
+- [x] Tab：`QslHubTab`（图标+标题+底指示条，同 Island Hub；FA + fontMono）
+- [x] 内层卡：`Color.surface` / `surfaceHigh` 实色；ListView 仍禁阴影
+- [x] Clipboard：**仍半透明**（例外）
+- [ ] 右上角 bar / 右栏功能向 zip 深对齐（下一轮）
+- Island Hub 本身不改（它是对齐目标）
 
 #### 10. 设置面板
 - 独立窗口（ControlCenter），IPC `qs ipc call settings open`
@@ -105,8 +107,8 @@
 | 天气 | ✅ MetricTile + 当前卡 + 预报 | 地图可选（暂缓） |
 | 歌词 | ✅ 活跃行弹簧缩放 | 可选进一步 Spring contentY |
 | 封面 | ✅ 岛正圆 / Hub 方块 | — |
-| 滑块/开关 | 系统默认 | 自绘 M3 风格 |
-| 图标 | 混用 | 统一 Material Symbols Outlined |
+| 滑块/开关 | ✅ QslSlider / QslSwitch | 可选更细交互反馈 |
+| 图标 | ✅ 左右栏/App/Clipboard Material ligature | bar QuickSettings 下一轮 |
 
 ---
 
