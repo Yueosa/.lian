@@ -60,8 +60,8 @@
           "title": "灵动岛",
           "items": [
             { "keys": "Alt+Tab", "desc": "Hub 主视图" },
-            { "keys": "Super+Tab", "desc": "窗口切换器（再按关闭）" },
-            { "keys": "Super+G", "desc": "一级岛置顶开关（全屏游戏时看歌词/通知）" }
+            { "keys": "Super+Tab", "desc": "窗口切换器" },
+            { "keys": "Super+G", "desc": "一级岛置顶开关" }
           ]
         },
         {
