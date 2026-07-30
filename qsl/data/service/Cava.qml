@@ -60,6 +60,12 @@ Singleton {
         }
     }
 
+    // 仅清孤儿，不 arm（维护页用）
+    function cleanupOrphans() {
+        _pendingStart = false
+        _runOrphanCleanup()
+    }
+
     function _runOrphanCleanup() {
         if (orphanCleanup.running) {
             // 排队：当前清理结束后若仍需 start 会走 onExited

@@ -111,7 +111,12 @@ ShellRoot {
 
     IpcHandler {
         target: "settings"
-        function open() { controlCenter.openWindow() }
+        function open(view: string) {
+            if (view && view.length > 0)
+                controlCenter.openView(view)
+            else
+                controlCenter.openView("arch")
+        }
         function close() { controlCenter.closeWindow() }
         function toggle() { controlCenter.toggle() }
     }

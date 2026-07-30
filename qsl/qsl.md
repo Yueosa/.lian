@@ -79,10 +79,11 @@
 #### 10. 设置面板
 - [x] 入口：顶栏最右 SettingsPill + IPC `qs ipc call settings open/toggle/close`
 - [x] ControlCenter **占位窗**（FreeWindow）
-- [ ] **延后**：先做完内存轮再继续（见下「内存备忘」）
-- [ ] 导航 Rail + 页面 Loader；首页拟为动态架构图（P3 反射白箱不做）
-- [ ] 功能：编辑 hotkeys.json / 法定节假日 / 清除磁盘缓存 / 快速重启 qs / 修改服务配置
-- [ ] 动态架构图：Canvas 画模块节点 + 数据流连线，鼠标悬停显示描述
+- [x] 导航 Rail + 单页面 Loader（关窗销毁）
+- [x] 首页：动态架构图（静态节点/边 + hover + 深链）
+- [x] 维护：重启 qs / 清 `~/.cache/qsl` / 开目录；打开页采一次 RSS·cava
+- [x] 本地文件页：键位 / 节假日摘要 + `kitty -e nvim`（IPC 别名 hotkeys/calendar→files）
+- [ ] （可选）架构图更多深链 / 维护里一键清 cava 孤儿
 
 ### 内存备忘（2026-07）
 - **两笔账**：qs 进程 RSS ≠ 系统总涨。cava python reader 孤儿另计（曾堆 20+ 个 ≈350MiB）。
