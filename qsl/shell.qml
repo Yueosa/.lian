@@ -110,6 +110,7 @@ ShellRoot {
         function switcher() { return Island.switcher() }
         function wallpaper() { return Island.wallpaper() }
         function media() { return Island.media() }
+        function weather() { return Island.weather() }
         function close() { Island.closeHub(); return "CLOSED" }
         function togglelayer() { return Island.toggleLayer() }
 

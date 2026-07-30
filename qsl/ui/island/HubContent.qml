@@ -80,8 +80,18 @@ FocusScope {
         }
     }
 
+    // tab 上下/左右各 10，page 左右底 12；高度必须计入，否则 body.clip 会裁顶/底
+    readonly property int hubChromeTop: 10
+    readonly property int hubChromeBottom: 12
+    readonly property int hubChromeSide: 12
+
     implicitWidth: contentW
-    implicitHeight: Size.island.hubTabBarHeight + Size.island.hubContentGap + contentH
+    implicitHeight: hubChromeTop + Size.island.hubTabBarHeight
+        + Size.island.hubContentGap + contentH + hubChromeBottom
+
+    // Loader centerIn 时要把隐式尺寸落到真实宽高，否则子页 anchors.fill 会按 0 算
+    width: implicitWidth
+    height: implicitHeight
 
     Behavior on implicitWidth {
         NumberAnimation { duration: 400; easing.type: Easing.OutQuint }
@@ -103,8 +113,10 @@ FocusScope {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.topMargin: root.hubChromeTop
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
         height: Size.island.hubTabBarHeight
-        anchors.margins: 10
         spacing: Size.island.hubTabSpacing
 
         Repeater {
@@ -171,7 +183,9 @@ FocusScope {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.topMargin: Size.island.hubContentGap
-        anchors.margins: 12
+        anchors.leftMargin: root.hubChromeSide
+        anchors.rightMargin: root.hubChromeSide
+        anchors.bottomMargin: root.hubChromeBottom
         active: true
         // 让子页能抢到键盘（Enter/方向键）；否则焦点停在 Hub FocusScope
         focus: true

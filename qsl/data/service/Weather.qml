@@ -259,7 +259,10 @@ Singleton {
                 day: d === 0 ? "Today" : dayNames[dateObj.getDay()],
                 icon: iconUrl(row.icon_name, row.weather_code, true),
                 maxTemp: Math.round(Number(row.temp_max) || 0) + "°",
-                minTemp: Math.round(Number(row.temp_min) || 0) + "°"
+                minTemp: Math.round(Number(row.temp_min) || 0) + "°",
+                // 数值留给 7 日温差条算比例（避免 UI 再 parse "24°"）
+                maxC: Math.round(Number(row.temp_max) || 0),
+                minC: Math.round(Number(row.temp_min) || 0)
             })
         }
         daily = dout

@@ -310,6 +310,11 @@ Singleton {
         return "MEDIA_OPENED"
     }
 
+    function weather() {
+        openHubTab(3)
+        return "WEATHER_OPENED"
+    }
+
     function toggleLayer() {
         overlayLayer = !overlayLayer
         return overlayLayer ? "OVERLAY_ON" : "OVERLAY_OFF"

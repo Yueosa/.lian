@@ -212,13 +212,15 @@ Variants {
                         }
                     }
                     readonly property int hubFallbackH: {
+                        // 与 HubContent.implicitHeight 对齐：chromeTop(10)+tab+gap+page+chromeBottom(12)
+                        const chrome = 10 + 12
                         const bar = Size.island.hubTabBarHeight + Size.island.hubContentGap
                         switch (Island.hubTabIndex) {
-                        case 1: return bar + Size.island.mediaHeight
-                        case 2: return bar + Size.island.wallpaperHeight
-                        case 3: return bar + Size.island.weatherHeight
-                        case 4: return bar + Size.island.switcherHeight
-                        default: return bar + Size.island.overviewHeight
+                        case 1: return chrome + bar + Size.island.mediaHeight
+                        case 2: return chrome + bar + Size.island.wallpaperHeight
+                        case 3: return chrome + bar + Size.island.weatherHeight
+                        case 4: return chrome + bar + Size.island.switcherHeight
+                        default: return chrome + bar + Size.island.overviewHeight
                         }
                     }
 
