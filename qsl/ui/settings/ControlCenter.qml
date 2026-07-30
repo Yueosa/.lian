@@ -16,6 +16,8 @@ FreeWindow {
     property string currentPage: "arch"
     readonly property var pages: [
         { id: "arch", title: "架构", icon: "account_tree" },
+        { id: "guide", title: "说明", icon: "menu_book" },
+        { id: "ipc", title: "IPC", icon: "terminal" },
         { id: "maintain", title: "维护", icon: "build" },
         { id: "files", title: "文件", icon: "folder_open" }
     ]
@@ -25,6 +27,8 @@ FreeWindow {
         // 旧别名
         if (id === "hotkeys" || id === "calendar" || id === "about")
             id = "files"
+        if (id === "overview" || id === "docs")
+            id = "guide"
         let ok = false
         for (let i = 0; i < pages.length; i++) {
             if (pages[i].id === id) {
@@ -38,6 +42,8 @@ FreeWindow {
 
     function pageComponent(id) {
         switch (id) {
+        case "guide": return guidePage
+        case "ipc": return ipcPage
         case "maintain": return maintainPage
         case "files": return filesPage
         default: return archPage
@@ -156,6 +162,8 @@ FreeWindow {
     }
 
     Component { id: archPage; ArchPage {} }
+    Component { id: guidePage; GuidePage {} }
+    Component { id: ipcPage; IpcPage {} }
     Component { id: maintainPage; MaintainPage {} }
     Component { id: filesPage; FilesPage {} }
 }

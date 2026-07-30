@@ -1,5 +1,7 @@
 module qs.ui.settings
 ControlCenter 1.0 ControlCenter.qml
 ArchPage 1.0 ArchPage.qml
+GuidePage 1.0 GuidePage.qml
+IpcPage 1.0 IpcPage.qml
 MaintainPage 1.0 MaintainPage.qml
 FilesPage 1.0 FilesPage.qml
