@@ -1,7 +1,8 @@
 // Bar — 顶部状态栏
-// 左：工作区 + 窗口名；右：Tray + WiFi/BT/Audio 芯片
+// 左：工作区 + 窗口名
+// 右：Tray(折叠) + SysMonitor + WiFi/BT/Audio + Settings
 //
-// 性能：无 MultiEffect 阴影、无 gooey；芯片无点击开栏
+// 性能：无 MultiEffect 阴影、无 gooey；SysMonitor 复用 Sysmon 摘要
 
 import Quickshell
 import Quickshell.Wayland
@@ -64,8 +65,12 @@ Variants {
                 }
                 spacing: Size.spacing.sm
 
-                Tray {}
+                Tray {
+                    screen: barWindow.screen
+                }
+                SysMonitor {}
                 StatusChips {}
+                SettingsPill {}
             }
         }
     }
