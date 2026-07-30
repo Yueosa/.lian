@@ -12,6 +12,7 @@ import qs.ui.island
 import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
+import qs.ui.lock
 
 ShellRoot {
     Bar {}
@@ -36,6 +37,10 @@ ShellRoot {
 
     Rightbar {
         id: rightbar
+    }
+
+    Lock {
+        id: lockScreen
     }
 
     IpcHandler {
@@ -79,6 +84,12 @@ ShellRoot {
         function next() { leftbar.next() }
         function prev() { leftbar.prev() }
         function close() { leftbar.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "lock"
+        function lock() { return lockScreen.lock() }
+        function status() { return lockScreen.isLocked() ? "LOCKED" : "UNLOCKED" }
     }
 
     IpcHandler {

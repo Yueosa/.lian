@@ -24,7 +24,8 @@
           "id": "power",
           "title": "电源管理",
           "items": [
-            { "keys": "Super+Space", "desc": "电源菜单" }
+            { "keys": "Super+Space", "desc": "电源菜单" },
+            { "keys": "Super+L", "desc": "锁屏" }
           ]
         },
         {

@@ -50,11 +50,12 @@ PanelWindow {
     property string pendingView: ""
     property int panelSlide: closedOffset
 
-    readonly property var views: ["time", "sys", "keys"]
+    readonly property var views: ["time", "sys", "keys", "todo"]
     readonly property var viewMeta: ({
         time: { title: "时间", icon: "\uf017" },
         sys:  { title: "系统", icon: "\uf233" },
-        keys: { title: "键位", icon: "\uf11c" }
+        keys: { title: "键位", icon: "\uf11c" },
+        todo: { title: "待办", icon: "\uf0ae" }
     })
 
     function normalizeView(v) {
@@ -67,6 +68,8 @@ PanelWindow {
             return "sys"
         if (key === "weather" || key === "hotkeys" || key === "shortcuts")
             return "keys"
+        if (key === "todos" || key === "task" || key === "tasks")
+            return "todo"
         for (let i = 0; i < views.length; i++) {
             if (views[i] === key)
                 return views[i]
@@ -363,6 +366,7 @@ PanelWindow {
                             switch (root.view) {
                             case "sys": return sysPage
                             case "keys": return keysPage
+                            case "todo": return todoPage
                             default: return timePage
                             }
                         }
@@ -389,5 +393,9 @@ PanelWindow {
     Component {
         id: keysPage
         KeysPage {}
+    }
+    Component {
+        id: todoPage
+        TodoPage {}
     }
 }
