@@ -1,6 +1,5 @@
 AudioPage 1.0 AudioPage.qml
 BluetoothPage 1.0 BluetoothPage.qml
 NetworkPage 1.0 NetworkPage.qml
-PlaceholderPage 1.0 PlaceholderPage.qml
 Rightbar 1.0 Rightbar.qml
 UpdatesPage 1.0 UpdatesPage.qml

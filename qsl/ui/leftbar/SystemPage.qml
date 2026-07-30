@@ -7,6 +7,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -131,7 +132,9 @@ Item {
         Layout.fillWidth: true
         Layout.preferredHeight: 56
         radius: Size.rounding.lg
-        color: Color.surface
+        color: Color.surfaceHigh
+        border.width: Style.border.width
+        border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
         clip: true
 
         // 有占用时至少 2*radius 宽，圆角才能与父容器一致
@@ -234,7 +237,9 @@ Item {
         Layout.fillWidth: true
         Layout.preferredHeight: 48
         radius: Size.rounding.lg
-        color: Color.surface
+        color: Color.surfaceHigh
+        border.width: Style.border.width
+        border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
 
         RowLayout {
             anchors.fill: parent

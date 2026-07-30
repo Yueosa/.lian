@@ -300,8 +300,9 @@ Item {
             Layout.preferredHeight: yiyanCol.implicitHeight + 24
             radius: Size.rounding.lg
             color: Color.surface
-            border.color: Color.outlineVariant
-            border.width: 1
+            border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+            border.width: Style.border.width
+            // 实色卡面，对齐 Hub 层次
 
             ColumnLayout {
                 id: yiyanCol
@@ -355,8 +356,8 @@ Item {
         height: timerCol.implicitHeight + Size.spacing.md * 2 + Size.spacing.sm
         radius: Size.rounding.lg
         color: Color.surface
-        border.color: Color.outlineVariant
-        border.width: 1
+        border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+        border.width: Style.border.width
         visible: root._timerExpanded
 
         ColumnLayout {

@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -19,60 +20,6 @@ Item {
 
     function pctText(vol, muted) {
         return Math.round((muted ? 0 : vol) * 100) + "%"
-    }
-
-    // 轻量音量条：拖拽/点击设 0~1
-    component VolBar: Item {
-        id: bar
-        property real value: 0
-        property bool muted: false
-        signal moved(real v)
-
-        height: 16
-        implicitHeight: 16
-
-        readonly property real shown: muted ? 0 : Math.max(0, Math.min(1, value))
-
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            height: 6
-            radius: 3
-            color: Color.withAlpha(Color.text, 0.1)
-
-            Rectangle {
-                height: parent.height
-                width: parent.width * bar.shown
-                radius: parent.radius
-                color: Color.primary
-            }
-        }
-
-        Rectangle {
-            width: 4
-            height: 20
-            radius: 2
-            color: Color.text
-            anchors.verticalCenter: parent.verticalCenter
-            x: Math.max(0, Math.min(parent.width - width, parent.width * bar.shown - width / 2))
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            preventStealing: true
-
-            function setFromX(mx) {
-                const v = Math.max(0, Math.min(1, mx / Math.max(1, bar.width)))
-                bar.moved(v)
-            }
-
-            onPressed: (mouse) => setFromX(mouse.x)
-            onPositionChanged: (mouse) => {
-                if (pressed)
-                    setFromX(mouse.x)
-            }
-        }
     }
 
     ColumnLayout {
@@ -212,7 +159,7 @@ Item {
                     }
                 }
 
-                VolBar {
+                QslSlider {
                     Layout.fillWidth: true
                     value: Volume.sinkVolume
                     muted: Volume.sinkMuted
@@ -271,7 +218,7 @@ Item {
                     }
                 }
 
-                VolBar {
+                QslSlider {
                     Layout.fillWidth: true
                     value: Volume.sourceVolume
                     muted: Volume.sourceMuted
@@ -385,7 +332,7 @@ Item {
                         }
                     }
 
-                    VolBar {
+                    QslSlider {
                         Layout.fillWidth: true
                         value: row.appVol
                         muted: row.appMuted

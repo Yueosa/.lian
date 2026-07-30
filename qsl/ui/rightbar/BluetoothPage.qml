@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -51,97 +52,34 @@ Item {
             Layout.fillWidth: true
             spacing: Size.spacing.sm
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: bluemanMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "settings"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Color.textMuted
-                }
-                MouseArea {
-                    id: bluemanMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Bluetooth.openBlueman()
-                        root.requestClose()
-                    }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "settings"
+                onClicked: {
+                    Bluetooth.openBlueman()
+                    root.requestClose()
                 }
             }
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: scanMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-                opacity: Bluetooth.enabled ? 1 : 0.35
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "refresh"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Bluetooth.discovering ? Color.primary : Color.textMuted
-                    RotationAnimator on rotation {
-                        from: 0
-                        to: 360
-                        duration: 900
-                        loops: Animation.Infinite
-                        running: Bluetooth.discovering
-                    }
-                }
-                MouseArea {
-                    id: scanMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    enabled: Bluetooth.enabled
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: Bluetooth.toggleScan()
-                }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "refresh"
+                busy: Bluetooth.discovering
+                enabled: Bluetooth.enabled
+                onClicked: Bluetooth.toggleScan()
             }
 
             Item { Layout.fillWidth: true }
 
-            Rectangle {
-                id: btSwitch
-                width: 44
-                height: 24
-                radius: height / 2
-                color: Bluetooth.enabled ? Color.primary : "transparent"
-                border.width: Bluetooth.enabled ? 0 : 2
-                border.color: Color.outline
-                Behavior on color { ColorAnimation { duration: 200 } }
-
-                Rectangle {
-                    width: Bluetooth.enabled ? 16 : 12
-                    height: width
-                    radius: width / 2
-                    x: Bluetooth.enabled ? parent.width - width - 4 : 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Bluetooth.enabled ? Color.textOnPrimary : Color.outline
-                    Behavior on x {
-                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on width {
-                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Bluetooth.toggle()
+            QslSwitch {
+                sizeScale: 0.8
+                checked: Bluetooth.enabled
+                onToggled: (wantOn) => {
+                    if (wantOn === Bluetooth.enabled)
+                        return
+                    Bluetooth.toggle()
                 }
             }
         }

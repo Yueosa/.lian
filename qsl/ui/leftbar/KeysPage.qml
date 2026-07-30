@@ -5,6 +5,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -67,33 +68,13 @@ Item {
                 spacing: Size.spacing.xs
                 Repeater {
                     model: Hotkeys.groups
-                    Rectangle {
+                    QslChip {
                         required property var modelData
                         readonly property string gid: modelData && modelData.id ? String(modelData.id) : ""
-                        readonly property bool selected: gid === root.groupId
-                        height: 32
-                        width: chipLbl.implicitWidth + 20
-                        radius: Size.rounding.full
-                        color: selected
-                            ? Color.withAlpha(Color.primary, 0.18)
-                            : (chipMa.containsMouse
-                                ? Color.withAlpha(Color.text, 0.06)
-                                : Color.surface)
-                        Text {
-                            id: chipLbl
-                            anchors.centerIn: parent
-                            text: (modelData && modelData.title) ? modelData.title : gid
-                            color: selected ? Color.primary : Color.textMuted
-                            font.pixelSize: Size.fontSize.sm
-                            font.bold: selected
-                        }
-                        MouseArea {
-                            id: chipMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.groupId = gid
-                        }
+                        text: (modelData && modelData.title) ? modelData.title : gid
+                        selected: gid === root.groupId
+                        chipHeight: 32
+                        onClicked: root.groupId = gid
                     }
                 }
             }

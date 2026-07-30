@@ -7,6 +7,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -68,54 +69,21 @@ Item {
                 spacing: Size.spacing.xs
 
                 // "全部" 芯片
-                Rectangle {
-                    readonly property bool selected: root.activeTag === ""
-                    height: 32; width: allLbl.implicitWidth + 20
-                    radius: Size.rounding.full
-                    color: selected
-                        ? Color.withAlpha(Color.primary, 0.18)
-                        : (allMa.containsMouse
-                            ? Color.withAlpha(Color.text, 0.06)
-                            : Color.surface)
-                    Text {
-                        id: allLbl; anchors.centerIn: parent
-                        text: "全部"
-                        color: parent.selected ? Color.primary : Color.textMuted
-                        font.pixelSize: Size.fontSize.sm
-                        font.bold: parent.selected
-                    }
-                    MouseArea {
-                        id: allMa
-                        anchors.fill: parent; hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.activeTag = ""
-                    }
+                QslChip {
+                    text: "全部"
+                    selected: root.activeTag === ""
+                    chipHeight: 32
+                    onClicked: root.activeTag = ""
                 }
 
                 Repeater {
                     model: Todo.tags
-                    Rectangle {
+                    QslChip {
                         required property string modelData
-                        readonly property bool selected: root.activeTag === modelData
-                        height: 32; width: tagLbl.implicitWidth + 20
-                        radius: Size.rounding.full
-                        color: selected
-                            ? Color.withAlpha(Color.primary, 0.18)
-                            : (tagMa.containsMouse
-                                ? Color.withAlpha(Color.text, 0.06)
-                                : Color.surface)
-                        Text {
-                            id: tagLbl; anchors.centerIn: parent
-                            text: modelData
-                            color: selected ? Color.primary : Color.textMuted
-                            font.pixelSize: Size.fontSize.sm
-                            font.bold: selected
-                        }
-                        MouseArea {
-                            id: tagMa; anchors.fill: parent
-                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: root.activeTag = modelData
-                        }
+                        text: modelData
+                        selected: root.activeTag === modelData
+                        chipHeight: 32
+                        onClicked: root.activeTag = modelData
                     }
                 }
             }
@@ -126,9 +94,11 @@ Item {
             Layout.fillWidth: true
             height: 44
             radius: Size.rounding.sm
-            color: Color.surface
-            border.width: inputField.activeFocus ? 2 : 0
-            border.color: Color.primary
+            color: Color.surfaceHigh
+            border.width: inputField.activeFocus ? 2 : Style.border.width
+            border.color: inputField.activeFocus
+                ? Color.primary
+                : Color.withAlpha(Color.outlineVariant, Style.border.opacity)
 
             RowLayout {
                 anchors.fill: parent

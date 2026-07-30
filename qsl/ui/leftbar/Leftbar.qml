@@ -12,6 +12,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 PanelWindow {
@@ -45,7 +46,6 @@ PanelWindow {
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
     property bool open: false
-    property bool switching: false
     property string view: "time"
     property string pendingView: ""
     property int panelSlide: closedOffset
@@ -53,7 +53,7 @@ PanelWindow {
     readonly property var views: ["time", "sys", "keys", "todo"]
     readonly property var viewMeta: ({
         time: { title: "时间", icon: "\uf017" },
-        sys:  { title: "系统", icon: "\uf233" },
+        sys:  { title: "系统", icon: "\uf2db" },
         keys: { title: "键位", icon: "\uf11c" },
         todo: { title: "待办", icon: "\uf0ae" }
     })
@@ -109,7 +109,7 @@ PanelWindow {
     // 与旧 IPC 对齐：指定页打开；同页再开则关闭
     function openView(v) {
         const target = normalizeView(v)
-        if (open && view === target && !switching) {
+        if (open && view === target) {
             closeWindow()
             return
         }
@@ -140,23 +140,20 @@ PanelWindow {
 
     function switchTo(nextView) {
         const target = normalizeView(nextView)
-        if (target === view || switching)
+        if (target === view)
             return
         if (!open) {
             view = target
             open = true
             return
         }
-        switching = true
-        pendingView = target
-        pageExit.start()
+        // 对齐 Hub：直接切页，无淡出/滑入（避免整栏闪暗）
+        view = target
     }
 
     onOpenChanged: {
         panelAnim.stop()
         if (open) {
-            pageHost.fade = 1
-            pageHost.slide = 0
             panelAnim.duration = 420
             panelAnim.easing.type = Easing.OutBack
             panelAnim.easing.overshoot = 0.25
@@ -176,61 +173,9 @@ PanelWindow {
         property: "panelSlide"
     }
 
-    // 页切换：旧页左滑淡出 → 换 source → 新页从右侧滑入
-    SequentialAnimation {
-        id: pageExit
-        ParallelAnimation {
-            NumberAnimation {
-                target: pageHost
-                property: "fade"
-                to: 0
-                duration: Size.anim.fast
-                easing.type: Easing.InQuad
-            }
-            NumberAnimation {
-                target: pageHost
-                property: "slide"
-                to: -36
-                duration: Size.anim.fast
-                easing.type: Easing.InCubic
-            }
-        }
-        ScriptAction {
-            script: {
-                root.view = root.pendingView
-                pageHost.slide = 24
-                pageHost.fade = 0
-                pageEnter.start()
-            }
-        }
-    }
-
-    ParallelAnimation {
-        id: pageEnter
-        NumberAnimation {
-            target: pageHost
-            property: "fade"
-            to: 1
-            duration: Size.anim.normal
-            easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: pageHost
-            property: "slide"
-            to: 0
-            duration: Size.anim.smooth
-            easing.type: Easing.OutCubic
-        }
-        onFinished: root.switching = false
-    }
-
     onContentActiveChanged: {
-        if (!contentActive) {
-            switching = false
+        if (!contentActive)
             pendingView = ""
-            pageHost.fade = 1
-            pageHost.slide = 0
-        }
     }
 
     Item {
@@ -280,7 +225,8 @@ PanelWindow {
             anchors.bottomMargin: root.panelBottom
             visible: root.contentActive
             radius: Size.rounding.xl
-            color: Color.withAlpha(Color.surfaceHigh, 0.97)
+            // 对齐 Hub：实色 background，去半透明
+            color: Color.background
             border.width: 2
             border.color: Color.secondaryFixed
             clip: true
@@ -295,52 +241,22 @@ PanelWindow {
                 anchors.margins: Size.spacing.lg
                 spacing: Size.spacing.md
 
+                // Hub 式 Tab：固定高度，不吃 fillHeight
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: Size.spacing.xs
+                    Layout.preferredHeight: Size.island.hubTabBarHeight * 0.7
+                    Layout.maximumHeight: Size.island.hubTabBarHeight * 0.7
+                    spacing: Size.island.hubTabSpacing
 
                     Repeater {
                         model: root.views
 
-                        Rectangle {
-                            id: tab
+                        QslHubTab {
                             required property string modelData
-                            readonly property bool selected: modelData === root.view
-
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 36
-                            radius: Size.rounding.full
-                            color: selected
-                                ? Color.withAlpha(Color.primary, 0.18)
-                                : (tabMa.containsMouse
-                                    ? Color.withAlpha(Color.text, 0.06)
-                                    : "transparent")
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text {
-                                    text: root.iconOf(tab.modelData)
-                                    font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.sm
-                                    color: tab.selected ? Color.primary : Color.textMuted
-                                }
-                                Text {
-                                    text: root.titleOf(tab.modelData)
-                                    font.pixelSize: Size.fontSize.sm
-                                    font.bold: tab.selected
-                                    color: tab.selected ? Color.primary : Color.textMuted
-                                }
-                            }
-
-                            MouseArea {
-                                id: tabMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                enabled: !root.switching
-                                onClicked: root.switchTo(tab.modelData)
-                            }
+                            text: root.titleOf(modelData)
+                            icon: root.iconOf(modelData)
+                            selected: modelData === root.view
+                            onClicked: root.switchTo(modelData)
                         }
                     }
                 }
@@ -351,16 +267,9 @@ PanelWindow {
                     Layout.fillHeight: true
                     clip: true
 
-                    property real fade: 1
-                    property real slide: 0
-
-                    opacity: fade
-
                     Loader {
                         id: pageLoader
-                        width: parent.width
-                        height: parent.height
-                        x: pageHost.slide
+                        anchors.fill: parent
                         active: root.contentActive
                         sourceComponent: {
                             switch (root.view) {

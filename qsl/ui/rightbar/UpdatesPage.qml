@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -26,63 +27,23 @@ Item {
             Layout.fillWidth: true
             spacing: Size.spacing.sm
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: upgradeMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "system_update"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Color.textMuted
-                }
-                MouseArea {
-                    id: upgradeMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Updates.openUpgrade()
-                        root.requestClose()
-                    }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "system_update"
+                onClicked: {
+                    Updates.openUpgrade()
+                    root.requestClose()
                 }
             }
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: refreshMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "refresh"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Updates.loading ? Color.primary : Color.textMuted
-                    RotationAnimator on rotation {
-                        from: 0
-                        to: 360
-                        duration: 900
-                        loops: Animation.Infinite
-                        running: Updates.loading
-                    }
-                }
-                MouseArea {
-                    id: refreshMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    enabled: !Updates.loading
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: Updates.refresh()
-                }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "refresh"
+                busy: Updates.loading
+                enabled: !Updates.loading
+                onClicked: Updates.refresh()
             }
 
             Item { Layout.fillWidth: true }
@@ -95,7 +56,9 @@ Item {
             radius: Size.rounding.md
             color: Updates.totalCount > 0
                 ? Color.withAlpha(Color.primary, 0.12)
-                : Color.withAlpha(Color.text, 0.06)
+                : Color.surfaceHigh
+            border.width: Style.border.width
+            border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
             Behavior on color { ColorAnimation { duration: 140 } }
 
             RowLayout {

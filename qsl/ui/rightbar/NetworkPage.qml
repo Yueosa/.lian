@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -31,103 +32,37 @@ Item {
             Layout.fillWidth: true
             spacing: Size.spacing.sm
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: nmtuiMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "settings"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Color.textMuted
-                }
-                MouseArea {
-                    id: nmtuiMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Network.openNmtui()
-                        root.requestClose()
-                    }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "settings"
+                onClicked: {
+                    Network.openNmtui()
+                    root.requestClose()
                 }
             }
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: Size.rounding.md
-                color: scanMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.08)
-                    : "transparent"
-                opacity: Network.wifiEnabled ? 1 : 0.35
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "refresh"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.xl
-                    color: Network.wifiScanning ? Color.primary : Color.textMuted
-                    RotationAnimator on rotation {
-                        from: 0
-                        to: 360
-                        duration: 900
-                        loops: Animation.Infinite
-                        running: Network.wifiScanning
-                    }
-                }
-                MouseArea {
-                    id: scanMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    enabled: Network.wifiEnabled
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: Network.scanWifi()
-                }
+            QslIconButton {
+                buttonSize: 36
+                iconSize: Size.fontSize.xl
+                icon: "refresh"
+                busy: Network.wifiScanning
+                enabled: Network.wifiEnabled
+                onClicked: Network.scanWifi()
             }
 
             Item { Layout.fillWidth: true }
 
-            // WiFi 开关
-            Rectangle {
-                id: wifiSwitch
-                width: 44
-                height: 24
-                radius: height / 2
-                color: Network.wifiEnabled ? Color.primary : "transparent"
-                border.width: Network.wifiEnabled ? 0 : 2
-                border.color: Color.outline
-                Behavior on color { ColorAnimation { duration: 200 } }
-
-                Rectangle {
-                    width: Network.wifiEnabled ? 16 : 12
-                    height: width
-                    radius: width / 2
-                    x: Network.wifiEnabled ? parent.width - width - 4 : 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Network.wifiEnabled ? Color.textOnPrimary : Color.outline
-                    Behavior on x {
-                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on width {
-                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        const turningOn = !Network.wifiEnabled
-                        Network.toggleWifi()
-                        if (turningOn)
-                            Qt.callLater(() => Network.scanWifi())
-                    }
+            // WiFi 开关 — checked 绑定服务态；toggled 只请求翻转
+            QslSwitch {
+                sizeScale: 0.8
+                checked: Network.wifiEnabled
+                onToggled: (wantOn) => {
+                    if (wantOn === Network.wifiEnabled)
+                        return
+                    Network.toggleWifi()
+                    if (wantOn)
+                        Qt.callLater(() => Network.scanWifi())
                 }
             }
         }
