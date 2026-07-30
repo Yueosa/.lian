@@ -4,12 +4,19 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import qs.data.state
+import qs.data.service
 
 PopupWindow {
     id: root
 
     property var rootMenuHandle: null
     property string trayName: ""
+    property string trayItemId: ""
+
+    readonly property bool itemPinned: {
+        const _ = TrayService.pinnedItems
+        return TrayService.isPinnedId(root.trayItemId)
+    }
 
     function resolveMenuIconSource(iconValue) {
         const raw = iconValue || ""
@@ -170,6 +177,59 @@ PopupWindow {
                 Layout.fillWidth: true
                 Layout.margins: 6
                 spacing: Size.spacing.xs
+
+                // pin / unpin — 不依赖应用菜单
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 36
+                    radius: Size.rounding.sm
+                    color: pinMa.containsMouse
+                        ? Color.withAlpha(Color.primary, 0.15)
+                        : "transparent"
+                    visible: root.trayItemId.length > 0
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: Size.spacing.md
+
+                        Text {
+                            text: "push_pin"
+                            font.family: Size.fontIcon
+                            font.pixelSize: Size.fontSize.md
+                            color: pinMa.containsMouse ? Color.primary : Color.secondary
+                        }
+                        Text {
+                            text: root.itemPinned ? "从栏上收起" : "固定到栏上"
+                            Layout.fillWidth: true
+                            color: pinMa.containsMouse ? Color.primary : Color.text
+                            font.pixelSize: Size.fontSize.md
+                        }
+                    }
+
+                    MouseArea {
+                        id: pinMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            TrayService.togglePin(root.trayItemId)
+                            root.visible = false
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    visible: root.trayItemId.length > 0
+                    color: Color.outlineVariant
+                    opacity: 0.5
+                    Layout.leftMargin: 8
+                    Layout.rightMargin: 8
+                    Layout.bottomMargin: 2
+                }
 
                 property var currentModel: (menuStack.count === 0)
                     ? (rootOpener.children ? rootOpener.children.values : [])

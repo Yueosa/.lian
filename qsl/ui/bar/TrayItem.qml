@@ -80,6 +80,7 @@ MouseArea {
         id: trayMenu
         rootMenuHandle: root.modelData.menu
         trayName: root.modelData.tooltipTitle || root.modelData.id || "Menu"
+        trayItemId: root.modelData.id || ""
         anchor.item: root
         anchor.rect.y: (root.mapToItem(null, 0, 0).y > 500)
             ? -trayMenu.implicitHeight - 5
