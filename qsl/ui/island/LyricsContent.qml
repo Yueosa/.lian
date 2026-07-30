@@ -3,6 +3,7 @@
 // 性能：仅 active 时 Cava.acquire；频谱 ~33ms；无 FastBlur
 
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import qs.data.state
 import qs.data.service
 
@@ -126,7 +127,7 @@ Item {
         }
     }
 
-    // ---- 封面 ----
+    // ---- 封面（正圆：clip+radius 裁不住 Image，需 OpacityMask）----
     Item {
         id: coverBox
         anchors.left: parent.left
@@ -137,18 +138,10 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            radius: 4
+            radius: width / 2
             color: Color.surfaceHighest
-            clip: true
+            visible: !lyricsRoot.artUrl.length || coverImg.status !== Image.Ready
 
-            Image {
-                anchors.fill: parent
-                source: lyricsRoot.artUrl
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                sourceSize: Qt.size(64, 64)
-                visible: status === Image.Ready
-            }
             Text {
                 anchors.centerIn: parent
                 visible: !lyricsRoot.artUrl.length
@@ -156,6 +149,31 @@ Item {
                 color: Color.textMuted
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.sm
+            }
+        }
+
+        Image {
+            id: coverImg
+            anchors.fill: parent
+            source: lyricsRoot.artUrl
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            sourceSize: Qt.size(64, 64)
+            visible: false
+        }
+
+        OpacityMask {
+            anchors.fill: parent
+            source: coverImg
+            visible: coverImg.status === Image.Ready
+            maskSource: Item {
+                width: coverBox.width
+                height: coverBox.height
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "#000000"
+                }
             }
         }
     }

@@ -1,10 +1,11 @@
 // QslShadow — 纯 QML 卡片阴影（多层 Rectangle 模拟 blur spread）
 // 不使用 DropShadow/ShaderEffect/layer.enabled，零 GPU 离屏开销。
-// cached 模式：首次渲染后通过 visible 绑定控制显隐，不持续计算。
+//
+// ⚠ 只用在少量常驻卡片（侧栏壳、弹窗），禁止放进 ListView delegate。
+//   每层是完整 Rectangle，delegate × N 会迅速放大场景图节点数。
 //
 // 用法：
 //   QslShadow { target: myCard }
-//   或手动设置 anchors.fill / radius
 
 import QtQuick
 import qs.data.state

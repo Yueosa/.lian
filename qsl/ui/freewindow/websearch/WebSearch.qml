@@ -5,7 +5,7 @@
 // 性能：
 //   - 关闭时 mask=0 不挡桌面
 //   - 搜索建议 debounce 300ms，最多 8 条
-//   - 无 Image/blur/layer.enabled
+//   - 无 Image/blur
 
 import QtQuick
 import QtQuick.Layouts
@@ -80,7 +80,6 @@ PanelWindow {
         _engineIdx = (_engineIdx + 1) % engines.length
     }
 
-    // ---- 搜索建议 debounce ----
     Timer {
         id: suggestDebounce
         interval: 300
@@ -117,7 +116,6 @@ PanelWindow {
         running: false
     }
 
-    // ---- mask ----
     Item {
         id: inputMask
         width: root.open ? root.width : 0
@@ -125,7 +123,6 @@ PanelWindow {
     }
     mask: Region { item: inputMask }
 
-    // ---- 动画 ----
     property real _slideY: open ? 0 : -80
     property real _opacity: open ? 1 : 0
 
@@ -158,13 +155,13 @@ PanelWindow {
             onClicked: root.closeWindow()
         }
 
-        // ---- 搜索栏 ----
+        // 高度 = 内容 + 上下 padding（否则 topMargin 会把行推出可视区）
         Rectangle {
             id: bar
             width: root.barWidth
             anchors.horizontalCenter: parent.horizontalCenter
             y: root.barTop + root._slideY
-            height: barCol.implicitHeight
+            height: barInner.implicitHeight + Size.spacing.lg * 2
             visible: root.contentActive
             opacity: root._opacity
             radius: Size.rounding.xl
@@ -177,108 +174,151 @@ PanelWindow {
                 onClicked: {}
             }
 
-            ColumnLayout {
-                id: barCol
+            Column {
+                id: barInner
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.margins: Size.spacing.lg
-                anchors.top: parent.top
-                anchors.topMargin: Size.spacing.lg
-                anchors.bottomMargin: Size.spacing.lg
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Size.spacing.lg
+                anchors.rightMargin: Size.spacing.lg
                 spacing: Size.spacing.sm
 
-                // 输入行
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Size.spacing.sm
+                // 输入行：固定 36px，子项全部 verticalCenter
+                Item {
+                    width: parent.width
+                    height: 36
 
-                    // 引擎切换
-                    Rectangle {
-                        width: engineLbl.implicitWidth + 20
-                        height: 36
-                        radius: Size.rounding.sm
-                        color: engineMa.containsMouse
-                            ? Color.withAlpha(Color.primary, 0.15)
-                            : Color.withAlpha(Color.text, 0.06)
-                        Text {
-                            id: engineLbl
-                            anchors.centerIn: parent
-                            text: root.currentEngine.name
-                            color: Color.primary
-                            font.pixelSize: Size.fontSize.sm
-                            font.bold: true
+                    Row {
+                        anchors.fill: parent
+                        spacing: Size.spacing.sm
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: engineLbl.implicitWidth + 20
+                            height: 32
+                            radius: Size.rounding.sm
+                            color: engineMa.containsMouse
+                                ? Color.withAlpha(Color.primary, 0.15)
+                                : Color.withAlpha(Color.text, 0.06)
+                            Text {
+                                id: engineLbl
+                                anchors.centerIn: parent
+                                text: root.currentEngine.name
+                                color: Color.primary
+                                font.pixelSize: Size.fontSize.sm
+                                font.bold: true
+                            }
+                            MouseArea {
+                                id: engineMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.cycleEngine()
+                            }
                         }
-                        MouseArea {
-                            id: engineMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.cycleEngine()
+
+                        Item {
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: 32
+                            width: {
+                                const engW = engineLbl.implicitWidth + 20
+                                return Math.max(80, parent.width - engW - 32 - parent.spacing * 2)
+                            }
+
+                            TextInput {
+                                id: searchInput
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                color: Color.text
+                                font.pixelSize: Size.fontSize.md
+                                font.family: Size.fontSans
+                                clip: true
+                                selectByMouse: true
+
+                                onTextChanged: {
+                                    suggestList.currentIndex = -1
+                                    suggestDebounce.restart()
+                                }
+
+                                Keys.onReturnPressed: (event) => {
+                                    if (suggestList.currentIndex >= 0
+                                        && suggestList.currentIndex < root.suggestions.length)
+                                        root.doSearch(root.suggestions[suggestList.currentIndex])
+                                    else
+                                        root.doSearch()
+                                    event.accepted = true
+                                }
+                                Keys.onEnterPressed: (event) => {
+                                    if (suggestList.currentIndex >= 0
+                                        && suggestList.currentIndex < root.suggestions.length)
+                                        root.doSearch(root.suggestions[suggestList.currentIndex])
+                                    else
+                                        root.doSearch()
+                                    event.accepted = true
+                                }
+                                Keys.onDownPressed: (event) => {
+                                    if (root.suggestions.length === 0) return
+                                    suggestList.currentIndex = Math.min(
+                                        suggestList.currentIndex + 1,
+                                        root.suggestions.length - 1)
+                                    event.accepted = true
+                                }
+                                Keys.onUpPressed: (event) => {
+                                    if (suggestList.currentIndex <= 0)
+                                        suggestList.currentIndex = -1
+                                    else
+                                        suggestList.currentIndex -= 1
+                                    event.accepted = true
+                                }
+                                Keys.onTabPressed: (event) => {
+                                    root.cycleEngine()
+                                    event.accepted = true
+                                }
+
+                                Text {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    visible: !searchInput.text && !searchInput.activeFocus
+                                    text: "搜索…"
+                                    color: Color.textMuted
+                                    font: searchInput.font
+                                }
+                            }
                         }
-                    }
 
-                    // 搜索输入框
-                    TextInput {
-                        id: searchInput
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 36
-                        verticalAlignment: Text.AlignVCenter
-                        color: Color.text
-                        font.pixelSize: Size.fontSize.md
-                        font.family: Size.fontSans
-                        clip: true
-                        selectByMouse: true
-
-                        onTextChanged: suggestDebounce.restart()
-
-                        Keys.onReturnPressed: root.doSearch()
-                        Keys.onEnterPressed: root.doSearch()
-                        Keys.onDownPressed: {
-                            if (suggestList.count > 0)
-                                suggestList.currentIndex = 0
-                        }
-                        Keys.onTabPressed: root.cycleEngine()
-
-                        Text {
-                            anchors.fill: parent
-                            verticalAlignment: Text.AlignVCenter
-                            visible: !searchInput.text && !searchInput.activeFocus
-                            text: "搜索…"
-                            color: Color.textMuted
-                            font: searchInput.font
-                        }
-                    }
-
-                    // 搜索按钮
-                    Rectangle {
-                        width: 36; height: 36
-                        radius: Size.rounding.sm
-                        color: searchBtnMa.containsMouse
-                            ? Color.withAlpha(Color.primary, 0.15)
-                            : "transparent"
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\ue8b6"
-                            font.family: Size.fontIcon
-                            font.pixelSize: 20
-                            color: Color.primary
-                        }
-                        MouseArea {
-                            id: searchBtnMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.doSearch()
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 32
+                            height: 32
+                            radius: Size.rounding.sm
+                            color: searchBtnMa.containsMouse
+                                ? Color.withAlpha(Color.primary, 0.15)
+                                : "transparent"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\ue8b6"
+                                font.family: Size.fontIcon
+                                font.pixelSize: 20
+                                color: Color.primary
+                            }
+                            MouseArea {
+                                id: searchBtnMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.doSearch()
+                            }
                         }
                     }
                 }
 
-                // 搜索建议列表
                 ListView {
                     id: suggestList
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: contentHeight
+                    width: parent.width
+                    height: root.suggestions.length > 0
+                        ? Math.min(root.suggestions.length, 8) * 38 : 0
                     visible: root.suggestions.length > 0
+                    clip: true
                     interactive: false
                     model: root.suggestions
                     currentIndex: -1
@@ -313,22 +353,7 @@ PanelWindow {
                             onClicked: root.doSearch(modelData)
                         }
                     }
-
-                    Keys.onReturnPressed: {
-                        if (currentIndex >= 0 && currentIndex < count)
-                            root.doSearch(root.suggestions[currentIndex])
-                    }
-                    Keys.onUpPressed: {
-                        if (currentIndex > 0) currentIndex--
-                        else { currentIndex = -1; searchInput.forceActiveFocus() }
-                    }
-                    Keys.onDownPressed: {
-                        if (currentIndex < count - 1) currentIndex++
-                    }
                 }
-
-                // 底部间距
-                Item { Layout.preferredHeight: Size.spacing.sm }
             }
         }
     }

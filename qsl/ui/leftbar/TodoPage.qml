@@ -15,9 +15,17 @@ Item {
 
     property string activeTag: ""
 
+    // 直接读 Todo.items，保证 binding 依赖跟踪（函数内读属性可能不触发刷新）
     readonly property var filteredItems: {
-        const list = Todo.itemsByTag(activeTag)
-        // 排序：未完成在前，组内按优先级 T0>T1>T2
+        const items = Todo.items
+        const tag = activeTag
+        let list
+        if (!tag)
+            list = items
+        else if (tag === "重要")
+            list = items.filter(i => i.starred)
+        else
+            list = items.filter(i => i.tag === tag)
         return [...list].sort((a, b) => {
             if (a.done !== b.done) return a.done ? 1 : -1
             return a.priority - b.priority
@@ -131,7 +139,9 @@ Item {
                 TextInput {
                     id: inputField
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 28
                     Layout.alignment: Qt.AlignVCenter
+                    verticalAlignment: Text.AlignVCenter
                     color: Color.text
                     font.pixelSize: Size.fontSize.md
                     font.family: Size.fontSans
@@ -147,12 +157,19 @@ Item {
                         font: inputField.font
                     }
 
-                    Keys.onReturnPressed: _addItem()
-                    Keys.onEnterPressed: _addItem()
+                    Keys.onReturnPressed: (event) => {
+                        root._addItem()
+                        event.accepted = true
+                    }
+                    Keys.onEnterPressed: (event) => {
+                        root._addItem()
+                        event.accepted = true
+                    }
                 }
 
                 // 优先级选择（小 badge）
                 Row {
+                    Layout.alignment: Qt.AlignVCenter
                     spacing: 2
                     Repeater {
                         model: ["T0", "T1", "T2"]

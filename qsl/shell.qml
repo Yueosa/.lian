@@ -48,17 +48,6 @@ ShellRoot {
         id: lockScreen
     }
 
-    Connections {
-        target: Timers
-        function onCountdownFinished() {
-            Island.pushNotifToast({
-                title: "倒计时结束",
-                body: "设定的 " + Timers.formatSec(Timers.countdown.total) + " 已到",
-                appName: "qsl-timer"
-            })
-        }
-    }
-
     IpcHandler {
         target: "free-window-app"
         function toggle() { appWindow.toggle() }

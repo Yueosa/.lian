@@ -4,19 +4,12 @@ pragma Singleton
 // 计时器 + 秒表服务 — Timers
 // ============================================================
 // 正计时（stopwatch）：从 0 开始，手动停止
-// 倒计时（countdown）：设定秒数，时间到发 signal → 推灵动岛通知
-// 持久化到 ~/.local/share/qsl/timer.json（防 qs 崩丢进度）
+// 倒计时（countdown）：设定秒数，时间到发 notify-send
+// 持久化到 ~/.local/share/qsl/timer.json
 //
-// 对外接口：
-//   stopwatch            QtObject   正计时状态
-//   countdown            QtObject   倒计时状态
-//   startStopwatch()     开始/继续正计时
-//   pauseStopwatch()     暂停正计时
-//   resetStopwatch()     重置正计时
-//   startCountdown(secs) 开始倒计时
-//   pauseCountdown()     暂停倒计时
-//   resetCountdown()     重置倒计时
-//   signal countdownFinished()
+// 性能：
+//   - Timer 1s interval（不是 100ms），只在运行时 active
+//   - 属性变更仅秒级，不触发高频重绘
 // ============================================================
 
 import QtQuick
@@ -28,38 +21,36 @@ Singleton {
 
     signal countdownFinished()
 
-    // ---- 正计时 ----
+    // ---- 正计时（秒级） ----
     readonly property QtObject stopwatch: QtObject {
         property bool running: false
-        property int elapsed: 0   // 累计毫秒
+        property int elapsed: 0   // 累计秒数
     }
 
     // ---- 倒计时 ----
     readonly property QtObject countdown: QtObject {
         property bool running: false
-        property int total: 0      // 设定总秒数
-        property int remaining: 0  // 剩余秒数
+        property int total: 0
+        property int remaining: 0
     }
 
     // ---- 正计时 API ----
     function startStopwatch() {
         stopwatch.running = true
-        _tick.running = true
+        _ensureTick()
         _save()
     }
 
     function pauseStopwatch() {
         stopwatch.running = false
-        if (!countdown.running)
-            _tick.running = false
+        _ensureTick()
         _save()
     }
 
     function resetStopwatch() {
         stopwatch.running = false
         stopwatch.elapsed = 0
-        if (!countdown.running)
-            _tick.running = false
+        _ensureTick()
         _save()
     }
 
@@ -72,14 +63,13 @@ Singleton {
         if (countdown.remaining <= 0)
             return
         countdown.running = true
-        _tick.running = true
+        _ensureTick()
         _save()
     }
 
     function pauseCountdown() {
         countdown.running = false
-        if (!stopwatch.running)
-            _tick.running = false
+        _ensureTick()
         _save()
     }
 
@@ -87,63 +77,57 @@ Singleton {
         countdown.running = false
         countdown.remaining = 0
         countdown.total = 0
-        if (!stopwatch.running)
-            _tick.running = false
+        _ensureTick()
         _save()
     }
 
-    // ---- 格式化辅助 ----
-    function formatMs(ms) {
-        const totalSec = Math.floor(ms / 1000)
-        const h = Math.floor(totalSec / 3600)
-        const m = Math.floor((totalSec % 3600) / 60)
-        const s = totalSec % 60
-        if (h > 0)
-            return _pad(h) + ":" + _pad(m) + ":" + _pad(s)
-        return _pad(m) + ":" + _pad(s)
-    }
-
+    // ---- 格式化 ----
     function formatSec(sec) {
-        const h = Math.floor(sec / 3600)
-        const m = Math.floor((sec % 3600) / 60)
-        const s = sec % 60
+        const s = Math.max(0, Math.floor(sec))
+        const h = Math.floor(s / 3600)
+        const m = Math.floor((s % 3600) / 60)
+        const r = s % 60
         if (h > 0)
-            return _pad(h) + ":" + _pad(m) + ":" + _pad(s)
-        return _pad(m) + ":" + _pad(s)
+            return _pad(h) + ":" + _pad(m) + ":" + _pad(r)
+        return _pad(m) + ":" + _pad(r)
     }
 
     function _pad(n) { return n < 10 ? "0" + n : "" + n }
 
-    // ---- Tick（100ms 精度） ----
+    // ---- Tick（1s，仅在有活动计时时运行）----
+    function _ensureTick() {
+        _tick.running = stopwatch.running || countdown.running
+    }
+
     Timer {
         id: _tick
-        interval: 100
+        interval: 1000
         repeat: true
         running: false
         onTriggered: {
             if (stopwatch.running)
-                stopwatch.elapsed += 100
+                stopwatch.elapsed += 1
 
             if (countdown.running) {
-                // 每秒减一
-                const now = Date.now()
-                if (!root._lastCountdownTick || now - root._lastCountdownTick >= 1000) {
-                    root._lastCountdownTick = now
-                    countdown.remaining -= 1
-                    if (countdown.remaining <= 0) {
-                        countdown.remaining = 0
-                        countdown.running = false
-                        if (!stopwatch.running)
-                            _tick.running = false
-                        root.countdownFinished()
-                        root._save()
-                    }
+                countdown.remaining -= 1
+                if (countdown.remaining <= 0) {
+                    countdown.remaining = 0
+                    countdown.running = false
+                    root._ensureTick()
+                    root.countdownFinished()
+                    _notifyProc.command = ["notify-send", "-a", "qsl-timer",
+                        "倒计时结束", root.formatSec(countdown.total) + " 已到"]
+                    _notifyProc.running = true
+                    root._save()
                 }
             }
         }
     }
 
-    property real _lastCountdownTick: 0
+    Process {
+        id: _notifyProc
+        running: false
+    }
 
     // ---- 持久化 ----
     readonly property string _dataDir: Quickshell.env("HOME") + "/.local/share/qsl"

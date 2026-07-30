@@ -151,7 +151,6 @@ Item {
                 color: Color.surfaceHighest
                 clip: true
 
-                // 封面播放时微缩放呼吸效果
                 scale: root.isPlaying ? 1.0 : 0.95
                 Behavior on scale {
                     SpringAnimation { spring: 3.5; damping: 0.6 }
@@ -444,44 +443,131 @@ Item {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 24
+                    Layout.preferredHeight: 28
 
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 6
-                        radius: 3
-                        color: Color.surfaceHighest
-
-                        Rectangle {
-                            width: {
-                                if (root.trackLength <= 0)
-                                    return 0
-                                return parent.width * Math.max(0, Math.min(1, root.seekPos / root.trackLength))
-                            }
-                            height: parent.height
-                            radius: 3
-                            color: Color.primary
-                        }
-                    }
-
-                    MouseArea {
+                    // 波浪进度条（参数对齐 clavis WaveProgressBar：amp 2.5 / freq 0.12 / trackH 6）
+                    Item {
+                        id: waveRoot
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onPressed: root.seeking = true
-                        onReleased: (mouse) => {
-                            if (root.player && root.trackLength > 0 && root.canSeek) {
-                                const ratio = Math.max(0, Math.min(1, mouse.x / width))
-                                root.player.position = ratio * root.trackLength
-                                root.seekPos = Number(root.player.position) || 0
-                            }
-                            root.seeking = false
+
+                        readonly property real progress: root.trackLength > 0
+                            ? Math.max(0, Math.min(1, root.seekPos / root.trackLength)) : 0
+                        readonly property real trackH: 6
+                        readonly property real amp: 2.5
+                        readonly property real freq: 0.12
+                        readonly property real fadeLen: 30
+                        readonly property real waveBias: 1.3
+                        readonly property real secAmp: 0.3
+                        readonly property real secFreqMul: 1.5
+                        property real phase: 0
+                        property real visualX: width * progress
+
+                        Behavior on visualX {
+                            enabled: !root.seeking
+                            SmoothedAnimation { velocity: 500; duration: 400 }
                         }
-                        onPositionChanged: (mouse) => {
-                            if (!pressed || root.trackLength <= 0)
-                                return
-                            root.seekPos = Math.max(0, Math.min(1, mouse.x / width)) * root.trackLength
+
+                        NumberAnimation on phase {
+                            loops: Animation.Infinite
+                            from: 0
+                            to: Math.PI * 2
+                            duration: 1200
+                            easing.type: Easing.Linear
+                            running: root.isPlaying && root.visible
+                        }
+
+                        onPhaseChanged: waveCanvas.requestPaint()
+                        onVisualXChanged: waveCanvas.requestPaint()
+                        onWidthChanged: waveCanvas.requestPaint()
+
+                        // 未播放轨道
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: waveRoot.trackH
+                            radius: waveRoot.trackH / 2
+                            color: Color.surfaceHighest
+                        }
+
+                        Canvas {
+                            id: waveCanvas
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: Math.max(waveRoot.trackH, waveRoot.visualX)
+
+                            onPaint: {
+                                const ctx = getContext("2d")
+                                const w = width
+                                const h = height
+                                ctx.clearRect(0, 0, w, h)
+
+                                const trackH = waveRoot.trackH
+                                const radius = trackH / 2
+                                const centerY = h / 2
+                                if (w < radius * 2)
+                                    return
+
+                                ctx.beginPath()
+                                ctx.moveTo(w, centerY + trackH / 2)
+                                ctx.lineTo(radius, centerY + trackH / 2)
+                                ctx.arcTo(0, centerY + trackH / 2, 0, centerY, radius)
+                                ctx.arcTo(0, centerY - trackH / 2, radius, centerY - trackH / 2, radius)
+
+                                const freq = waveRoot.freq
+                                const maxAmp = waveRoot.amp
+                                const fadeLen = waveRoot.fadeLen
+                                const phase = waveRoot.phase
+
+                                for (let x = radius; x <= w; x++) {
+                                    let leftDist = x - radius
+                                    let rightDist = w - x
+                                    let envelope = 1.0
+                                    if (leftDist < fadeLen)
+                                        envelope = Math.sin((leftDist / fadeLen) * (Math.PI / 2))
+                                    if (rightDist < fadeLen) {
+                                        const envRight = Math.sin((rightDist / fadeLen) * (Math.PI / 2))
+                                        if (envRight < envelope)
+                                            envelope = envRight
+                                    }
+
+                                    let wave1 = Math.sin(x * freq - phase)
+                                    let wave2 = Math.sin(x * freq * waveRoot.secFreqMul - phase * 2.0) * waveRoot.secAmp
+                                    let combined = (wave1 + wave2 + waveRoot.waveBias) / (2 * waveRoot.waveBias)
+                                    if (combined < 0) combined = 0
+                                    if (combined > 1) combined = 1
+
+                                    const y = (centerY - trackH / 2) - (combined * maxAmp * envelope)
+                                    ctx.lineTo(x, y)
+                                }
+
+                                ctx.lineTo(w, centerY - trackH / 2)
+                                ctx.lineTo(w, centerY + trackH / 2)
+                                ctx.closePath()
+                                ctx.fillStyle = String(Color.primary)
+                                ctx.fill()
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -8
+                            cursorShape: Qt.PointingHandCursor
+                            onPressed: root.seeking = true
+                            onReleased: (mouse) => {
+                                if (root.player && root.trackLength > 0 && root.canSeek) {
+                                    const ratio = Math.max(0, Math.min(1, mouse.x / width))
+                                    root.player.position = ratio * root.trackLength
+                                    root.seekPos = Number(root.player.position) || 0
+                                }
+                                root.seeking = false
+                            }
+                            onPositionChanged: (mouse) => {
+                                if (!pressed || root.trackLength <= 0)
+                                    return
+                                root.seekPos = Math.max(0, Math.min(1, mouse.x / width)) * root.trackLength
+                            }
                         }
                     }
                 }
