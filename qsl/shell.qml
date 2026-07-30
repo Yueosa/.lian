@@ -12,6 +12,7 @@ import qs.ui.island
 import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
+import qs.ui.freewindow.websearch
 import qs.ui.lock
 
 ShellRoot {
@@ -39,8 +40,23 @@ ShellRoot {
         id: rightbar
     }
 
+    WebSearch {
+        id: webSearch
+    }
+
     Lock {
         id: lockScreen
+    }
+
+    Connections {
+        target: Timers
+        function onCountdownFinished() {
+            Island.pushNotifToast({
+                title: "倒计时结束",
+                body: "设定的 " + Timers.formatSec(Timers.countdown.total) + " 已到",
+                appName: "qsl-timer"
+            })
+        }
     }
 
     IpcHandler {
@@ -84,6 +100,13 @@ ShellRoot {
         function next() { leftbar.next() }
         function prev() { leftbar.prev() }
         function close() { leftbar.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "websearch"
+        function toggle() { webSearch.toggle() }
+        function open() { webSearch.openWindow() }
+        function close() { webSearch.closeWindow() }
     }
 
     IpcHandler {

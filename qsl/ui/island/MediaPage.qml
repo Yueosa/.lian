@@ -147,9 +147,15 @@ Item {
                 Layout.preferredWidth: 200
                 Layout.preferredHeight: 200
                 Layout.alignment: Qt.AlignHCenter
-                radius: Size.rounding.lg
+                radius: Size.rounding.xl
                 color: Color.surfaceHighest
                 clip: true
+
+                // 封面播放时微缩放呼吸效果
+                scale: root.isPlaying ? 1.0 : 0.95
+                Behavior on scale {
+                    SpringAnimation { spring: 3.5; damping: 0.6 }
+                }
 
                 Image {
                     anchors.fill: parent
@@ -343,7 +349,7 @@ Item {
                     highlightRangeMode: ListView.StrictlyEnforceRange
                     preferredHighlightBegin: height / 2 - 28
                     preferredHighlightEnd: height / 2 + 28
-                    highlightMoveDuration: 220
+                    highlightMoveDuration: 350
                     highlightMoveVelocity: -1
 
                     Connections {
@@ -376,11 +382,24 @@ Item {
                             font.bold: parent.isCurrent
                             font.weight: parent.isCurrent ? Font.DemiBold : Font.Normal
                             opacity: parent.isCurrent ? 1.0 : 0.45
+
+                            scale: parent.isCurrent ? 1.0 : 0.92
+                            transformOrigin: Item.Center
+
                             Behavior on font.pixelSize {
-                                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
                             }
                             Behavior on opacity {
-                                NumberAnimation { duration: 160 }
+                                NumberAnimation { duration: 200 }
+                            }
+                            Behavior on scale {
+                                SpringAnimation {
+                                    spring: 4.0
+                                    damping: 0.65
+                                }
+                            }
+                            Behavior on color {
+                                ColorAnimation { duration: 200 }
                             }
                         }
                     }

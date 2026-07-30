@@ -85,6 +85,7 @@ hl.bind(mainMod .. " + B", sh(browser))
 
 hl.bind(mainMod .. " + A", qs("free-window-app", "toggle"))
 hl.bind(mainMod .. " + Z", qs("free-window-clipboard", "toggle"))
+hl.bind(mainMod .. " + X", qs("websearch", "toggle"))  -- Web 搜索
 
 
 -- ============================================================

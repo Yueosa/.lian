@@ -42,7 +42,8 @@
           "title": "快捷面板",
           "items": [
             { "keys": "Super+A", "desc": "应用启动器" },
-            { "keys": "Super+Z", "desc": "剪贴板" }
+            { "keys": "Super+Z", "desc": "剪贴板" },
+            { "keys": "Super+X", "desc": "Web 搜索" }
           ]
         },
         {
