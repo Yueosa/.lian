@@ -72,14 +72,21 @@
 - [x] Tab：`QslHubTab`（图标+标题+底指示条，同 Island Hub；FA + fontMono）
 - [x] 内层卡：`Color.surface` / `surfaceHigh` 实色；ListView 仍禁阴影
 - [x] Clipboard：**仍半透明**（例外）
-- [ ] 右上角 bar / 右栏功能向 zip 深对齐（下一轮）
+- [x] 顶栏：Tray 折叠（常驻 qq/微信/fcitx/splayer）+ SysMonitor（RAM→hover CPU/GPU）+ SettingsPill
+- [ ] 右栏功能向 zip 深对齐 / QuickSettings 簇（可选下一轮）
 - Island Hub 本身不改（它是对齐目标）
 
 #### 10. 设置面板
-- 独立窗口（ControlCenter），IPC `qs ipc call settings open`
-- 导航 Rail + 页面 Loader
-- 功能：编辑 hotkeys.json / 法定节假日 / 清除磁盘缓存 / 快速重启 qs / 修改服务配置
-- 动态架构图：Canvas 画模块节点 + 数据流连线，鼠标悬停显示描述
+- [x] 入口：顶栏最右 SettingsPill + IPC `qs ipc call settings open/toggle/close`
+- [x] ControlCenter **占位窗**（FreeWindow）
+- [ ] 导航 Rail + 页面 Loader
+- [ ] 功能：编辑 hotkeys.json / 法定节假日 / 清除磁盘缓存 / 快速重启 qs / 修改服务配置
+- [ ] 动态架构图：Canvas 画模块节点 + 数据流连线，鼠标悬停显示描述
+
+### 内存备忘（2026-07）
+- qs VmRSS 曾见 ~680MiB：anon + LLVM + NVIDIA + CJK 字体为主；功能增多相对早期 ~300MiB 正常偏高
+- cava `python` reader / `cava-relay` 在 qs 崩溃后会变孤儿 → 启动与首次 acquire 前 `pkill` 清理
+- 调试请用默认 `qs`（`~/.config/quickshell` → qsl），勿 `qs -p ~/.lian/qsl`（IPC Path ID 对不上）
 
 ### P3（远期）
 
@@ -108,7 +115,7 @@
 | 歌词 | ✅ 活跃行弹簧缩放 | 可选进一步 Spring contentY |
 | 封面 | ✅ 岛正圆 / Hub 方块 | — |
 | 滑块/开关 | ✅ QslSlider / QslSwitch | 可选更细交互反馈 |
-| 图标 | ✅ 左右栏/App/Clipboard Material ligature | bar QuickSettings 下一轮 |
+| 图标 | ✅ 左右栏/App/Clipboard/顶栏 Settings Material | QuickSettings 簇可选 |
 
 ---
 
