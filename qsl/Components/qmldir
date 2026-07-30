@@ -1,2 +1,7 @@
 QslCard 1.0 QslCard.qml
+QslChip 1.0 QslChip.qml
+QslHubTab 1.0 QslHubTab.qml
+QslIconButton 1.0 QslIconButton.qml
 QslShadow 1.0 QslShadow.qml
+QslSlider 1.0 QslSlider.qml
+QslSwitch 1.0 QslSwitch.qml

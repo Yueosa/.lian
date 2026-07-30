@@ -25,7 +25,8 @@ Rectangle {
     property real headerSpacing: Size.spacing.sm
     default property alias contentItem: bodyContainer.data
 
-    color: Color.withAlpha(Color.surfaceHigh, Style.bg.cardAlpha)
+    // 对齐 Hub：实色表面（不再用 cardAlpha 半透明）
+    color: Color.surfaceHigh
     radius: Size.rounding.lg
     border.width: Style.border.width
     border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
@@ -72,11 +73,11 @@ Rectangle {
             }
         }
 
-        // Body slot
-        Item {
+        // Body：ColumnLayout 吃子项隐式高度（勿 fillHeight，否则卡片高度算死）
+        ColumnLayout {
             id: bodyContainer
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            spacing: Size.spacing.sm
         }
     }
 }
