@@ -79,13 +79,18 @@
 #### 10. 设置面板
 - [x] 入口：顶栏最右 SettingsPill + IPC `qs ipc call settings open/toggle/close`
 - [x] ControlCenter **占位窗**（FreeWindow）
-- [ ] 导航 Rail + 页面 Loader
+- [ ] **延后**：先做完内存轮再继续（见下「内存备忘」）
+- [ ] 导航 Rail + 页面 Loader；首页拟为动态架构图（P3 反射白箱不做）
 - [ ] 功能：编辑 hotkeys.json / 法定节假日 / 清除磁盘缓存 / 快速重启 qs / 修改服务配置
 - [ ] 动态架构图：Canvas 画模块节点 + 数据流连线，鼠标悬停显示描述
 
 ### 内存备忘（2026-07）
-- qs VmRSS 曾见 ~680MiB：anon + LLVM + NVIDIA + CJK 字体为主；功能增多相对早期 ~300MiB 正常偏高
-- cava `python` reader / `cava-relay` 在 qs 崩溃后会变孤儿 → 启动与首次 acquire 前 `pkill` 清理
+- **两笔账**：qs 进程 RSS ≠ 系统总涨。cava python reader 孤儿另计（曾堆 20+ 个 ≈350MiB）。
+- qs 冷启空闲曾见 ~670MiB；内存轮后约 **~550MiB**（Private_Dirty ~275MiB）。大头仍是 anon + LLVM + NVIDIA + CJK。
+- cava 清理：匹配 cmdline 中的 `/ 'qsl' / 'cava.bin'`（用 `/ '[q]sl' / 'cava.bin'` 防自匹配）；启动 / acquire / release→0 都清。**勿**再用字面量 `qsl/cava.bin`。
+- Tray：栏上/overflow 仅 `Loader.active` 时建 TrayItem+Image；未 pin 不占解码缓存。
+- Island DropShadow：`cached: true`（阴影源跟岛体；非 gooey/blur）。
+- **不要**为省内存把 QML service 批量 Rust 化（薄封装；重活已在 cava-relay/sysmond/weatherd）。
 - 调试请用默认 `qs`（`~/.config/quickshell` → qsl），勿 `qs -p ~/.lian/qsl`（IPC Path ID 对不上）
 
 ### P3（远期）
@@ -120,10 +125,11 @@
 ---
 
 ## 性能红线
-- RSS 稳态 ≤ 400MB（当前 ~300MB，留余量给新功能）
+- RSS 稳态目标 **≤ 550MB**（本轮实测冷启空闲约此；早期 400MB 红线暂作下一轮，需再砍岛/字体/常驻窗）
+- 系统侧：`python … cava.bin` reader 稳态 **0 或 1**（仅 acquire 时）
 - 无常驻轮询（所有 Timer 必须 gated）
 - 新页面遵循单 Loader 按需加载
-- Image 必须设 sourceSize + asynchronous
+- Image 必须设 sourceSize + asynchronous；Tray 隐藏项禁止常驻 Image
 - 锁屏面板关闭时完全销毁（不常驻）
 
 ---

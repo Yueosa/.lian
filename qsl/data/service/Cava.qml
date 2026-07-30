@@ -6,8 +6,9 @@ pragma Singleton
 // cava-relay → $XDG_RUNTIME_DIR/qsl/cava.bin（30×u8）
 // refCount>0 才跑；values 归一 0–1，约 30fps
 //
-// 防泄漏：启动 / 首次 acquire 前清孤儿；清理完成后再拉起 Process，
-// 避免 pkill 误杀刚 spawn 的实例
+// 防泄漏：启动 / 首次 acquire / release→0 清孤儿；清理完成后再拉起 Process，
+// 避免 pkill 误杀刚 spawn 的实例。
+// reader cmdline 含 ` / 'qsl' / 'cava.bin'`（非字面量 qsl/cava.bin）。
 // ============================================================
 
 import QtQuick
@@ -31,6 +32,13 @@ Singleton {
     // 清理完成前不拉起子进程
     property bool _procsArmed: false
 
+    // 匹配 python reader / relay / cava 配置的 cava；[q]/[c] 防自匹配 pkill 脚本
+    readonly property string _orphanCmd:
+        "pkill -f \"/ '[q]sl' / 'cava.bin'\" 2>/dev/null || true; "
+        + "pkill -f '[c]ava-relay' 2>/dev/null || true; "
+        + "pkill -f '[q]sl_cava.conf' 2>/dev/null || true; "
+        + "exit 0"
+
     function acquire() {
         if (refCount > 0) {
             refCount += 1
@@ -38,7 +46,7 @@ Singleton {
         }
         // 先清孤儿，再 arm 进程
         _pendingStart = true
-        orphanCleanup.running = true
+        _runOrphanCleanup()
     }
 
     function release() {
@@ -47,7 +55,17 @@ Singleton {
             _procsArmed = false
             _pendingStart = false
             values = []
+            // 停 Process 后仍清一次，防热重载残留
+            _runOrphanCleanup()
         }
+    }
+
+    function _runOrphanCleanup() {
+        if (orphanCleanup.running) {
+            // 排队：当前清理结束后若仍需 start 会走 onExited
+            return
+        }
+        orphanCleanup.running = true
     }
 
     function _zeroValues() {
@@ -84,14 +102,7 @@ Singleton {
 
     Process {
         id: orphanCleanup
-        command: [
-            "bash", "-lc",
-            "pkill -f '[q]sl/cava.bin' 2>/dev/null || true; "
-            + "pkill -f '[q]sl/backend/cava/build/cava-relay' 2>/dev/null || true; "
-            + "pkill -f '[.]config/quickshell/backend/cava/build/cava-relay' 2>/dev/null || true; "
-            + "pkill -f '[q]sl_cava.conf' 2>/dev/null || true; "
-            + "exit 0"
-        ]
+        command: ["bash", "-lc", root._orphanCmd]
         onExited: root._armAfterCleanup()
     }
 

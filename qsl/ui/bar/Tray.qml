@@ -1,6 +1,7 @@
 // Tray — 常驻 pin + expand overflow（无 MultiEffect）
 // model 直接用 SystemTray.items；pinSignature 驱动立刻刷新
-// overflow 用 Loader：关闭即销毁
+// 栏上 / overflow：Loader.active 才建 TrayItem+Image，未 pin 不占解码缓存
+// overflow 窗：关闭即销毁
 
 import QtQuick
 import QtQuick.Layouts
@@ -26,6 +27,18 @@ Item {
     function relayoutBar() {
         if (content.forceLayout)
             content.forceLayout()
+    }
+
+    function onTrayPinChanged() {
+        root.relayoutBar()
+        Qt.callLater(root.closeOverflow)
+    }
+
+    Component {
+        id: trayItemComp
+        TrayItem {
+            // modelData / 信号在 Loader.onLoaded 注入
+        }
     }
 
     Rectangle {
@@ -71,7 +84,6 @@ Item {
                 id: barSlot
                 required property var modelData
 
-                // 不用函数绑定猜依赖：显式听 pinSignature
                 property bool show: false
 
                 function syncShow() {
@@ -95,16 +107,24 @@ Item {
                 width: show ? 20 : 0
                 height: show ? 20 : 0
                 clip: true
-                opacity: show ? 1 : 0
 
-                TrayItem {
+                // 未 pin：active=false，不建 Image / TrayMenu
+                Loader {
+                    id: barLoader
                     anchors.fill: parent
-                    modelData: barSlot.modelData
-                    // 先让栏刷新，再关 overflow（同帧关窗会感觉「没立刻刷新」）
-                    onPinChanged: {
-                        root.relayoutBar()
-                        Qt.callLater(root.closeOverflow)
+                    active: barSlot.show
+                    sourceComponent: trayItemComp
+                    onLoaded: {
+                        item.modelData = barSlot.modelData
+                        item.pinChanged.connect(root.onTrayPinChanged)
                     }
+                }
+
+                Binding {
+                    when: barLoader.status === Loader.Ready && !!barLoader.item
+                    target: barLoader.item
+                    property: "modelData"
+                    value: barSlot.modelData
                 }
             }
         }
@@ -223,13 +243,22 @@ Item {
                                 height: show ? 20 : 0
                                 clip: true
 
-                                TrayItem {
+                                Loader {
+                                    id: ovLoader
                                     anchors.fill: parent
-                                    modelData: ovSlot.modelData
-                                    onPinChanged: {
-                                        root.relayoutBar()
-                                        Qt.callLater(root.closeOverflow)
+                                    active: ovSlot.show
+                                    sourceComponent: trayItemComp
+                                    onLoaded: {
+                                        item.modelData = ovSlot.modelData
+                                        item.pinChanged.connect(root.onTrayPinChanged)
                                     }
+                                }
+
+                                Binding {
+                                    when: ovLoader.status === Loader.Ready && !!ovLoader.item
+                                    target: ovLoader.item
+                                    property: "modelData"
+                                    value: ovSlot.modelData
                                 }
                             }
                         }

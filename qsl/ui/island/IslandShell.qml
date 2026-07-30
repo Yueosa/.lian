@@ -2,7 +2,7 @@
 // 状态真源：qs.data.state.Island（多屏共享）
 //
 // 性能：
-//   - 无 gooey；DropShadow cached:false + EarCanvas×4
+//   - 无 gooey；DropShadow cached:true（阴影源仅跟岛体，非全屏 FBO 每帧）
 //   - Hub / 一级时钟均用 Loader，关态销毁
 //   - 一级无左/右键；无 L2 媒体卡
 //
@@ -161,7 +161,7 @@ Variants {
                 radius: Size.rounding.xxl
                 samples: 25
                 color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, islandWindow.shadowSoft)
-                cached: false
+                cached: true
                 z: 0
             }
 

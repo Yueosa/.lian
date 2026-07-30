@@ -8,7 +8,8 @@ import qs.data.service
 
 MouseArea {
     id: root
-    required property var modelData
+    // 非 required：Tray Loader 先实例化再注入，避免 required 卡死
+    property var modelData: null
 
     signal pinChanged
 
