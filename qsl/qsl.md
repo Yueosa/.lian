@@ -9,12 +9,9 @@
 
 ### P0（本轮核心）
 
-#### 1. 锁屏（替掉 hyprlock） — WIP / BUG
-- [x] 使用 Quickshell `SessionLock` API（`WlSessionLock`）
-- [x] 手动触发：IPC `qs ipc call lock lock` + Hyprland `Super+L`
-- [ ] PAM 密码验证（卡在「验证中」，待修）
-- [ ] 锁屏面板卡片：时钟 / 日历 / 天气 / 音乐 / 状态 / Todo / 通知
-- [ ] 模糊背景（截图 → blur；当前仅纯色，有意轻量）
+#### 1. 锁屏 — 已放弃（用 hyprlock）
+- Super+L → `hyprlock`（`hypr/lua/binds.lua`）
+- qsl SessionLock / PAM 相关代码已全部删除
 
 #### 2. 待办清单（Todo） — 基本完成
 - [x] 两级分类：标签(重要★/生活/开发) + 优先级(T0/T1/T2)

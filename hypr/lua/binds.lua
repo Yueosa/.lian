@@ -67,7 +67,6 @@ hl.bind(mainMod .. " + M", sh("command -v hyprshutdown >/dev/null 2>&1 && hyprsh
 -- ============================================================
 
 hl.bind(mainMod .. " + SPACE", sh(sysmenu))
-hl.bind(mainMod .. " + L", qs("lock", "lock"))  -- 锁屏
 
 
 -- ============================================================
