@@ -1,10 +1,9 @@
 // LockSurface — 每屏一个；鉴权走共享 LockContext
-// 背景：Wallpaper 降采样 + FastBlur + 暗色遮罩
-// 动画：显式 ParallelAnimation（不用 Behavior，避免退出时被立刻销毁/看不出）
-// 性能：Image async + sourceSize；blur 缩小源；关锁随 surface 销毁
+// 背景：Wallpaper 降采样铺满 + 暗色遮罩（不用 FastBlur / 全屏离屏）
+// 动画：显式 ParallelAnimation；关锁随 surface 销毁
+// 性能：Image async + sourceSize≈960 + cache:false；无 GraphicalEffects
 
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
 import qs.data.state
@@ -19,7 +18,6 @@ WlSessionLockSurface {
 
     readonly property bool exiting: !!(context && context.dismissing)
 
-    property real blurRadius: 0
     property real scrimOpacity: 0
     property real chromeOpacity: 0
     property real chromeY: 48
@@ -46,7 +44,6 @@ WlSessionLockSurface {
             playExit()
     }
 
-    // 进锁：沉入（自下上移 + blur 抬升）
     ParallelAnimation {
         id: enterAnim
         NumberAnimation {
@@ -54,11 +51,7 @@ WlSessionLockSurface {
             duration: 320; easing.type: Easing.OutCubic
         }
         NumberAnimation {
-            target: root; property: "blurRadius"; to: 48
-            duration: 380; easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: root; property: "scrimOpacity"; to: 0.52
+            target: root; property: "scrimOpacity"; to: 0.55
             duration: 360; easing.type: Easing.OutCubic
         }
         NumberAnimation {
@@ -71,7 +64,6 @@ WlSessionLockSurface {
         }
     }
 
-    // 出锁：掀开（上移淡出 + blur/遮罩回落）——幅度加大，避免「没看见」
     ParallelAnimation {
         id: exitAnim
         NumberAnimation {
@@ -83,10 +75,6 @@ WlSessionLockSurface {
             duration: 360; easing.type: Easing.InCubic
         }
         NumberAnimation {
-            target: root; property: "blurRadius"; to: 0
-            duration: 400; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
             target: root; property: "scrimOpacity"; to: 0
             duration: 380; easing.type: Easing.InCubic
         }
@@ -96,43 +84,28 @@ WlSessionLockSurface {
         }
     }
 
-    Item {
-        id: wpSource
-        width: 480
-        height: Math.max(1, Math.round(480 * root.height / Math.max(1, root.width)))
-        visible: false
-        layer.enabled: true
-
-        Image {
-            id: wpImage
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            cache: true
-            mipmap: false
-            sourceSize.width: 960
-            property int fallbackStage: 0
-            source: {
-                if (fallbackStage <= 0)
-                    return Wallpaper.preview
-                if (fallbackStage === 1)
-                    return Wallpaper.current
-                return ""
-            }
-            onStatusChanged: {
-                if (status === Image.Error && fallbackStage < 2)
-                    fallbackStage += 1
-            }
-        }
-    }
-
-    FastBlur {
+    // 降采样壁纸：靠 sourceSize 软化细节，再叠重遮罩（避免 FastBlur 全屏 FBO）
+    Image {
+        id: wpImage
         anchors.fill: parent
-        source: wpSource
-        radius: root.blurRadius
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        cache: false
+        mipmap: false
         opacity: root.wpOpacity
-        transparentBorder: false
-        visible: wpImage.status === Image.Ready || wpImage.fallbackStage > 0
+        sourceSize.width: 960
+        property int fallbackStage: 0
+        source: {
+            if (fallbackStage <= 0)
+                return Wallpaper.preview
+            if (fallbackStage === 1)
+                return Wallpaper.current
+            return ""
+        }
+        onStatusChanged: {
+            if (status === Image.Error && fallbackStage < 2)
+                fallbackStage += 1
+        }
     }
 
     Rectangle {
@@ -174,10 +147,13 @@ WlSessionLockSurface {
     }
 
     Component.onCompleted: {
-        // 下一帧再进场，保证初始值已提交到场景图
         Qt.callLater(function () {
             root.playEnter()
             content.focusInput()
         })
+    }
+
+    Component.onDestruction: {
+        wpImage.source = ""
     }
 }

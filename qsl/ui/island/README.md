@@ -21,7 +21,7 @@
 
 - 顶栏贴边 **左右耳朵**（Canvas 四分之一圆凹角）
 - 实色底（`Color.background`）+ 尺寸 / 圆角 morph
-- `DropShadow`（`cached: false`，避免形变阴影泄漏）
+- 无 `DropShadow`（岛体不加阴影）
 
 ### 三级岛（Hub）
 

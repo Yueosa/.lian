@@ -110,7 +110,9 @@ MouseArea {
         asynchronous: true
         fillMode: Image.PreserveAspectFit
         smooth: true
-        mipmap: true
+        mipmap: false
+        sourceSize.width: 40
+        sourceSize.height: 40
         opacity: root.containsMouse ? 1.0 : 0.88
         Behavior on opacity { NumberAnimation { duration: 150 } }
 

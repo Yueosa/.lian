@@ -38,7 +38,6 @@ Canvas {
     Connections {
         target: Color
         function onBackgroundChanged() { root.requestPaint() }
-        function onShadowChanged() { root.requestPaint() }
     }
 
     Component.onCompleted: requestPaint()

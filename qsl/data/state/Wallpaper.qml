@@ -33,13 +33,13 @@ Singleton {
     property int version: 0
     property string resolvedPath: ""
 
+    // current：主题 JSON 解析出的静态原图；否则走 current 软链
     readonly property string current: resolvedPath !== ""
         ? ("file://" + resolvedPath + "?v=" + version)
         : ("file://" + linkPath + "?v=" + version)
 
-    readonly property string preview: resolvedPath !== ""
-        ? ("file://" + resolvedPath + "?v=" + version)
-        : ("file://" + previewPath + "?v=" + version)
+    // preview：永远走 preview 软链（应为降采样）；不要回落到 resolvedPath 原图
+    readonly property string preview: "file://" + previewPath + "?v=" + version
 
     function loadThemeMetadata() {
         try {
@@ -63,10 +63,14 @@ Singleton {
         onFileChanged: reload()
     }
 
-    // hook 的软链先于主题 JSON 更新；先 bump 一次让 UI 不粘旧缓存，
-    // 随后 themeFile 会给出最终真实路径。
     FileView {
         path: root.linkPath
+        watchChanges: true
+        onFileChanged: root.version += 1
+    }
+
+    FileView {
+        path: root.previewPath
         watchChanges: true
         onFileChanged: root.version += 1
     }

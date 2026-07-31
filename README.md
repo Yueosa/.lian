@@ -2,7 +2,7 @@
 
 # 恋的 Arch 配置
 
-> 我使用的桌面环境是 `Hyprland` + `Wayland` + `quickshell` + `kitty` + `zsh`
+> 我使用的桌面环境是 `Hyprland` + `Wayland` + `qsl`（Quickshell）+ `kitty` + `zsh`
 
 哎呀, 我自己都懒得更新README了...叫AI帮忙写了一版出来, 如果你对配置有疑问就直接来加联系方式问我吧! 我会一步一步带着你做的!
 
@@ -34,15 +34,13 @@
 > - 整个仓库随时可以 `git diff` / `git log` 看出我做过什么改动 
 > - 换机器只需要一次 `git clone` + 一次软链脚本 
 
-我的桌面会话入口在 `hyprland.conf` 的 `exec-once` 中，服务部署策略如下：
-
-- 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party / quickshell / lianwall 等）
-  → 由 `exec-once` 直接拉起，确保 `WAYLAND_DISPLAY` / `HYPRLAND_INSTANCE_SIGNATURE` / IM 变量完整继承
+- 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party / qs / lianwall 等）
+  → 由会话入口直接拉起，确保 `WAYLAND_DISPLAY` / `HYPRLAND_INSTANCE_SIGNATURE` / IM 变量完整继承
 - ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist-watch / hysp / stalk-hypr / tuxedo-tray / hypr-event-daemon）
-  → 由 `hyprland-session.target` 统一管理的 `systemd --user` 服务（`exec-once` 只 import-environment 和 start 这一个 target）
+  → 由 `hyprland-session.target` 统一管理的 `systemd --user` 服务
 - 🔧 还有少部分系统级服务（`sddm` / `bluetooth` / `polkit` / `wpa_supplicant`）需要在用户登录前启动，配置为 `systemctl enable` 
 
-`exec-once` 中也负责导入环境变量到 user systemd（`dbus-update-activation-environment` + `systemctl --user import-environment`）、并启动 `hyprland-session.target` 
+会话入口在 [hypr/hyprland.lua](hypr/hyprland.lua)（Lua 主配 + `hypr/lua/` 子模块），负责 import 环境变量并 `start hyprland-session.target`。
 
 #### 目录（快速跳转）
 
@@ -62,13 +60,12 @@
 | [mimeapps](#mimeapps) | XDG 默认应用关联  |
 | [git/ignore](#gitignore) | 全局 gitignore（XDG 路径）  |
 | [btop](#btop) | 终端系统监控配置  |
-| [cava](#cava) | 音频频谱可视化（quickshell 媒体卡也读它）  |
-| [hyprlock](#hyprlock) | 锁屏配置与字体依赖  |
-| [Hyprland](#hyprland) | 窗口管理器 / 混成器核心配置说明  |
+| [cava](#cava) | 音频频谱可视化（qsl 媒体页也会用）  |
+| [Hyprland](#hyprland) | 窗口管理器 / 混成器（Lua 主配）  |
 | [systemd/user](#systemduser) | Hyprland 用户会话服务管理  |
 | [nvim](#nvim) | Neovim 配置结构、插件与依赖  |
-| [quickshell](#quickshell) | 主线桌面外壳：Bar / 启动器 / 剪贴板 / 灵动岛 / 锁屏 全在这  |
-| [matugen](#matugen) | 从当前壁纸生成 Material You palette 派发到 GTK / qt6ct / quickshell  |
+| [qsl](#qsl) | 主线桌面外壳：Bar / 灵动岛 / 启动器 / 剪贴板 / 锁屏 / 设置  |
+| [matugen](#matugen) | 从当前壁纸生成 Material You palette 派发到 GTK / qt6ct / qsl  |
 | [lianwall](#lianwall) | 壁纸引擎与 hooks（含主题热更钩子）  |
 
 ---
@@ -446,7 +443,7 @@ ln -sf ~/.lian/btop/btop.conf ~/.config/btop/btop.conf
 
 ## | cava
 
-`cava` 是音频频谱可视化工具 我用它做主程序播放可视化（终端里直接跑），quickshell 媒体卡也会从同一份配置取数据 
+`cava` 是音频频谱可视化工具。我用它做终端频谱；qsl 媒体页也会通过本地 relay 读同一路数据。
 
 ```bash
 sudo pacman -S cava
@@ -456,27 +453,9 @@ ln -sf ~/.lian/cava/config ~/.config/cava/config
 
 > `~/.config/cava/` 目录下还有 cava 自带的 shaders/themes，所以只软链 `config`，不要整目录软链 
 
-## | hyprlock
-
-`hyprlock` 是一个简单的锁屏软件 
-
-![hyprlock](./image/hyprlock.jpg)
-
-###### 使用 `pacman` 安装
-
-```bash
-sudo pacman -S hyprlock
-```
-
-如果你想要获得和我一样的效果, 还需要安装这个字体:
-
-```bash
-sudo pacman -S ttf-jetbrains-mono-nerd
-```
-
 ## | Hyprland
 
-本次配置的重头戏之一 `hyprland` 是我心目中最 **linux** 的桌面环境 
+本次配置的重头戏之一 `hyprland` 是我心目中最 **linux** 的桌面环境。
 
 ###### 使用 `pacman` 安装（可能会漏掉一些包，请以 hypr.land 为准）
 
@@ -491,47 +470,36 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 * `qt5/6-wayland`: 让基于 qt 框架的应用能跑在 wayland 上
 * `polkit-gnome`: 当你执行需要 sudo 权限的 gui 应用时跳出弹窗
 
-关于 `hyprland` 配置详解, 可以直接 [跳转](./hypr/hyprland.conf) 查看注释, 但这里还是做一个简单介绍：
+配置入口是 [hypr/hyprland.lua](hypr/hyprland.lua)，子模块在 [hypr/lua/](hypr/lua/)（`binds` / `appearance` / `autostart` / `rules` …）。有疑问可以直接把 Lua 丢给 AI；`lianwall` / `hysp` 等是我自己写的，在 [Github](https://github.com/Yueosa) 能找到。
 
-* **修复区:** 一些杂项修复
-* **窗口规则:** 定义窗口弹出时的行为，例如浮动模式、弹出大小……
-* **NVIDIA:** N 卡修复（如果你刚开始觉得渲染网页/调度 GPU 卡顿是正常的，几天后还卡顿那就不正常了 :)）
-* **QT 变量:** 让 QT 高效运行在 wayland 高分屏
-* **全局变量:** hyprland 配置文件支持变量，建议把常用目录全部定义为变量
-* **自动启动:** 跟随 hyprland 启动的软件
-* **窗口外观:** 圆角、边框、颜色、动画……
-* **快捷键:** 这部分建议直接抄作业
+#### 桌面快捷键（与 qsl 协作）
 
-你可以直接把配置文件丢给 AI 问，如果有一些软件 AI 不认识（比如 `lianwall` `hysp`），那是正常的——这些是我自己写的软件，在我的 [Github](https://github.com/Yueosa) 主页可以找到 
-
-#### 桌面快捷键（与 quickshell 协作）
-
-桌面 Bar / 启动器 / 剪贴板 / 灵动岛 / 通知中心 / 侧边栏全部由 [quickshell](#quickshell) 提供，Hyprland 只负责把按键转成 IPC 调用：
+Bar / 启动器 / 剪贴板 / 灵动岛 / 通知中心 / 侧边栏 / 锁屏全部由 [qsl](#qsl) 提供，Hyprland 只负责把按键转成 IPC：
 
 | 快捷键 | 动作 |
 |---|---|
 | `SUPER + A` | 应用启动器：`qs ipc call free-window-app toggle` |
-| `ALT  + TAB` | 灵动岛 Hub（Overview）：`qs ipc call island hub` |
-| `SUPER + TAB` | 灵动岛 Switcher（窗口）：`qs ipc call island switcher` |
+| `ALT  + TAB` | 灵动岛 Hub：`qs ipc call island hub` |
+| `SUPER + TAB` | 灵动岛 Switcher：`qs ipc call island switcher` |
 | `SUPER + Z` | 剪贴板：`qs ipc call free-window-clipboard toggle` |
+| `SUPER + X` | Web 搜索：`qs ipc call websearch toggle` |
 | `SUPER + C` | 左侧边栏：`qs ipc call sidebar toggle` |
 | `SUPER + V` | 右侧边栏：`qs ipc call rightbar toggle` |
 | `SUPER + N` | 通知中心：`qs ipc call notif toggle` |
-| `SUPER + X` | Emoji 面板：`qs ipc call emoji toggle` |
+| `SUPER + L` | 锁屏：`qs ipc call lock lock` |
 | `SUPER + SPACE` | 电源菜单：`$sysmenu`（默认走 wlogout） |
 | `ALT  + N` / `ALT + S` | 壁纸 next / 模式切换：`lianwall next` / `lianwall switch` |
-| `SUPER + SHIFT + ←/→/↓` | 工作区切换：`$window down/up/empty` |
 
-完整定义见 [hypr/hyprland.conf](hypr/hyprland.conf) 
+完整定义见 [hypr/lua/binds.lua](hypr/lua/binds.lua)。
 
 #### Scrolling 无限平铺布局（hyprland-git / 0.54+）
 
-> **前置条件**：需要 `hyprland-git`（AUR）或正式版 0.54+ 
-> 0.53.x 稳定版不含此功能；升级前建议先做 Timeshift 快照 
+> **前置条件**：需要 `hyprland-git`（AUR）或正式版 0.54+  
+> 0.53.x 稳定版不含此功能；升级前建议先做 Timeshift 快照  
 
-Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无限水平卷轴** 上，屏幕作为视口左右滚动浏览，类似 [niri](https://github.com/YaLTeR/niri) 的体验 
+Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无限水平卷轴** 上，屏幕作为视口左右滚动浏览，类似 [niri](https://github.com/YaLTeR/niri) 的体验。
 
-我的策略是 **保留 dwindle 为默认布局**，按快捷键随时切换，两种模式自由来回 
+我的策略是 **保留 dwindle 为默认布局**，按快捷键随时切换，两种模式自由来回。
 
 ##### `scrolling` 块关键配置
 
@@ -561,22 +529,13 @@ Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无
 
 现在的策略是：
 
-- `hyprland.conf` 仍然作为桌面会话入口
-- `exec-once` 只负责导入 Wayland/Hyprland 环境变量，并启动 `hyprland-session.target`
+- `hyprland.lua` / `hypr/lua/` 仍然作为桌面会话入口
 - 常驻组件放在 [systemd/user](systemd/user) 中，由 `systemd --user` 管理生命周期
 - `~/.config/systemd/user/*.service|*.target` 只作为软链，源文件维护在 `~/.lian`
 
-> Bar / 通知 / 启动器 / 剪贴板 等桌面外壳由 [quickshell](#quickshell) 单进程承担，**不**走 systemd unit 
+> Bar / 通知 / 启动器 / 剪贴板 / 灵动岛 / 锁屏 等桌面外壳由 [qsl](#qsl) 单进程承担，**不**走 systemd unit 
 
-会话入口在 [hypr/hyprland.conf](hypr/hyprland.conf)：
-
-```ini
-exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE DISPLAY
-exec-once = systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE DISPLAY
-exec-once = systemctl --user start hyprland-session.target
-exec-shutdown = systemctl --user stop hyprland-session.target
-```
-
+会话入口逻辑在 [hypr/lua/autostart.lua](hypr/lua/autostart.lua) / [hypr/hyprland.lua](hypr/hyprland.lua)（import 环境变量 → `start hyprland-session.target` → 拉起 `qs` 等 GUI）。
 ##### 依赖（剪贴板相关）
 
 ```bash
@@ -728,20 +687,21 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 ---
 
-## | quickshell
+## | qsl
 
-[quickshell](https://quickshell.outfoxxed.me/) 是我桌面主交互层，功能基本都在这个目录里完成。
+[Quickshell](https://quickshell.outfoxxed.me/) 是桌面主交互层；本仓库的配置在 **`qsl/`**（`~/.config/quickshell` → `~/.lian/qsl`）。
 
-当前仓库内的核心分层：
+![桌面](./image/qsl-desktop.png)
 
-- `Modules/`：Bar、DynamicIsland、Launcher、Clipboard、Lock、HotCorner
-- `Widget/`：左/右侧边栏、通知内容、更新面板等页面级组件
-- `Services/`：网络、蓝牙、媒体、更新、LianClaw 等状态服务
-- `config/`：Colorscheme、Sizes、WidgetState 等全局单例
-- `scripts/`：外部命令桥接脚本（截图、系统信息、更新读取等）
-- `core/`：Qt/C++ 插件（sysmon / weather / notif / clipboard / lianclaw）
+当前分层：
 
-也就是说：桌面 UI、状态编排、IPC 响应都在 quickshell 这一套里闭环，Hyprland 主要负责窗口管理和按键入口。
+- `ui/`：Bar、Island、Left/Rightbar、Notif、Lock、FreeWindow（App / Clipboard / WebSearch）、Settings
+- `data/service` + `data/state`：Network / Media / Weather / Color / Style 等单例
+- `Components/`：QslCard / QslSlider / QslShadow …
+- `backend/`：weatherd、sysmond、notifctl、cava relay 等
+- `scripts/`：主题刷新、截图等桥接脚本
+
+也就是说：桌面 UI、状态编排、IPC 都在 qsl 闭环，Hyprland 主要负责窗口管理和按键入口。
 
 ###### 安装依赖
 
@@ -753,41 +713,39 @@ sudo pacman -S --needed qt6-base qt6-declarative qt6-wayland qt6-svg
 ###### 部署
 
 ```bash
-ln -sf ~/.lian/quickshell ~/.config/quickshell
+ln -sf ~/.lian/qsl ~/.config/quickshell
 ```
 
 ###### 启动方式
 
-由 `hyprland.conf` 的 `exec-once = qs` 拉起；不走 systemd user unit（quickshell 本身具备崩溃自恢复，且需要直接持有 Wayland 环境变量） 
+由 Hyprland 会话拉起 `qs`；不走 systemd user unit（需要直接持有 Wayland 环境）。
 
-###### 与外部脚本/快捷键的契约
+###### 锁屏（SessionLock，已替掉 hyprlock）
 
-所有桌面快捷键通过 `qs ipc call <module> <action>` 调用，定义在 [Hyprland](#hyprland) 节的快捷键表里 
+- IPC：`qs ipc call lock lock` / `status`
+- 绑定：`Super+L`；wlogout 的 lock 同样走 IPC
+- PAM：`qsl/ui/lock/pam/password.conf`
+- UI：壁纸降采样 + 遮罩；左上天气 / 右上通知 / 中轴时钟密码 / 底中方案 B 媒体条
 
-> 实现细节、模块拆分、IPC 协议见 [quickshell/README.md](quickshell/README.md) 
+###### 截图
 
-###### 截图补充清单（待你补图）
+| 图 | 内容 |
+|---|---|
+| ![Hub 天气](./image/qsl-hub-weather.png) | Island Hub · Weather |
+| ![Hub 媒体](./image/qsl-hub-media.png) | Island Hub · Media（旁侧栏 / 通知） |
+| ![Switcher](./image/qsl-hub-switcher.png) | Island Hub · Switcher |
+| ![启动器](./image/qsl-launcher.png) | `Super+A` 应用启动器 |
+| ![Web 搜索](./image/qsl-websearch.png) | `Super+X` WebSearch |
+| ![剪贴板](./image/qsl-clipboard.png) | `Super+Z` 剪贴板 |
+| ![面板合集](./image/qsl-panels.png) | 左栏键位 + Hub 壁纸 + 右栏 + 通知中心 |
 
-为了把文档信息补齐但不过度冗长，建议新增这些 quickshell 截图：
-
-| 文件名建议 | 截图内容 | 备注 |
-|---|---|---|
-| `image/qs-overview.png` | 桌面全景（Bar + 灵动岛 + 侧边栏入口） | 一张总览图 |
-| `image/qs-launcher.png` | 启动器界面 | 展示搜索与结果列表 |
-| `image/qs-clipboard.png` | 剪贴板界面 | 有分组/预览更好 |
-| `image/qs-notif-center.png` | 通知中心 | 含未读通知示例 |
-| `image/qs-system-view.png` | 左侧 System 页面 | 带图表与进程区 |
-| `image/qs-weather-view.png` | 左侧 Weather 页面 | 建议有动态背景 |
-| `image/qs-island-hub.png` | 灵动岛 Hub | 至少包含一个 tab 内容 |
-| `image/qs-island-switcher.png` | 灵动岛 Switcher | 有窗口切换卡片 |
-
-补图后我可以再帮你把 README 里的图文顺序统一成「总览 -> 功能 -> 细节」的展示流。
+IPC 目录也可在设置页「IPC」里看；键位以 [hypr/lua/binds.lua](hypr/lua/binds.lua) 与左栏 Keys 页为准。
 
 ## | matugen
 
-[matugen](https://github.com/InioX/matugen) 是一个 Rust 写的 Material You 配色生成器：输入图片，输出多套模板渲染结果 
+[matugen](https://github.com/InioX/matugen) 是一个 Rust 写的 Material You 配色生成器：输入图片，输出多套模板渲染结果。
 
-我用它把当前壁纸的主色调实时派发到 GTK3 / GTK4 / qt6ct，再由 quickshell 自己读 palette 做内部颜色刷新 
+我用它把当前壁纸的主色调实时派发到 GTK3 / GTK4 / qt6ct，再由 qsl 读 palette 做内部颜色刷新。
 
 ###### 安装
 
@@ -805,7 +763,7 @@ paru -S matugen
 | GTK4 | `matugen/templates/gtk-4.0/gtk.css` | `gtk-4.0/gtk.css`（同上） |
 | qt6ct | `matugen/templates/qt6ct/colors.conf` | `~/.config/qt6ct/colors/MatugenAuto.conf`（运行时产物，不入库） |
 
-> **被忽略的产物**：`gtk-3.0/gtk.css` 和 `gtk-4.0/gtk.css` 在 [.gitignore](.gitignore) 中精确指定为忽略，避免主题切换的 diff 污染仓库 **模板**（`matugen/templates/...`）正常入库 
+> **被忽略的产物**：`gtk-3.0/gtk.css` 和 `gtk-4.0/gtk.css` 在 [.gitignore](.gitignore) 中精确指定为忽略，避免主题切换的 diff 污染仓库。**模板**（`matugen/templates/...`）正常入库。
 
 ###### 触发方式
 
@@ -815,17 +773,17 @@ paru -S matugen
 matugen image "$WALLPAPER" --source-color-index 0 --mode <auto|dark|light> --json hex --old-json-output
 ```
 
-然后把 JSON 喂给 quickshell（quickshell 内部 `Colorscheme.qml` 监听文件变化做热更） 
+然后把 JSON 喂给 qsl（内部 Color 单例监听文件变化做热更）。
 
 ## | lianwall
 
-`lianwall` 是我自己写的壁纸引擎（守护进程 + CLI），支持视频/图片混合、定时切换、模式切换、VRAM 自适应降级等 详见 [Github](https://github.com/Yueosa) 
+`lianwall` 是我自己写的壁纸引擎（守护进程 + CLI），支持视频/图片混合、定时切换、模式切换、VRAM 自适应降级等。详见 [Github](https://github.com/Yueosa)。
 
 仓库里只纳管 [lianwall/hooks.toml](lianwall/hooks.toml) —— 这是 daemon 的 hook 配置，**主题热更链路的关键**：
 
 | hook 名 | 触发 | 作用 |
 |---|---|---|
-| `quickshell-theme-refresh` | `wallpaper_changed` | 调 `update_theme_from_wallpaper.sh` → matugen → 派发到 GTK/qt6ct/quickshell |
+| `quickshell-theme-refresh` | `wallpaper_changed` | 调 `update_theme_from_wallpaper.sh` → matugen → 派发到 GTK/qt6ct/qsl |
 | 通知 / 缓存软链 / btop 弹窗 | 各种 | 见 hooks.toml 内注释 |
 
 ###### 部署
@@ -836,4 +794,6 @@ ln -sf ~/.lian/lianwall/hooks.toml ~/.config/lianwall/hooks.toml
 lianwall hook reload   # 不重启 daemon 重载 hooks
 ```
 
-> `~/.config/lianwall/{config.toml, gui.conf}` 暂未纳管（用户私有，按需自己维护） 
+> `~/.config/lianwall/{config.toml, gui.conf}` 暂未纳管（用户私有，按需自己维护）。
+>
+> 注意：当前 `~/.cache/wallpaper_rofi/current_preview` 若仍软链到原图，UI 会靠 `Image.sourceSize` 降采样；理想情况应由 hook 写出真正的小预览图。

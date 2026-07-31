@@ -1,8 +1,8 @@
-// IslandShell — 灵动岛视觉壳（耳朵 + morph + DropShadow）
+// IslandShell — 灵动岛视觉壳（耳朵 + morph）
 // 状态真源：qs.data.state.Island（多屏共享）
 //
 // 性能：
-//   - 无 gooey；DropShadow cached:true（阴影源仅跟岛体，非全屏 FBO 每帧）
+//   - 无 gooey、无 DropShadow（阴影源/离屏已去掉）
 //   - Hub / 一级时钟均用 Loader，关态销毁
 //   - 一级无左/右键；无 L2 媒体卡
 //
@@ -10,7 +10,6 @@
 // + 点空白关闭。仅主屏 Exclusive，避免多屏抢键导致 Esc 落到黑洞。
 
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
 import qs.data.state
@@ -30,17 +29,16 @@ Variants {
         }
 
         readonly property int earRadius: Size.island.earRadius
-        readonly property real shadowStrong: 0.72
-        readonly property real shadowSoft: 0.5
-        readonly property color shadowFill: Qt.rgba(
-            Color.shadow.r, Color.shadow.g, Color.shadow.b, shadowStrong)
 
         anchors {
             top: true
             left: true
             right: true
         }
-        implicitHeight: Screen.height
+        // 收起只占岛高（少一张全屏 layer 缓冲）；Hub 才扩到全屏点空白关闭
+        implicitHeight: Island.showHub
+            ? Screen.height
+            : Math.ceil(Size.island.collapsedH + 20)
         margins.top: 0
         color: "transparent"
         exclusiveZone: -1
@@ -102,67 +100,6 @@ Variants {
                 anchors.fill: parent
                 enabled: Island.showHub
                 onClicked: Island.closeHub()
-            }
-
-            // ---------- 阴影源（不可见）----------
-            Item {
-                id: shadowSource
-                anchors.top: maskContainer.top
-                anchors.horizontalCenter: maskContainer.horizontalCenter
-                width: maskContainer.width
-                height: maskContainer.height
-                visible: false
-
-                EarCanvas {
-                    anchors.right: shadowBody.left
-                    anchors.top: shadowBody.top
-                    width: islandWindow.earRadius
-                    height: islandWindow.earRadius
-                    fillColor: islandWindow.shadowFill
-                }
-
-                Item {
-                    id: shadowBody
-                    anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: body.width
-                    height: body.height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: body.radius
-                        color: islandWindow.shadowFill
-
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: parent.radius
-                            color: parent.color
-                        }
-                    }
-                }
-
-                EarCanvas {
-                    anchors.left: shadowBody.right
-                    anchors.top: shadowBody.top
-                    width: islandWindow.earRadius
-                    height: islandWindow.earRadius
-                    mirror: true
-                    fillColor: islandWindow.shadowFill
-                }
-            }
-
-            DropShadow {
-                anchors.fill: shadowSource
-                source: shadowSource
-                horizontalOffset: 0
-                verticalOffset: 6
-                radius: Size.rounding.xxl
-                samples: 25
-                color: Qt.rgba(Color.shadow.r, Color.shadow.g, Color.shadow.b, islandWindow.shadowSoft)
-                cached: true
-                z: 0
             }
 
             // ---------- 可视岛 ----------

@@ -603,4 +603,10 @@ Item {
         Weather.ensureDaemon()
         pwdInput.forceActiveFocus()
     }
+
+    Component.onDestruction: {
+        // 锁屏只借 entries 展示；通知中心未开时清掉，避免单例常驻
+        if (!Notification.uiActive)
+            Notification.release()
+    }
 }
