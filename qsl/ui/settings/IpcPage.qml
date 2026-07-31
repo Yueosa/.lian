@@ -11,6 +11,14 @@ Item {
 
     readonly property var catalog: [
         {
+            target: "lock",
+            summary: "会话锁屏（ext-session-lock / qsl SessionLock）。",
+            methods: [
+                { sig: "lock()", desc: "锁定会话；已锁定时返回 ALREADY_LOCKED。" },
+                { sig: "status()", desc: "返回 LOCKED 或 UNLOCKED。" }
+            ]
+        },
+        {
             target: "island",
             summary: "灵动岛：Hub、媒体控制与层级切换。",
             methods: [

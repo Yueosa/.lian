@@ -13,6 +13,7 @@ import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
 import qs.ui.freewindow.websearch
+import qs.ui.lock
 import qs.ui.settings
 
 ShellRoot {
@@ -46,6 +47,10 @@ ShellRoot {
 
     ControlCenter {
         id: controlCenter
+    }
+
+    Lock {
+        id: lockScreen
     }
 
     IpcHandler {
@@ -108,6 +113,12 @@ ShellRoot {
         }
         function close() { controlCenter.closeWindow() }
         function toggle() { controlCenter.toggle() }
+    }
+
+    IpcHandler {
+        target: "lock"
+        function lock(): string { return lockScreen.lock() }
+        function status(): string { return lockScreen.isLocked() ? "LOCKED" : "UNLOCKED" }
     }
 
     IpcHandler {
