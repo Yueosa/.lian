@@ -12,7 +12,7 @@ Item {
     readonly property var catalog: [
         {
             target: "lock",
-            summary: "会话锁屏（ext-session-lock / qsl SessionLock）。",
+            summary: "会话锁屏（ext-session-lock）。Super+L / wlogout / qs ipc call lock lock。",
             methods: [
                 { sig: "lock()", desc: "锁定会话；已锁定时返回 ALREADY_LOCKED。" },
                 { sig: "status()", desc: "返回 LOCKED 或 UNLOCKED。" }

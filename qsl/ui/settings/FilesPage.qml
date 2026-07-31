@@ -20,6 +20,7 @@ Item {
         const home = Quickshell.env("HOME") || ""
         return home + "/.local/share/qsl/todo.json"
     }
+    readonly property string lockPamPath: Quickshell.shellDir + "/ui/lock/pam/password.conf"
 
     readonly property int hotkeyGroupCount: {
         void Hotkeys.groups
@@ -288,6 +289,78 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.editInNvim(root.todoPath)
+                    }
+                }
+            }
+        }
+
+        // 锁屏 PAM
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 96
+            radius: Size.rounding.md
+            color: Color.surfaceHigh
+            border.width: Style.border.width
+            border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 14
+                spacing: Size.spacing.md
+
+                Text {
+                    text: "lock"
+                    font.family: Size.fontIcon
+                    font.pixelSize: 32
+                    color: Color.primary
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    Text {
+                        text: "锁屏 PAM · password.conf"
+                        font.bold: true
+                        font.pixelSize: Size.fontSize.md
+                        color: Color.text
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "qsl SessionLock 鉴权；改后需重启 qs"
+                        font.pixelSize: Size.fontSize.xsm
+                        color: Color.textMuted
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.lockPamPath
+                        font.pixelSize: Size.fontSize.xsm
+                        color: Color.textMuted
+                        elide: Text.ElideMiddle
+                    }
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: pamBtn.implicitWidth + 28
+                    Layout.preferredHeight: 36
+                    radius: height / 2
+                    color: pamMa.containsMouse
+                        ? Color.withAlpha(Color.primary, 0.28)
+                        : Color.withAlpha(Color.primary, 0.18)
+                    Text {
+                        id: pamBtn
+                        anchors.centerIn: parent
+                        text: "nvim 打开"
+                        font.bold: true
+                        font.pixelSize: Size.fontSize.sm
+                        color: Color.primary
+                    }
+                    MouseArea {
+                        id: pamMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.editInNvim(root.lockPamPath)
                     }
                 }
             }

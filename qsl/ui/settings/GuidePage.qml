@@ -45,6 +45,10 @@ Item {
                     text: "独立搜索条：引擎切换、建议列表，确认后交由系统打开目标地址。"
                 },
                 {
+                    name: "Lock",
+                    text: "会话锁屏（ext-session-lock）。壁纸模糊背景；左上天气、右上通知、中轴时钟与密码；底中方案 B 媒体条（音量内嵌）。触发：Super+L、wlogout、IPC lock.lock。已替掉 hyprlock。"
+                },
+                {
                     name: "剪贴板",
                     text: "剪贴板历史浏览与回贴；底层依赖 cliphist 等会话侧能力。"
                 }

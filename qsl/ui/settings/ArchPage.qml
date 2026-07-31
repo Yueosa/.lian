@@ -14,16 +14,17 @@ Item {
         { id: "island", layer: "ui", label: "Island", x: 0.38, y: 0.14 },
         { id: "leftbar", layer: "ui", label: "Left", x: 0.62, y: 0.20 },
         { id: "rightbar", layer: "ui", label: "Right", x: 0.86, y: 0.20 },
-        { id: "notif", layer: "ui", label: "通知中心", x: 0.14, y: 0.38 },
-        { id: "app", layer: "ui", label: "App", x: 0.38, y: 0.38 },
-        { id: "websearch", layer: "ui", label: "WebSearch", x: 0.62, y: 0.38 },
-        { id: "clipboard", layer: "ui", label: "剪贴板", x: 0.86, y: 0.38 },
-        { id: "service", layer: "data", label: "service", x: 0.22, y: 0.64 },
-        { id: "state", layer: "data", label: "state", x: 0.50, y: 0.64 },
-        { id: "freewindow", layer: "data", label: "freewindow", x: 0.78, y: 0.64 },
-        { id: "be_rust", layer: "backend", label: "Rust", x: 0.22, y: 0.88 },
-        { id: "be_cava", layer: "backend", label: "cava", x: 0.50, y: 0.88 },
-        { id: "be_theme", layer: "backend", label: "主题管线", x: 0.78, y: 0.88 }
+        { id: "notif", layer: "ui", label: "通知中心", x: 0.14, y: 0.36 },
+        { id: "app", layer: "ui", label: "App", x: 0.38, y: 0.36 },
+        { id: "websearch", layer: "ui", label: "WebSearch", x: 0.62, y: 0.36 },
+        { id: "clipboard", layer: "ui", label: "剪贴板", x: 0.86, y: 0.36 },
+        { id: "lock", layer: "ui", label: "Lock", x: 0.50, y: 0.48 },
+        { id: "service", layer: "data", label: "service", x: 0.22, y: 0.68 },
+        { id: "state", layer: "data", label: "state", x: 0.50, y: 0.68 },
+        { id: "freewindow", layer: "data", label: "freewindow", x: 0.78, y: 0.68 },
+        { id: "be_rust", layer: "backend", label: "Rust", x: 0.22, y: 0.90 },
+        { id: "be_cava", layer: "backend", label: "cava", x: 0.50, y: 0.90 },
+        { id: "be_theme", layer: "backend", label: "主题管线", x: 0.78, y: 0.90 }
     ]
 
     readonly property var edges: [
@@ -37,7 +38,9 @@ Item {
         { from: "service", to: "leftbar" },
         { from: "service", to: "rightbar" },
         { from: "service", to: "notif" },
+        { from: "service", to: "lock" },
         { from: "state", to: "island" },
+        { from: "state", to: "lock" },
         { from: "freewindow", to: "app" },
         { from: "freewindow", to: "clipboard" }
     ]
@@ -93,8 +96,8 @@ Item {
             Repeater {
                 model: [
                     { label: "界面", y: 0.08 },
-                    { label: "数据", y: 0.54 },
-                    { label: "后端", y: 0.80 }
+                    { label: "数据", y: 0.58 },
+                    { label: "后端", y: 0.82 }
                 ]
                 delegate: Text {
                     required property var modelData
