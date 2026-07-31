@@ -4,6 +4,7 @@
 // 性能：
 //   - 无 gooey、无 DropShadow（阴影源/离屏已去掉）
 //   - Hub / 一级时钟均用 Loader，关态销毁
+//   - 窗高常驻 Screen.height（矮窗 IPC 改 buffer 会卡闪）；关态 mask 收岛
 //   - 一级无左/右键；无 L2 媒体卡
 //
 // 关岛：窗口级 FocusScope 吃 Esc（对齐 Leftbar）；Hub 时全屏 mask
@@ -29,26 +30,36 @@ Variants {
         }
 
         readonly property int earRadius: Size.island.earRadius
+        // 始终占满屏高：矮窗在 Hub IPC 开关时同步改 buffer 会卡/闪；
+        // 关态靠 mask 只命中岛体，不挡桌面。
+        implicitHeight: Screen.height
 
         anchors {
             top: true
             left: true
             right: true
         }
-        // 收起只占岛高（少一张全屏 layer 缓冲）；Hub 才扩到全屏点空白关闭
-        implicitHeight: Island.showHub
-            ? Screen.height
-            : Math.ceil(Size.island.collapsedH + 20)
         margins.top: 0
         color: "transparent"
         exclusiveZone: -1
 
         WlrLayershell.namespace: "qsl-island"
-        WlrLayershell.layer: (Island.showHub || Island.overlayLayer) ? WlrLayer.Overlay : WlrLayer.Top
-        WlrLayershell.keyboardFocus: (Island.showHub && isKeyOwner)
+        // Hub 卸载前保持 Overlay，避免关岛瞬间 Overlay→Top 闪一帧
+        WlrLayershell.layer: (Island.showHub || Island.overlayLayer || hubMounted)
+            ? WlrLayer.Overlay : WlrLayer.Top
+        WlrLayershell.keyboardFocus: ((Island.showHub || hubMounted) && isKeyOwner)
             ? WlrKeyboardFocus.Exclusive
             : WlrKeyboardFocus.None
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
+
+        // Hub 视觉保活：showHub=false 后仍挂载至 morph 结束，先淡出再拆
+        property bool hubMounted: Island.showHub
+        Timer {
+            id: hubUnmountTimer
+            interval: 360
+            repeat: false
+            onTriggered: hubMounted = false
+        }
 
         // Hub 全屏可点关；收起只命中岛体
         Item {
@@ -290,8 +301,12 @@ Variants {
                     Loader {
                         id: hubLoader
                         anchors.centerIn: parent
-                        active: Island.showHub
-                        visible: Island.showHub
+                        active: hubMounted
+                        visible: hubMounted
+                        opacity: Island.showHub ? 1 : 0
+                        Behavior on opacity {
+                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                        }
                         sourceComponent: HubContent {
                             onCloseRequested: Island.closeHub()
                         }
@@ -304,10 +319,14 @@ Variants {
             target: Island
             function onShowHubChanged() {
                 if (Island.showHub) {
+                    hubUnmountTimer.stop()
+                    hubMounted = true
                     if (islandWindow.isKeyOwner)
                         Qt.callLater(() => keyScope.forceActiveFocus())
                 } else {
                     Island.lyricsHoverRestore = false
+                    // 保持 Hub 节点做淡出，morph 后再拆
+                    hubUnmountTimer.restart()
                 }
             }
         }

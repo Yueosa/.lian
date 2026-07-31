@@ -48,12 +48,16 @@ Singleton {
     // 旧 DI：notifH = count*70 + 20（高度本身不再乘 islandScale）
     readonly property int notifH: notifCount > 0 ? (notifCount * 70 + 20) : 0
 
+    // Hub 收起宽限期：先回时钟一级岛，再允许通知/歌词抢占（避免 morph 中歌词被拉宽）
+    property bool hubCollapseHold: false
+    readonly property int hubCollapseHoldMs: 1000
+
     readonly property bool isHubMode: showHub
     // 手动歌词压 toast；自动歌词让路给 toast（对齐旧 DI）
-    readonly property bool isNotifMode: notifCount > 0 && !showLyrics && !showHub
+    readonly property bool isNotifMode: notifCount > 0 && !showLyrics && !showHub && !hubCollapseHold
     readonly property bool isLyricsMode:
         (showLyrics || (autoLyrics && !lyricsHoverRestore))
-        && !showHub && !isNotifMode
+        && !showHub && !isNotifMode && !hubCollapseHold
     readonly property bool isCollapsedMode: !showHub && !isLyricsMode && !isNotifMode
 
     onHubTabIndexChanged: hubLastOpenIndex = hubTabIndex
@@ -100,9 +104,32 @@ Singleton {
         if (!showHub)
             return
         showHub = false
-        // 跳窗走 activateWindow，不要把焦点抢回原窗
+        // 等岛 morph 完再还焦点，避免关瞬间抢 client 焦点导致闪一下
         if (!_activating)
-            restoreFocus()
+            hubFocusRestoreTimer.restart()
+    }
+
+    Timer {
+        id: hubCollapseHoldTimer
+        interval: root.hubCollapseHoldMs
+        repeat: false
+        onTriggered: root.hubCollapseHold = false
+    }
+
+    // 与 IslandShell body height Behavior(350) 对齐
+    Timer {
+        id: hubFocusRestoreTimer
+        interval: 360
+        repeat: false
+        onTriggered: {
+            if (!root.showHub && !root._activating)
+                root.restoreFocus()
+        }
+    }
+
+    function _beginHubCollapseHold() {
+        hubCollapseHold = true
+        hubCollapseHoldTimer.restart()
     }
 
     // —— Exclusive 层焦点归还 ——
@@ -252,9 +279,17 @@ Singleton {
     }
 
     onShowHubChanged: {
+        if (showHub) {
+            hubCollapseHold = false
+            hubCollapseHoldTimer.stop()
+            hubFocusRestoreTimer.stop()
+            return
+        }
         // 非跳窗关岛时丢掉焦点目标，避免持有 HyprlandToplevel 引用
-        if (!showHub && !_activating)
+        if (!_activating)
             clearSwitcherTarget()
+        // 关 Hub：先停在时钟一级岛 1s，再让 toast/歌词抢占
+        _beginHubCollapseHold()
     }
 
     function closeTransient() {

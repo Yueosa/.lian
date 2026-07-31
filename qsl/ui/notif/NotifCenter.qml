@@ -17,10 +17,10 @@ PanelWindow {
     id: root
 
     color: "transparent"
-    // 关态卸 layer，避免 1080p 空壳常驻
-    visible: contentActive
+    // 关态也保持 visible：卸 layer 会在 IPC 开栏时同步建缓冲卡顿
+    visible: true
 
-    // 开栏铺满，点空白关闭；关栏 visible=false
+    // 开栏铺满，点空白关闭；关栏 mask=0
     anchors {
         left: true
         right: true

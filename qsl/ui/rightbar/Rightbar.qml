@@ -19,7 +19,7 @@ PanelWindow {
     id: root
 
     color: "transparent"
-    visible: contentActive
+    visible: true
 
     // 开栏铺满，点空白关闭；关栏 mask=0
     anchors {

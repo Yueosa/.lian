@@ -3,7 +3,8 @@
 // 统一：几何 / 入退场动画 / Esc / 关闭时不挡点击
 // 入场 OutBack(0.3) / 退场 InBack(0.1)
 //
-// 性能：关态 visible=false 卸 Wayland layer（避免 1080p 空壳常驻）；
+// 关态 visible 保持 true：IPC 开/关若卸 layer 会同步建/拆全屏缓冲，
+// 表现为「卡一下再播动画」。关态靠 mask=0 不挡点击。
 // 圆角裁切由子窗自己做；此处不加全窗 layer。
 
 import QtQuick
@@ -15,8 +16,7 @@ PanelWindow {
     id: root
 
     color: "transparent"
-    // 关态不占 Wayland layer 缓冲（开窗/退场动画期间才 visible）
-    visible: contentActive
+    visible: true
 
     // 子内容自动进入卡牌
     default property alias content: card.data
@@ -30,7 +30,8 @@ PanelWindow {
 
     WlrLayershell.namespace: shellNamespace
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // 退场滑完前保持 Exclusive，避免一关就卸焦点抢 client
+    WlrLayershell.keyboardFocus: contentActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
     // 子窗口可覆盖，例如 "qsl-app"
@@ -49,12 +50,22 @@ PanelWindow {
     // ============================================================
 
     property bool open: false
+    // closeWindow 后等滑出结束再还焦点
+    property bool _pendingFocusRestore: false
 
-    // 打开或动画中才参与绘制；子对象仍存在，不需要伪缓存 Timer。
+    // 打开或滑动中：用于键盘焦点 / 子窗 OpacityMask 等
     readonly property bool contentActive: open || anim.slide !== closedOffset
+
+    onContentActiveChanged: {
+        if (!contentActive && _pendingFocusRestore) {
+            _pendingFocusRestore = false
+            Island.restoreFocus()
+        }
+    }
 
     function toggle() { open ? closeWindow() : openWindow() }
     function openWindow() {
+        _pendingFocusRestore = false
         Island.captureFocus()
         open = true
     }
@@ -62,7 +73,7 @@ PanelWindow {
         if (!open)
             return
         open = false
-        Island.restoreFocus()
+        _pendingFocusRestore = true
     }
 
     // 关闭时清零 mask，避免挡桌面点击
@@ -120,8 +131,8 @@ PanelWindow {
 
     FocusScope {
         anchors.fill: parent
-        enabled: root.open
-        focus: root.open
+        enabled: root.contentActive
+        focus: root.contentActive
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
@@ -143,7 +154,6 @@ PanelWindow {
             height: root.frameHeight
             anchors.centerIn: parent
             anchors.verticalCenterOffset: anim.slide
-            // 完全关闭且缓存结束后再藏，滑动过程中保持绘制
             visible: root.contentActive
             color: "transparent"
             radius: Size.rounding.xxl

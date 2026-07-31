@@ -21,17 +21,19 @@ ShellRoot {
 
     IslandShell {}
 
-    // App 常驻：左侧壁纸 OpacityMask 重载会闪；关态靠 FreeWindow.visible=contentActive 卸 layer
+    // App / Clipboard 常驻：IPC 现场 create 或 map layer 会卡一帧再播动画
     AppWindow {
         id: appWindow
     }
 
-    // ---- 冷路径懒加载：Settings / WebSearch / Clipboard（无重图预缓存需求）----
-    Component { id: clipboardComp; ClipboardWindow {} }
+    ClipboardWindow {
+        id: clipboardWindow
+    }
+
+    // ---- 冷路径懒加载：Settings / WebSearch（低频）----
     Component { id: webSearchComp; WebSearch {} }
     Component { id: settingsComp; ControlCenter {} }
 
-    Loader { id: clipboardLoader; active: false; sourceComponent: clipboardComp }
     Loader { id: webSearchLoader; active: false; sourceComponent: webSearchComp }
     Loader { id: settingsLoader; active: false; sourceComponent: settingsComp }
 
@@ -54,12 +56,6 @@ ShellRoot {
     }
 
     Timer {
-        id: clipboardUnload
-        interval: 480
-        repeat: false
-        onTriggered: maybeUnload(clipboardLoader)
-    }
-    Timer {
         id: webSearchUnload
         interval: 480
         repeat: false
@@ -72,16 +68,6 @@ ShellRoot {
         onTriggered: maybeUnload(settingsLoader)
     }
 
-    Connections {
-        target: clipboardLoader.item
-        enabled: clipboardLoader.status === Loader.Ready
-        function onOpenChanged() {
-            if (clipboardLoader.item.open)
-                clipboardUnload.stop()
-            else
-                scheduleUnload(clipboardLoader, clipboardUnload)
-        }
-    }
     Connections {
         target: webSearchLoader.item
         enabled: webSearchLoader.status === Loader.Ready
@@ -128,20 +114,9 @@ ShellRoot {
 
     IpcHandler {
         target: "free-window-clipboard"
-        function toggle() {
-            const w = ensureLoader(clipboardLoader)
-            if (w)
-                w.toggle()
-        }
-        function open() {
-            const w = ensureLoader(clipboardLoader)
-            if (w)
-                w.openWindow()
-        }
-        function close() {
-            if (clipboardLoader.item)
-                clipboardLoader.item.closeWindow()
-        }
+        function toggle() { clipboardWindow.toggle() }
+        function open() { clipboardWindow.openWindow() }
+        function close() { clipboardWindow.closeWindow() }
     }
 
     IpcHandler {

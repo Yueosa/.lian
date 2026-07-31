@@ -119,3 +119,10 @@ hl.layer_rule({
     blur = true,
     ignore_alpha = 0,
 })
+
+-- 岛 Overlay↔Top 切换时禁 compositor fade（QML morph 自己做）
+hl.layer_rule({
+    name = "qsl-noanim-island",
+    match = { namespace = "qsl-island" },
+    no_anim = true,
+})
