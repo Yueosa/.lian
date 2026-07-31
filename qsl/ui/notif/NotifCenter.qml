@@ -17,9 +17,10 @@ PanelWindow {
     id: root
 
     color: "transparent"
-    visible: true
+    // 关态卸 layer，避免 1080p 空壳常驻
+    visible: contentActive
 
-    // 开栏铺满，点空白关闭；关栏 mask=0
+    // 开栏铺满，点空白关闭；关栏 visible=false
     anchors {
         left: true
         right: true

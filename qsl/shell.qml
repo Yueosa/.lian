@@ -21,12 +21,86 @@ ShellRoot {
 
     IslandShell {}
 
+    // App 常驻：左侧壁纸 OpacityMask 重载会闪；关态靠 FreeWindow.visible=contentActive 卸 layer
     AppWindow {
         id: appWindow
     }
 
-    ClipboardWindow {
-        id: clipboardWindow
+    // ---- 冷路径懒加载：Settings / WebSearch / Clipboard（无重图预缓存需求）----
+    Component { id: clipboardComp; ClipboardWindow {} }
+    Component { id: webSearchComp; WebSearch {} }
+    Component { id: settingsComp; ControlCenter {} }
+
+    Loader { id: clipboardLoader; active: false; sourceComponent: clipboardComp }
+    Loader { id: webSearchLoader; active: false; sourceComponent: webSearchComp }
+    Loader { id: settingsLoader; active: false; sourceComponent: settingsComp }
+
+    function ensureLoader(loader) {
+        if (!loader.active)
+            loader.active = true
+        return loader.item
+    }
+
+    function scheduleUnload(loader, timer) {
+        timer.restart()
+    }
+
+    function maybeUnload(loader) {
+        const w = loader.item
+        if (!w)
+            return
+        if (!w.open && !w.contentActive)
+            loader.active = false
+    }
+
+    Timer {
+        id: clipboardUnload
+        interval: 480
+        repeat: false
+        onTriggered: maybeUnload(clipboardLoader)
+    }
+    Timer {
+        id: webSearchUnload
+        interval: 480
+        repeat: false
+        onTriggered: maybeUnload(webSearchLoader)
+    }
+    Timer {
+        id: settingsUnload
+        interval: 480
+        repeat: false
+        onTriggered: maybeUnload(settingsLoader)
+    }
+
+    Connections {
+        target: clipboardLoader.item
+        enabled: clipboardLoader.status === Loader.Ready
+        function onOpenChanged() {
+            if (clipboardLoader.item.open)
+                clipboardUnload.stop()
+            else
+                scheduleUnload(clipboardLoader, clipboardUnload)
+        }
+    }
+    Connections {
+        target: webSearchLoader.item
+        enabled: webSearchLoader.status === Loader.Ready
+        function onOpenChanged() {
+            if (webSearchLoader.item.open)
+                webSearchUnload.stop()
+            else
+                scheduleUnload(webSearchLoader, webSearchUnload)
+        }
+    }
+    Connections {
+        target: settingsLoader.item
+        enabled: settingsLoader.status === Loader.Ready
+        function onOpenChanged() {
+            if (settingsLoader.item.open)
+                settingsUnload.stop()
+            else
+                scheduleUnload(settingsLoader, settingsUnload)
+        }
     }
 
     NotifCenter {
@@ -39,14 +113,6 @@ ShellRoot {
 
     Rightbar {
         id: rightbar
-    }
-
-    WebSearch {
-        id: webSearch
-    }
-
-    ControlCenter {
-        id: controlCenter
     }
 
     Lock {
@@ -62,9 +128,20 @@ ShellRoot {
 
     IpcHandler {
         target: "free-window-clipboard"
-        function toggle() { clipboardWindow.toggle() }
-        function open() { clipboardWindow.openWindow() }
-        function close() { clipboardWindow.closeWindow() }
+        function toggle() {
+            const w = ensureLoader(clipboardLoader)
+            if (w)
+                w.toggle()
+        }
+        function open() {
+            const w = ensureLoader(clipboardLoader)
+            if (w)
+                w.openWindow()
+        }
+        function close() {
+            if (clipboardLoader.item)
+                clipboardLoader.item.closeWindow()
+        }
     }
 
     IpcHandler {
@@ -98,21 +175,42 @@ ShellRoot {
 
     IpcHandler {
         target: "websearch"
-        function toggle() { webSearch.toggle() }
-        function open() { webSearch.openWindow() }
-        function close() { webSearch.closeWindow() }
+        function toggle() {
+            const w = ensureLoader(webSearchLoader)
+            if (w)
+                w.toggle()
+        }
+        function open() {
+            const w = ensureLoader(webSearchLoader)
+            if (w)
+                w.openWindow()
+        }
+        function close() {
+            if (webSearchLoader.item)
+                webSearchLoader.item.closeWindow()
+        }
     }
 
     IpcHandler {
         target: "settings"
         function open(view: string) {
+            const w = ensureLoader(settingsLoader)
+            if (!w)
+                return
             if (view && view.length > 0)
-                controlCenter.openView(view)
+                w.openView(view)
             else
-                controlCenter.openView("arch")
+                w.openView("arch")
         }
-        function close() { controlCenter.closeWindow() }
-        function toggle() { controlCenter.toggle() }
+        function close() {
+            if (settingsLoader.item)
+                settingsLoader.item.closeWindow()
+        }
+        function toggle() {
+            const w = ensureLoader(settingsLoader)
+            if (w)
+                w.toggle()
+        }
     }
 
     IpcHandler {

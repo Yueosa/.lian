@@ -3,8 +3,8 @@
 // 统一：几何 / 入退场动画 / Esc / 关闭时不挡点击
 // 入场 OutBack(0.3) / 退场 InBack(0.1)
 //
-// 圆角裁切：实心底用 Rectangle.radius 即可；含 Image 的子窗（AppWindow）
-// 自己做 OpacityMask。这里不加全窗 layer，避免 1200×700 常驻离屏纹理。
+// 性能：关态 visible=false 卸 Wayland layer（避免 1080p 空壳常驻）；
+// 圆角裁切由子窗自己做；此处不加全窗 layer。
 
 import QtQuick
 import Quickshell
@@ -15,7 +15,8 @@ PanelWindow {
     id: root
 
     color: "transparent"
-    visible: true
+    // 关态不占 Wayland layer 缓冲（开窗/退场动画期间才 visible）
+    visible: contentActive
 
     // 子内容自动进入卡牌
     default property alias content: card.data

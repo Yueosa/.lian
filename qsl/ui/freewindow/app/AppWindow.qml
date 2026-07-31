@@ -2,7 +2,8 @@
 // 左 60% 壁纸预览 + 右 40% AppPage；无 Tab / 无按键提示 / 无左下角文案
 //
 // 圆角：右侧实心 Rectangle 自带半径即可；左侧 Image 必须 OpacityMask
-//（Item.clip / 父级 radius 都裁不住 Image）。仅 Ready 时开 layer。
+//（Item.clip / 父级 radius 都裁不住 Image）。仅开窗且 Ready 时开 layer。
+// 常驻实例 + Image.cache，避免懒加载每次闪壁纸；关窗卸 OpacityMask 离屏。
 
 import QtQuick
 import QtQuick.Layouts
@@ -46,7 +47,8 @@ FreeWindow {
                     Item {
                         id: wallpaperClip
                         anchors.fill: parent
-                        layer.enabled: wallpaperImage.status === Image.Ready
+                        // 仅开窗时开 OpacityMask 离屏；关窗卸 layer，保留 Image 解码缓存
+                        layer.enabled: root.contentActive && wallpaperImage.status === Image.Ready
                         layer.smooth: true
                         layer.effect: OpacityMask {
                             maskSource: Item {
@@ -67,7 +69,7 @@ FreeWindow {
                             fillMode: Image.PreserveAspectCrop
                             source: Wallpaper.preview
                             asynchronous: true
-                            cache: false
+                            cache: true
                             smooth: true
                             sourceSize.width: Math.max(1, Math.round(previewPaneBg.width))
                             sourceSize.height: Math.max(1, Math.round(previewPaneBg.height))
