@@ -67,10 +67,13 @@ Item {
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            // Hub→歌词：从默认宽起步，避免隐藏态测到 maxTextW 后突然拉长
+            textW = defaultTextW
             Qt.callLater(kickVisible)
-        else
+        } else {
             remountTimer.stop()
+        }
     }
 
     Component.onCompleted: {
@@ -97,7 +100,7 @@ Item {
         Lyrics.fetch(
             player.trackTitle || "",
             player.trackArtist || "",
-            Media.getIdentity(player),
+            Media.playerctlName(player),
             Media.trackUrl(player)
         )
     }

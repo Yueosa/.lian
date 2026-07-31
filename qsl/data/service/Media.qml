@@ -166,6 +166,21 @@ Singleton {
         return source
     }
 
+    // lyrics-fetch / playerctl 用的实例名（大小写敏感；Identity「SPlayer」会失败）
+    // org.mpris.MediaPlayer2.splayer.instance8090 → splayer.instance8090
+    function playerctlName(player) {
+        if (!player)
+            return ""
+        const bus = String(player.dbusName || "").trim()
+        const prefix = "org.mpris.MediaPlayer2."
+        if (bus.startsWith(prefix) && bus.length > prefix.length)
+            return bus.slice(prefix.length)
+        const id = getIdentity(player)
+        if (!id || id === "No Media")
+            return ""
+        return id.toLowerCase()
+    }
+
     function getIdentityIcon(player) {
         const identity = getIdentity(player).toLowerCase()
         if (identity === "no media")

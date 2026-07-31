@@ -1,16 +1,18 @@
 // lyrics-fetch — 多源歌词获取
 //
-// 优先级：同目录 .lrc → ~/.lyrics/ → SPlayer SQLite → QQ 音乐 → 网易云
+// 优先级：同目录 .lrc → ~/.lyrics/（需匹配达标）→ SPlayer → QQ → 网易
+// QQ/网易：搜多首打分，不达标则试下一源（避免 list[0] 串歌）
 //
 // 用法：
 //   lyrics-fetch <title> <artist> [player_name] [media_url]
 
-mod lrc;
-mod local;
-mod splayer;
-mod qq;
-mod netease;
 mod http;
+mod local;
+mod lrc;
+mod match_score;
+mod netease;
+mod qq;
+mod splayer;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -30,25 +32,30 @@ fn main() {
 }
 
 fn find_lyrics(title: &str, artist: &str, player: &str, media_url: &str) -> Vec<lrc::LyricLine> {
-    // 1. 同目录 .lrc
     let r = local::near_media(media_url);
-    if !r.is_empty() { return r; }
+    if !r.is_empty() {
+        return r;
+    }
 
-    // 2. ~/.lyrics/
     let r = local::from_home_dir(title, artist);
-    if !r.is_empty() { return r; }
+    if !r.is_empty() {
+        return r;
+    }
 
-    // 3. SPlayer cache.db
     let r = splayer::fetch(player);
-    if !r.is_empty() { return r; }
+    if !r.is_empty() {
+        return r;
+    }
 
-    // 4. QQ 音乐
     let r = qq::fetch(title, artist);
-    if !r.is_empty() { return r; }
+    if !r.is_empty() {
+        return r;
+    }
 
-    // 5. 网易云
     let r = netease::fetch(title, artist);
-    if !r.is_empty() { return r; }
+    if !r.is_empty() {
+        return r;
+    }
 
     vec![]
 }

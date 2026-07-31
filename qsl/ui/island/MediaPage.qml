@@ -52,7 +52,7 @@ Item {
         Lyrics.fetch(
             player.trackTitle || "",
             player.trackArtist || "",
-            Media.getIdentity(player),
+            Media.playerctlName(player),
             Media.trackUrl(player)
         )
     }

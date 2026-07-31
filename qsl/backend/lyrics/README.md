@@ -12,7 +12,9 @@
 lyrics-fetch <title> <artist> [player_name] [media_url]
 ```
 
-**输出：** stdout JSON 数组 `[{"time": 0.0, "text": "作词 : 张安缇"}, ...]`
+`player_name` 须为 **playerctl 实例名**（如 `splayer.instance8090`），不要传展示用 Identity（`SPlayer` 会因大小写失败）。
+
+**输出：** stdout JSON 数组 `[{"time": 0.0, "text": "..."}, ...]`
 
 无结果时返回 `[{"time": 0, "text": "暂无歌词"}]`
 
@@ -21,12 +23,14 @@ lyrics-fetch <title> <artist> [player_name] [media_url]
 ## 工作流程
 
 ```
-1. 媒体文件同目录 .lrc            ← 最快，毫秒
-2. ~/.lyrics/ 文件名模糊匹配      ← 本地，毫秒
-3. SPlayer cache.db SQLite       ← 本地数据库，毫秒（仅当 player=splayer）
-4. QQ 音乐 HTTP API              ← 网络，秒级
-5. 网易云音乐 HTTP API            ← 网络，秒级
+1. 媒体文件同目录 .lrc
+2. ~/.lyrics/ 文件名匹配达标（无「最新文件」兜底）
+3. SPlayer cache.db（BLOB；yrc JSON + LRC 混排）← player=splayer*
+4. QQ 音乐 HTTP（搜多首打分）
+5. 网易云 HTTP（搜多首打分）
 ```
+
+网络源标题/艺人综合分 ≥ 60 才采用。
 
 ---
 
