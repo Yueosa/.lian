@@ -161,7 +161,9 @@ Item {
                     source: root.artUrl
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    sourceSize: Qt.size(400, 400)
+                    // 显示 200；勿 400 解码 + Qt 图缓存常驻（切歌会堆）
+                    sourceSize: Qt.size(240, 240)
+                    cache: false
                     visible: status === Image.Ready
                 }
 

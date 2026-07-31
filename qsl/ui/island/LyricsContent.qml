@@ -162,6 +162,7 @@ Item {
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             sourceSize: Qt.size(64, 64)
+            cache: false
             visible: false
         }
 

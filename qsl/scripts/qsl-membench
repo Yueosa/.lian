@@ -1,0 +1,557 @@
+#!/usr/bin/env bash
+# qsl-membench — qs IPC / 功能压测 + 细粒度内存采样（不含锁屏）
+#
+# ★ 必须在 Hyprland 会话里跑（kitty 推荐），不要从无 HIS 的代理环境盲跑：
+#     ~/.config/quickshell/scripts/qsl-membench run
+#   或：
+#     ~/.lian/qsl/scripts/qsl-membench run
+#
+# 一轮内容（默认 ×3 轮）：
+#   App / Clipboard / Sidebar / Rightbar / Notif / WebSearch / Settings
+#   Island Hub（含 media/wallpaper/weather/switcher 子页各停一瞬）
+#   媒体 play-pause×2、通知风暴、工作区切換
+#
+# 每步采样：before → open+门禁 → dwell → open_settled → close → close_settled
+# 指标：RSS / PSS / RssAnon / RssFile / VmSize / fd / threads + layers 快照
+#
+# 环境变量：
+#   MEMBENCH_ROUNDS=3          轮数
+#   MEMBENCH_DWELL=4           打开后停留秒（肉眼可见）
+#   MEMBENCH_SETTLE=2.5        关闭后稳定秒
+#   MEMBENCH_RESTART=1         开始前重启 qs（0=用当前实例）
+#   MEMBENCH_SHOTS=0           1=每次 open 用 grim 截屏到 cache
+#   MEMBENCH_STRICT=1          1=门禁失败则中止该步并记 FAIL（默认）；0=只警告
+
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/qsl"
+mkdir -p "$CACHE_DIR"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+RUN_DIR="$CACHE_DIR/membench-run-$STAMP"
+mkdir -p "$RUN_DIR/layers" "$RUN_DIR/shots"
+TSV="$RUN_DIR/samples.tsv"
+LOG="$RUN_DIR/run.log"
+SUMMARY="$RUN_DIR/summary.txt"
+
+ROUNDS="${MEMBENCH_ROUNDS:-3}"
+DWELL="${MEMBENCH_DWELL:-4}"
+SETTLE="${MEMBENCH_SETTLE:-2.5}"
+DO_RESTART="${MEMBENCH_RESTART:-1}"
+SHOTS="${MEMBENCH_SHOTS:-0}"
+STRICT="${MEMBENCH_STRICT:-1}"
+
+PEAK_RSS=0
+PEAK_PSS=0
+PEAK_ANON=0
+FAILS=0
+STEP=0
+
+QS_ENV_MALLOC="background_thread:true,dirty_decay_ms:5000,muzzy_decay_ms:5000"
+
+log() { printf '%s\n' "$*" | tee -a "$LOG" >&2; }
+
+mib() { awk -v k="${1:-0}" 'BEGIN { printf "%.1f", k/1024 }'; }
+
+ensure_session_env() {
+    if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+        export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    fi
+    if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+        export WAYLAND_DISPLAY="wayland-1"
+    fi
+    if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        local d
+        d="$(ls -1t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1 || true)"
+        if [[ -n "$d" ]]; then
+            export HYPRLAND_INSTANCE_SIGNATURE="$d"
+        fi
+    fi
+    if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -S "$XDG_RUNTIME_DIR/bus" ]]; then
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+    fi
+}
+
+hypr() {
+    ensure_session_env
+    if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        return 1
+    fi
+    hyprctl -i "$HYPRLAND_INSTANCE_SIGNATURE" "$@"
+}
+
+qs_pid() { pgrep -n -x qs 2>/dev/null || true; }
+
+# 输出：pid rss pss anon file vsz fd thr
+read_mem() {
+    local pid rss pss anon file vsz fd thr
+    pid="$(qs_pid)"
+    if [[ -z "$pid" || ! -r "/proc/$pid/status" ]]; then
+        return 1
+    fi
+    rss="$(awk '/^VmRSS:/{print $2}' "/proc/$pid/status")"
+    vsz="$(awk '/^VmSize:/{print $2}' "/proc/$pid/status")"
+    anon="$(awk '/^RssAnon:/{print $2}' "/proc/$pid/status")"
+    file="$(awk '/^RssFile:/{print $2}' "/proc/$pid/status")"
+    pss="$(awk '/^Pss:/{print $2; exit}' "/proc/$pid/smaps_rollup" 2>/dev/null || echo 0)"
+    fd="$(ls -1 "/proc/$pid/fd" 2>/dev/null | wc -l | tr -d ' ')"
+    thr="$(ls -1d "/proc/$pid/task/"* 2>/dev/null | wc -l | tr -d ' ')"
+    printf '%s %s %s %s %s %s %s %s' "$pid" "$rss" "$pss" "$anon" "$file" "$vsz" "$fd" "$thr"
+}
+
+layers_dump() {
+    local tag="$1"
+    local out="$RUN_DIR/layers/${STEP}_${tag}.txt"
+    hypr layers >"$out" 2>&1 || echo "hyprctl layers FAILED" >"$out"
+    # 只抽 qsl 行方便扫
+    rg -n 'qsl-' "$out" >"$RUN_DIR/layers/${STEP}_${tag}.qsl.txt" 2>/dev/null || true
+    echo "$out"
+}
+
+# 返回匹配 namespace 的层数
+layers_count_ns() {
+    local ns="$1"
+    hypr layers 2>/dev/null | rg -c "namespace: ${ns}(,|$)" || echo 0
+}
+
+# 解析某 namespace 第一层的 w×h（失败空）
+layers_wh_ns() {
+    local ns="$1"
+    hypr layers 2>/dev/null | rg "namespace: ${ns}" | head -1 \
+        | sed -n 's/.*xywh: [0-9]* [0-9]* \([0-9]*\) \([0-9]*\).*/\1x\2/p'
+}
+
+sample() {
+    local label="$1"
+    shift || true
+    local extra="${*:-}"
+    local raw pid rss pss anon file vsz fd thr
+    STEP=$((STEP + 1))
+    raw="$(read_mem)" || {
+        log "SAMPLE FAIL no-qs [$label]"
+        FAILS=$((FAILS + 1))
+        return 1
+    }
+    # shellcheck disable=SC2086
+    set -- $raw
+    pid=$1; rss=$2; pss=$3; anon=$4; file=$5; vsz=$6; fd=$7; thr=$8
+    (( rss > PEAK_RSS )) && PEAK_RSS=$rss
+    (( pss > PEAK_PSS )) && PEAK_PSS=$pss
+    (( anon > PEAK_ANON )) && PEAK_ANON=$anon
+
+    local dump
+    dump="$(layers_dump "$label")"
+
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date +%s%3N)" "$STEP" "$label" "$pid" \
+        "$rss" "$pss" "$anon" "$file" "$vsz" "$fd" "$thr" \
+        "$PEAK_RSS" "$PEAK_PSS" "$extra" >>"$TSV"
+
+    log "S#${STEP}  [$label]  RSS=$(mib "$rss")  PSS=$(mib "$pss")  Anon=$(mib "$anon")  File=$(mib "$file")  fd=$fd thr=$thr  peakRSS=$(mib "$PEAK_RSS")  ${extra}"
+    log "       layers → $dump"
+}
+
+wait_qs() {
+    local i=0
+    while (( i < 100 )); do
+        if [[ -n "$(qs_pid)" ]] && qs ipc call lock status &>/dev/null; then
+            return 0
+        fi
+        sleep 0.2
+        i=$((i + 1))
+    done
+    return 1
+}
+
+restart_qs() {
+    log "重启 qs（会话环境 HIS=${HYPRLAND_INSTANCE_SIGNATURE:-unset} WD=${WAYLAND_DISPLAY:-}）"
+    pkill -x qs 2>/dev/null || true
+    sleep 0.7
+    if [[ -n "$(qs_pid)" ]]; then
+        pkill -9 -x qs 2>/dev/null || true
+        sleep 0.4
+    fi
+    MALLOC_CONF="$QS_ENV_MALLOC" QSG_RENDER_LOOP=basic \
+        HYPRLAND_INSTANCE_SIGNATURE="${HYPRLAND_INSTANCE_SIGNATURE:-}" \
+        WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" \
+        XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" \
+        DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" \
+        qs -d -n
+    wait_qs || {
+        log "FATAL: qs 未就绪"
+        exit 2
+    }
+    sleep 3
+}
+
+gate_session() {
+    ensure_session_env
+    log "==== 环境门禁 ===="
+    log "HIS=$HYPRLAND_INSTANCE_SIGNATURE"
+    log "WD=$WAYLAND_DISPLAY"
+    log "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+    log "DBUS=${DBUS_SESSION_BUS_ADDRESS:-}"
+
+    if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        log "FATAL: 无 HYPRLAND_INSTANCE_SIGNATURE — 请在 Hyprland 的 kitty 里跑，不要用代理沙箱"
+        exit 3
+    fi
+    if ! hypr version >/dev/null 2>&1; then
+        log "FATAL: hyprctl 连不上 compositor"
+        exit 3
+    fi
+    local bar_n
+    bar_n="$(layers_count_ns qsl-bar | tr -d '[:space:]')"
+    if [[ "${bar_n:-0}" -lt 1 ]]; then
+        # qs 可能还没起
+        if [[ -z "$(qs_pid)" ]]; then
+            log "尚无 qs，将在 restart/启动后复查 qsl-bar"
+        else
+            log "FATAL: qs 在跑但 layers 里没有 qsl-bar（可能连错 Wayland 会话）"
+            hypr layers 2>&1 | head -40 | tee -a "$LOG" >&2 || true
+            exit 3
+        fi
+    else
+        log "OK qsl-bar ×${bar_n}"
+    fi
+}
+
+ipc_raw() {
+    # 打印 stdout；返回码透传
+    qs ipc call "$@"
+}
+
+ipc() {
+    local out rc
+    set +e
+    out="$(qs ipc call "$@" 2>&1)"
+    rc=$?
+    set -e
+    log "IPC  qs ipc call $*  → rc=$rc out=${out:-<empty>}"
+    printf '%s' "$out"
+    return "$rc"
+}
+
+maybe_shot() {
+    local tag="$1"
+    if [[ "$SHOTS" != "1" ]]; then
+        return 0
+    fi
+    if ! command -v grim >/dev/null 2>&1; then
+        log "SHOT skip (no grim)"
+        return 0
+    fi
+    local f="$RUN_DIR/shots/${STEP}_${tag}.png"
+    grim "$f" 2>/dev/null && log "SHOT $f" || log "SHOT fail $tag"
+}
+
+# 断言：IPC 输出匹配正则（可选）
+assert_out() {
+    local got="$1" re="$2" what="$3"
+    if [[ -z "$re" ]]; then
+        return 0
+    fi
+    if printf '%s' "$got" | rg -q "$re"; then
+        log "ASSERT OK  $what ~ /$re/"
+        return 0
+    fi
+    log "ASSERT FAIL $what  got='$got'  want /$re/"
+    FAILS=$((FAILS + 1))
+    if [[ "$STRICT" == "1" ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# 面板：显式 open / close（不用 toggle）
+# panel_cycle <round> <name> <expect_ns> <open ipc args...> -- <close ipc args...>
+panel_cycle() {
+    local round_tag="$1"
+    local name="$2"
+    local expect_ns="$3"
+    shift 3
+
+    local -a open_args=()
+    local -a close_args=()
+    local mode=open
+    local a
+    for a in "$@"; do
+        if [[ "$a" == "--" ]]; then
+            mode=close
+            continue
+        fi
+        if [[ "$mode" == open ]]; then
+            open_args+=("$a")
+        else
+            close_args+=("$a")
+        fi
+    done
+
+    local prefix="r${round_tag}_${name}"
+    log "---- panel $name (round $round_tag)  open=(${open_args[*]})  close=(${close_args[*]}) ----"
+    sample "${prefix}_before" "ns=${expect_ns}"
+
+    local out rc
+    set +e
+    out="$(ipc_raw "${open_args[@]}" 2>&1)"
+    rc=$?
+    set -e
+    log "IPC OPEN  (${open_args[*]})  rc=$rc out=${out:-<empty>}"
+
+    sleep 0.4
+    sample "${prefix}_open_0.4s" "ns=${expect_ns} wh=$(layers_wh_ns "$expect_ns")"
+    maybe_shot "${prefix}_open"
+
+    if [[ -n "$expect_ns" ]]; then
+        local n
+        n="$(layers_count_ns "$expect_ns" | tr -d '[:space:]')"
+        log "LAYER  $expect_ns count=$n wh=$(layers_wh_ns "$expect_ns")"
+        if [[ "${n:-0}" -lt 1 ]]; then
+            log "WARN: open 后未见 namespace=$expect_ns（连错会话或窗未建）"
+            FAILS=$((FAILS + 1))
+            if [[ "$STRICT" == "1" ]]; then
+                log "STRICT: 跳过本面板剩余动作"
+                return 0
+            fi
+        fi
+    fi
+
+    log "DWELL ${DWELL}s — 屏上应能看见【$name】"
+    sleep "$DWELL"
+    sample "${prefix}_open_dwell" "ns=${expect_ns}"
+
+    set +e
+    out="$(ipc_raw "${close_args[@]}" 2>&1)"
+    rc=$?
+    set -e
+    log "IPC CLOSE (${close_args[*]})  rc=$rc out=${out:-<empty>}"
+
+    sleep "$SETTLE"
+    sample "${prefix}_close_settled" "ns=${expect_ns}"
+}
+
+hub_cycle() {
+    local round_tag="$1"
+    local prefix="r${round_tag}_hub"
+    local out
+
+    log "---- island hub suite (round $round_tag) ----"
+    sample "${prefix}_before"
+
+    out="$(ipc island hub || true)"
+    assert_out "$out" "HUB_OPENED|HUB_CLOSED" "hub.toggle1" || true
+    # 若关着则再开一次保证打开
+    if printf '%s' "$out" | rg -q 'HUB_CLOSED'; then
+        out="$(ipc island hub || true)"
+    fi
+    sleep 0.5
+    sample "${prefix}_overview"
+    maybe_shot "${prefix}_overview"
+    sleep "$DWELL"
+
+    for tab in media wallpaper weather switcher; do
+        out="$(ipc island "$tab" || true)"
+        log "HUB TAB $tab out=$out"
+        sleep 1.2
+        sample "${prefix}_tab_${tab}"
+        maybe_shot "${prefix}_tab_${tab}"
+    done
+
+    out="$(ipc island close || true)"
+    assert_out "$out" "CLOSED" "hub.close" || true
+    sleep "$SETTLE"
+    sample "${prefix}_close_settled"
+}
+
+media_cycle() {
+    local round_tag="$1"
+    local prefix="r${round_tag}_media"
+    sample "${prefix}_before"
+    ipc island mediatoggle || true
+    sleep 2
+    sample "${prefix}_after_toggle1"
+    ipc island mediatoggle || true
+    sleep 2
+    sample "${prefix}_after_toggle2"
+}
+
+notify_cycle() {
+    local round_tag="$1"
+    local n="${2:-12}"
+    local prefix="r${round_tag}_notifstorm"
+    sample "${prefix}_before"
+    local i
+    for ((i = 1; i <= n; i++)); do
+        notify-send -a "qsl-membench" -t 2800 \
+            "membench r${round_tag} #$i" "通知风暴 $i/$n" || true
+        sleep 0.07
+    done
+    sleep 1
+    sample "${prefix}_during"
+    sleep 5
+    sample "${prefix}_after_expiry"
+}
+
+workspace_cycle() {
+    local round_tag="$1"
+    local prefix="r${round_tag}_ws"
+    sample "${prefix}_before"
+    if hypr dispatch workspace e+1 >/dev/null 2>&1; then
+        sleep 0.9
+        sample "${prefix}_next"
+        hypr dispatch workspace e-1 >/dev/null 2>&1 || true
+        sleep 0.9
+        sample "${prefix}_prev"
+    else
+        log "WARN: workspace 切换失败（hyprctl）"
+        FAILS=$((FAILS + 1))
+        sample "${prefix}_skipped"
+    fi
+}
+
+one_round() {
+    local r="$1"
+    log ""
+    log "######################## ROUND $r / $ROUNDS ########################"
+    sample "r${r}_round_start"
+
+    panel_cycle "$r" app        qsl-app        free-window-app open -- free-window-app close
+    panel_cycle "$r" clipboard  qsl-clipboard  free-window-clipboard open -- free-window-clipboard close
+    panel_cycle "$r" sidebar    qsl-leftbar    sidebar open time -- sidebar close
+    panel_cycle "$r" rightbar   qsl-rightbar   rightbar open network -- rightbar close
+    panel_cycle "$r" notif      qsl-notif      notif open -- notif close
+    panel_cycle "$r" websearch  qsl-websearch  websearch open -- websearch close
+    panel_cycle "$r" settings   qsl-settings   settings open arch -- settings close
+
+    hub_cycle "$r"
+    media_cycle "$r"
+    notify_cycle "$r" 12
+    workspace_cycle "$r"
+
+    sleep 3
+    sample "r${r}_round_end"
+}
+
+write_summary() {
+    python3 - "$TSV" "$SUMMARY" "$PEAK_RSS" "$PEAK_PSS" "$PEAK_ANON" "$FAILS" "$ROUNDS" <<'PY'
+import sys, csv
+from pathlib import Path
+tsv, out, peak_rss, peak_pss, peak_anon, fails, rounds = sys.argv[1:8]
+rows = list(csv.DictReader(open(tsv), delimiter="\t"))
+def mib(x):
+    try: return float(x)/1024
+    except: return 0.0
+
+lines = []
+lines.append(f"rounds={rounds}  samples={len(rows)}  fails={fails}")
+lines.append(f"peak RSS={mib(peak_rss):.1f} MiB  PSS={mib(peak_pss):.1f}  Anon={mib(peak_anon):.1f}")
+if not rows:
+    Path(out).write_text("\n".join(lines)+"\n")
+    print("\n".join(lines))
+    raise SystemExit
+
+cold = next((r for r in rows if r["label"].endswith("cold_settled") or r["label"]=="cold_settled"), rows[0])
+final = rows[-1]
+lines.append(f"first[{cold['label']}] RSS={mib(cold['rss_kib']):.1f} Anon={mib(cold['rss_anon_kib']):.1f}")
+lines.append(f"last [{final['label']}] RSS={mib(final['rss_kib']):.1f} Anon={mib(final['rss_anon_kib']):.1f}  ΔRSS={mib(float(final['rss_kib'])-float(cold['rss_kib'])):+.1f}  ΔAnon={mib(float(final['rss_anon_kib'])-float(cold['rss_anon_kib'])):+.1f}")
+
+# 每轮 round_start → round_end
+by = {r["label"]: r for r in rows}
+lines.append("")
+lines.append("== per-round ratchet ==")
+for r in range(1, int(rounds)+1):
+    a = by.get(f"r{r}_round_start")
+    b = by.get(f"r{r}_round_end")
+    if a and b:
+        lines.append(f"round{r}: start RSS={mib(a['rss_kib']):.1f} → end {mib(b['rss_kib']):.1f}  Δ={mib(float(b['rss_kib'])-float(a['rss_kib'])):+.1f}  AnonΔ={mib(float(b['rss_anon_kib'])-float(a['rss_anon_kib'])):+.1f}")
+
+lines.append("")
+lines.append("== open_dwell vs close_settled (round1) ==")
+names = ["app","clipboard","sidebar","rightbar","notif","websearch","settings","hub"]
+for n in names:
+    o = by.get(f"r1_{n}_open_dwell") or by.get(f"r1_{n}_overview")
+    c = by.get(f"r1_{n}_close_settled")
+    if o and c:
+        lines.append(f"{n:12s} open={mib(o['rss_kib']):6.1f} close={mib(c['rss_kib']):6.1f} reclaim={mib(float(o['rss_kib'])-float(c['rss_kib'])):+6.1f}  AnonReclaim={mib(float(o['rss_anon_kib'])-float(c['rss_anon_kib'])):+6.1f}")
+
+text = "\n".join(lines) + "\n"
+Path(out).write_text(text)
+print(text)
+PY
+}
+
+run_main() {
+    ensure_session_env
+    printf 'epoch_ms\tstep\tlabel\tpid\trss_kib\tpss_kib\trss_anon_kib\trss_file_kib\tvmsize_kib\tfd\tthreads\tpeak_rss_kib\tpeak_pss_kib\textra\n' >"$TSV"
+    log "RUN_DIR=$RUN_DIR"
+    log "ROUNDS=$ROUNDS DWELL=$DWELL SETTLE=$SETTLE RESTART=$DO_RESTART SHOTS=$SHOTS STRICT=$STRICT"
+
+    gate_session
+
+    if [[ "$DO_RESTART" == "1" ]]; then
+        restart_qs
+    else
+        wait_qs || { log "FATAL: qs 未运行"; exit 2; }
+    fi
+
+    # 复查 bar
+    local bar_n
+    bar_n="$(layers_count_ns qsl-bar | tr -d '[:space:]')"
+    if [[ "${bar_n:-0}" -lt 1 ]]; then
+        log "FATAL: 启动后仍无 qsl-bar — 停止，避免测到幽灵 qs"
+        hypr layers 2>&1 | tee -a "$LOG" >&2 || true
+        exit 3
+    fi
+    log "门禁通过：qsl-bar ×${bar_n}  qs_pid=$(qs_pid)"
+
+    sample "cold_after_ready"
+    sleep 2
+    sample "cold_settled"
+
+    local r
+    for ((r = 1; r <= ROUNDS; r++)); do
+        one_round "$r"
+    done
+
+    sleep 5
+    sample "final_settled"
+
+    log "======== SUMMARY ========"
+    write_summary | tee -a "$LOG" >&2
+    log "TSV=$TSV"
+    log "SUMMARY=$SUMMARY"
+    log "fails=$FAILS peakRSS=$(mib "$PEAK_RSS") peakAnon=$(mib "$PEAK_ANON")"
+    echo "$RUN_DIR"
+}
+
+# 兼容旧子命令
+cmd="${1:-run}"
+case "$cmd" in
+    run|auto)
+        run_main
+        ;;
+    sample)
+        ensure_session_env
+        # 追加到最新 run 或新建
+        newest="$(ls -1dt "$CACHE_DIR"/membench-run-* 2>/dev/null | head -1 || true)"
+        if [[ -n "$newest" && -f "$newest/samples.tsv" ]]; then
+            RUN_DIR="$newest"
+            TSV="$RUN_DIR/samples.tsv"
+            LOG="$RUN_DIR/run.log"
+            PEAK_RSS="$(awk -F'\t' 'NR>1{if($12+0>m)m=$12}END{print m+0}' "$TSV")"
+            PEAK_PSS="$(awk -F'\t' 'NR>1{if($13+0>m)m=$13}END{print m+0}' "$TSV")"
+        else
+            printf 'epoch_ms\tstep\tlabel\tpid\trss_kib\tpss_kib\trss_anon_kib\trss_file_kib\tvmsize_kib\tfd\tthreads\tpeak_rss_kib\tpeak_pss_kib\textra\n' >"$TSV"
+        fi
+        sample "${2:-manual}"
+        ;;
+    *)
+        cat <<EOF
+用法:
+  $0 run          # 默认：门禁 → 重启 qs → ${ROUNDS:-3} 轮 IPC/功能压测
+  $0 sample [标签]
+
+环境变量见脚本头注释。请在 Hyprland 的终端运行。
+EOF
+        exit 1
+        ;;
+esac

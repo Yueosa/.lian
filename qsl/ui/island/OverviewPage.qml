@@ -117,7 +117,7 @@ Item {
                             id: avatarImg
                             anchors.fill: parent
                             source: Size.island.avatarUrl
-                            sourceSize: Qt.size(200, 200)
+                            sourceSize: Qt.size(128, 128)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             cache: true

@@ -1,8 +1,8 @@
 // SwitcherPage — 按工作区分组的窗口切换器
 //
 // 相对旧 qs：
-// 1. 性能：ListView 回收；仅焦点卡 live；无 OpacityMask
-// 2. 缩略图：可见卡静帧 + 重试；失败用 app icon
+// 1. 性能：ListView reuseItems；仅视口附近 Screencopy；焦点卡 live
+// 2. 缩略图：可见卡静帧 + 重试；失败用 app icon（小 sourceSize）
 // 3. 定位：横/纵 positionViewAtIndex；开页定位活动窗口
 // 4. 跳转：目标写入 Island；壳层 Enter / 单击 → activateSwitcherFocus
 //
@@ -210,7 +210,9 @@ FocusScope {
         model: root.groups
         spacing: Size.spacing.lg
         boundsBehavior: Flickable.StopAtBounds
-        cacheBuffer: 240
+        // 降离屏预取：每卡 Screencopy 静帧很贵，关功能只少缓存邻卡
+        cacheBuffer: 48
+        reuseItems: true
 
         ScrollBar.horizontal: ScrollBar {
             policy: hList.contentWidth > hList.width
@@ -265,7 +267,8 @@ FocusScope {
                 model: groupCol.modelData.wins
                 spacing: Size.spacing.sm
                 boundsBehavior: Flickable.StopAtBounds
-                cacheBuffer: 160
+                cacheBuffer: 32
+                reuseItems: true
 
                 Connections {
                     target: root
@@ -287,6 +290,13 @@ FocusScope {
                         && index === root.focusItem
                     readonly property var win: modelData
                     readonly property var wayland: win ? win.wayland : null
+                    // 仅视口附近建 Screencopy，滑出即拆 dmabuf（图标兜底仍在）
+                    readonly property bool nearView: {
+                        const cy = vList.contentY
+                        const vh = vList.height
+                        const y = card.y
+                        return (y + card.height) > (cy - 24) && y < (cy + vh + 24)
+                    }
 
                     Rectangle {
                         anchors.fill: parent
@@ -310,7 +320,7 @@ FocusScope {
                         Loader {
                             id: thumbLoader
                             anchors.fill: parent
-                            active: !!card.wayland
+                            active: !!card.wayland && (card.nearView || card.focused)
                             sourceComponent: Component {
                                 ScreencopyView {
                                     id: thumb
@@ -368,6 +378,7 @@ FocusScope {
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             cache: true
+                            sourceSize: Qt.size(72, 72)
                             visible: (!thumbLoader.item || !thumbLoader.item.hasContent)
                                 && status !== Image.Error
                             onStatusChanged: {

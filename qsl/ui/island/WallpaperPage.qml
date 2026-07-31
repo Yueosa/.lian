@@ -1,7 +1,7 @@
 // WallpaperPage — Hub 壁纸页
 // prev/next/mode + 网格单击设壁纸；齿轮开 lianwall-gui 并关岛
 // 缩略图：LianWall 缓存优先；静态图无缓存时小 sourceSize 原图；视频无缓存占位
-// 开销：仅 detail 时拉列表；GridView cacheBuffer≈3 行；Image 异步且 cache:false
+// 开销：仅 detail 时拉列表；GridView cacheBuffer≈1 行；Image 异步且 cache:false
 
 import QtQuick
 import QtQuick.Layouts
@@ -201,7 +201,7 @@ FocusScope {
                     cellWidth: Math.floor(width / Math.max(1, root.gridColumns))
                     cellHeight: 148
                     boundsBehavior: Flickable.StopAtBounds
-                    cacheBuffer: cellHeight * 3
+                    cacheBuffer: cellHeight * 1
 
                     ScrollBar.vertical: ScrollBar {
                         policy: grid.contentHeight > grid.height

@@ -340,6 +340,7 @@ Item {
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             smooth: true
+                            cache: false
                             visible: status === Image.Ready && !iconRoot.forceFontFallback
                             property int failCount: 0
 

@@ -179,7 +179,7 @@ Item {
             Layout.fillHeight: true
             clip: true
             spacing: Size.spacing.xs
-            reuseItems: false
+            reuseItems: true
             model: root.filteredItems
             boundsBehavior: Flickable.StopAtBounds
 

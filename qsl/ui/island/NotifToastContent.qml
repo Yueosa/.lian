@@ -115,6 +115,8 @@ Item {
                                 ? Image.PreserveAspectFit
                                 : Image.PreserveAspectCrop
                             asynchronous: true
+                            cache: false
+                            sourceSize: Qt.size(80, 80)
                             visible: row.iconSource.length > 0
                                 && status !== Image.Error
                                 && status !== Image.Null
