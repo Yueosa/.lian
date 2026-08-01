@@ -16,7 +16,10 @@ Singleton {
     id: root
 
     property var items: []
-    property var tags: ["重要", "生活", "开发"]
+    // 「重要」曾经混在这里当标签用，但它其实是 starred 这个正交维度：
+    // 一件事既可以是「开发」又可以重要。已改由页面上独立的星标筛选承担，
+    // 标签回归纯分类。预置只给两个，其余用 addTag 自建
+    property var tags: ["生活", "开发"]
     property int revision: 0
     property bool _suppressLoad: false
     property bool _storeReady: false
@@ -49,7 +52,8 @@ Singleton {
         const item = {
             id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
             text: text,
-            tag: tag || "生活",
+            // 默认无标签：随手记一笔不该被强行归到某一类里
+            tag: tag || "",
             priority: priority !== undefined ? priority : 1,
             done: false,
             starred: false,
@@ -110,11 +114,16 @@ Singleton {
         }
     }
 
+    // 删标签不删事项：被摘掉标签的条目退回无标签，而不是被塞进另一类
     function removeTag(tag) {
-        if (tag === "重要")
-            return
         tags = tags.filter(t => t !== tag)
-        items = items.map(i => i.tag === tag ? Object.assign({}, i, { tag: "生活" }) : i)
+        items = items.map(i => i.tag === tag ? Object.assign({}, i, { tag: "" }) : i)
+        _bump()
+        _save()
+    }
+
+    function clearDone() {
+        items = items.filter(i => i && !i.done)
         _bump()
         _save()
     }
@@ -123,8 +132,6 @@ Singleton {
         void revision
         if (!tag || tag === "")
             return items
-        if (tag === "重要")
-            return items.filter(i => i.starred)
         return items.filter(i => i.tag === tag)
     }
 
@@ -153,11 +160,26 @@ Singleton {
             return
         try {
             const data = JSON.parse(raw)
-            if (Array.isArray(data.tags) && data.tags.length > 0)
-                tags = data.tags
-            if (Array.isArray(data.items))
-                items = data.items
+            // 迁移：磁盘上还留着把「重要」当标签的旧结构，读回来会把它带回列表。
+            // 标记为重要的条目转成 starred，标签位清空
+            let migrated = false
+            if (Array.isArray(data.tags) && data.tags.length > 0) {
+                const clean = data.tags.filter(t => t !== "重要")
+                migrated = clean.length !== data.tags.length
+                tags = clean.length > 0 ? clean : ["生活", "开发"]
+            }
+            if (Array.isArray(data.items)) {
+                items = data.items.map(i => {
+                    if (i && i.tag === "重要") {
+                        migrated = true
+                        return Object.assign({}, i, { tag: "", starred: true })
+                    }
+                    return i
+                })
+            }
             _bump()
+            if (migrated)
+                _save()
         } catch (e) {
             console.warn("[Todo] JSON parse failed:", e)
         }

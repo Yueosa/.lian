@@ -246,46 +246,46 @@
       "sections": [
         {
           "id": "ipc-usage",
-          "title": "用法：qs ipc call <target> <method> [args…]",
+          "title": "qs ipc call <target> <method>",
           "items": [
-            { "keys": "qs ipc show", "desc": "列出运行时真实注册的全部 target" }
+            { "keys": "qs ipc show", "desc": "列出全部 target" }
           ]
         },
         {
           "id": "ipc-island",
           "title": "island — 灵动岛",
           "items": [
-            { "keys": "island hub", "desc": "打开或关闭 Hub" },
-            { "keys": "island switcher", "desc": "开 Hub 并切到窗口切换页" },
-            { "keys": "island wallpaper", "desc": "开 Hub 并切到壁纸页" },
-            { "keys": "island media", "desc": "开 Hub 并切到媒体页" },
-            { "keys": "island weather", "desc": "开 Hub 并切到天气页" },
+            { "keys": "island hub", "desc": "开关 Hub" },
             { "keys": "island close", "desc": "关闭 Hub" },
-            { "keys": "island togglelayer", "desc": "一级岛层级 Top / Overlay 互切" },
-            { "keys": "island mediatoggle", "desc": "当前媒体播放 / 暂停" },
+            { "keys": "island switcher", "desc": "窗口切换页" },
+            { "keys": "island wallpaper", "desc": "壁纸页" },
+            { "keys": "island media", "desc": "媒体页" },
+            { "keys": "island weather", "desc": "天气页" },
+            { "keys": "island togglelayer", "desc": "岛层级切换" },
+            { "keys": "island mediatoggle", "desc": "播放 / 暂停" },
             { "keys": "island medianext", "desc": "下一曲" },
             { "keys": "island mediaprevious", "desc": "上一曲" }
           ]
         },
         {
           "id": "ipc-sidebar",
-          "title": "sidebar — 左侧栏",
+          "title": "sidebar — view: time / sys / keys / todo",
           "items": [
-            { "keys": "sidebar toggle", "desc": "打开或关闭" },
-            { "keys": "sidebar open <view>", "desc": "time / sys / keys / todo，另有 system→sys、hotkeys→keys 别名" },
-            { "keys": "sidebar next", "desc": "已打开时循环切下一页" },
-            { "keys": "sidebar prev", "desc": "已打开时循环切上一页" },
+            { "keys": "sidebar toggle", "desc": "开关" },
+            { "keys": "sidebar open <view>", "desc": "切到指定页" },
+            { "keys": "sidebar next", "desc": "下一页" },
+            { "keys": "sidebar prev", "desc": "上一页" },
             { "keys": "sidebar close", "desc": "关闭" }
           ]
         },
         {
           "id": "ipc-rightbar",
-          "title": "rightbar — 右侧栏",
+          "title": "rightbar — view: network / bluetooth / audio / updates",
           "items": [
-            { "keys": "rightbar toggle", "desc": "打开或关闭" },
-            { "keys": "rightbar open <view>", "desc": "network / bluetooth / audio / updates" },
-            { "keys": "rightbar next", "desc": "已打开时循环切下一页" },
-            { "keys": "rightbar prev", "desc": "已打开时循环切上一页" },
+            { "keys": "rightbar toggle", "desc": "开关" },
+            { "keys": "rightbar open <view>", "desc": "切到指定页" },
+            { "keys": "rightbar next", "desc": "下一页" },
+            { "keys": "rightbar prev", "desc": "上一页" },
             { "keys": "rightbar close", "desc": "关闭" }
           ]
         },
@@ -293,27 +293,27 @@
           "id": "ipc-notif",
           "title": "notif — 通知中心",
           "items": [
-            { "keys": "notif toggle", "desc": "打开或关闭" },
+            { "keys": "notif toggle", "desc": "开关" },
             { "keys": "notif open", "desc": "打开" },
             { "keys": "notif close", "desc": "关闭" },
-            { "keys": "notif dnd", "desc": "切换免打扰，返回 DND_ON / DND_OFF" }
+            { "keys": "notif dnd", "desc": "免打扰" }
           ]
         },
         {
           "id": "ipc-window",
-          "title": "浮动窗",
+          "title": "浮动窗 — 均支持 toggle / open / close",
           "items": [
-            { "keys": "free-window-app toggle", "desc": "应用启动器，另有 open / close" },
-            { "keys": "free-window-clipboard toggle", "desc": "剪贴板历史，另有 open / close" },
-            { "keys": "websearch toggle", "desc": "Web 搜索条，另有 open / close" }
+            { "keys": "free-window-app", "desc": "应用启动器" },
+            { "keys": "free-window-clipboard", "desc": "剪贴板" },
+            { "keys": "websearch", "desc": "搜索条" }
           ]
         },
         {
           "id": "ipc-lock",
           "title": "lock — 会话锁屏",
           "items": [
-            { "keys": "lock lock", "desc": "锁定会话，已锁时返回 ALREADY_LOCKED" },
-            { "keys": "lock status", "desc": "返回 LOCKED / UNLOCKED" }
+            { "keys": "lock lock", "desc": "锁屏" },
+            { "keys": "lock status", "desc": "查锁定状态" }
           ]
         }
       ]

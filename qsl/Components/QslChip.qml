@@ -14,6 +14,7 @@ Rectangle {
     property bool enabled: true
     property int chipHeight: 36
     signal clicked()
+    signal rightClicked()
 
     implicitHeight: chipHeight
     implicitWidth: row.implicitWidth + Size.spacing.md * 2
@@ -54,6 +55,12 @@ Rectangle {
         enabled: root.enabled
         hoverEnabled: true
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: root.clicked()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton)
+                root.rightClicked()
+            else
+                root.clicked()
+        }
     }
 }
