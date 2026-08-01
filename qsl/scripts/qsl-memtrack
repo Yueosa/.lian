@@ -60,20 +60,38 @@ cmd_start() {
     echo "$out" > "$CURRENT"
     echo "ts,elapsed_s,rss_mib,swap_mib,total_mib,threads,fds,anon_maps,children,cava" > "$out"
 
-    (
-        local start; start=$(date +%s)
-        while true; do
-            local cur; cur="$(qs_pid)"
-            if [ -n "$cur" ]; then
-                sample_row "$cur" "$(date +%s)" "$start" >> "$out" || true
-            fi
-            sleep "$INTERVAL"
-        done
-    ) &
-    echo $! > "$PIDFILE"
-    echo "memtrack: 已启动 (pid $!)  间隔 ${INTERVAL}s"
+    # 必须脱离控制终端：直接 `( ... ) &` 会在调用方 shell 退出时被 SIGHUP 带走，
+    # 而这个脚本的全部意义就是跨小时地跑下去。
+    rm -f "$PIDFILE"
+    setsid "$(readlink -f "$0")" _loop "$out" </dev/null >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+
+    # _loop 自己写 PIDFILE；等它落盘
+    local i=0
+    while [ $i -lt 30 ] && [ ! -f "$PIDFILE" ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+    [ -f "$PIDFILE" ] || die "采样进程未能启动"
+
+    echo "memtrack: 已启动 (pid $(cat "$PIDFILE"))  间隔 ${INTERVAL}s"
     echo "  输出: $out"
     echo "  qs  : pid $p，当前 $(awk '/^VmRSS:/{printf "%d",$2/1024}' "/proc/$p/status") MiB RSS"
+}
+
+# 后台采样循环；只由 cmd_start 经 setsid 调用
+cmd_loop() {
+    local out="$1"
+    echo $$ > "$PIDFILE"
+    trap 'rm -f "$PIDFILE"; exit 0' TERM INT
+    local start; start=$(date +%s)
+    while true; do
+        local cur; cur="$(qs_pid)"
+        if [ -n "$cur" ]; then
+            sample_row "$cur" "$(date +%s)" "$start" >> "$out" 2>/dev/null || true
+        fi
+        sleep "$INTERVAL"
+    done
 }
 
 cmd_stop() {
@@ -136,6 +154,7 @@ cmd_report() {
 
 case "${1:-}" in
     start)  cmd_start ;;
+    _loop)  cmd_loop "${2:?}" ;;
     stop)   cmd_stop ;;
     status) cmd_status ;;
     report) cmd_report "${2:-}" ;;
