@@ -5,6 +5,7 @@
 //   notifctl list [--limit N]     stdout JSON + 写缓存
 //   notifctl dismiss <notif_id>   soft-dismiss
 //   notifctl clear                清空全部活动通知
+//   notifctl prune [--days N]     删除已读且超期的历史行
 
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -13,6 +14,11 @@ use std::fs;
 use std::path::PathBuf;
 
 const DEFAULT_LIMIT: usize = 80;
+// dismiss 只写 dismissed_at 不删行，不清理的话表会无限增长（实测数月即数千行）。
+// 已读行只对「历史回看」有意义，超期直接删。
+const DEFAULT_RETAIN_DAYS: i64 = 30;
+// 二级兜底：即便都在保留期内，也不让已读行无限堆积
+const MAX_DISMISSED_ROWS: i64 = 5000;
 
 #[derive(Debug, Deserialize)]
 struct IngestInput {
@@ -218,6 +224,53 @@ fn cmd_ingest(raw: &str) -> i32 {
     0
 }
 
+fn now_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+// 只删已读行；未读的一律保留，与 dismissed_at=0 的查询语义一致。
+fn prune_old(conn: &Connection, retain_days: i64) -> usize {
+    let cutoff = now_ms() - retain_days.max(1) * 24 * 60 * 60 * 1000;
+    let mut removed = conn
+        .execute(
+            "DELETE FROM notifications WHERE dismissed_at > 0 AND dismissed_at < ?1",
+            params![cutoff],
+        )
+        .unwrap_or(0);
+
+    removed += conn
+        .execute(
+            "DELETE FROM notifications
+             WHERE dismissed_at > 0 AND id NOT IN (
+                 SELECT id FROM notifications
+                 WHERE dismissed_at > 0
+                 ORDER BY dismissed_at DESC
+                 LIMIT ?1
+             )",
+            params![MAX_DISMISSED_ROWS],
+        )
+        .unwrap_or(0);
+
+    removed
+}
+
+fn cmd_prune(retain_days: i64) -> i32 {
+    let conn = match open_db() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("notifctl: db: {}", e);
+            return 1;
+        }
+    };
+    let removed = prune_old(&conn, retain_days);
+    let _ = conn.execute_batch("VACUUM");
+    println!("{}", removed);
+    0
+}
+
 fn cmd_list(limit: usize) -> i32 {
     let conn = match open_db() {
         Ok(c) => c,
@@ -226,6 +279,8 @@ fn cmd_list(limit: usize) -> i32 {
             return 1;
         }
     };
+    // 面板打开是低频动作，顺手清一次历史，避免依赖额外的定时任务
+    prune_old(&conn, DEFAULT_RETAIN_DAYS);
     match load_entries(&conn, limit) {
         Ok(entries) => {
             write_list_cache(&entries);
@@ -324,8 +379,23 @@ fn main() {
             }
         }
         "clear" => cmd_clear(),
+        "prune" => {
+            let mut days = DEFAULT_RETAIN_DAYS;
+            let mut i = 2;
+            while i < args.len() {
+                if args[i] == "--days" {
+                    if let Some(v) = args.get(i + 1).and_then(|s| s.parse().ok()) {
+                        days = v;
+                    }
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            cmd_prune(days)
+        }
         _ => {
-            eprintln!("usage: notifctl <ingest|list|dismiss|clear>");
+            eprintln!("usage: notifctl <ingest|list|dismiss|clear|prune>");
             1
         }
     };

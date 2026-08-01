@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# qsl-memtrack — qs 长期内存跟踪（与 qsl-membench 互补）
+#
+# membench 回答「一次操作涨多少、还回多少」；memtrack 回答「放着不动会不会涨」。
+# 后者才是 1.4 GiB 的成因：冷启动约 390 MiB，跑满一天后 RSS+Swap 到 1.6 GiB。
+#
+# ★ 必须能读到 qs 进程；建议在 Hyprland 会话里跑：
+#     ~/.config/quickshell/scripts/qsl-memtrack start
+#     ~/.config/quickshell/scripts/qsl-memtrack status
+#     ~/.config/quickshell/scripts/qsl-memtrack report
+#     ~/.config/quickshell/scripts/qsl-memtrack stop
+#
+# 关键点：只看 VmRSS 会被 swap 骗。系统内存吃紧时内核会把 qs 的页换出，
+# RSS 反而「变好看」，实际提交量没变。所以一律以 RSS+Swap 为准。
+#
+# 环境变量：
+#   MEMTRACK_INTERVAL=60   采样间隔秒
+#   MEMTRACK_FILE=<path>   CSV 输出路径（默认 ~/.cache/qsl/memtrack-<起始时间>.csv）
+
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/qsl"
+mkdir -p "$CACHE_DIR"
+
+INTERVAL="${MEMTRACK_INTERVAL:-60}"
+PIDFILE="$CACHE_DIR/memtrack.pid"
+CURRENT="$CACHE_DIR/memtrack.current"
+
+die() { echo "memtrack: $*" >&2; exit 1; }
+
+qs_pid() { pgrep -n -x qs 2>/dev/null || true; }
+
+# ---------- 采样 ----------
+
+sample_row() {
+    local p="$1" now="$2" start="$3"
+    local rss swap threads fds anon children cava
+    rss=$(awk '/^VmRSS:/{print int($2/1024)}' "/proc/$p/status" 2>/dev/null || echo "")
+    [ -z "$rss" ] && return 1
+    swap=$(awk '/^VmSwap:/{print int($2/1024)}' "/proc/$p/status" 2>/dev/null || echo 0)
+    threads=$(awk '/^Threads:/{print $2}' "/proc/$p/status" 2>/dev/null || echo 0)
+    fds=$(ls "/proc/$p/fd" 2>/dev/null | wc -l)
+    # 匿名可写段数：QV4 chunk / jemalloc arena 扩张时会涨
+    anon=$(awk '$2=="rw-p" && NF==5{n++} END{print n+0}' "/proc/$p/maps" 2>/dev/null || echo 0)
+    children=$(pgrep -P "$p" 2>/dev/null | wc -l)
+    # cava 链路是否在跑：播放器停了它还活着就是回归
+    cava=$(pgrep -x cava-relay >/dev/null 2>&1 && echo 1 || echo 0)
+
+    echo "$now,$((now - start)),$rss,$swap,$((rss + swap)),$threads,$fds,$anon,$children,$cava"
+}
+
+cmd_start() {
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+        die "已在运行 (pid $(cat "$PIDFILE"))，先 stop"
+    fi
+    local p; p="$(qs_pid)"
+    [ -z "$p" ] && die "找不到 qs 进程"
+
+    local out="${MEMTRACK_FILE:-$CACHE_DIR/memtrack-$(date +%Y%m%d-%H%M%S).csv}"
+    echo "$out" > "$CURRENT"
+    echo "ts,elapsed_s,rss_mib,swap_mib,total_mib,threads,fds,anon_maps,children,cava" > "$out"
+
+    (
+        local start; start=$(date +%s)
+        while true; do
+            local cur; cur="$(qs_pid)"
+            if [ -n "$cur" ]; then
+                sample_row "$cur" "$(date +%s)" "$start" >> "$out" || true
+            fi
+            sleep "$INTERVAL"
+        done
+    ) &
+    echo $! > "$PIDFILE"
+    echo "memtrack: 已启动 (pid $!)  间隔 ${INTERVAL}s"
+    echo "  输出: $out"
+    echo "  qs  : pid $p，当前 $(awk '/^VmRSS:/{printf "%d",$2/1024}' "/proc/$p/status") MiB RSS"
+}
+
+cmd_stop() {
+    [ -f "$PIDFILE" ] || die "未在运行"
+    local p; p="$(cat "$PIDFILE")"
+    kill "$p" 2>/dev/null || true
+    rm -f "$PIDFILE"
+    echo "memtrack: 已停止 (pid $p)"
+}
+
+cmd_status() {
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+        echo "运行中 (pid $(cat "$PIDFILE"))，输出 $(cat "$CURRENT" 2>/dev/null)"
+    else
+        echo "未运行"
+    fi
+    local p; p="$(qs_pid)"
+    if [ -n "$p" ]; then
+        awk '/^VmRSS:|^VmSwap:/{printf "  %-8s %6.1f MiB\n",$1,$2/1024}' "/proc/$p/status"
+        echo "  运行时长 $(ps -p "$p" -o etime= | tr -d ' ')"
+    fi
+}
+
+# ---------- 报告 ----------
+
+cmd_report() {
+    local f="${1:-$(cat "$CURRENT" 2>/dev/null || true)}"
+    [ -n "$f" ] && [ -f "$f" ] || die "没有可用的 CSV，先 start 或传路径"
+
+    awk -F, 'NR>1' "$f" | {
+        read -r first || die "样本不足"
+        echo "文件: $f"
+        awk -F, '
+            NR == 1 { next }
+            {
+                n++
+                if (n == 1) { t0=$2; r0=$5 }
+                tN=$2; rN=$5
+                if ($5 > peak) peak=$5
+                if (min == 0 || $5 < min) min=$5
+                cava += $10
+                threads=$6; fds=$7; anon=$8
+            }
+            END {
+                if (n < 2) { print "样本不足（需 ≥2 条）"; exit }
+                hours = (tN - t0) / 3600.0
+                printf "样本数     %d，跨度 %.2f 小时\n", n, hours
+                printf "起始       %d MiB\n", r0
+                printf "结束       %d MiB\n", rN
+                printf "峰值/谷值  %d / %d MiB\n", peak, min
+                printf "净增长     %+d MiB\n", rN - r0
+                if (hours > 0.05)
+                    printf "增长速率   %+.1f MiB/小时\n", (rN - r0) / hours
+                printf "末次采样   线程 %d，fd %d，匿名段 %d\n", threads, fds, anon
+                printf "cava 在跑  %d / %d 次采样\n", cava, n
+            }
+        ' "$f"
+    }
+}
+
+case "${1:-}" in
+    start)  cmd_start ;;
+    stop)   cmd_stop ;;
+    status) cmd_status ;;
+    report) cmd_report "${2:-}" ;;
+    *)
+        cat <<'EOF'
+用法: qsl-memtrack <start|stop|status|report [csv]>
+
+  start   后台采样 qs 的 RSS/Swap/线程/fd/匿名段/子进程/cava 状态
+  stop    停止采样
+  status  查看采样器与 qs 当前状态
+  report  对 CSV 出增长速率报告（默认用最近一次 start 的文件）
+
+判读要点：
+  - 一律看 total_mib（RSS+Swap）。单看 rss_mib 会被内核换页误导。
+  - cava 列在播放器停止后应为 0；若长期为 1，说明引用计数又漏了。
+  - anon_maps 持续上涨通常意味着 jemalloc arena 在扩张，即真实堆增长。
+EOF
+        exit 1
+        ;;
+esac

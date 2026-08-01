@@ -31,8 +31,20 @@ Singleton {
 
     // 歌词（一级）
     property bool showLyrics: false
-    property bool autoLyrics: false
+    // 纯绑定收敛：读 Media.active 与其 isPlaying，两者任一变化都会重算。
+    // 勿改回命令式 sync——MPRIS 上同时挂多个播放器（如 chromium + splayer）时，
+    // 单点 Connections 的 target 会被重新赋值而断掉绑定，暂停信号丢失后
+    // autoLyrics 卡在 true，Cava 的 relay/reader 子进程会一直空转。
+    readonly property bool autoLyrics: {
+        const p = Media.active
+        return !!(p && p.isPlaying)
+    }
     property bool lyricsHoverRestore: false
+
+    onAutoLyricsChanged: {
+        if (!autoLyrics)
+            lyricsHoverRestore = false
+    }
 
     // 通知 toast 队列（最新在前；≤3；ListModel 保条目身份 → Timer 不重置）
     readonly property int notifToastLimit: 3
@@ -67,37 +79,6 @@ Singleton {
         function onToastRequested(payload) {
             root.pushNotifToast(payload)
         }
-    }
-
-    function syncAutoLyrics() {
-        // 有播放中的曲目 → 一级歌词优先于时钟
-        const p = Media.active
-        autoLyrics = !!(p && p.isPlaying)
-        if (!autoLyrics)
-            lyricsHoverRestore = false
-    }
-
-    Connections {
-        target: Media
-        function onActiveChanged() {
-            root.syncAutoLyrics()
-            if (Media.active)
-                playConn.target = Media.active
-            else
-                playConn.target = null
-        }
-    }
-
-    Connections {
-        id: playConn
-        target: Media.active
-        function onIsPlayingChanged() { root.syncAutoLyrics() }
-    }
-
-    Component.onCompleted: {
-        if (Media.active)
-            playConn.target = Media.active
-        syncAutoLyrics()
     }
 
     function closeHub() {
@@ -294,7 +275,7 @@ Singleton {
 
     function closeTransient() {
         showLyrics = false
-        // autoLyrics 由媒体逻辑维护，这里不强制关
+        // autoLyrics 是只读绑定，随播放状态自行收敛
     }
 
     function openHubTab(index) {

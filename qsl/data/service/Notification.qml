@@ -40,6 +40,12 @@ Singleton {
     readonly property bool hasNotifications: entries.length > 0
     readonly property int count: entries.length
 
+    // 常驻 Notification 对象会持有 hints（含应用直传的原始像素数据）和 image 句柄。
+    // 面板读的是 SQLite 出来的 entries，从不访问这些对象，全量常驻纯属浪费——
+    // 一天下来能攒几千条。保留最近若干条只为让应用「按 id 替换/更新通知」仍生效
+    // （进度条类通知依赖这个），超出的直接释放。
+    readonly property int trackedLimit: 32
+
     // 仅面板打开时维护 entries，避免关窗后仍堆内存
     property bool uiActive: false
     property bool dndEnabled: false
@@ -86,6 +92,29 @@ Singleton {
             icon: n.icon || ""
         })
         Quickshell.execDetached([root.ctlPath, "ingest", payload])
+    }
+
+    // 释放最旧的常驻通知，直到不超过上限。
+    // 按 id 取最旧而非按下标，trackedNotifications 的排列顺序无文档保证。
+    function trimTracked() {
+        const list = server.trackedNotifications
+        if (!list)
+            return
+        let guard = 0
+        while (list.count > root.trackedLimit && guard++ < 512) {
+            let oldest = null
+            let oldestId = Infinity
+            for (let i = 0; i < list.count; i++) {
+                const n = list.get(i)
+                if (n && Number(n.id) < oldestId) {
+                    oldestId = Number(n.id)
+                    oldest = n
+                }
+            }
+            if (!oldest)
+                return
+            oldest.tracked = false
+        }
     }
 
     function shouldSkip(n) {
@@ -173,6 +202,7 @@ Singleton {
                 return
             notification.tracked = true
             root.persistIngest(notification)
+            root.trimTracked()
             if (root.uiActive)
                 root.prependLive(notification)
             // DnD 仍入库，只压制岛上 toast

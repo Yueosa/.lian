@@ -1,6 +1,6 @@
 // LyricsContent — 一级岛歌词胶囊（封面 + 滚动歌词 + 6 柱 cava）
 // 数据：Lyrics / Cava / Media；悬停还原时钟由 IslandShell 处理
-// 性能：仅 active 时 Cava.acquire；频谱 ~33ms；无 FastBlur
+// 性能：Cava 只在真正可见时占用（隐藏 500ms 后释放）；频谱 ~33ms；无 FastBlur
 
 import QtQuick
 import Qt5Compat.GraphicalEffects
@@ -68,21 +68,50 @@ Item {
 
     onVisibleChanged: {
         if (visible) {
+            cavaReleaseTimer.stop()
+            _holdCava(true)
             // Hub→歌词：从默认宽起步，避免隐藏态测到 maxTextW 后突然拉长
             textW = defaultTextW
             Qt.callLater(kickVisible)
         } else {
             remountTimer.stop()
+            // 悬停看时钟 / 通知 toast 抢占期间不烧 cava；去抖避免快速来回时反复启停
+            cavaReleaseTimer.restart()
+        }
+    }
+
+    // Loader 在 toast/悬停时保持 active（拆了会让跑马灯与 Timer 状态丢失），
+    // 所以 Cava 的占用跟「可见」走而不是跟组件生命周期走。
+    property bool _cavaHeld: false
+
+    function _holdCava(want) {
+        if (want === _cavaHeld)
+            return
+        if (want)
+            Cava.acquire()
+        else
+            Cava.release()
+        _cavaHeld = want
+    }
+
+    Timer {
+        id: cavaReleaseTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            if (!lyricsRoot.visible)
+                lyricsRoot._holdCava(false)
         }
     }
 
     Component.onCompleted: {
-        Cava.acquire()
+        if (visible)
+            _holdCava(true)
         Lyrics.acquire()
         refresh()
     }
     Component.onDestruction: {
-        Cava.release()
+        _holdCava(false)
         Lyrics.release()
     }
 

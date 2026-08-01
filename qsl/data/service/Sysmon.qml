@@ -5,6 +5,7 @@ pragma Singleton
 // ============================================================
 // 后端：sysmond → $XDG_RUNTIME_DIR/qsl/sysmon.json
 // 进程：写 sysmon_cmd "process_list" → sysmon_process.json
+// 档位：写 sysmon_cmd "detail 0|1" 切换 daemon 轮询频率（摘要档 GPU 15s，详情档 3s）
 // 仅 detailActive 时看文件 + 拉进程；关页停 Timer、清进程数组
 // 电池不在此，用 Battery（UPower）
 // ============================================================
@@ -262,12 +263,35 @@ Singleton {
         }
     }
 
-    // 开页 / 每 2s：写命令 → 稍后再读进程 JSON（等 daemon ≤200ms 轮询）
+    // 告诉 daemon 该用哪一档轮询：只有顶栏摘要在看时不必 1s 采一次，
+    // GPU 更不必——它每采一次就 fork 一个 nvidia-smi。
+    Process {
+        id: tierProc
+        property string mode: "0"
+        // 追加而非截断：与 process_list 共用同一个命令文件，截断会互相覆盖
+        command: [
+            "bash", "-lc",
+            "mkdir -p \"$XDG_RUNTIME_DIR/qsl\" && printf 'detail "
+            + tierProc.mode + "\\n' >> \"$XDG_RUNTIME_DIR/qsl/sysmon_cmd\""
+        ]
+    }
+
+    function _syncDaemonTier() {
+        const want = root.detailActive ? "1" : "0"
+        if (tierProc.mode === want && tierProc.running)
+            return
+        tierProc.mode = want
+        tierProc.running = true
+    }
+
+    onDetailActiveChanged: _syncDaemonTier()
+
+    // 开页 / 每 2s：写命令 → 稍后再读进程 JSON（等 daemon 轮询）
     Process {
         id: cmdProc
         command: [
             "bash", "-lc",
-            "mkdir -p \"$XDG_RUNTIME_DIR/qsl\" && printf 'process_list\\n' > \"$XDG_RUNTIME_DIR/qsl/sysmon_cmd\""
+            "mkdir -p \"$XDG_RUNTIME_DIR/qsl\" && printf 'process_list\\n' >> \"$XDG_RUNTIME_DIR/qsl/sysmon_cmd\""
         ]
         onExited: procReadDelay.start()
     }
@@ -312,6 +336,8 @@ Singleton {
         ]
         onExited: (code) => {
             root.daemonOk = (code === 0)
+            // daemon 可能是刚被拉起来的，默认在摘要档；补一次当前档位
+            root._syncDaemonTier()
             if (root.snapWatching) {
                 snapReloadDelay.start()
             }

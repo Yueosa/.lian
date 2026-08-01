@@ -39,22 +39,25 @@ Singleton {
         + "pkill -f '[q]sl_cava.conf' 2>/dev/null || true; "
         + "exit 0"
 
+    // 计数与进程启停解耦：refCount 无条件增减，_procsArmed 只作「孤儿已清干净」的闸门。
+    // 旧写法在 refCount===0 分支不加计数、改由 _armAfterCleanup 强行置 1，
+    // 清理窗口期内的并发 acquire 会被吞掉，计数与实际占用方数量对不上。
     function acquire() {
-        if (refCount > 0) {
-            refCount += 1
-            return
+        refCount += 1
+        if (refCount === 1) {
+            _pendingStart = true
+            _runOrphanCleanup()
         }
-        // 先清孤儿，再 arm 进程
-        _pendingStart = true
-        _runOrphanCleanup()
     }
 
     function release() {
-        refCount = Math.max(0, refCount - 1)
+        if (refCount === 0)
+            return
+        refCount -= 1
         if (refCount === 0) {
             _procsArmed = false
             _pendingStart = false
-            values = []
+            values = _zeroValues()
             // 停 Process 后仍清一次，防热重载残留
             _runOrphanCleanup()
         }
@@ -93,12 +96,13 @@ Singleton {
         values = arr
     }
 
+    // 清理期间占用方可能已全部撤走，此时不得再拉起进程
     function _armAfterCleanup() {
-        if (root._pendingStart) {
-            root._pendingStart = false
+        if (!root._pendingStart)
+            return
+        root._pendingStart = false
+        if (root.refCount > 0)
             root._procsArmed = true
-            root.refCount = Math.max(1, root.refCount)
-        }
     }
 
     Component.onCompleted: {
