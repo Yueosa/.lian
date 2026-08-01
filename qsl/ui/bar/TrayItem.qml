@@ -12,6 +12,8 @@ MouseArea {
     property var modelData: null
 
     signal pinChanged
+    // 供 overflow 窗口感知菜单开合：全屏 mask 期间 popup 收不到指针事件
+    signal menuToggled(bool open)
 
     readonly property string trayIconLower: (root.modelData && root.modelData.icon || "").toLowerCase()
     readonly property string trayIdLower: (root.modelData && root.modelData.id || "").toLowerCase()
@@ -101,6 +103,13 @@ MouseArea {
             : root.height + 5
         anchor.rect.x: 0
         onPinToggled: root.pinChanged()
+        onVisibleChanged: root.menuToggled(trayMenu.visible)
+    }
+
+    // 菜单开着就被拆掉时补一次关闭，避免上层计数漏账
+    Component.onDestruction: {
+        if (trayMenu.visible)
+            root.menuToggled(false)
     }
 
     Image {

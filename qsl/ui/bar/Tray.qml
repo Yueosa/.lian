@@ -17,6 +17,18 @@ Item {
     property var screen: null
     property bool trayOverflowOpen: false
 
+    // overflow 里有几个菜单开着。见 overflowComp 的 mask 说明。
+    property int openMenuCount: 0
+
+    function noteMenu(open) {
+        openMenuCount = Math.max(0, openMenuCount + (open ? 1 : -1))
+    }
+
+    onTrayOverflowOpenChanged: {
+        if (!trayOverflowOpen)
+            openMenuCount = 0
+    }
+
     implicitHeight: 36
     implicitWidth: Math.max(36, content.implicitWidth + 24)
 
@@ -166,10 +178,17 @@ Item {
 
             WlrLayershell.namespace: "qsl-tray-overflow"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            // 菜单是挂在本窗口上的 xdg_popup。父 layer surface 若同时持有整屏输入区
+            // 和独占键盘，popup 就拿不到指针事件——菜单画得出来但点不动。
+            // 菜单打开期间把输入区收回到面板本身，并让出键盘。
+            WlrLayershell.keyboardFocus: root.openMenuCount > 0
+                ? WlrKeyboardFocus.None
+                : WlrKeyboardFocus.Exclusive
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-            mask: Region { item: overflowMask }
+            mask: Region {
+                item: root.openMenuCount > 0 ? overflowPanel : overflowMask
+            }
 
             Item {
                 id: overflowMask
@@ -192,6 +211,7 @@ Item {
                 }
 
                 Rectangle {
+                    id: overflowPanel
                     anchors.top: parent.top
                     anchors.right: parent.right
                     anchors.topMargin: 52
@@ -251,6 +271,7 @@ Item {
                                     onLoaded: {
                                         item.modelData = ovSlot.modelData
                                         item.pinChanged.connect(root.onTrayPinChanged)
+                                        item.menuToggled.connect(root.noteMenu)
                                     }
                                 }
 

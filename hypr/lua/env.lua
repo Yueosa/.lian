@@ -20,6 +20,20 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 
 
 -- ============================================================
+-- 输入法（fcitx5）
+--     此前这里什么都没设，Qt 应用只能退回 Wayland 的 text-input-v3。
+--     该协议要求表面拿到 text-input 焦点，而 Quickshell 的 layer-shell 面板
+--     用的是 layer surface + 独占键盘焦点，拿不到，于是 qs 页面里打不了中文。
+--     指到 fcitx5-qt 插件后走 DBus，与表面类型无关。
+--     GTK 侧刻意不设 GTK_IM_MODULE：GTK4 在 Wayland 下用 text-input 更好，
+--     设了反而会退回旧路径。
+-- ============================================================
+
+hl.env("QT_IM_MODULE", "fcitx")
+hl.env("XMODIFIERS", "@im=fcitx")
+
+
+-- ============================================================
 -- 光标主题
 --     XCursor 用于 XWayland 和传统应用
 --     Hyprcursor 用于 Hyprland 原生渲染
