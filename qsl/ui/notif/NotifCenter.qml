@@ -80,7 +80,7 @@ PanelWindow {
             }
             g.count += 1
             if (!g.icon)
-                g.icon = e.imagePath || ""
+                g.icon = root.iconSourceFor(e)
             if (!g.preview)
                 g.preview = e.summary || ""
             if (Number(e.receivedAt) > g.latestAt)
@@ -111,16 +111,37 @@ PanelWindow {
         return ""
     }
 
-    // qsimage 句柄随进程失效；DB/缓存里残留的直接丢掉走 fallback 字标
-    function iconSourceFor(p) {
-        const s = String(p || "")
-        if (!s || s.indexOf("image://qsimage") === 0)
+    // 图标三级回退：通知自带 → desktop entry → 应用名。
+    // 只用第一级不够，库里三种失败原因都存在：
+    //   QQ      传 image://qsimage/424/1 这种进程内句柄，重启即失效
+    //   Discord / Telegram  image_path 干脆是空的
+    //   cursor  传的是图标名 co.anysphere.cursor，本来就能用
+    // 后两级统一转小写：图标主题里的文件名是 qq.png，而 desktop_entry 存的是 "QQ"。
+    // 必须先验证图标存不存在：图标 provider 查不到时不会把 Image.status 置为
+    // Error，而是交回一张品红/黑格子的占位图，status 照样是 Ready——
+    // 于是 fallback 永远不触发，界面上直接糊一块格子。
+    // iconPath(name, true) 查不到返回空串，据此提前挡掉。
+    function themeIcon(name) {
+        if (!name)
             return ""
-        if (s.startsWith("file://") || s.startsWith("image://"))
-            return s
-        if (s.startsWith("/"))
-            return "file://" + s
-        return "image://icon/" + s
+        return Quickshell.iconPath(name, true) ? "image://icon/" + name : ""
+    }
+
+    function iconSourceFor(entry) {
+        const p = String(entry.imagePath || "")
+        if (p && p.indexOf("image://qsimage") !== 0) {
+            if (p.startsWith("file://") || p.startsWith("image://"))
+                return p
+            if (p.startsWith("/"))
+                return "file://" + p
+            const byName = root.themeIcon(p)
+            if (byName)
+                return byName
+        }
+        const d = root.themeIcon(String(entry.desktopEntry || "").toLowerCase())
+        if (d)
+            return d
+        return root.themeIcon(String(entry.appName || "").toLowerCase())
     }
 
     function openApp(key) { currentApp = key }
@@ -196,9 +217,12 @@ PanelWindow {
             clearAllAnimated()
             return
         }
-        const ids = idsOfCurrentApp()
-        Notification.dismissMany(ids)
-        backToApps()
+        Notification.dismissMany(idsOfCurrentApp())
+        // 清完这个应用后一条都不剩，就没必要再退回一个空列表，直接收起面板
+        if (!Notification.hasNotifications)
+            closeWindow()
+        else
+            backToApps()
     }
 
     Item {
@@ -444,7 +468,7 @@ PanelWindow {
                                         id: appGroupImg
                                         anchors.fill: parent
                                         anchors.margins: 4
-                                        source: root.iconSourceFor(modelData.icon)
+                                        source: modelData.icon
                                         fillMode: Image.PreserveAspectFit
                                         asynchronous: true
                                         cache: false
@@ -621,7 +645,7 @@ PanelWindow {
                                 return Math.floor(sec / 86400) + " 天前"
                             }
 
-                            readonly property string iconSrc: root.iconSourceFor(row.entry.imagePath)
+                            readonly property string iconSrc: root.iconSourceFor(row.entry)
 
                             ListView.onPooled: resetVisual()
                             ListView.onReused: resetVisual()
