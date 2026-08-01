@@ -168,6 +168,32 @@ Singleton {
         Quickshell.execDetached([root.ctlPath, "dismiss", String(id)])
     }
 
+    // 批量关闭（堆叠整摞收起时用）。逐条调 dismiss 会重建 entries N 次，
+    // 每次都触发面板整表重排，这里合并成一次。
+    function dismissMany(ids) {
+        if (!ids || ids.length === 0)
+            return
+        const doomed = {}
+        for (let i = 0; i < ids.length; i++)
+            doomed[ids[i]] = true
+
+        for (let i = trackedNotifications.count - 1; i >= 0; i--) {
+            const n = trackedNotifications.get(i)
+            if (n && doomed[n.id])
+                n.tracked = false
+        }
+
+        const keep = []
+        for (let i = 0; i < entries.length; i++) {
+            if (!doomed[entries[i].notifId])
+                keep.push(entries[i])
+        }
+        entries = keep
+
+        for (let i = 0; i < ids.length; i++)
+            Quickshell.execDetached([root.ctlPath, "dismiss", String(ids[i])])
+    }
+
     function dismissAll() {
         for (let i = trackedNotifications.count - 1; i >= 0; i--) {
             const n = trackedNotifications.get(i)

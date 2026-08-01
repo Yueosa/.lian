@@ -43,6 +43,97 @@ PanelWindow {
     readonly property int rowIconSize: 44
     // 展开时正文最多显示多少行；再长就 elide，避免一条通知吃满整个面板
     readonly property int expandedBodyLines: 12
+    readonly property int appRowHeight: 68
+
+    // 当前进入的应用页；空串表示停在应用列表
+    property string currentApp: ""
+
+    // 分组键用 app_name 而非 notifctl 的 mapped_app：后者只认
+    // telegram/discord/wechat/qq 四个，cursor / notify-send / blueman
+    // 等等全被归成 system，混在一起没法看（库里这类将近 3800 条）。
+    // desktop_entry 也不可靠——同一个 QQ 有带和不带两种记录。
+    function appKeyOf(e) {
+        return String(e.appName || "系统").toLowerCase()
+    }
+
+    // 按应用聚合出列表页的数据。entries 至多 80 条，每次开面板算一遍即可。
+    readonly property var appGroups: {
+        const src = Notification.entries || []
+        const order = []
+        const map = ({})
+        for (let i = 0; i < src.length; i++) {
+            const e = src[i]
+            const k = root.appKeyOf(e)
+            let g = map[k]
+            if (!g) {
+                g = {
+                    key: k,
+                    // 展示用原始大小写，取该应用最新一条的写法
+                    name: e.appName || "系统",
+                    count: 0,
+                    latestAt: 0,
+                    icon: "",
+                    preview: ""
+                }
+                map[k] = g
+                order.push(g)
+            }
+            g.count += 1
+            if (!g.icon)
+                g.icon = e.imagePath || ""
+            if (!g.preview)
+                g.preview = e.summary || ""
+            if (Number(e.receivedAt) > g.latestAt)
+                g.latestAt = Number(e.receivedAt)
+        }
+        // entries 已是最新在前，order 天然按「各应用最新消息」降序
+        return order
+    }
+
+    readonly property var currentAppEntries: {
+        if (root.currentApp === "")
+            return []
+        const src = Notification.entries || []
+        const out = []
+        for (let i = 0; i < src.length; i++) {
+            if (root.appKeyOf(src[i]) === root.currentApp)
+                out.push(src[i])
+        }
+        return out
+    }
+
+    readonly property string currentAppName: {
+        const g = root.appGroups
+        for (let i = 0; i < g.length; i++) {
+            if (g[i].key === root.currentApp)
+                return g[i].name
+        }
+        return ""
+    }
+
+    // qsimage 句柄随进程失效；DB/缓存里残留的直接丢掉走 fallback 字标
+    function iconSourceFor(p) {
+        const s = String(p || "")
+        if (!s || s.indexOf("image://qsimage") === 0)
+            return ""
+        if (s.startsWith("file://") || s.startsWith("image://"))
+            return s
+        if (s.startsWith("/"))
+            return "file://" + s
+        return "image://icon/" + s
+    }
+
+    function openApp(key) { currentApp = key }
+    function backToApps() { currentApp = "" }
+
+    // 该应用当前的全部通知 id，用于「清空本应用」
+    function idsOfCurrentApp() {
+        const src = root.currentAppEntries
+        const ids = []
+        for (let i = 0; i < src.length; i++)
+            ids.push(src[i].notifId)
+        return ids
+    }
     readonly property int closedOffset: Math.round(Math.min(640, Screen.height - 48) + 80)
     readonly property bool contentActive: open || anim.slide !== closedOffset
 
@@ -74,7 +165,8 @@ PanelWindow {
         if (clearing || !Notification.hasNotifications)
             return
         clearing = true
-        const n = Math.min(listView.count, clearAnimMax)
+        // 用总条数而非 listView.count：停在应用列表页时详情列表是空的
+        const n = Math.min(Notification.entries.length, clearAnimMax)
         clearFinish.interval = Size.anim.normal + 50 + Math.max(0, n - 1) * clearStaggerMs
         clearFinish.restart()
     }
@@ -93,7 +185,20 @@ PanelWindow {
         if (!contentActive) {
             Notification.uiActive = false
             Notification.release()
+            // 下次开面板回到应用列表，而不是停在上次进的那个应用
+            currentApp = ""
         }
+    }
+
+    // 进了应用页时，清空键只清该应用；在列表页才是全清
+    function clearScoped() {
+        if (currentApp === "") {
+            clearAllAnimated()
+            return
+        }
+        const ids = idsOfCurrentApp()
+        Notification.dismissMany(ids)
+        backToApps()
     }
 
     Item {
@@ -136,7 +241,11 @@ PanelWindow {
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
-                root.closeWindow()
+                // 在应用页时先退回列表，再按一次才关窗
+                if (root.currentApp !== "")
+                    root.backToApps()
+                else
+                    root.closeWindow()
                 event.accepted = true
             }
         }
@@ -181,11 +290,45 @@ PanelWindow {
                     Layout.fillWidth: true
                     spacing: Size.spacing.sm
 
+                    // 返回：仅在应用页显示，占位宽度随之收掉
+                    Rectangle {
+                        Layout.preferredWidth: root.currentApp === "" ? 0 : 32
+                        Layout.preferredHeight: 32
+                        visible: Layout.preferredWidth > 0
+                        radius: Size.rounding.full
+                        color: backMa.containsMouse
+                            ? Color.withAlpha(Color.primary, 0.18)
+                            : "transparent"
+
+                        Behavior on Layout.preferredWidth {
+                            NumberAnimation {
+                                duration: Size.anim.fast
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf060"
+                            font.family: Size.fontMono
+                            font.pixelSize: Size.fontSize.md
+                            color: Color.text
+                        }
+                        MouseArea {
+                            id: backMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.backToApps()
+                        }
+                    }
+
                     Text {
-                        text: "通知中心"
+                        text: root.currentApp === "" ? "通知中心" : root.currentAppName
                         color: Color.text
                         font.pixelSize: Size.fontSize.lg
                         font.bold: true
+                        elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
 
@@ -235,7 +378,7 @@ PanelWindow {
                             hoverEnabled: true
                             enabled: Notification.hasNotifications && !root.clearing
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: root.clearAllAnimated()
+                            onClicked: root.clearScoped()
                         }
                     }
                     // 关窗：Esc / 点外侧（与 Rightbar 一致，无 X）
@@ -247,14 +390,152 @@ PanelWindow {
                     Layout.fillHeight: true
                     clip: true
 
+                    // 两页横向滑动：左=应用列表，右=某应用的通知。
+                    // 两个 ListView 都常驻，切页只动 x——重建 delegate 会丢滚动位置，
+                    // 而且回收池要重新填充，来回切几次就明显卡。
+                    property real pageShift: root.currentApp === "" ? 0 : -width
+                    Behavior on pageShift {
+                        NumberAnimation {
+                            duration: Size.anim.smooth
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    // ---------- 应用列表页 ----------
                     ListView {
-                        id: listView
-                        anchors.fill: parent
+                        id: appListView
+                        width: parent.width
+                        height: parent.height
+                        x: listSlide.pageShift
                         clip: true
-                        spacing: Size.spacing.sm
-                        model: Notification.entries
+                        spacing: Size.spacing.xs
+                        model: root.appGroups
                         reuseItems: true
                         boundsBehavior: Flickable.StopAtBounds
+                        // 滑出去之后别再吃事件
+                        enabled: root.currentApp === ""
+
+                        delegate: Item {
+                            id: appRow
+                            width: ListView.view ? ListView.view.width : 0
+                            height: root.appRowHeight
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 2
+                                anchors.bottomMargin: 2
+                                radius: Size.rounding.lg
+                                color: appMa.containsMouse
+                                    ? Color.withAlpha(Color.surfaceHighest, 0.7)
+                                    : Color.withAlpha(Color.surfaceHighest, 0.35)
+
+                                Rectangle {
+                                    id: appIconBox
+                                    width: root.rowIconSize
+                                    height: root.rowIconSize
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: Size.spacing.md
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    radius: Size.rounding.md
+                                    color: Color.withAlpha(Color.primary, 0.15)
+                                    clip: true
+
+                                    Image {
+                                        id: appGroupImg
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        source: root.iconSourceFor(modelData.icon)
+                                        fillMode: Image.PreserveAspectFit
+                                        asynchronous: true
+                                        cache: false
+                                        sourceSize.width: root.rowIconSize
+                                        sourceSize.height: root.rowIconSize
+                                        visible: status === Image.Ready
+                                    }
+                                    // 没图标就用应用名首字，比统一的铃铛好认
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: appGroupImg.status !== Image.Ready
+                                        text: (modelData.name || "?").charAt(0).toUpperCase()
+                                        font.family: Size.fontSans
+                                        font.pixelSize: Size.fontSize.lg
+                                        font.bold: true
+                                        color: Color.primary
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: countPill
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Size.spacing.md
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: countLabel.implicitWidth + Size.spacing.md
+                                    height: 24
+                                    radius: Size.rounding.full
+                                    color: Color.withAlpha(Color.primary, 0.20)
+                                    Text {
+                                        id: countLabel
+                                        anchors.centerIn: parent
+                                        text: modelData.count + " 条"
+                                        color: Color.primary
+                                        font.pixelSize: Size.fontSize.xsm
+                                        font.bold: true
+                                    }
+                                }
+
+                                Column {
+                                    anchors.left: appIconBox.right
+                                    anchors.leftMargin: Size.spacing.md
+                                    anchors.right: countPill.left
+                                    anchors.rightMargin: Size.spacing.sm
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 3
+
+                                    Text {
+                                        width: parent.width
+                                        text: modelData.name
+                                        color: Color.text
+                                        font.pixelSize: Size.fontSize.md
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
+                                    }
+                                    Text {
+                                        width: parent.width
+                                        text: modelData.preview
+                                        color: Color.textMuted
+                                        font.pixelSize: Size.fontSize.sm
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
+                                        wrapMode: Text.NoWrap
+                                        height: text.length > 0 ? Math.ceil(font.pixelSize * 1.35) : 0
+                                        visible: text.length > 0
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: appMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.openApp(modelData.key)
+                                }
+                            }
+                        }
+                    }
+
+                    // ---------- 单应用通知页 ----------
+                    ListView {
+                        id: listView
+                        width: parent.width
+                        height: parent.height
+                        x: listSlide.pageShift + parent.width
+                        clip: true
+                        spacing: Size.spacing.sm
+                        model: root.currentAppEntries
+                        reuseItems: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        enabled: root.currentApp !== ""
 
                         // 无空态文案：关窗 release() 会清空 entries，避免闪「没有新通知」
 
@@ -263,13 +544,15 @@ PanelWindow {
                             width: ListView.view ? ListView.view.width : 0
                             clip: true
 
+                            readonly property var entry: modelData
+
                             property bool exiting: false
                             property bool expanded: false
                             // 单条收起要收行高；清空波次只滑不收高（否则 ListView 狂刷布局）
                             property bool shrinking: false
                             // 回收池换数据时高度会瞬变，此刻必须关掉动画
                             property bool animateHeight: false
-                            property int notifId: modelData.notifId
+                            property int notifId: entry.notifId
 
                             // 正文展开后由文本实际高度撑开；至少不低于收起态
                             readonly property int expandedH:
@@ -338,19 +621,7 @@ PanelWindow {
                                 return Math.floor(sec / 86400) + " 天前"
                             }
 
-                            readonly property string iconSrc: {
-                                const p = modelData.imagePath || ""
-                                if (!p)
-                                    return ""
-                                // qsimage 句柄随进程失效；DB/缓存里残留的直接丢掉走 fallback 字标
-                                if (p.indexOf("image://qsimage") === 0)
-                                    return ""
-                                if (p.startsWith("file://") || p.startsWith("image://"))
-                                    return p
-                                if (p.startsWith("/"))
-                                    return "file://" + p
-                                return "image://icon/" + p
-                            }
+                            readonly property string iconSrc: root.iconSourceFor(row.entry.imagePath)
 
                             ListView.onPooled: resetVisual()
                             ListView.onReused: resetVisual()
@@ -395,7 +666,6 @@ PanelWindow {
                             Rectangle {
                                 id: body
                                 width: parent.width
-                                // 跟 row 走：展开时一起长高，收起单条时一起收到 0
                                 height: row.height
                                 radius: Size.rounding.lg
                                 color: rowMa.containsMouse || row.expanded
@@ -506,14 +776,14 @@ PanelWindow {
                                         spacing: Size.spacing.sm
                                         Text {
                                             width: parent.width - timeLabel.width - parent.spacing
-                                            text: modelData.appName || "系统"
+                                            text: row.entry.appName || "系统"
                                             color: Color.textMuted
                                             font.pixelSize: Size.fontSize.xsm
                                             elide: Text.ElideRight
                                         }
                                         Text {
                                             id: timeLabel
-                                            text: row.relativeTime(modelData.receivedAt)
+                                            text: row.relativeTime(row.entry.receivedAt)
                                             color: Color.textMuted
                                             font.pixelSize: Size.fontSize.xsm
                                         }
@@ -521,7 +791,7 @@ PanelWindow {
                                     Text {
                                         id: summaryText
                                         width: parent.width
-                                        text: modelData.summary || "(无标题)"
+                                        text: row.entry.summary || "(无标题)"
                                         color: Color.text
                                         font.pixelSize: Size.fontSize.md
                                         font.bold: true
@@ -532,7 +802,7 @@ PanelWindow {
                                     Text {
                                         id: bodyText
                                         width: parent.width
-                                        text: modelData.body || ""
+                                        text: row.entry.body || ""
                                         color: Color.textMuted
                                         font.pixelSize: Size.fontSize.sm
                                         // 展开态刻意不用 elide：elide 需要先知道 height 才能决定截断量，
