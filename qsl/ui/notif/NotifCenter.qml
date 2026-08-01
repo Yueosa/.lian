@@ -38,7 +38,11 @@ PanelWindow {
     property bool open: false
     property bool clearing: false
     readonly property int panelWidth: 420
-    readonly property int rowHeight: 72
+    // 收起态行高。展开态由正文实际行数决定，见 delegate 的 expandedH。
+    readonly property int rowHeight: 84
+    readonly property int rowIconSize: 44
+    // 展开时正文最多显示多少行；再长就 elide，避免一条通知吃满整个面板
+    readonly property int expandedBodyLines: 12
     readonly property int closedOffset: Math.round(Math.min(640, Screen.height - 48) + 80)
     readonly property bool contentActive: open || anim.slide !== closedOffset
 
@@ -257,25 +261,50 @@ PanelWindow {
                         delegate: Item {
                             id: row
                             width: ListView.view ? ListView.view.width : 0
-                            height: root.rowHeight
                             clip: true
 
                             property bool exiting: false
+                            property bool expanded: false
+                            // 单条收起要收行高；清空波次只滑不收高（否则 ListView 狂刷布局）
+                            property bool shrinking: false
+                            // 回收池换数据时高度会瞬变，此刻必须关掉动画
+                            property bool animateHeight: false
                             property int notifId: modelData.notifId
 
+                            // 正文展开后由文本实际高度撑开；至少不低于收起态
+                            readonly property int expandedH:
+                                Math.max(root.rowHeight,
+                                         textCol.implicitHeight + Size.spacing.md * 2)
+
+                            height: shrinking ? 0 : (expanded ? expandedH : root.rowHeight)
+
                             Behavior on height {
-                                enabled: row.exiting
+                                enabled: row.animateHeight
                                 NumberAnimation {
                                     duration: Size.anim.normal
-                                    easing.type: Easing.InQuad
+                                    easing.type: Easing.OutCubic
                                 }
+                            }
+
+                            // 正文/标题没被截断就没有可展开的内容，不给交互暗示
+                            readonly property bool canExpand:
+                                row.expanded || bodyText.truncated || summaryText.truncated
+
+                            function toggleExpand() {
+                                if (!canExpand)
+                                    return
+                                animateHeight = true
+                                expanded = !expanded
                             }
 
                             function resetVisual() {
                                 exitAnim.stop()
                                 exitDelay.stop()
+                                // 先关动画再改状态，避免复用时从上一条的高度插值过来
+                                animateHeight = false
                                 exiting = false
-                                height = root.rowHeight
+                                shrinking = false
+                                expanded = false
                                 body.x = 0
                                 body.opacity = 1
                             }
@@ -288,8 +317,10 @@ PanelWindow {
                                 if (root.clearing && thenDismiss)
                                     return
                                 exiting = true
-                                if (thenDismiss)
-                                    height = 0
+                                if (thenDismiss) {
+                                    animateHeight = true
+                                    shrinking = true
+                                }
                                 exitAnim.thenDismiss = !!thenDismiss
                                 exitAnim.start()
                             }
@@ -364,9 +395,10 @@ PanelWindow {
                             Rectangle {
                                 id: body
                                 width: parent.width
-                                height: root.rowHeight
+                                // 跟 row 走：展开时一起长高，收起单条时一起收到 0
+                                height: row.height
                                 radius: Size.rounding.lg
-                                color: rowMa.containsMouse
+                                color: rowMa.containsMouse || row.expanded
                                     ? Color.withAlpha(Color.surfaceHighest, 0.7)
                                     : Color.withAlpha(Color.surfaceHighest, 0.35)
 
@@ -375,11 +407,14 @@ PanelWindow {
 
                                 Rectangle {
                                     id: iconBox
-                                    width: 40
-                                    height: 40
+                                    width: root.rowIconSize
+                                    height: root.rowIconSize
                                     anchors.left: parent.left
                                     anchors.leftMargin: body.pad
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    // 展开后卡片可能很高，图标浮在正中间会很怪，改为贴顶
+                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
+                                    anchors.top: row.expanded ? parent.top : undefined
+                                    anchors.topMargin: Size.spacing.md
                                     radius: Size.rounding.md
                                     color: Color.withAlpha(Color.primary, 0.15)
                                     clip: true
@@ -392,8 +427,8 @@ PanelWindow {
                                         fillMode: Image.PreserveAspectFit
                                         asynchronous: true
                                         cache: false
-                                        sourceSize.width: 40
-                                        sourceSize.height: 40
+                                        sourceSize.width: root.rowIconSize
+                                        sourceSize.height: root.rowIconSize
                                         visible: status === Image.Ready
                                     }
                                     Text {
@@ -406,22 +441,52 @@ PanelWindow {
                                     }
                                 }
 
-                                Text {
-                                    id: closeBtn
+                                // 右侧动作区：展开指示 + 关闭。整块跟着图标一起贴顶，
+                                // 否则展开后关闭按钮会掉到卡片正中间。
+                                Row {
+                                    id: actions
                                     anchors.right: parent.right
                                     anchors.rightMargin: body.pad
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\uf00d"
-                                    font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.sm
-                                    color: Color.textMuted
-                                    opacity: root.clearing ? 0.3 : 1
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        anchors.margins: -8
-                                        enabled: !row.exiting && !root.clearing
-                                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                        onClicked: row.beginExit(true)
+                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
+                                    anchors.top: row.expanded ? parent.top : undefined
+                                    anchors.topMargin: Size.spacing.md
+                                    spacing: Size.spacing.sm
+
+                                    Text {
+                                        id: expandBtn
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "\uf078"
+                                        font.family: Size.fontMono
+                                        font.pixelSize: Size.fontSize.xsm
+                                        color: Color.textMuted
+                                        // 必须用 opacity 而非 visible：Row 的隐式宽度会跳过不可见子项，
+                                        // 一旦 visible 绑到 canExpand 就成环——
+                                        // actions.width → textCol.width → bodyText.truncated → canExpand。
+                                        opacity: row.canExpand && !root.clearing ? 1 : 0
+                                        rotation: row.expanded ? 180 : 0
+                                        Behavior on rotation {
+                                            NumberAnimation {
+                                                duration: Size.anim.normal
+                                                easing.type: Easing.OutCubic
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        id: closeBtn
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "\uf00d"
+                                        font.family: Size.fontMono
+                                        font.pixelSize: Size.fontSize.sm
+                                        color: Color.textMuted
+                                        opacity: root.clearing ? 0.3 : 1
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            anchors.margins: -8
+                                            enabled: !row.exiting && !root.clearing
+                                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                            onClicked: row.beginExit(true)
+                                        }
                                     }
                                 }
 
@@ -429,9 +494,11 @@ PanelWindow {
                                     id: textCol
                                     anchors.left: iconBox.right
                                     anchors.leftMargin: Size.spacing.md
-                                    anchors.right: closeBtn.left
+                                    anchors.right: actions.left
                                     anchors.rightMargin: Size.spacing.sm
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
+                                    anchors.top: row.expanded ? parent.top : undefined
+                                    anchors.topMargin: Size.spacing.md
                                     spacing: 2
 
                                     Row {
@@ -452,25 +519,34 @@ PanelWindow {
                                         }
                                     }
                                     Text {
+                                        id: summaryText
                                         width: parent.width
                                         text: modelData.summary || "(无标题)"
                                         color: Color.text
                                         font.pixelSize: Size.fontSize.md
                                         font.bold: true
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
+                                        elide: row.expanded ? Text.ElideNone : Text.ElideRight
+                                        wrapMode: row.expanded ? Text.Wrap : Text.NoWrap
+                                        maximumLineCount: row.expanded ? 3 : 1
                                     }
                                     Text {
+                                        id: bodyText
                                         width: parent.width
                                         text: modelData.body || ""
                                         color: Color.textMuted
                                         font.pixelSize: Size.fontSize.sm
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
-                                        wrapMode: Text.NoWrap
+                                        // 展开态刻意不用 elide：elide 需要先知道 height 才能决定截断量，
+                                        // 而这里 height 又绑到 implicitHeight，两者会互相拉成环。
+                                        // 收起态 height 是常量，用 elide 安全。
+                                        elide: row.expanded ? Text.ElideNone : Text.ElideRight
+                                        wrapMode: row.expanded ? Text.Wrap : Text.NoWrap
+                                        maximumLineCount: row.expanded ? root.expandedBodyLines : 1
                                         // 单行高度用字号推算，避开 height↔implicitHeight 环
-                                        //（elide 时 Text 的 implicitHeight 会跟 height 互相拉）
-                                        height: text.length > 0 ? Math.ceil(font.pixelSize * 1.35) : 0
+                                        height: text.length === 0
+                                            ? 0
+                                            : (row.expanded
+                                               ? Math.ceil(implicitHeight)
+                                               : Math.ceil(font.pixelSize * 1.35))
                                         visible: text.length > 0
                                     }
                                 }
@@ -479,7 +555,11 @@ PanelWindow {
                                     id: rowMa
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    acceptedButtons: Qt.NoButton
+                                    // 整卡点击折叠；z:-1 让关闭按钮优先拿到事件
+                                    acceptedButtons: Qt.LeftButton
+                                    cursorShape: row.canExpand ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: !row.exiting && !root.clearing
+                                    onClicked: row.toggleExpand()
                                     z: -1
                                 }
                             }
