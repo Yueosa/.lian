@@ -65,6 +65,16 @@ Singleton {
     property real load1: 0
     property real load5: 0
     property real load15: 0
+
+    // PSI：过去 10 秒被「卡住」的时间占比，0–100。
+    // 比 loadavg 直观得多——不必除以核心数，也分得清是谁在卡。
+    property bool psiAvailable: false
+    property real psiCpu: 0
+    property real psiIo: 0
+    property real psiMem: 0
+    // full = 所有任务都被阻塞。CPU 无此概念（内核恒报 0），故只留 io / mem。
+    property real psiIoFull: 0
+    property real psiMemFull: 0
     property real diskPercent: 0
     property real diskUsedGB: 0
     property real diskTotalGB: 0
@@ -74,6 +84,66 @@ Singleton {
 
     // 原始列表；筛选/排序留给 UI，避免服务层绑死视图状态
     property var processes: []
+
+    // ---- 迷你曲线用的历史 ----
+    // 定长环形，满了从头丢，不会随运行时间增长。
+    // 60 个采样点：摘要档 3s/次约 3 分钟，详情档 1s/次约 1 分钟。
+    readonly property int historyLen: 60
+    property var cpuHistory: []
+    property var memHistory: []
+    property var gpuHistory: []
+    property var netDownHistory: []
+    property var netUpHistory: []
+    // PSI 平时恒为 0，只有卡顿瞬间才跳一下——不留历史等于什么都看不到
+    property var psiCpuHistory: []
+    property var psiIoHistory: []
+    property var psiMemHistory: []
+
+    function _peakOf(arr) {
+        let m = 0
+        for (let i = 0; i < arr.length; i++)
+            if (arr[i] > m) m = arr[i]
+        return m
+    }
+    readonly property real psiCpuPeak: _peakOf(psiCpuHistory)
+    readonly property real psiIoPeak: _peakOf(psiIoHistory)
+    readonly property real psiMemPeak: _peakOf(psiMemHistory)
+    // 网速纵轴按近期峰值自适应，这里顺带算出来供 UI 直接用
+    readonly property real netPeak: {
+        let m = 0
+        const a = root.netDownHistory
+        const b = root.netUpHistory
+        for (let i = 0; i < a.length; i++)
+            if (a[i] > m) m = a[i]
+        for (let i = 0; i < b.length; i++)
+            if (b[i] > m) m = b[i]
+        return m
+    }
+
+    property real _lastHistoryMs: 0
+
+    function _push(arr, v) {
+        // 超长时从头切一位，等价环形但省一个游标；60 元素的拷贝可忽略
+        const next = arr.length >= root.historyLen ? arr.slice(1) : arr.slice(0)
+        next.push(Number(v) || 0)
+        return next
+    }
+
+    // FileView 偶尔会对一次写入触发两次 loaded，重复点会让曲线出现假台阶
+    function _recordHistory() {
+        const now = Date.now()
+        if (now - root._lastHistoryMs < 500)
+            return
+        root._lastHistoryMs = now
+        cpuHistory = _push(cpuHistory, root.cpuPercent)
+        memHistory = _push(memHistory, root.ramPercent)
+        gpuHistory = _push(gpuHistory, root.gpuPercent)
+        netDownHistory = _push(netDownHistory, root.netDownBps)
+        netUpHistory = _push(netUpHistory, root.netUpBps)
+        psiCpuHistory = _push(psiCpuHistory, root.psiCpu)
+        psiIoHistory = _push(psiIoHistory, root.psiIo)
+        psiMemHistory = _push(psiMemHistory, root.psiMem)
+    }
 
     function setDetailActive(active) {
         detailActive = !!active
@@ -191,6 +261,12 @@ Singleton {
         load1 = Number(ld.load1) || 0
         load5 = Number(ld.load5) || 0
         load15 = Number(ld.load15) || 0
+        psiAvailable = !!ld.psi_available
+        psiCpu = Number(ld.psi_cpu) || 0
+        psiIo = Number(ld.psi_io) || 0
+        psiMem = Number(ld.psi_mem) || 0
+        psiIoFull = Number(ld.psi_io_full) || 0
+        psiMemFull = Number(ld.psi_mem_full) || 0
         const disk = data.disk || {}
         diskPercent = Number(disk.percent) || 0
         diskUsedGB = Number(disk.used_gb) || 0
@@ -198,6 +274,7 @@ Singleton {
         uptimeSecs = Number(data.uptime_secs) || 0
         ready = true
         daemonOk = true
+        _recordHistory()
     }
 
     function applyProcesses(data) {

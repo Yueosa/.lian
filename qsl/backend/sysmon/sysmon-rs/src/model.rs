@@ -56,6 +56,16 @@ pub struct Load {
     pub load1: f64,
     pub load5: f64,
     pub load15: f64,
+    /// PSI（/proc/pressure）过去 10 秒的失速时间占比，0–100。
+    /// 比 loadavg 好读：不必除以核心数，而且分得清是 CPU 抢占还是 IO / 内存回收在卡。
+    /// some = 至少一个任务被阻塞；full = 所有任务都被阻塞（真卡了）。
+    pub psi_cpu: f64,
+    pub psi_io: f64,
+    pub psi_mem: f64,
+    pub psi_io_full: f64,
+    pub psi_mem_full: f64,
+    /// 内核没开 CONFIG_PSI 时为 false，UI 据此回退到 loadavg
+    pub psi_available: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]

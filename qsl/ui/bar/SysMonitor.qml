@@ -1,10 +1,12 @@
 // SysMonitor — 栏上硬件摘要
-// 默认只显示 RAM；hover 展开 CPU% + GPU%
+// 收起：RAM 数值 + 内存趋势线；hover 展开：RAM + CPU% + GPU% 数值，趋势线让位
 // 性能：复用 Sysmon 摘要 watch，无自建 Timer/Process
+//       唯一一条 Sparkline 跟摘要档 3s 一次的采样重绘，常驻开销约等于一张 30×14 的小贴图
 
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -59,6 +61,20 @@ Item {
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.sm
+            }
+            // 只在收起时画：曲线是余光扫一眼的趋势，
+            // hover 展开是为了读准确数字，两者挤在一起反而都看不清
+            Sparkline {
+                Layout.preferredWidth: 30
+                Layout.preferredHeight: 14
+                Layout.alignment: Qt.AlignVCenter
+                visible: !root.isHovered && Sysmon.memHistory.length > 1
+                values: Sysmon.memHistory
+                maxValue: 100
+                lineColor: Color.secondary
+                lineWidth: 1.2
+                // 栏上只有 14px 高，内存又长期平稳，带填充会糊成一个方块
+                fillArea: false
             }
         }
 

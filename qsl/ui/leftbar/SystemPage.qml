@@ -127,6 +127,8 @@ Item {
         property color accent2: Color.withAlpha(Color.primary, 0.28)
         property bool dual: false
         property bool show: true
+        // 趋势曲线：给了数据才画，纵轴固定 0–100（这几项都是百分比）
+        property var history: []
 
         visible: show
         Layout.fillWidth: true
@@ -224,6 +226,22 @@ Item {
                     font.pixelSize: Size.fontSize.sm
                     elide: Text.ElideRight
                 }
+            }
+
+            // 暗底由 Sparkline 自己画：内存胶囊的进度条会一路铺到最右，
+            // 曲线画在浅色填充上会糊掉，垫一层才有稳定对比度。
+            // 圆角也交给它——外层套 Rectangle 的话，Item.clip 只裁矩形，
+            // 填充区的下面两个角会溢出到圆角外面。
+            Sparkline {
+                Layout.preferredWidth: 68
+                Layout.preferredHeight: 30
+                Layout.alignment: Qt.AlignVCenter
+                visible: cap.history.length > 1
+                values: cap.history
+                maxValue: 100
+                lineColor: cap.accent
+                cornerRadius: Size.rounding.sm
+                backgroundColor: Color.withAlpha(Color.background, 0.45)
             }
         }
     }
@@ -331,6 +349,7 @@ Item {
                     : "占用"
                 fraction: Sysmon.cpuPercent / 100
                 accent: Sysmon.cpuTemp > 85 ? Color.error : root.cpuColor
+                history: Sysmon.cpuHistory
             }
             FillCapsule {
                 show: Sysmon.gpuAvailable
@@ -342,6 +361,7 @@ Item {
                     : "占用"
                 fraction: Sysmon.gpuPercent / 100
                 accent: Sysmon.gpuTemp > 85 ? Color.error : Color.secondary
+                history: Sysmon.gpuHistory
             }
             FillCapsule {
                 title: "内存"
@@ -355,40 +375,240 @@ Item {
                 fraction2: Sysmon.ramTotalGB > 0 ? (Sysmon.ramCacheGB / Sysmon.ramTotalGB) : 0
                 accent: root.memColor
                 accent2: Color.withAlpha(root.memColor, 0.22)
+                history: Sysmon.memHistory
             }
         }
 
-        // 中：Swap / Net / Load / Uptime — 2×2
-        GridLayout {
+        // 中：网络双曲线 + 压力 + Swap/Uptime
+        ColumnLayout {
             Layout.fillWidth: true
-            columns: 2
-            rowSpacing: Size.spacing.sm
-            columnSpacing: Size.spacing.sm
+            spacing: Size.spacing.sm
 
-            InfoCapsule {
-                title: "Swap"
-                value: Sysmon.swapTotalGB > 0.01
-                    ? (Sysmon.swapUsedGB.toFixed(1) + "/" + Sysmon.swapTotalGB.toFixed(1))
-                    : "—"
-            }
-            InfoCapsule {
-                // 只显示较快的一侧，避免两行速率挤成 …
-                title: "网络"
-                value: {
-                    const down = Sysmon.netDownBps
-                    const up = Sysmon.netUpBps
-                    if (up > down)
-                        return "↑ " + Sysmon.formatBytes(up)
-                    return "↓ " + Sysmon.formatBytes(down)
+            // 网络：上下行各一条，共用同一纵轴（按近期峰值自适应），
+            // 否则两条各自归一化，视觉上会把 1 K/s 画得和 10 M/s 一样高。
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 78
+                radius: Size.rounding.lg
+                color: Color.surfaceHigh
+                border.width: Style.border.width
+                border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+                clip: true
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Size.spacing.md
+                    anchors.rightMargin: Size.spacing.md
+                    anchors.topMargin: Size.spacing.sm
+                    anchors.bottomMargin: Size.spacing.sm
+                    spacing: 2
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Size.spacing.sm
+
+                        Text {
+                            text: "网络"
+                            color: Color.textMuted
+                            font.pixelSize: Size.fontSize.sm
+                        }
+                        Text {
+                            text: Sysmon.netIface
+                            color: Color.withAlpha(Color.textMuted, 0.7)
+                            font.pixelSize: Size.fontSize.xsm
+                            elide: Text.ElideRight
+                        }
+                        Item { Layout.fillWidth: true }
+                        // 纵轴量程放在标题行，压在曲线上会被尖峰撞到
+                        Text {
+                            text: Sysmon.netPeak > 0
+                                ? ("峰值 " + Sysmon.formatBytes(Sysmon.netPeak))
+                                : ""
+                            color: Color.withAlpha(Color.textMuted, 0.6)
+                            font.pixelSize: Size.fontSize.xsm
+                        }
+                        Text {
+                            text: "↓ " + Sysmon.formatBytes(Sysmon.netDownBps)
+                            color: root.cpuColor
+                            font.pixelSize: Size.fontSize.sm
+                            font.bold: true
+                            font.family: Size.fontMono
+                        }
+                        Text {
+                            text: "↑ " + Sysmon.formatBytes(Sysmon.netUpBps)
+                            color: Color.tertiary
+                            font.pixelSize: Size.fontSize.sm
+                            font.bold: true
+                            font.family: Size.fontMono
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        Sparkline {
+                            anchors.fill: parent
+                            values: Sysmon.netDownHistory
+                            overrideMax: Sysmon.netPeak
+                            lineColor: root.cpuColor
+                        }
+                        Sparkline {
+                            anchors.fill: parent
+                            values: Sysmon.netUpHistory
+                            overrideMax: Sysmon.netPeak
+                            lineColor: Color.tertiary
+                            fillOpacity: 0.10
+                        }
+                    }
                 }
             }
-            InfoCapsule {
-                title: "Load"
-                value: Sysmon.load1.toFixed(2)
+
+            // 压力（PSI）取代 Load：0–100 的百分比，直接读作
+            // 「过去 10 秒有多少时间被卡住」，且 CPU / IO / 内存分得清。
+            //
+            // 健康系统上这三个数几乎恒为 0——这正是它有用的地方，但光看
+            // 一个 0.0 等于没有。所以每项都配一条历史曲线（自适应量程，
+            // minSpan 兜底避免把 0.02 的噪声放大成大波浪），
+            // 并在近期出现过明显尖峰时才把峰值数字显示出来。
+            Rectangle {
+                id: psiCard
+
+                // 三项里最坏的近期峰值。用峰值而非当前值做展开条件：
+                // 卡顿过去后详情还会多留一会儿（直到尖峰滑出 60 点环形缓冲），
+                // 否则等你低头看时它已经收回去了。
+                readonly property real worstPeak: Math.max(
+                    Sysmon.psiCpuPeak, Sysmon.psiIoPeak, Sysmon.psiMemPeak)
+                // 1% 即「10 秒里有 100ms 被卡住」，低于此不值得占一整行
+                readonly property bool expanded:
+                    Sysmon.psiAvailable && worstPeak >= 1
+                readonly property color severity:
+                    worstPeak >= 10 ? Color.error : Color.primary
+
+                Layout.fillWidth: true
+                // 空闲时收成窄条：三个 0.0 加三条平线不值一整行
+                Layout.preferredHeight: (expanded || !Sysmon.psiAvailable) ? 54 : 34
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                }
+
+                radius: Size.rounding.lg
+                color: Color.surfaceHigh
+                border.width: Style.border.width
+                border.color: psiCard.expanded
+                    ? Color.withAlpha(psiCard.severity, 0.45)
+                    : Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Size.spacing.md
+                    anchors.rightMargin: Size.spacing.md
+                    spacing: Size.spacing.sm
+
+                    Text {
+                        text: Sysmon.psiAvailable ? "PSI" : "Load"
+                        color: psiCard.expanded ? psiCard.severity : Color.textMuted
+                        font.pixelSize: Size.fontSize.sm
+                    }
+                    Item { Layout.fillWidth: true }
+
+                    // 空闲态只留一句话——异常时它消失、三栏顶上来，变化本身就是信号
+                    Text {
+                        visible: Sysmon.psiAvailable && !psiCard.expanded
+                        text: "无阻塞"
+                        color: Color.withAlpha(Color.textMuted, 0.75)
+                        font.pixelSize: Size.fontSize.sm
+                    }
+
+                    // 内核没开 PSI 就退回 loadavg
+                    Text {
+                        visible: !Sysmon.psiAvailable
+                        text: Sysmon.load1.toFixed(2)
+                        color: Color.text
+                        font.pixelSize: Size.fontSize.md
+                        font.bold: true
+                        font.family: Size.fontMono
+                    }
+
+                    Repeater {
+                        // 收起时 model 置空，三个 Canvas 直接不存在。
+                        // 只把它们设成 invisible 的话，数据每到一次仍会走一遍
+                        // requestPaint，白烧 CPU。
+                        model: psiCard.expanded ? [
+                            {
+                                label: "CPU", v: Sysmon.psiCpu, c: root.cpuColor,
+                                hist: Sysmon.psiCpuHistory, peak: Sysmon.psiCpuPeak
+                            },
+                            {
+                                label: "IO", v: Sysmon.psiIo, c: Color.tertiary,
+                                hist: Sysmon.psiIoHistory, peak: Sysmon.psiIoPeak
+                            },
+                            {
+                                label: "内存", v: Sysmon.psiMem, c: root.memColor,
+                                hist: Sysmon.psiMemHistory, peak: Sysmon.psiMemPeak
+                            }
+                        ] : []
+
+                        RowLayout {
+                            required property var modelData
+                            spacing: 4
+
+                            Text {
+                                text: modelData.label
+                                color: Color.withAlpha(Color.textMuted, 0.8)
+                                font.pixelSize: Size.fontSize.xsm
+                            }
+                            Sparkline {
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 18
+                                Layout.alignment: Qt.AlignVCenter
+                                visible: modelData.hist.length > 1
+                                values: modelData.hist
+                                // 自适应量程：PSI 常年贴 0，固定 0–100 会画成一条死线
+                                maxValue: 0
+                                minSpan: 5
+                                lineColor: modelData.peak >= 10 ? Color.error : modelData.c
+                                lineWidth: 1.2
+                                cornerRadius: Size.rounding.sm
+                                backgroundColor: Color.withAlpha(Color.background, 0.45)
+                            }
+                            Text {
+                                // 超过 10% 说明真的在卡，标红
+                                text: modelData.v.toFixed(1)
+                                color: modelData.v >= 10 ? Color.error : modelData.c
+                                font.pixelSize: Size.fontSize.md
+                                font.bold: true
+                                font.family: Size.fontMono
+                            }
+                            Text {
+                                // 当前已回落但近期卡过——这才是最该看见的信息
+                                visible: modelData.peak >= 1
+                                    && modelData.peak > modelData.v + 0.5
+                                text: "峰" + modelData.peak.toFixed(1)
+                                color: Color.withAlpha(Color.textMuted, 0.75)
+                                font.pixelSize: Size.fontSize.xsm
+                                font.family: Size.fontMono
+                            }
+                        }
+                    }
+                }
             }
-            InfoCapsule {
-                title: "Uptime"
-                value: Sysmon.uptimeText
+
+            GridLayout {
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: Size.spacing.sm
+
+                InfoCapsule {
+                    title: "Swap"
+                    value: Sysmon.swapTotalGB > 0.01
+                        ? (Sysmon.swapUsedGB.toFixed(1) + "/" + Sysmon.swapTotalGB.toFixed(1))
+                        : "—"
+                }
+                InfoCapsule {
+                    title: "Uptime"
+                    value: Sysmon.uptimeText
+                }
             }
         }
 
