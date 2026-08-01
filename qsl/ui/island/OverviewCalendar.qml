@@ -29,24 +29,23 @@ Rectangle {
     readonly property string monthLabel: {
         if (centerMonth < 1 || centerMonth > 12)
             return "—"
-        return monthNames[centerMonth - 1] + "  ·  " + centerYear
+        return monthNames[centerMonth - 1]
     }
 
-    readonly property int gridH: Math.max(1, gridClip.height)
+    // 翻页横向滑：箭头是 < >，动画却上下走，看的人会觉得点错了
+    readonly property int slideSpan: Math.max(1, gridClip.width)
 
-    function cellBackground(day) {
-        if (!day)
+    // 高亮改画居中圆：整格铺底会让六行七列糊成一片色块，
+    // 圆点只占格子的一部分，留白本身成为节奏。
+    function cellCircle(day) {
+        if (!day || !day.inMonth)
             return "transparent"
         if (day.isToday)
             return Color.primary
         if (day.isWorkday)
-            return Color.withAlpha(Color.secondary, 0.20)
+            return Color.withAlpha(Color.secondary, 0.22)
         if (day.isHoliday)
             return Color.withAlpha(Color.tertiary, 0.22)
-        if (day.label && day.label.length > 0 && day.inMonth)
-            return Color.withAlpha(Color.primary, 0.12)
-        if (day.inMonth && day.isWeekend)
-            return Color.withAlpha(Color.error, 0.08)
         return "transparent"
     }
 
@@ -56,7 +55,7 @@ Rectangle {
         if (day.isToday)
             return Color.textOnPrimary
         if (!day.inMonth)
-            return Color.withAlpha(Color.textMuted, 0.45)
+            return Color.withAlpha(Color.textMuted, 0.35)
         if (day.isWorkday)
             return Color.secondary
         if (day.isHoliday)
@@ -66,29 +65,93 @@ Rectangle {
         return Color.textOnBackground
     }
 
-    function shortLabel(day) {
-        if (!day || !day.label)
+    // 节气 / 节日用空心圆标记。数字改主色行不通——主色和周末的红太近，
+    // 「有节日」会被读成「是周末」。描边复用格子里那个圆，不增加元素。
+    function cellOutline(day) {
+        if (!day || !day.inMonth || day.isToday)
+            return 0
+        if (day.isHoliday || day.isWorkday)
+            return 0
+        return (day.label && day.label.length > 0) ? 1 : 0
+    }
+
+    // 右上角角标。假期标「假」、调休标「班」，颜色与格子圆一致
+    function cornerBadge(day) {
+        if (!day || !day.inMonth)
             return ""
         if (day.isWorkday)
             return "班"
-        return String(day.label)
+        if (day.isHoliday)
+            return "假"
+        return ""
+    }
+
+    function badgeColor(day) {
+        if (!day)
+            return "transparent"
+        if (day.isToday)
+            return Color.textOnPrimary
+        if (day.isWorkday)
+            return Color.secondary
+        return Color.tertiary
+    }
+
+    readonly property bool onCurrentMonth: {
+        const d = Time.rawDate
+        if (!d || centerYear <= 0)
+            return true
+        return d.getFullYear() === centerYear && (d.getMonth() + 1) === centerMonth
+    }
+
+    // 圆形翻页钮，呼应格子里的圆
+    component NavButton: Rectangle {
+        id: nav
+        property string glyph: ""
+        signal tapped
+
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
+        radius: width / 2
+        color: navMa.containsMouse ? Color.withAlpha(Color.primary, 0.18) : Color.surfaceHighest
+        opacity: root.animating ? 0.5 : 1
+        Behavior on color { ColorAnimation { duration: 140 } }
+
+        // 填满整个圆再居中，而不是让 Text 的紧包围盒去居中——
+        // 字形本身的左右边距不对称，包围盒居中看着就是偏的
+        Text {
+            anchors.fill: parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            text: nav.glyph
+            color: Color.primary
+            font.family: Size.fontMono
+            font.pixelSize: Size.fontSize.md
+        }
+        MouseArea {
+            id: navMa
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: !root.animating
+            cursorShape: Qt.PointingHandCursor
+            onClicked: nav.tapped()
+        }
     }
 
     function panelAt(i) {
         return order.length === 3 ? order[i] : null
     }
 
-    function layoutPanels(offsetY) {
-        const h = gridH
-        const o = offsetY || 0
+    function layoutPanels(offsetX) {
+        const w = slideSpan
+        const o = offsetX || 0
         const left = panelAt(0)
         const mid = panelAt(1)
         const right = panelAt(2)
         if (!left || !mid || !right)
             return
-        left.y = -h + o
-        mid.y = 0 + o
-        right.y = h + o
+        left.x = -w + o
+        mid.x = 0 + o
+        right.x = w + o
     }
 
     function fillPanel(panel, year, month) {
@@ -138,12 +201,12 @@ Rectangle {
     onSlideOffsetChanged: layoutPanels(slideOffset)
 
     function navigate(dir) {
-        if (root.animating || gridH <= 1)
+        if (root.animating || slideSpan <= 1)
             return false
         root.animating = true
         root.chainDir = dir
         _slideFrom = slideOffset
-        _slideTo = dir > 0 ? -gridH : gridH
+        _slideTo = dir > 0 ? -slideSpan : slideSpan
         slideAnim.from = _slideFrom
         slideAnim.to = _slideTo
         slideAnim.duration = root.chainLeft > 0 ? 180 : 260
@@ -160,12 +223,12 @@ Rectangle {
             return
 
         if (dir > 0) {
-            // 向上滚：right 成为新 mid；旧 left 去右边接再下一月
+            // 向左滚：right 成为新 mid；旧 left 去右边接再下一月
             order = [mid, right, left]
             const next = Calendar.shiftMonth(right.year, right.month, 1)
             fillPanel(left, next.year, next.month)
         } else {
-            // 向下滚：left 成为新 mid；旧 right 去左边接再上一月
+            // 向右滚：left 成为新 mid；旧 right 去左边接再上一月
             order = [right, left, mid]
             const prev = Calendar.shiftMonth(left.year, left.month, -1)
             fillPanel(right, prev.year, prev.month)
@@ -183,7 +246,7 @@ Rectangle {
         if (root.chainLeft > 1) {
             root.chainLeft -= 1
             slideAnim.from = 0
-            slideAnim.to = root.chainDir > 0 ? -gridH : gridH
+            slideAnim.to = root.chainDir > 0 ? -slideSpan : slideSpan
             slideAnim.duration = 170
             slideAnim.start()
             return
@@ -249,37 +312,72 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
+                    // 节日名优先，没有就退回农历。每格都有第二行，
+                    // 数字的位置才是恒定的，不会因为有没有节日而跳动
+                    readonly property string festival:
+                        (cell.dayData.inMonth && cell.dayData.label && !cell.dayData.isWorkday)
+                        ? String(cell.dayData.label) : ""
+                    readonly property string subText:
+                        cell.festival.length > 0 ? cell.festival : (cell.dayData.lunar || "")
+
+                    // 圆的直径取格子短边的八成，格子再怎么被拉伸都不会变椭圆
+                    readonly property real dotSize: Math.min(width, height) * 0.86
+
                     Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        radius: Size.rounding.sm
-                        color: root.cellBackground(cell.dayData)
+                        anchors.centerIn: parent
+                        width: cell.dotSize
+                        height: cell.dotSize
+                        radius: width / 2
+                        color: root.cellCircle(cell.dayData)
+                        border.width: root.cellOutline(cell.dayData)
+                        border.color: Color.withAlpha(Color.primary, 0.5)
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: root.shortLabel(cell.dayData).length > 0 ? -7 : 0
+                        anchors.verticalCenterOffset: -7
                         text: String(cell.dayData.day)
                         color: root.dayColor(cell.dayData)
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.lg
-                        font.bold: cell.dayData.isToday || cell.dayData.isHoliday || cell.dayData.isWeekend
+                        font.bold: cell.dayData.isToday || cell.dayData.isHoliday
                     }
 
                     Text {
+                        visible: cell.subText.length > 0
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 4
-                        width: parent.width - 6
-                        visible: root.shortLabel(cell.dayData).length > 0 && cell.dayData.inMonth
-                        text: root.shortLabel(cell.dayData)
-                        color: cell.dayData.isToday ? Color.textOnPrimary : root.dayColor(cell.dayData)
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: 9
+                        width: cell.dotSize
+                        text: cell.subText
+                        color: {
+                            if (cell.dayData.isToday)
+                                return Color.textOnPrimary
+                            if (!cell.dayData.inMonth)
+                                return Color.withAlpha(Color.textMuted, 0.3)
+                            // 节日用强调色把自己从一片农历小字里拎出来
+                            return cell.festival.length > 0
+                                ? Color.tertiary
+                                : Color.withAlpha(Color.textMuted, 0.75)
+                        }
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: 9
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
-                        opacity: 0.9
+                    }
+
+                    // 角标压在圆的右上，不与数字抢中心
+                    Text {
+                        readonly property string badge: root.cornerBadge(cell.dayData)
+                        visible: badge.length > 0
+                        text: badge
+                        x: parent.width / 2 + cell.dotSize * 0.26
+                        y: parent.height / 2 - cell.dotSize * 0.54
+                        color: root.badgeColor(cell.dayData)
+                        font.family: Size.fontSans
+                        font.pixelSize: 9
+                        font.bold: true
                     }
                 }
             }
@@ -295,74 +393,52 @@ Rectangle {
             Layout.fillWidth: true
             spacing: Size.spacing.sm
 
-            Rectangle {
+            // 月份不再套药丸底：标题本来就是标题，给它加个色块只是噪声
+            Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                radius: Size.rounding.lg
-                color: Color.surfaceHighest
+                Layout.preferredHeight: 44
 
-                Text {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    verticalAlignment: Text.AlignVCenter
-                    text: root.monthLabel
-                    color: Color.textOnBackground
-                    font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xl
-                    font.bold: true
-                    elide: Text.ElideRight
-                }
+                Row {
+                    id: titleRow
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.goToday()
-                }
-            }
-
-            Rectangle {
-                Layout.preferredWidth: 44
-                Layout.preferredHeight: 48
-                radius: Size.rounding.lg
-                color: Color.surfaceHighest
-                opacity: root.animating ? 0.5 : 1
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf053"
-                    color: Color.primary
-                    font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.lg
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: !root.animating
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.navigate(-1)
+                    // 大的那个定基线，小的来对齐。反过来会把 26px 的月份
+                    // 吊到 14px 年份的基线上，整块字就浮起来了
+                    Text {
+                        id: monthText
+                        text: root.monthLabel
+                        color: Color.textOnBackground
+                        font.family: Size.fontSans
+                        font.pixelSize: 24
+                        font.bold: true
+                    }
+                    Text {
+                        anchors.baseline: monthText.baseline
+                        text: root.centerYear > 0 ? String(root.centerYear) : ""
+                        color: Color.textMuted
+                        font.family: Size.fontMono
+                        font.pixelSize: Size.fontSize.md
+                    }
                 }
             }
 
-            Rectangle {
-                Layout.preferredWidth: 44
-                Layout.preferredHeight: 48
-                radius: Size.rounding.lg
-                color: Color.surfaceHighest
-                opacity: root.animating ? 0.5 : 1
+            // 只在离开当月时出现：平时它是废话，跨月时它是唯一的回程票
+            NavButton {
+                visible: !root.onCurrentMonth
+                glyph: "\uf192"
+                onTapped: root.goToday()
+            }
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf054"
-                    color: Color.primary
-                    font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.lg
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: !root.animating
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.navigate(1)
-                }
+            NavButton {
+                glyph: "\uf053"
+                onTapped: root.navigate(-1)
+            }
+
+            NavButton {
+                glyph: "\uf054"
+                onTapped: root.navigate(1)
             }
         }
 
@@ -410,15 +486,64 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
 
-            onWidthChanged: layoutPanels(slideOffset)
-            onHeightChanged: {
-                if (height > 0)
+            onWidthChanged: {
+                if (width > 0)
                     layoutPanels(slideOffset)
             }
+            onHeightChanged: layoutPanels(slideOffset)
 
             MonthPanel { id: panelA }
             MonthPanel { id: panelB }
             MonthPanel { id: panelC }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: Color.surfaceHighest
+        }
+
+        // 今日条：格子里塞不下的完整信息落在这儿。假期倒数是纯派生值，
+        // 数据加载完算一次就静止，没有 Timer
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 34
+
+            Text {
+                id: todayLine
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                text: {
+                    const t = Time.rawDate
+                    if (!t)
+                        return ""
+                    const wd = ["日", "一", "二", "三", "四", "五", "六"][t.getDay()]
+                    const l = Calendar.todayLunar
+                    return Qt.formatDateTime(t, "M 月 d 日") + " 周" + wd
+                        + (l.length > 0 ? "  " + l : "")
+                }
+                color: Color.text
+                font.family: Size.fontSans
+                font.pixelSize: Size.fontSize.sm
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                readonly property var nh: Calendar.nextHoliday
+                visible: !!nh
+                text: {
+                    if (!nh)
+                        return ""
+                    if (nh.daysAway <= 0)
+                        return nh.name + "假期中"
+                    return "距 " + nh.name + " " + nh.daysAway + " 天"
+                }
+                color: Color.primary
+                font.family: Size.fontSans
+                font.pixelSize: Size.fontSize.sm
+                font.bold: true
+            }
         }
     }
 

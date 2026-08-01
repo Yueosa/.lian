@@ -26,6 +26,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "lunar.js" as Lunar
 
 Singleton {
     id: root
@@ -42,6 +43,35 @@ Singleton {
     property var _workdays: ({})    // "YYYY-MM-DD" → "春节调休"
     property var _festivals: ({})   // "YYYY-MM-DD" → ["节气"]
     property var _allDates: []
+    property var _holidayRanges: []  // [{ name, start, end }]，按年份顺序
+
+    // 今天的农历，例：六月二十
+    readonly property string todayLunar: {
+        void sourceTitle
+        const t = new Date()
+        return Lunar.fullText(t.getFullYear(), t.getMonth() + 1, t.getDate())
+    }
+
+    // 下一个法定假期。已经放在假里就返回剩余天数（daysAway <= 0）。
+    // 依赖 _holidayRanges，随 sourceTitle 一并就位后重算一次，之后静止。
+    readonly property var nextHoliday: {
+        const rs = root._holidayRanges || []
+        if (rs.length === 0)
+            return null
+        const now = new Date()
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        let best = null
+        for (let i = 0; i < rs.length; i++) {
+            const e = new Date(rs[i].end)
+            if (e < today)
+                continue
+            const s = new Date(rs[i].start)
+            const days = Math.round((s - today) / 86400000)
+            if (best === null || days < best.daysAway)
+                best = { name: rs[i].name, daysAway: days, start: rs[i].start }
+        }
+        return best
+    }
 
     function _key(y, m, d) { return y + "-" + String(m).padStart(2,'0') + "-" + String(d).padStart(2,'0') }
 
@@ -58,13 +88,13 @@ Singleton {
         onLoaded: {
             try {
                 const json = JSON.parse(_dataFile.text());
-                sourceTitle = json.sourceTitle || ""
-                sourceUrl = json.sourceUrl || ""
-
                 const h = {}, w = {}, f = {}
+                const ranges = []
                 for (const item of json.holidays || []) {
                     _fillRange(h, item.start, item.end, item.name)
+                    ranges.push({ name: item.name, start: item.start, end: item.end })
                 }
+                root._holidayRanges = ranges
                 for (const item of json.workdays || []) {
                     w[item.date] = item.name
                 }
@@ -77,6 +107,13 @@ Singleton {
                 root._workdays = w
                 root._festivals = f
                 root._allDates = Object.keys(Object.assign({}, h, w, f)).sort()
+
+                // sourceTitle 是「数据已就位」的对外信号，消费者靠它重建视图。
+                // QML 属性赋值同步发信号，所以它必须排在三张表之后——
+                // 放在前面的话，订阅方会在表还空着的时候就去 buildDays，
+                // 拿到一个没有节日的月份，而且此后再没有东西会触发重建。
+                sourceTitle = json.sourceTitle || ""
+                sourceUrl = json.sourceUrl || ""
 
                 resetToToday()
             } catch (e) {}
@@ -144,6 +181,8 @@ Singleton {
                     weekday: weekday,
                     inMonth: inMonth,
                     label: label,
+                    // 没有节日的日子退回农历初几，格子才不会只剩一个数字
+                    lunar: Lunar.cellText(y, m, day),
                     isHoliday: !!_holidays[key],
                     isWorkday: !!_workdays[key],
                     isToday: key === todayKey,
