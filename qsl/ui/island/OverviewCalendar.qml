@@ -519,8 +519,10 @@ Rectangle {
                         return ""
                     const wd = ["日", "一", "二", "三", "四", "五", "六"][t.getDay()]
                     const l = Calendar.todayLunar
-                    return Qt.formatDateTime(t, "M 月 d 日") + " 周" + wd
-                        + (l.length > 0 ? "  " + l : "")
+                    // 农历必须带前缀：不标注的话「六月二十」紧挨着「8月2日」，
+                    // 月份对不上，看着就像日期算错了
+                    return Qt.formatDateTime(t, "M月d日") + " 周" + wd
+                        + (l.length > 0 ? " · 农历" + l : "")
                 }
                 color: Color.text
                 font.family: Size.fontSans

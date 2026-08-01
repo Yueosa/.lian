@@ -695,7 +695,7 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 当前分层：
 
-- `ui/`：Bar、Island、Left/Rightbar、Notif、Lock、FreeWindow（App / Clipboard / WebSearch）、Settings
+- `ui/`：Bar、Island、Left/Rightbar、Notif、Lock、FreeWindow（App / Clipboard / WebSearch）
 - `data/service` + `data/state`：Network / Media / Weather / Color / Style 等单例
 - `Components/`：QslCard / QslSlider / QslShadow …
 - `backend/`：weatherd、sysmond、notifctl、cava relay 等
@@ -739,7 +739,7 @@ ln -sf ~/.lian/qsl ~/.config/quickshell
 | ![剪贴板](./image/qsl-clipboard.png) | `Super+Z` 剪贴板 |
 | ![面板合集](./image/qsl-panels.png) | 左栏键位 + Hub 壁纸 + 右栏 + 通知中心 |
 
-IPC 目录也可在设置页「IPC」里看；键位以 [hypr/lua/binds.lua](hypr/lua/binds.lua) 与左栏 Keys 页为准。
+IPC 目录见左栏 Keys 页的「IPC」组（数据在 [qsl/asset/hotkeys.json](qsl/asset/hotkeys.json)），运行时真实注册表用 `qs ipc show`；键位以 [hypr/lua/binds.lua](hypr/lua/binds.lua) 与左栏 Keys 页为准。
 
 ## | matugen
 
