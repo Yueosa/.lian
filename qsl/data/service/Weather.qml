@@ -17,7 +17,9 @@ Singleton {
     id: root
 
     readonly property string cacheDir: Quickshell.env("HOME") + "/.cache/qsl"
-    readonly property string forecastPath: cacheDir + "/forecast.json"
+    // 瘦身快照（约 5 KB）。完整的 forecast.json 有 220 KB，其中 air_quality
+    // 12 个数组和 hourly 后面的 380 多条这边一个都用不上，白让 QV4 嚼一遍。
+    readonly property string forecastPath: cacheDir + "/forecast_slim.json"
     readonly property string geocodePath: cacheDir + "/geocode_results.json"
     readonly property string daemonBin: Quickshell.shellDir + "/backend/weather/build/weatherd"
     readonly property string iconDir: Quickshell.shellDir + "/asset/icon/weather"
@@ -43,8 +45,64 @@ Singleton {
     property string weatherText: ""
     property string iconName: ""
     property real windSpeedMs: 0
+    property real windDirDeg: 0
     property int humidity: 0
     property real pressure: 0
+    // 近 3 小时气压变化（hPa）。绝对值 1011 读不出信息，涨跌才有预报价值
+    property real pressureTrend: 0
+    property real uvIndex: 0
+    property real pm25: 0
+    property real pm10: 0
+    property bool airAvailable: false
+
+    // 今日温区——给左上大卡片的温标定量程，不依赖 daily 数组（后者只在详情页解析）
+    property real todayMaxC: 0
+    property real todayMinC: 0
+
+    // 8 方位。给 16 方位的精度对「今天风往哪吹」没有意义
+    readonly property string windDirText: {
+        if (!ready) return ""
+        const dirs = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
+        return dirs[Math.round(((windDirDeg % 360) + 360) % 360 / 45) % 8]
+    }
+
+    // 3 小时 ±1 hPa 是常规日变化，超出才值得提示
+    readonly property string pressureTrendText: {
+        if (!ready || pressureTrend === 0) return "平稳"
+        if (pressureTrend <= -2) return "快速下降"
+        if (pressureTrend <= -1) return "下降"
+        if (pressureTrend >= 2) return "快速上升"
+        if (pressureTrend >= 1) return "上升"
+        return "平稳"
+    }
+    // -1 跌 / 0 平 / 1 涨
+    readonly property int pressureTrendDir: {
+        if (!ready || Math.abs(pressureTrend) < 1) return 0
+        return pressureTrend > 0 ? 1 : -1
+    }
+
+    // UV 分级按 WHO：0–2 低 / 3–5 中 / 6–7 高 / 8–10 很高 / 11+ 极高
+    readonly property string uvText: ready ? uvIndex.toFixed(1) : "--"
+    readonly property string uvLevel: {
+        if (!ready) return ""
+        if (uvIndex < 3) return "低"
+        if (uvIndex < 6) return "中等"
+        if (uvIndex < 8) return "高"
+        if (uvIndex < 11) return "很高"
+        return "极高"
+    }
+
+    // PM2.5 按中国 HJ 633 的日均浓度限值分级（μg/m³）
+    readonly property string pm25Text: airAvailable ? Math.round(pm25) + "" : "--"
+    readonly property string airLevel: {
+        if (!airAvailable) return ""
+        if (pm25 <= 35) return "优"
+        if (pm25 <= 75) return "良"
+        if (pm25 <= 115) return "轻度污染"
+        if (pm25 <= 150) return "中度污染"
+        if (pm25 <= 250) return "重度污染"
+        return "严重污染"
+    }
 
     readonly property string tempText: ready ? (Math.round(tempC) + "°") : "--"
     readonly property string feelsText: ready ? (Math.round(feelsLikeC) + "°C") : "--"
@@ -56,6 +114,37 @@ Singleton {
     property var hourly: []
     property var daily: []
     property var geocodeResults: []
+
+    // 15 分钟粒度降水临近预报，未来 2 小时共 8 点。
+    // 常驻解析（不随 detailActive 清空）：只有 8 个对象，而「等下会不会下雨」
+    // 是一级岛/Overview 也该能答的问题。
+    property var minutely: []
+
+    readonly property real rainPeakSoon: {
+        let m = 0
+        for (let i = 0; i < minutely.length; i++) {
+            const p = Number(minutely[i].pop) || 0
+            if (p > m) m = p
+        }
+        return m
+    }
+    readonly property real rainAmountSoon: {
+        let s = 0
+        for (let i = 0; i < minutely.length; i++)
+            s += Number(minutely[i].mm) || 0
+        return s
+    }
+    // 概率过半才算「有雨」——96% 和 20% 不该说同一句话
+    readonly property bool rainingSoon: minutely.length > 0 && rainPeakSoon >= 50
+    readonly property string rainSoonText: {
+        if (minutely.length === 0)
+            return ""
+        if (!rainingSoon)
+            return "两小时内无雨"
+        if (rainAmountSoon >= 2)
+            return "两小时内有雨 " + rainAmountSoon.toFixed(1) + " mm"
+        return "两小时内有零星降水"
+    }
 
     function setDetailActive(active) {
         detailActive = !!active
@@ -214,8 +303,35 @@ Singleton {
         weatherText = String(cur.weather_text || "")
         iconName = String(cur.icon_name || "")
         windSpeedMs = Number(cur.wind_speed) || 0
+        windDirDeg = Number(cur.wind_direction) || 0
         humidity = Number(cur.humidity) || 0
         pressure = Number(cur.pressure) || 0
+        pressureTrend = Number(cur.pressure_trend) || 0
+        uvIndex = Number(cur.uv_index) || 0
+
+        // 今日温区常驻，两个数的代价换掉左上卡片对 daily 数组的依赖
+        const d0 = (data.daily || [])[0]
+        if (d0) {
+            todayMaxC = Number(d0.temp_max) || 0
+            todayMinC = Number(d0.temp_min) || 0
+        }
+
+        const air = data.air || {}
+        airAvailable = !!air.available
+        pm25 = Number(air.pm2_5) || 0
+        pm10 = Number(air.pm10) || 0
+
+        const mins = data.minutely || []
+        const mout = []
+        for (let i = 0; i < mins.length; i++) {
+            mout.push({
+                t: Number(mins[i].time) || 0,
+                mm: Number(mins[i].precipitation) || 0,
+                pop: Number(mins[i].precipitation_probability) || 0
+            })
+        }
+        minutely = mout
+
         ready = true
         loading = false
 
@@ -244,7 +360,12 @@ Singleton {
                 time: String(t.getHours()).padStart(2, "0") + ":00",
                 temp: Math.round(Number(row.temperature) || 0),
                 icon: iconUrl(row.icon_name, row.weather_code, isDay),
-                code: Number(row.weather_code) || 0
+                code: Number(row.weather_code) || 0,
+                // 降水概率 0–100，降水量毫米；给小时图下方的降水柱用
+                pop: Number(row.precipitation_probability) || 0,
+                mm: Number(row.precipitation) || 0,
+                // 天气带的昼夜底色靠这个分段
+                day: isDay
             })
         }
         hourly = hout

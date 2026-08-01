@@ -19,10 +19,9 @@ Item {
     readonly property string humidity: Weather.humidityText
     readonly property string windSpeed: Weather.windText
     readonly property string pressure: Weather.pressureText
-    readonly property string todayHigh: (Weather.daily && Weather.daily.length > 0)
-        ? Weather.daily[0].maxTemp : "--"
-    readonly property string todayLow: (Weather.daily && Weather.daily.length > 0)
-        ? Weather.daily[0].minTemp : "--"
+    // 走常驻的 todayMaxC/MinC，不依赖只在详情页解析的 daily 数组
+    readonly property string todayHigh: Weather.ready ? (Math.round(Weather.todayMaxC) + "°") : "--"
+    readonly property string todayLow: Weather.ready ? (Math.round(Weather.todayMinC) + "°") : "--"
 
     property bool isHourly: true
 
@@ -47,18 +46,162 @@ Item {
     }
     readonly property real dailyTempSpan: Math.max(1, dailyMaxC - dailyMinC)
 
+    // 冷 → 热的四段色标。与 UV / PM2.5 刻度条共用同一套，
+    // 于是「颜色越靠后 = 程度越强」在整页里是同一条规则。
+    readonly property var rampStops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+
+    // 取色标上任意位置的颜色。纯算术，不建对象、不开缓冲；
+    // 调用点是 7 日条（14 次/刷新）和 Canvas 渐变（1 次/重绘），量可以忽略。
+    function rampColor(t) {
+        const s = root.rampStops
+        const n = s.length - 1
+        const x = Math.max(0, Math.min(1, Number(t) || 0)) * n
+        const i = Math.min(n - 1, Math.floor(x))
+        const f = x - i
+        const a = s[i], b = s[i + 1]
+        return Qt.rgba(a.r + (b.r - a.r) * f,
+                       a.g + (b.g - a.g) * f,
+                       a.b + (b.b - a.b) * f, 1)
+    }
+
     // 固定高度指标格：避免 Grid 压缩把「体感/湿度」标签挤没
-    component MetricTile: Rectangle {
-        id: tile
-        property string iconGlyph: ""
+    // 刻度条 — 让「严重程度」变成位置，而不是一个要心算的数字
+    //
+    // UV 3 和 UV 9 写成数字看不出差别，画成游标在渐变条上的位置就一目了然。
+    // 渐变用 Rectangle 内建的横向 Gradient，不走 shader，也不开离屏缓冲。
+    component GaugeTile: Rectangle {
+        id: gauge
         property string label: ""
-        property string value: "--"
+        property string valueText: "--"
+        property string hint: ""
+        property real value: 0
+        property real maxValue: 100
+        property bool dataOk: true
+        // 分段色标，位置是归一化的 0–1
+        property var stops: []
 
         Layout.fillWidth: true
         Layout.fillHeight: true
         radius: Size.rounding.md
         color: Color.surfaceHighest
         clip: true
+
+        readonly property real ratio: maxValue > 0
+            ? Math.max(0, Math.min(1, value / maxValue))
+            : 0
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Size.spacing.md
+            anchors.rightMargin: Size.spacing.md
+            anchors.topMargin: Size.spacing.sm
+            anchors.bottomMargin: Size.spacing.sm
+            spacing: 4
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+                Text {
+                    text: gauge.label
+                    color: Color.textMuted
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.xsm
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: gauge.valueText
+                    color: Color.text
+                    font.family: Size.fontMono
+                    font.pixelSize: Size.fontSize.md
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    visible: gauge.hint.length > 0
+                    text: gauge.hint
+                    color: Color.textMuted
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.xsm
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 8
+                Layout.alignment: Qt.AlignVCenter
+
+                Rectangle {
+                    id: track
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 6
+                    radius: height / 2
+                    opacity: gauge.dataOk ? 1 : 0.25
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.00; color: gauge.stops.length > 0 ? gauge.stops[0] : Color.primary }
+                        GradientStop { position: 0.33; color: gauge.stops.length > 1 ? gauge.stops[1] : Color.primary }
+                        GradientStop { position: 0.66; color: gauge.stops.length > 2 ? gauge.stops[2] : Color.primary }
+                        GradientStop { position: 1.00; color: gauge.stops.length > 3 ? gauge.stops[3] : Color.error }
+                    }
+                }
+
+                // 游标：白心深边，压在任何底色上都看得见
+                Rectangle {
+                    visible: gauge.dataOk
+                    width: 10
+                    height: 10
+                    radius: 5
+                    anchors.verticalCenter: track.verticalCenter
+                    x: Math.round(gauge.ratio * (track.width - width))
+                    color: Color.text
+                    border.width: 2
+                    border.color: Color.surfaceHighest
+                    Behavior on x {
+                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+        }
+    }
+
+    component MetricTile: Rectangle {
+        id: tile
+        property string iconGlyph: ""
+        property string label: ""
+        property string value: "--"
+        // 分级词（如 UV「很高」、空气「良」）——数值本身不说明严重程度
+        property string hint: ""
+        property color hintColor: Color.textMuted
+        property color iconColor: Color.primary
+        // 图标旋转角（风向箭头用），0 为不转
+        property real iconRotation: 0
+        // 0–1：卡片自身按比例填充；负值关闭。
+        // 让容器承载信息，而不是当背景板——「湿度 94%」不用读数字也看得出来。
+        property real fillRatio: -1
+
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        radius: Size.rounding.md
+        color: Color.surfaceHighest
+        clip: true
+
+        // 一个 Rectangle，无渐变无 shader，不额外占显存
+        Rectangle {
+            visible: tile.fillRatio >= 0
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: parent.width * Math.max(0, Math.min(1, tile.fillRatio))
+            // 父级的 clip 只裁矩形边界、裁不掉圆角，所以填充块必须自带圆角，
+            // 否则方角会从卡片的圆角处支出来。窄填充时按半宽收敛成胶囊。
+            radius: Math.min(tile.radius, width / 2)
+            color: Color.withAlpha(tile.iconColor, 0.16)
+            Behavior on width {
+                NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+            }
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -72,8 +215,12 @@ Item {
                 text: tile.iconGlyph
                 font.family: Size.fontMono
                 font.pixelSize: 18
-                color: Color.primary
+                color: tile.iconColor
+                rotation: tile.iconRotation
                 Layout.alignment: Qt.AlignVCenter
+                Behavior on rotation {
+                    RotationAnimation { duration: 400; direction: RotationAnimation.Shortest }
+                }
             }
 
             ColumnLayout {
@@ -89,14 +236,27 @@ Item {
                     font.pixelSize: Size.fontSize.xsm
                     elide: Text.ElideRight
                 }
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    text: tile.value
-                    color: Color.text
-                    font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.md
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
+                    spacing: 4
+
+                    Text {
+                        text: tile.value
+                        color: Color.text
+                        font.family: Size.fontMono
+                        font.pixelSize: Size.fontSize.md
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        visible: tile.hint.length > 0
+                        text: tile.hint
+                        color: tile.hintColor
+                        font.family: Size.fontSans
+                        font.pixelSize: Size.fontSize.xsm
+                        elide: Text.ElideRight
+                    }
                 }
             }
         }
@@ -290,12 +450,80 @@ Item {
                                     elide: Text.ElideRight
                                     width: Math.min(implicitWidth, parent.parent.width - 8)
                                 }
-                                Text {
+                                // 今日温标：↑24 ↓17 只说了区间两端，说不出「现在 19° 处在
+                                // 这个区间的哪里」。游标一放，冷热就不用心算了。
+                                Row {
+                                    id: dayScale
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: "↑" + root.todayHigh + "  ↓" + root.todayLow
-                                    font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.sm
-                                    color: Color.textMuted
+                                    spacing: 6
+                                    topPadding: 4
+
+                                    readonly property real lo: Weather.todayMinC
+                                    readonly property real hi: Weather.todayMaxC
+                                    readonly property real span: Math.max(1, hi - lo)
+                                    readonly property real ratio: Weather.ready
+                                        ? Math.max(0, Math.min(1, (Weather.tempC - lo) / span))
+                                        : 0
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: root.todayLow
+                                        font.family: Size.fontMono
+                                        font.pixelSize: Size.fontSize.sm
+                                        color: Color.textMuted
+                                    }
+
+                                    Item {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 104
+                                        height: 10
+
+                                        Rectangle {
+                                            id: dayTrack
+                                            anchors.fill: parent
+                                            anchors.topMargin: 2
+                                            anchors.bottomMargin: 2
+                                            radius: height / 2
+                                            gradient: Gradient {
+                                                orientation: Gradient.Horizontal
+                                                GradientStop {
+                                                    position: 0
+                                                    color: root.rampColor(
+                                                        (dayScale.lo - root.dailyMinC)
+                                                        / root.dailyTempSpan)
+                                                }
+                                                GradientStop {
+                                                    position: 1
+                                                    color: root.rampColor(
+                                                        (dayScale.hi - root.dailyMinC)
+                                                        / root.dailyTempSpan)
+                                                }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            visible: Weather.ready
+                                            width: 10
+                                            height: 10
+                                            radius: 5
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            x: Math.round(dayScale.ratio * (parent.width - width))
+                                            color: Color.text
+                                            border.width: 2
+                                            border.color: Color.surfaceHigh
+                                            Behavior on x {
+                                                NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: root.todayHigh
+                                        font.family: Size.fontMono
+                                        font.pixelSize: Size.fontSize.sm
+                                        color: Color.text
+                                    }
                                 }
                             }
                         }
@@ -316,25 +544,89 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         spacing: Size.spacing.sm
-                        MetricTile { iconGlyph: "\uf2c9"; label: "体感"; value: root.feelsLike }
-                        MetricTile { iconGlyph: "\uf043"; label: "湿度"; value: root.humidity }
+                        // 体感的信息量在「和实测差多少」，单看 21°C 等于把气温读了两遍
+                        MetricTile {
+                            iconGlyph: "\uf2c9"
+                            label: "体感"
+                            value: root.feelsLike
+                            readonly property real delta: Weather.feelsLikeC - Weather.tempC
+                            hint: (!Weather.ready || Math.abs(delta) < 0.5) ? "与实测持平"
+                                : (delta > 0 ? "偏热 " : "偏冷 ") + Math.abs(delta).toFixed(1) + "°"
+                        }
+                        MetricTile {
+                            iconGlyph: "\uf043"
+                            label: "湿度"
+                            value: root.humidity
+                            fillRatio: Weather.ready ? Weather.humidity / 100 : -1
+                        }
                     }
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         spacing: Size.spacing.sm
-                        MetricTile { iconGlyph: "\uf72e"; label: "风速"; value: root.windSpeed }
-                        MetricTile { iconGlyph: "\uf338"; label: "气压"; value: root.pressure }
+                        // 箭头指向风「吹去」的方向；气象上的风向记的是来向，故 +180
+                        MetricTile {
+                            iconGlyph: "\u2191"
+                            iconRotation: Weather.ready ? Weather.windDirDeg + 180 : 0
+                            label: "风速"
+                            value: root.windSpeed
+                            hint: Weather.windDirText ? Weather.windDirText + "风" : ""
+                            // 40 km/h 已是六级，再快在这条上分不出来
+                            fillRatio: Weather.ready
+                                ? Math.min(1, Weather.windSpeedMs * 3.6 / 40) : -1
+                        }
+                        // 1011 hPa 这个数说明不了任何事；3 小时的涨跌才是转晴还是转雨
+                        MetricTile {
+                            readonly property int dir: Weather.pressureTrendDir
+                            iconGlyph: dir === 0 ? "\u2192" : (dir > 0 ? "\u2197" : "\u2198")
+                            iconColor: dir < 0 ? Color.tertiary : Color.primary
+                            label: "气压 3h"
+                            value: Weather.ready
+                                ? (Weather.pressureTrend >= 0 ? "+" : "")
+                                  + Weather.pressureTrend.toFixed(1)
+                                : "--"
+                            hint: Weather.pressureTrendText
+                            hintColor: dir < 0 ? Color.tertiary : Color.textMuted
+                        }
+                    }
+                    // UV 与空气质量：weatherd 一直在抓，此前从没露过面。
+                    // 用刻度条而非数字——严重程度该是位置，不是要心算的数值。
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        spacing: Size.spacing.sm
+                        GaugeTile {
+                            label: "紫外线"
+                            valueText: Weather.uvText
+                            hint: Weather.uvLevel
+                            value: Weather.uvIndex
+                            // WHO 分级到 11+ 封顶，超过按满格算
+                            maxValue: 11
+                            stops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+                        }
+                        GaugeTile {
+                            label: "PM2.5"
+                            valueText: Weather.pm25Text
+                            hint: Weather.airLevel
+                            value: Weather.pm25
+                            dataOk: Weather.airAvailable
+                            // HJ 633 的「重度污染」下限，再高已经没有区分意义
+                            maxValue: 150
+                            stops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+                        }
                     }
                 }
             }
         }
 
-        // ---- 分段 ----
-        Row {
-            Layout.alignment: Qt.AlignLeft
+        // ---- 分段 + 临近预报 ----
+        RowLayout {
+            Layout.fillWidth: true
             Layout.preferredHeight: 34
             Layout.maximumHeight: 34
+            spacing: Size.spacing.sm
+
+        Row {
             spacing: 4
 
             Rectangle {
@@ -383,6 +675,66 @@ Item {
                     color: !root.isHourly ? Color.textOnPrimary : Color.textMuted
                 }
                 MouseArea { anchors.fill: parent; onClicked: root.isHourly = false }
+            }
+        }
+
+            Item { Layout.fillWidth: true }
+
+            // 降水临近预报：15 分钟粒度，未来 2 小时。
+            // 逐小时预报答不了「等下出门要不要带伞」——一小时里前 15 分钟下
+            // 和后 15 分钟下是两回事。有雨才显示，晴天不占位。
+            Rectangle {
+                id: nowcastChip
+                visible: Weather.minutely.length > 0 && Weather.rainingSoon
+                Layout.preferredHeight: 34
+                Layout.preferredWidth: nowcastRow.implicitWidth + 24
+                radius: 17
+                color: Color.withAlpha(Color.secondary, 0.16)
+                border.width: 1
+                border.color: Color.withAlpha(Color.secondary, 0.45)
+
+                RowLayout {
+                    id: nowcastRow
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Text {
+                        text: "\uf73d"
+                        font.family: Size.fontMono
+                        font.pixelSize: 14
+                        color: Color.secondary
+                    }
+                    Text {
+                        text: Weather.rainSoonText
+                        font.family: Size.fontSans
+                        font.pixelSize: Size.fontSize.sm
+                        color: Color.text
+                    }
+                    // 8 根小柱 = 未来 2 小时逐 15 分钟的降水概率
+                    Row {
+                        spacing: 2
+                        Layout.alignment: Qt.AlignVCenter
+                        Repeater {
+                            model: Weather.minutely
+                            Rectangle {
+                                required property var modelData
+                                width: 3
+                                height: 14
+                                radius: 1.5
+                                color: Color.withAlpha(Color.secondary, 0.22)
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    radius: parent.radius
+                                    height: Math.max(
+                                        2,
+                                        parent.height * Math.min(1, (Number(modelData.pop) || 0) / 100))
+                                    color: Color.secondary
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -435,14 +787,28 @@ Item {
                             if (t > maxTemp) maxTemp = t
                         }
                         if (maxTemp - minTemp < 4) {
-                            maxTemp += 2
-                            minTemp -= 2
+                            const mid = (maxTemp + minTemp) / 2
+                            maxTemp = mid + 2
+                            minTemp = mid - 2
                         }
+                        // 无条件留余量。此前只在温差 < 4 时补，于是 18–23° 这种
+                        // 刚好不触发的量程会把最低温那条线压在画布最底边：
+                        // 平段贴底、上半片全空，到降水带的虚线也被压成零长度。
+                        const headroom = (maxTemp - minTemp) * 0.18
+                        maxTemp += headroom
+                        minTemp -= headroom
 
                         const padTop = 28, padBottom = 28, padSide = 36
                         const timeY = height - 4
-                        const guideBottom = height - padBottom + 2
-                        const drawHeight = Math.max(1, height - padTop - padBottom)
+                        // 底部让出一条降水带；温度曲线相应上移
+                        const precipH = 26
+                        const precipBottom = height - padBottom + 2
+                        const precipTop = precipBottom - precipH
+                        // 概率数字单独占一行：96% 的柱子几乎填满泳道，
+                        // 数字压在柱子上会被盖掉
+                        const popLabelY = precipTop - 4
+                        const guideBottom = popLabelY - 10
+                        const drawHeight = Math.max(1, guideBottom - padTop)
                         const drawWidth = Math.max(1, width - padSide * 2)
                         const stepX = data.length > 1 ? drawWidth / (data.length - 1) : 0
                         const points = []
@@ -456,7 +822,96 @@ Item {
                             })
                         }
 
-                        // 节点 → 时刻 垂直虚线（同一 paint，无额外 Item）
+                        // ---- 昼夜底色 ----
+                        // 只给夜间段压一层暗色，白天不画。这样无论配色怎么变，
+                        // 「暗的是夜里」都成立；若两边都上色则依赖冷暖对比，换主题就失效。
+                        // 到 precipTop 为止：底下那条降水带必须保持统一底色，
+                        // 否则同样概率的柱子压在夜色上和白天上会呈现两种深浅。
+                        ctx.save()
+                        ctx.fillStyle = Color.withAlpha(Color.background, 0.38)
+                        for (let n = 0; n < points.length; n++) {
+                            if (points[n].data.day)
+                                continue
+                            const half = stepX / 2
+                            let x0 = points[n].x - half
+                            let x1 = points[n].x + half
+                            // 首尾段补到画布边缘，免得留两条突兀的白边
+                            if (n === 0) x0 = 0
+                            if (n === points.length - 1) x1 = width
+                            ctx.fillRect(x0, 0, x1 - x0, precipTop)
+                        }
+                        ctx.restore()
+
+                        // ---- 昼夜分界 ----
+                        // 光有深浅两块底色，看到的人只会问「为什么一半深一半浅」。
+                        // 在交界处画线并标出日出 / 日落，那块底色才成为信息。
+                        ctx.save()
+                        ctx.strokeStyle = Color.withAlpha(Color.textMuted, 0.55)
+                        ctx.lineWidth = 1
+                        ctx.setLineDash([3, 3])
+                        ctx.textAlign = "center"
+                        for (let m = 1; m < points.length; m++) {
+                            if (points[m].data.day === points[m - 1].data.day)
+                                continue
+                            const bx = Math.round((points[m - 1].x + points[m].x) / 2) + 0.5
+                            ctx.beginPath()
+                            ctx.moveTo(bx, 13)
+                            ctx.lineTo(bx, precipTop)
+                            ctx.stroke()
+                            ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.95)
+                            ctx.font = "10px '" + Size.fontSans + "'"
+                            ctx.fillText(points[m].data.day ? "日出" : "日落", bx, 10)
+                        }
+                        ctx.restore()
+
+                        // ---- 降水柱 ----
+                        // 柱高 = 降水概率，柱色深浅 = 雨量。
+                        // 只有图标的话，「30% 飘点雨」和「96% 下大雨」长得一模一样。
+                        ctx.save()
+                        // 独立底槽：让降水带自成一条泳道，柱子才不会被读成背景色块
+                        ctx.fillStyle = Color.withAlpha(Color.background, 0.55)
+                        ctx.fillRect(0, precipTop, width, precipH)
+
+                        const barW = Math.max(3, Math.min(14, stepX * 0.46))
+                        for (let b = 0; b < points.length; b++) {
+                            const pop = Number(points[b].data.pop) || 0
+                            if (pop <= 0)
+                                continue
+                            const mm = Number(points[b].data.mm) || 0
+                            const h = Math.max(2, (pop / 100) * precipH)
+                            // 1mm 以上就按最深画，再大在这个尺度上看不出差别
+                            const alpha = 0.45 + Math.min(1, mm) * 0.55
+                            ctx.fillStyle = Color.withAlpha(Color.secondary, alpha)
+                            ctx.fillRect(points[b].x - barW / 2, precipBottom - h, barW, h)
+                        }
+                        // 泳道标签。没有它，这排柱子就是一排看不懂的方块
+                        ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.75)
+                        ctx.font = "10px '" + Size.fontSans + "'"
+                        ctx.textAlign = "left"
+                        ctx.fillText("降水", 2, precipBottom - 8)
+
+                        // 概率数字。柱高已经编码了概率，但「看着挺高」答不了
+                        // 「到底是 66% 还是 96%」——要不要带伞是靠后者决定的
+                        ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.9)
+                        ctx.font = "10px '" + Size.fontMono + "'"
+                        ctx.textAlign = "center"
+                        for (let q = 0; q < points.length; q++) {
+                            const pq = Number(points[q].data.pop) || 0
+                            if (pq <= 0)
+                                continue
+                            ctx.fillText(pq + "%", points[q].x, popLabelY)
+                        }
+
+                        // 降水带基线，给柱子一个落脚点
+                        ctx.strokeStyle = Color.withAlpha(Color.outlineVariant, 0.5)
+                        ctx.lineWidth = 1
+                        ctx.beginPath()
+                        ctx.moveTo(0, precipBottom + 0.5)
+                        ctx.lineTo(width, precipBottom + 0.5)
+                        ctx.stroke()
+                        ctx.restore()
+
+                        // 节点 → 降水带 垂直虚线（同一 paint，无额外 Item）
                         ctx.save()
                         ctx.strokeStyle = Color.withAlpha(Color.textMuted, 0.45)
                         ctx.lineWidth = 1.25
@@ -470,22 +925,34 @@ Item {
                         }
                         ctx.restore()
 
+                        // ---- 温度曲线 ----
+                        // 按高度上色标：低处冷色、高处暖色，与 UV / PM2.5 那两条
+                        // 刻度条同一套配色。于是「哪段热」不必去读数字。
+                        // 一次 createLinearGradient，不额外分配纹理。
+                        const tempGrad = ctx.createLinearGradient(0, padTop, 0, guideBottom)
+                        const rs = root.rampStops
+                        for (let s = 0; s < rs.length; s++)
+                            tempGrad.addColorStop(s / (rs.length - 1), rs[rs.length - 1 - s])
+
                         ctx.beginPath()
                         ctx.moveTo(points[0].x, points[0].y)
                         for (let k = 1; k < points.length; k++)
                             ctx.lineTo(points[k].x, points[k].y)
                         ctx.lineWidth = 2.5
-                        ctx.strokeStyle = Color.primary
+                        ctx.strokeStyle = tempGrad
                         ctx.stroke()
 
                         for (let p = 0; p < points.length; p++) {
                             const pt = points[p]
+                            // 节点取自己那档温度的颜色，和曲线上的位置对得上
+                            const dotColor = root.rampColor(
+                                (pt.data.temp - minTemp) / (maxTemp - minTemp))
                             ctx.beginPath()
                             ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
                             ctx.fillStyle = Color.surfaceHigh
                             ctx.fill()
                             ctx.lineWidth = 2
-                            ctx.strokeStyle = Color.primary
+                            ctx.strokeStyle = dotColor
                             ctx.stroke()
 
                             // 首尾点改对齐，避免温度/时刻贴边被裁
@@ -576,19 +1043,24 @@ Item {
                                         radius: 1.5
                                         color: Color.withAlpha(Color.textMuted, 0.2)
                                     }
+                                    // 条的左右端各取自己那档温度的颜色。位置说的是
+                                    // 「这天在这周里偏冷还是偏热」，颜色把同一件事再说一遍，
+                                    // 于是扫一眼就能分出「凉到热」和「一直热」。
                                     Rectangle {
+                                        id: tempBar
                                         anchors.verticalCenter: parent.verticalCenter
                                         readonly property real span: root.dailyTempSpan
-                                        readonly property real startR: ((Number(modelData.minC) || 0) - root.dailyMinC) / span
-                                        readonly property real widthR: Math.max(
-                                            0.08,
-                                            ((Number(modelData.maxC) || 0) - (Number(modelData.minC) || 0)) / span
-                                        )
-                                        x: parent.width * startR
-                                        width: Math.max(12, parent.width * widthR)
+                                        readonly property real loR: ((Number(modelData.minC) || 0) - root.dailyMinC) / span
+                                        readonly property real hiR: ((Number(modelData.maxC) || 0) - root.dailyMinC) / span
+                                        x: parent.width * loR
+                                        width: Math.max(12, parent.width * Math.max(0.08, hiR - loR))
                                         height: 7
                                         radius: 3.5
-                                        color: Color.primary
+                                        gradient: Gradient {
+                                            orientation: Gradient.Horizontal
+                                            GradientStop { position: 0; color: root.rampColor(tempBar.loR) }
+                                            GradientStop { position: 1; color: root.rampColor(tempBar.hiR) }
+                                        }
                                     }
                                 }
 
@@ -646,6 +1118,20 @@ Item {
                 height: 32
                 radius: Size.rounding.sm
                 color: Color.surface
+
+                // 一个区能横跨十几公里、落在不同预报网格里，
+                // 与其在同名候选里猜，不如直接把坐标喂进去（daemon 会反查地名）
+                Text {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    visible: searchInput.text.length === 0
+                    text: "地名，或 25.02, 102.75"
+                    color: Color.textMuted
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.sm
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
 
                 TextInput {
                     id: searchInput

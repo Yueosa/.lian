@@ -16,7 +16,7 @@ pub fn fetch(lat: f64, lon: f64) -> Result<Value, String> {
          current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,\
          wind_direction_10m,wind_gusts_10m,uv_index,relative_humidity_2m,dew_point_2m,\
          pressure_msl,cloud_cover,visibility&\
-         minutely_15=precipitation",
+         minutely_15=precipitation,precipitation_probability&forecast_minutely_15=12",
         config::FORECAST_URL, lat, lon
     );
     http::get_json(&url)

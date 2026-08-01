@@ -3,6 +3,27 @@ use crate::calculator;
 use crate::model::*;
 use serde_json::Value;
 
+/// 提取 15 分钟降水临近预报。字段缺失时返回空 vec，UI 据此隐藏该条。
+pub fn minutely(json: &Value) -> Vec<MinutelyPoint> {
+    let m = match json.get("minutely_15") {
+        Some(v) => v,
+        None => return vec![],
+    };
+    let times = match m.get("time").and_then(|v| v.as_array()) {
+        Some(t) => t,
+        None => return vec![],
+    };
+    times
+        .iter()
+        .enumerate()
+        .map(|(i, t)| MinutelyPoint {
+            time: t.as_u64().unwrap_or(0),
+            precipitation: arr_f64(m, "precipitation", i, 0.0),
+            precipitation_probability: arr_f64(m, "precipitation_probability", i, 0.0) as u8,
+        })
+        .collect()
+}
+
 /// 从预报 JSON 中提取 current/hourly/daily，填充 weather_text 和 icon_name
 pub fn forecast(json: &Value) -> Result<(Current, Vec<Hourly>, Vec<Daily>), String> {
     let c = json.get("current").ok_or("forecast 缺少 current 字段")?;

@@ -53,8 +53,20 @@ pub fn run() {
                     }
                     s if s.starts_with("geocode ") => {
                         let query = &s[8..];
-                        eprintln!("weatherd: 搜索城市: {}", query);
-                        match api::geocode::search(query) {
+                        // 输入本身就是坐标时走反查。一个区能横跨十几公里、
+                        // 落在不同预报网格里，与其让用户在同名候选里猜，
+                        // 不如让他把自己的坐标直接喂进来。
+                        let results = match parse_coords(query) {
+                            Some((la, lo)) => {
+                                eprintln!("weatherd: 反查坐标 {:.5}, {:.5}", la, lo);
+                                api::geocode::reverse(la, lo).map(|r| vec![r])
+                            }
+                            None => {
+                                eprintln!("weatherd: 搜索城市: {}", query);
+                                api::geocode::search(query)
+                            }
+                        };
+                        match results {
                             Ok(results) => {
                                 let json =
                                     serde_json::to_string(&results).unwrap_or_else(|_| "[]".into());
@@ -93,6 +105,25 @@ pub fn run() {
             }
             thread::sleep(Duration::from_millis(1000));
         }
+    }
+}
+
+/// 识别「25.02, 102.75」「25.02 102.75」这类纯坐标输入。
+/// 要求两段都能解析成数且落在合法经纬度范围内，避免把「西安 110」误判。
+fn parse_coords(s: &str) -> Option<(f64, f64)> {
+    let parts: Vec<&str> = s
+        .split(|c: char| c == ',' || c.is_whitespace())
+        .filter(|p| !p.is_empty())
+        .collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let lat: f64 = parts[0].parse().ok()?;
+    let lon: f64 = parts[1].parse().ok()?;
+    if (-90.0..=90.0).contains(&lat) && (-180.0..=180.0).contains(&lon) {
+        Some((lat, lon))
+    } else {
+        None
     }
 }
 
@@ -153,6 +184,7 @@ fn do_refresh(lat: f64, lon: f64, name: &str, force: bool) -> bool {
         let aq = api::air_quality::fetch(lat, lon)?;
         let (current, hourly, daily) = enrich::forecast(&fc)?;
         let air_quality = enrich::air_quality(&aq);
+        let minutely = enrich::minutely(&fc);
         Ok(WeatherSnapshot {
             status: "fresh".into(),
             location_name: name.into(),
@@ -163,6 +195,7 @@ fn do_refresh(lat: f64, lon: f64, name: &str, force: bool) -> bool {
             hourly,
             daily,
             air_quality,
+            minutely,
         })
     })();
 
@@ -186,6 +219,7 @@ fn do_refresh(lat: f64, lon: f64, name: &str, force: bool) -> bool {
                 hourly: vec![],
                 daily: vec![],
                 air_quality: AirQuality::default(),
+                minutely: vec![],
             });
             snap.status = "stale".into();
             snap.location_name = name.into();

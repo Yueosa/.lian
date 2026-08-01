@@ -12,8 +12,11 @@ pub fn cache_dir() -> String {
     format!("{}/.cache/qsl", home)
 }
 
-/// 天气预报缓存（持久化到磁盘，重启后复用）
+/// 天气预报缓存（持久化到磁盘，重启后复用）— 完整数据，仅 daemon 自己读
 pub fn forecast_cache_file() -> String { format!("{}/forecast.json", cache_dir()) }
+
+/// 瘦身快照 — QML 只解析这一份，约为完整版的 5%
+pub fn forecast_slim_file() -> String { format!("{}/forecast_slim.json", cache_dir()) }
 
 /// 用户指定位置（优先于 IP 定位，通过 geocode 命令设置）
 pub fn location_file() -> String { format!("{}/location.json", cache_dir()) }
@@ -40,5 +43,9 @@ pub const HTTP_TIMEOUT: u64 = 10;
 pub const IPWHO_URL: &str = "https://ipwho.is/?fields=success,latitude,longitude,city,region,country";
 pub const FORECAST_URL: &str = "https://api.open-meteo.com/v1/forecast";
 pub const AIR_QUALITY_URL: &str = "https://air-quality-api.open-meteo.com/v1/air-quality";
-pub const GEOCODE_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";
-pub const USER_AGENT: &str = "qsl-weather/1.0";
+// Nominatim：Open-Meteo 的 geocoding 在中国只到市级，搜不到区
+pub const GEOCODE_URL: &str = "https://nominatim.openstreetmap.org/search";
+// 反查：用户直接给经纬度时，用它换回街道级地名当标签
+pub const REVERSE_URL: &str = "https://nominatim.openstreetmap.org/reverse";
+// Nominatim 条款要求 UA 能标识应用与联系方式
+pub const USER_AGENT: &str = "qsl-weather/1.0 (personal dotfiles; github.com/Yueosa)";
