@@ -1,4 +1,14 @@
 // shell.qml — qsl 入口
+//
+// 可编辑的本地数据文件（原设置面板「文件」页，页面已删）：
+//   asset/hotkeys.json              快捷键 + IPC 速查，左栏 keys 页读它
+//   asset/calendar/<年>.json        法定节假日 / 调休 / 节日，Calendar 单例读它
+//   ~/.local/share/qsl/todo.json    待办，左栏 todo 页读写
+//   ui/lock/pam/password.conf       锁屏 PAM 配置
+// 改完 hotkeys / calendar 需重启 qs 才生效（FileView 只在启动时读一次）。
+//
+// IPC 目录见左栏 keys 页的 IPC 组；运行时真实注册表用 `qs ipc show`。
+//
 //@ pragma UseQApplication
 import Quickshell
 import Quickshell.Io
@@ -14,7 +24,6 @@ import qs.ui.notif
 import qs.ui.rightbar
 import qs.ui.freewindow.websearch
 import qs.ui.lock
-import qs.ui.settings
 
 ShellRoot {
     Bar {}
@@ -30,12 +39,10 @@ ShellRoot {
         id: clipboardWindow
     }
 
-    // ---- 冷路径懒加载：Settings / WebSearch（低频）----
+    // ---- 冷路径懒加载：WebSearch（低频）----
     Component { id: webSearchComp; WebSearch {} }
-    Component { id: settingsComp; ControlCenter {} }
 
     Loader { id: webSearchLoader; active: false; sourceComponent: webSearchComp }
-    Loader { id: settingsLoader; active: false; sourceComponent: settingsComp }
 
     function ensureLoader(loader) {
         if (!loader.active)
@@ -61,12 +68,6 @@ ShellRoot {
         repeat: false
         onTriggered: maybeUnload(webSearchLoader)
     }
-    Timer {
-        id: settingsUnload
-        interval: 480
-        repeat: false
-        onTriggered: maybeUnload(settingsLoader)
-    }
 
     Connections {
         target: webSearchLoader.item
@@ -78,17 +79,6 @@ ShellRoot {
                 scheduleUnload(webSearchLoader, webSearchUnload)
         }
     }
-    Connections {
-        target: settingsLoader.item
-        enabled: settingsLoader.status === Loader.Ready
-        function onOpenChanged() {
-            if (settingsLoader.item.open)
-                settingsUnload.stop()
-            else
-                scheduleUnload(settingsLoader, settingsUnload)
-        }
-    }
-
     NotifCenter {
         id: notifCenter
     }
@@ -163,28 +153,6 @@ ShellRoot {
         function close() {
             if (webSearchLoader.item)
                 webSearchLoader.item.closeWindow()
-        }
-    }
-
-    IpcHandler {
-        target: "settings"
-        function open(view: string) {
-            const w = ensureLoader(settingsLoader)
-            if (!w)
-                return
-            if (view && view.length > 0)
-                w.openView(view)
-            else
-                w.openView("arch")
-        }
-        function close() {
-            if (settingsLoader.item)
-                settingsLoader.item.closeWindow()
-        }
-        function toggle() {
-            const w = ensureLoader(settingsLoader)
-            if (w)
-                w.toggle()
         }
     }
 

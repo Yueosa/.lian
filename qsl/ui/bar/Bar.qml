@@ -70,7 +70,6 @@ Variants {
                 }
                 SysMonitor {}
                 StatusChips {}
-                SettingsPill {}
             }
         }
     }
