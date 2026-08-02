@@ -16,7 +16,7 @@
 --       Layer 3 — Hyprland exec 层（hyprland.start 事件）
 --         GUI 应用：需要 Wayland 环境，跟随 Hyprland 同生共死
 --         一次性命令（mkdir, setcursor）也放在这里
---         例：qs, kanshi, mihomo-party, lianclaw, tuxedo-tray
+--         例：qs, kanshi, mihomo-party, lya, tuxedo-tray
 --
 
 
@@ -59,7 +59,16 @@ hl.on("hyprland.start", function()
     -- 5. Layer 3 GUI 应用
     hl.exec_cmd("kanshi")                               -- 多显示器自动配置
     hl.exec_cmd("mihomo-party")                         -- 代理客户端
-    hl.exec_cmd("/home/Sakurine/.local/bin/lianclaw")   -- 自研工具
+    -- lya 是 StatusNotifier 托盘：必须等 qs 的 StatusNotifierWatcher 就绪。
+    -- 跟 qs 同帧 exec 会 race，注册失败就退出；终端手动开时 watcher 早在，所以看起来「只有开机不行」。
+    hl.exec_cmd(
+        "bash -c 'for i in $(seq 1 50); do "
+            .. "busctl --user get-property org.kde.StatusNotifierWatcher "
+            .. "/StatusNotifierWatcher org.kde.StatusNotifierWatcher "
+            .. "IsStatusNotifierHostRegistered >/dev/null 2>&1 && break; "
+            .. "sleep 0.2; done; "
+            .. "exec /home/Sakurine/.local/bin/lya'"
+    )
     hl.exec_cmd("tuxedo-control-center --tray")         -- TUXEDO 硬件控制托盘
 end)
 
