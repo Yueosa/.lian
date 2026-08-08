@@ -28,7 +28,12 @@ fi
 
 x_mon=$(hyprctl -j monitors | jq '.[] | select(.focused==true) | .width')
 y_mon=$(hyprctl -j monitors | jq '.[] | select(.focused==true) | .height')
-hypr_scale=$(hyprctl -j monitors | jq '.[] | select (.focused == true) | .scale' | sed 's/\.//')
+# scale 必须按百分数：1 / 1.0 → 100，1.25 → 125。
+# 旧写法 sed 's/\.//' 在 jq 吐整数 1（无小数点）时会得到 1，margin 飙到几万 px，Cairo segfault。
+hypr_scale=$(hyprctl -j monitors | jq -r '.[] | select(.focused==true) | (.scale * 100 | floor)')
+if [ -z "$hypr_scale" ] || [ "$hypr_scale" -le 0 ] 2>/dev/null; then
+    hypr_scale=100
+fi
 
 
 wlColms=4
