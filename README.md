@@ -2,6 +2,13 @@
 
 # 恋的 Arch 配置
 
+> ⚠️ **本分支 `legacy/quickshell` 已冻结，不再维护** ⚠️
+>
+> 主线桌面外壳已经在 `main` 的 `qsl/`：<https://github.com/Yueosa/.lian/tree/main/qsl>
+>
+> 若你来这里只是为了看旧 `quickshell/` 配置参考，那就在这里翻看；
+> 否则请去 `main` 分支获取最新桌面栈。
+
 > 我使用的桌面环境是 `Hyprland` + `Wayland` + `qsl`（Quickshell）+ `kitty` + `zsh`
 
 哎呀, 我自己都懒得更新README了...叫AI帮忙写了一版出来, 如果你对配置有疑问就直接来加联系方式问我吧! 我会一步一步带着你做的!
