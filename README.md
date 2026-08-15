@@ -592,11 +592,13 @@ journalctl --user -u lianwall -b
 
 ## | nvim
 
-`nvim` 是一款比 `vim` 更强的文本编辑器，我目前对它进行了 `rust` 和 `markdown` 的定制化 
+`nvim` 是一款比 `vim` 更强的文本编辑器。配置写在 `~/.lian/nvim`，软链到 `~/.config/nvim`；`~/.local/share/nvim` 只是插件和语言服务器的数据目录。配色是自己写的 `sakurine`。
 
-| rust 开发体验 | markdown 体验 |
+主要栈：Rust / Python / C 系、前端三件套 + Vue、文档用 Markdown。
+
+| rust | markdown |
 |-|-|
-| ![rust](./image/nvim1.png) | ![markdown](./image/nvim2.png) |
+| ![rust](./image/nvim-rust.png) | ![markdown](./image/nvim-md.png) |
 
 ###### 使用 `pacman` 安装
 
@@ -620,45 +622,52 @@ ln -sf ~/.lian/nvim ~/.config/nvim
 ├──  lazy-lock.json
 ├──  lua
 │   ├──  core
-│   │   ├──  options.lua      # 基础选项（缩进/行号/分屏方向 ...）
-│   │   ├──  autocmds.lua     # 全局自动命令
-│   │   └──  keymaps.lua      # 全局快捷键（K / <leader>f* / 诊断跳转）
+│   │   ├──  options.lua      # 缩进 / 行号 / 搜索 / 滚动留白 ...
+│   │   ├──  autocmds.lua     # LSP 浮窗圆角
+│   │   └──  keymaps.lua      # 自定义键（尽量都走 <leader>=Space）
 │   └──  plugins
 │       ├──  init.lua         # lazy.nvim 引导 + 聚合 specs
 │       └──  specs            # 每类插件一个文件
 │           ├──  ui.lua          # nvim-tree + render-markdown
-│           ├──  lsp.lua         # lspconfig + mason + mason-lspconfig
-│           ├──  cmp.lua         # nvim-cmp + LuaSnip + cmp-nvim-lsp/buffer/path
-│           ├──  treesitter.lua  # nvim-treesitter（自动装 parser）
+│           ├──  status.lua      # lualine + bufferline
+│           ├──  minimap.lua     # 右侧缩略图（split，不挡编辑区）
+│           ├──  illuminate.lua  # 同词高亮
+│           ├──  indent.lua      # 缩进线 + 彩虹括号
+│           ├──  lsp.lua         # lspconfig + mason（lua_ls / pyright / vtsls）
+│           ├──  cmp.lua         # nvim-cmp + 图标 / 命令行补全
+│           ├──  treesitter.lua
 │           ├──  rust.lua        # rustaceanvim
+│           ├──  venv.lua        # 打开 .py 时向上找 .venv
 │           ├──  telescope.lua
-│           ├──  whichkey.lua
+│           ├──  whichkey.lua    # 中文分组
 │           ├──  comment.lua
 │           ├──  autopairs.lua
 │           ├──  git.lua         # vim-fugitive + gitsigns
-│           └──  venv.lua        # python venv 选择器
-│           └──  wakatime.lua    # WakaTime 统计
-└──  sakurine                 # 我自己写的主题（colorscheme），不是第三方主题包
+│           └──  wakatime.lua
+└──  sakurine                 # 自研配色，不是第三方主题包
     ├──  autoload
     └──  colors
 ```
 
 ##### 插件清单
 
-我使用 [lazy.nvim](https://github.com/folke/lazy.nvim) 管理插件（`init.lua` 自举克隆） 当前实际启用的插件：
+我使用 [lazy.nvim](https://github.com/folke/lazy.nvim) 管理插件（`init.lua` 自举克隆）。当前实际启用的插件：
 
 | 模块 | 插件 |
 |---|---|
 | 文件树 / Markdown | `nvim-tree.lua`、`render-markdown.nvim` |
+| 状态栏 / 标签 | `lualine.nvim`、`bufferline.nvim` |
+| 缩略图 | `neominimap.nvim`（右侧 split） |
 | LSP | `nvim-lspconfig` + `mason.nvim` + `mason-lspconfig.nvim`（默认装 `lua_ls` / `pyright` / `vtsls`） |
-| 补全 | `nvim-cmp` + `LuaSnip` + `cmp-nvim-lsp` / `cmp-buffer` / `cmp-path` / `cmp_luasnip` |
-| 语法 | `nvim-treesitter`（rust/lua/python/c/asm/dart/html/css/js/ts/vue/json/toml/sql/markdown 等） |
+| 补全 | `nvim-cmp` + `LuaSnip` + `cmp-nvim-lsp` / `cmp-buffer` / `cmp-path` / `cmp-cmdline` / `lspkind` |
+| 语法 | `nvim-treesitter`（rust/lua/python/c/asm/dart/html/css/js/vue/json/toml/sql/markdown 等） |
 | Rust | `rustaceanvim`（直接接管 rust-analyzer，不走 lspconfig） |
+| Python | `venv-selector.nvim`（自动找 `.venv`，`<leader>vs` 可手选） |
 | 模糊搜索 | `telescope.nvim` |
-| 依赖插件 | `plenary.nvim`、`nvim-web-devicons` |
-| Git | `vim-fugitive`、`gitsigns.nvim` |
-| 体验 | `which-key.nvim`、`comment.nvim`、`nvim-autopairs`、`vim-wakatime` |
-| Python | venv 选择器 |
+| Git | `vim-fugitive`（`:Git`）、`gitsigns.nvim` |
+| 阅读 | `vim-illuminate`、`indent-blankline.nvim`、`rainbow-delimiters.nvim` |
+| 体验 | `which-key.nvim`、`Comment.nvim`、`nvim-autopairs`、`vim-wakatime` |
+| 依赖 | `plenary.nvim`、`nvim-web-devicons` |
 
 系统依赖：
 
@@ -671,25 +680,30 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 ##### 常用快捷键
 
-> `<leader>` = 空格键（Space） 
+> `<leader>` = 空格键（Space）。自定义键尽量走 Leader，不抢 Vim 原生。忘了按 `Space` 等 `which-key` 即可。
 
 | 键 | 功能 |
 |---|---|
-| `<leader>w` | 切换文件树（nvim-tree） |
-| `<leader>e` | 在「文件树 / 编辑区」之间切焦点 |
-| 文件树里 `v` | 竖分屏打开选中文件 |
-| `<leader>ff` / `fg` / `fb` / `fh` | Telescope：文件 / 文本 / Buffer / 帮助 |
-| `<leader>dd` / `]d` / `[d` | 诊断详情 / 下一处 / 上一处 |
-| `<leader>ca` | 代码操作（rust 内由 rustaceanvim 接管） |
-| `K` | 悬停文档（带圆角 border） |
-
-忘了的话直接按 `Space` 等 `which-key` 弹出提示即可 
+| `<leader>w` | 开关文件树 |
+| `<leader>e` | 文件树 ↔ 编辑区 |
+| 树内 `a` / `d` / `r` | 新建 / 删除 / 重命名 |
+| `<leader><Left>` / `<Right>` | 上一个 / 下一个标签 |
+| `<leader><Up>` | 关闭当前标签（未保存会拒绝） |
+| `<leader>ff` / `<leader>fg` | 全库按文件名 / 按内容搜索（当前文件用 `/` + `n`） |
+| `<leader>k` | 查看文档 |
+| `<leader>dd` | 当前行诊断 |
+| `<leader>cc` | 注释 / 取消当前行 |
+| `<leader>vs` | 手动选择 Python 虚拟环境 |
+| `Ctrl+E`（插入） | 打开 / 关闭补全 |
+| `Tab` / `Shift+Tab` | 补全下一项 / 上一项（仅菜单打开时） |
 
 ---
 
 ## | qsl
 
 [Quickshell](https://quickshell.outfoxxed.me/) 是桌面主交互层；本仓库的配置在 **`qsl/`**（`~/.config/quickshell` → `~/.lian/qsl`）。
+
+旧的 `quickshell/` 已归档到 [`legacy/quickshell`](https://github.com/Yueosa/.lian/tree/legacy/quickshell)，主线以这里为准。
 
 ![桌面](./image/qsl-desktop.png)
 

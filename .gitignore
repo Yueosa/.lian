@@ -1,41 +1,5 @@
-# ============================================================
-# 个人速记 / 笔记 / 工作计划（保留在本地，不入库）
-# ============================================================
-
 # color.conf：我的配色速记，开发/写主题时翻
 color.conf
-
-# config.md：个人配置笔记（待重写）
-config.md
-
-# plan.md：当前阶段的工作计划草稿
-plan.md
-architecture-rfc.md
-
-# TODO.md：仓库根目录整理计划（本地草稿）；qsl/TODO.md 可入库
-/TODO.md
-
-# FEATURES.md：功能速记（本地草稿）
-FEATURES.md
-
-# CLAUDE.md：AI 协作规范（本地，不入库）
-CLAUDE.md
-
-# example: 测试文件
-example
-
-# VS Code 工作区设置（个人）
-.vscode/
-
-# ============================================================
-# Agent 工作目录 / 隐私文件
-# ============================================================
-
-# claude code / codex 等 agent 在仓库根或子目录留下的元数据（文件或目录都忽略）
-.claude
-.codex
-**/.codex
-**/.claude
 
 # secrets
 .env
@@ -69,6 +33,3 @@ fcitx5/rime/custom_phrase.txt
 # 动态切换主题（matugen 在运行时写出的成品，模板在 matugen/templates/ 下不受影响）
 /gtk-3.0/gtk.css
 /gtk-4.0/gtk.css
-
-# C++ 构建产物
-/quickshell/core/build/
