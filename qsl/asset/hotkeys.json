@@ -128,42 +128,54 @@
       "title": "Neovim",
       "sections": [
         {
-          "id": "search",
-          "title": "搜索（Leader=Space）",
+          "id": "tree",
+          "title": "文件树（Leader=Space）",
           "items": [
-            { "keys": "Space+ff", "desc": "搜索文件 (Telescope)" },
-            { "keys": "Space+fg", "desc": "全文搜索" },
-            { "keys": "Space+fb", "desc": "切换 Buffer" },
-            { "keys": "Space+fh", "desc": "搜索帮助" }
+            { "keys": "Space+w", "desc": "开关文件树" },
+            { "keys": "Space+e", "desc": "文件树 ↔ 编辑区" },
+            { "keys": "a / d / r（树内）", "desc": "新建 / 删除 / 重命名" }
           ]
         },
         {
-          "id": "tree",
-          "title": "文件树",
+          "id": "buffer",
+          "title": "标签",
           "items": [
-            { "keys": "Space+w", "desc": "开关文件树" },
-            { "keys": "Space+e", "desc": "文件树 ↔ 编辑区焦点" },
-            { "keys": "v（树内）", "desc": "竖分屏打开文件" }
+            { "keys": "Space+Left / Right", "desc": "上一个 / 下一个标签" },
+            { "keys": "Space+Up", "desc": "关闭当前标签（未保存会拒绝）" }
+          ]
+        },
+        {
+          "id": "search",
+          "title": "搜索",
+          "items": [
+            { "keys": "Space+ff", "desc": "按文件名搜索" },
+            { "keys": "Space+fg", "desc": "按内容搜索" }
           ]
         },
         {
           "id": "lsp",
-          "title": "LSP / 诊断",
+          "title": "文档 / 诊断",
           "items": [
-            { "keys": "K", "desc": "悬停文档" },
-            { "keys": "Space+dd", "desc": "诊断浮窗" },
-            { "keys": "]d", "desc": "下一处诊断" },
-            { "keys": "[d", "desc": "上一处诊断" }
+            { "keys": "Space+k", "desc": "查看文档" },
+            { "keys": "Space+dd", "desc": "当前行诊断" }
           ]
         },
         {
           "id": "edit",
-          "title": "补全",
+          "title": "注释 / 补全",
           "items": [
-            { "keys": "Tab", "desc": "补全下一项" },
-            { "keys": "Shift+Tab", "desc": "补全上一项" },
-            { "keys": "Enter", "desc": "确认补全" },
-            { "keys": "Ctrl+Space", "desc": "手动触发补全" }
+            { "keys": "Space+cc", "desc": "注释 / 取消当前行（可视模式对选中同样）" },
+            { "keys": "Ctrl+E（插入）", "desc": "打开 / 关闭补全" },
+            { "keys": "Tab / Shift+Tab", "desc": "补全下一项 / 上一项（仅菜单打开时）" },
+            { "keys": "Enter", "desc": "已选中则采用，否则换行" }
+          ]
+        },
+        {
+          "id": "python",
+          "title": "Python",
+          "items": [
+            { "keys": "自动", "desc": "打开 .py 时从文件目录往上找 .venv" },
+            { "keys": "Space+vs", "desc": "手动选择虚拟环境" }
           ]
         }
       ]
