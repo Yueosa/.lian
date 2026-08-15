@@ -1,0 +1,13 @@
+[Unit]
+Description=metacubexd local static UI
+PartOf=hyprland-session.target
+After=hyprland-session.target mihomo.service
+Wants=mihomo.service
+[Service]
+Type=simple
+WorkingDirectory=/usr/share/metacubexd
+ExecStart=/usr/bin/python3 -m http.server 8090 --bind 127.0.0.1 --directory /usr/share/metacubexd
+Restart=on-failure
+RestartSec=2
+[Install]
+WantedBy=hyprland-session.target

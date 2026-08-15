@@ -1,0 +1,12 @@
+[Unit]
+Description=mihomo proxy core (bare)
+PartOf=hyprland-session.target
+After=hyprland-session.target network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+ExecStart=/usr/bin/mihomo -d /home/Sakurine/.config/mihomo
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=hyprland-session.target

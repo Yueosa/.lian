@@ -58,7 +58,6 @@ hl.on("hyprland.start", function()
 
     -- 5. Layer 3 GUI 应用
     hl.exec_cmd("kanshi")                               -- 多显示器自动配置
-    hl.exec_cmd("mihomo-party")                         -- 代理客户端
     -- lya 是 StatusNotifier 托盘：必须等 qs 的 StatusNotifierWatcher 就绪。
     -- 跟 qs 同帧 exec 会 race，注册失败就退出；终端手动开时 watcher 早在，所以看起来「只有开机不行」。
     hl.exec_cmd(
