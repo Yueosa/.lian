@@ -4,8 +4,12 @@ return {
         event = "VeryLazy",
         config = function()
             require("Comment").setup({
+                -- 不启用默认 gcc，改走 <leader>cc
+                mappings = {
+                    basic = false,
+                    extra = false,
+                },
                 pre_hook = function(ctx)
-                    -- JSON/JSONC 用 // 注释
                     if vim.bo.filetype == "json" or vim.bo.filetype == "jsonc" then
                         vim.bo.commentstring = "//%s"
                     end

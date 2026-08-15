@@ -6,14 +6,6 @@ return {
         config = function()
             vim.g.rustaceanvim = {
                 server = {
-                    on_attach = function(_, bufnr)
-                        vim.keymap.set(
-                            "n",
-                            "<leader>ca",
-                            function() vim.cmd.RustLsp("codeAction") end,
-                            { buffer = bufnr, desc = "代码操作" }
-                        )
-                    end,
                     default_settings = {
                         ["rust-analyzer"] = {
                             cargo = {
