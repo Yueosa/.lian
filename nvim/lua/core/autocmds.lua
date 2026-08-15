@@ -17,11 +17,3 @@ vim.lsp.handlers["textDocument/signatureHelp"] = function(_, result, ctx, config
     })
     return orig_sig(_, result, ctx, config)
 end
-
--- 离开插入模式自动保存（仅 Markdown）
-vim.api.nvim_create_autocmd("InsertLeave", {
-    pattern = "*.md",
-    callback = function()
-        vim.cmd("silent write")
-    end,
-})
