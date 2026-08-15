@@ -32,6 +32,7 @@ alias du='dust'
 alias lpic='lpic-process'
 # kitty terminfo 的 clear 只有 \e[H\e[2J，不擦 scrollback，看起来像翻页；补上 \e[3J
 alias clear='printf "\e[H\e[2J\e[3J"'
+alias oc = 'opencode'
 
 
 # --- 补全增强 ----
