@@ -7,6 +7,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Hyprland
+import qs.Components
 import qs.data.state
 
 Item {
@@ -28,23 +29,20 @@ Item {
     property real displayWidth: contentWidth
 
     onContentWidthChanged: {
-        if (contentWidth >= displayWidth - 0.5) {
-            widthAnim.stop()
-            displayWidth = contentWidth
-        } else {
-            widthAnim.stop()
-            widthAnim.from = displayWidth
-            widthAnim.to = contentWidth
-            widthAnim.start()
-        }
+        // 段宽直绑内容：变长也变短都走动画，段和耳朵才始终同步
+        // （旧设计变长瞬移，是独立药丸时代的取舍）
+        widthAnim.stop()
+        widthAnim.from = displayWidth
+        widthAnim.to = contentWidth
+        widthAnim.start()
     }
 
-    NumberAnimation {
+    Anim {
         id: widthAnim
         target: root
         property: "displayWidth"
-        duration: Size.anim.slow
-        easing.type: Easing.OutCubic
+        // 药丸收拢用快档：长尾期布局一直变，时长压短
+        type: Anim.SpatialFast
     }
 
     Component.onCompleted: displayWidth = contentWidth

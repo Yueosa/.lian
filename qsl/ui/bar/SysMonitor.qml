@@ -15,13 +15,16 @@ Item {
 
     property bool isHovered: mouseArea.containsMouse
 
+    // 收起动画期间内容比根宽，不裁会画到栏上
+    clip: true
+
     implicitHeight: 36
     implicitWidth: isHovered
         ? (contentLayout.implicitWidth + 24)
         : (ramGroup.implicitWidth + 24)
 
     Behavior on implicitWidth {
-        NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+        Anim { type: Anim.SpatialFast }
     }
 
     Component.onCompleted: {
@@ -82,7 +85,7 @@ Item {
             spacing: 4
             visible: opacity > 0
             opacity: root.isHovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { Anim { type: Anim.Effects } }
 
             Text {
                 text: "speed"
@@ -103,7 +106,7 @@ Item {
             spacing: 4
             visible: Sysmon.gpuAvailable && opacity > 0
             opacity: root.isHovered && Sysmon.gpuAvailable ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { Anim { type: Anim.Effects } }
 
             // 与 SystemPage 一致：Outlined 无 graphics_card 字形
             Text {
