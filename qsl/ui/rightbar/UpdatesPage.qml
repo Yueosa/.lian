@@ -59,7 +59,7 @@ Item {
                 : Color.surfaceHigh
             border.width: Style.border.width
             border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { CAnim {} }
 
             RowLayout {
                 anchors.fill: parent
@@ -133,9 +133,9 @@ Item {
             clip: true
             opacity: Updates.loading ? 1 : 0
             Behavior on Layout.preferredHeight {
-                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
 
             Rectangle {
                 width: parent.width * 0.35
@@ -144,6 +144,7 @@ Item {
                 color: Color.primary
                 visible: Updates.loading
 
+                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                 SequentialAnimation on x {
                     running: Updates.loading
                     loops: Animation.Infinite

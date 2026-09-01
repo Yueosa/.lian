@@ -30,8 +30,8 @@ Item {
         color: root.checked ? Color.primary : Color.surfaceHighest
         border.width: root.checked ? 0 : Math.max(1, Math.round(2 * root.s))
         border.color: Color.outline
-        Behavior on color { ColorAnimation { duration: Style.transition.fadeIn } }
-        Behavior on border.color { ColorAnimation { duration: Style.transition.fadeIn } }
+        Behavior on color { CAnim {} }
+        Behavior on border.color { CAnim {} }
     }
 
     Rectangle {
@@ -46,13 +46,9 @@ Item {
             ? parent.width - width - (root.pressed ? 2 : 4) * root.s
             : (root.pressed ? 2 : 8) * root.s
         color: root.checked ? Color.textOnPrimary : Color.outline
-        Behavior on x {
-            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-        }
-        Behavior on width {
-            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-        }
-        Behavior on color { ColorAnimation { duration: Style.transition.fadeIn } }
+        Behavior on x { Anim { type: Anim.Spatial } }
+        Behavior on width { Anim { type: Anim.Spatial } }
+        Behavior on color { CAnim {} }
     }
 
     MouseArea {

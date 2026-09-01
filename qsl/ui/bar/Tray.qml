@@ -8,6 +8,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.SystemTray
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -72,7 +73,7 @@ Item {
             color: root.trayOverflowOpen ? Color.primary : Color.textMuted
             rotation: root.trayOverflowOpen ? 180 : 0
             Behavior on rotation {
-                NumberAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
             Layout.alignment: Qt.AlignVCenter
 

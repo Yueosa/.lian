@@ -6,6 +6,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 WlSessionLockSurface {
@@ -14,7 +15,8 @@ WlSessionLockSurface {
     required property WlSessionLock lock
     required property var context
 
-    color: Color.surface
+    // 底色透明：进入时桌面短暂可见（锁屏"盖上来"），退出时随整体淡出露出桌面
+    color: "transparent"
 
     readonly property bool exiting: !!(context && context.dismissing)
 
@@ -46,92 +48,105 @@ WlSessionLockSurface {
 
     ParallelAnimation {
         id: enterAnim
-        NumberAnimation {
+        // 整体"盖上来"：桌面短暂可见 → 锁屏从 1.06 倍落回原位
+        // scale 与 hypr windowsIn 同一条 spatial 曲线同一个 500ms
+        Anim {
+            target: stage; property: "opacity"; to: 1
+            type: Anim.Effects
+        }
+        Anim {
+            target: stage; property: "scale"; to: 1
+            type: Anim.Spatial
+        }
+        Anim {
             target: root; property: "wpOpacity"; to: 1
-            duration: 320; easing.type: Easing.OutCubic
+            type: Anim.EffectsSlow
         }
-        NumberAnimation {
+        Anim {
             target: root; property: "scrimOpacity"; to: 0.55
-            duration: 360; easing.type: Easing.OutCubic
+            type: Anim.EffectsSlow
         }
-        NumberAnimation {
+        Anim {
             target: root; property: "chromeOpacity"; to: 1
-            duration: 340; easing.type: Easing.OutCubic
+            type: Anim.EffectsSlow
         }
-        NumberAnimation {
+        Anim {
             target: root; property: "chromeY"; to: 0
-            duration: 380; easing.type: Easing.OutCubic
+            type: Anim.Spatial
         }
     }
 
     ParallelAnimation {
         id: exitAnim
-        NumberAnimation {
-            target: root; property: "chromeOpacity"; to: 0
-            duration: 280; easing.type: Easing.InCubic
+        // 整体淡出：壁纸/遮罩/控件一起透明，桌面"淡入"显现，
+        // 中途不露出任何底色（之前的白屏就是底色外露）
+        Anim {
+            target: stage; property: "opacity"; to: 0
+            type: Anim.Exit
         }
-        NumberAnimation {
-            target: root; property: "chromeY"; to: -56
-            duration: 360; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: root; property: "scrimOpacity"; to: 0
-            duration: 380; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: root; property: "wpOpacity"; to: 0
-            duration: 400; easing.type: Easing.InCubic
+        Anim {
+            target: stage; property: "scale"; to: 0.97
+            type: Anim.Exit
         }
     }
 
-    // 降采样壁纸：靠 sourceSize 软化细节，再叠重遮罩（避免 FastBlur 全屏 FBO）
-    Image {
-        id: wpImage
+    // 舞台：所有内容包一层，进入/退出整体做透明度与缩放
+    // 初始 opacity 0 + scale 1.06，由 enterAnim 落回
+    Item {
+        id: stage
         anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        cache: false
-        mipmap: false
-        opacity: root.wpOpacity
-        sourceSize.width: 960
-        property int fallbackStage: 0
-        source: {
-            if (fallbackStage <= 0)
-                return Wallpaper.preview
-            if (fallbackStage === 1)
-                return Wallpaper.current
-            return ""
+        opacity: 0
+        scale: 1.06
+
+        // 降采样壁纸：靠 sourceSize 软化细节，再叠重遮罩（避免 FastBlur 全屏 FBO）
+        Image {
+            id: wpImage
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            cache: false
+            mipmap: false
+            opacity: root.wpOpacity
+            sourceSize.width: 960
+            property int fallbackStage: 0
+            source: {
+                if (fallbackStage <= 0)
+                    return Wallpaper.preview
+                if (fallbackStage === 1)
+                    return Wallpaper.current
+                return ""
+            }
+            onStatusChanged: {
+                if (status === Image.Error && fallbackStage < 2)
+                    fallbackStage += 1
+            }
         }
-        onStatusChanged: {
-            if (status === Image.Error && fallbackStage < 2)
-                fallbackStage += 1
+
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, root.scrimOpacity)
         }
-    }
 
-    Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, root.scrimOpacity)
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        z: 0
-        onClicked: {
-            if (!root.exiting)
-                content.focusInput()
+        MouseArea {
+            anchors.fill: parent
+            z: 0
+            onClicked: {
+                if (!root.exiting)
+                    content.focusInput()
+            }
         }
-    }
 
-    LockContent {
-        id: content
-        anchors.fill: parent
-        opacity: root.chromeOpacity
-        transform: Translate { y: root.chromeY }
-        unlocking: root.context.unlockInProgress
-        failed: root.context.showFailure
-        dismissing: root.exiting
+        LockContent {
+            id: content
+            anchors.fill: parent
+            opacity: root.chromeOpacity
+            transform: Translate { y: root.chromeY }
+            unlocking: root.context.unlockInProgress
+            failed: root.context.showFailure
+            dismissing: root.exiting
 
-        onSubmit: root.tryUnlock()
+            onSubmit: root.tryUnlock()
+        }
     }
 
     Connections {

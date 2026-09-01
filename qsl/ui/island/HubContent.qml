@@ -5,6 +5,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 
 FocusScope {
@@ -94,10 +95,10 @@ FocusScope {
     height: implicitHeight
 
     Behavior on implicitWidth {
-        NumberAnimation { duration: 400; easing.type: Easing.OutQuint }
+        Anim {}
     }
     Behavior on implicitHeight {
-        NumberAnimation { duration: 400; easing.type: Easing.OutQuint }
+        Anim {}
     }
 
     readonly property var tabMeta: [
@@ -140,7 +141,7 @@ FocusScope {
                         font.pixelSize: Size.fontSize.title
                         color: active ? Color.textOnBackground : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                        Behavior on color { CAnim {} }
                     }
                     Text {
                         text: modelData.title
@@ -149,7 +150,7 @@ FocusScope {
                         font.bold: active
                         color: active ? Color.textOnBackground : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                        Behavior on color { CAnim {} }
                     }
                 }
 
@@ -162,9 +163,9 @@ FocusScope {
                     color: Color.textOnBackground
                     opacity: active ? 1 : 0
                     Behavior on width {
-                        NumberAnimation { duration: 300; easing.type: Easing.OutBack }
+                        Anim {}
                     }
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    Behavior on opacity { Anim { type: Anim.Effects } }
                 }
 
                 MouseArea {

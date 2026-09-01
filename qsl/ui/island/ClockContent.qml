@@ -2,6 +2,7 @@
 // 性能：无独立 Timer，跟 Time.rawDate；四格 RollingDigit 常驻（体积极小）
 
 import QtQuick
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -42,11 +43,7 @@ Item {
             y: -digitContainer.targetDigit * root.digitCellHeight
 
             Behavior on y {
-                SpringAnimation {
-                    spring: 3.5
-                    damping: 0.75
-                    mass: 1.0
-                }
+                Anim { type: Anim.Spatial }
             }
         }
     }

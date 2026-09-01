@@ -56,27 +56,4 @@ Singleton {
         readonly property real panelAlpha: 0.92
         readonly property real solidAlpha: 1.0
     }
-
-    // ============================================================
-    // 弹簧动画预设
-    //   spring.snappy: 轻快反弹（按钮按下/badge弹出）
-    //   spring.smooth: 柔和（面板展开/列表滚入）
-    //   spring.lazy:   缓慢（大面积过渡/锁屏滑动）
-    // ============================================================
-
-    readonly property QtObject spring: QtObject {
-        readonly property var snappy: ({ mass: 1, stiffness: 400, damping: 28 })
-        readonly property var smooth: ({ mass: 1, stiffness: 200, damping: 22 })
-        readonly property var lazy:   ({ mass: 1.2, stiffness: 120, damping: 18 })
-    }
-
-    // ============================================================
-    // 过渡效果辅助
-    // ============================================================
-
-    readonly property QtObject transition: QtObject {
-        readonly property int fadeIn: 120
-        readonly property int fadeOut: 80
-        readonly property int slideIn: 180
-    }
 }

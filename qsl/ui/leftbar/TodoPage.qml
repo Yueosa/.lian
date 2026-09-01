@@ -429,7 +429,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         opacity: delegateMa.containsMouse ? 1 : 0
                         Behavior on opacity {
-                            NumberAnimation { duration: 90 }
+                            Anim { type: Anim.EffectsFast }
                         }
 
                         Text {
@@ -493,7 +493,7 @@ Item {
                 color: Color.textMuted
                 rotation: root.showDone ? 0 : -90
                 Behavior on rotation {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                    Anim { type: Anim.SpatialFast }
                 }
             }
 

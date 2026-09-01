@@ -3,6 +3,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -279,7 +280,7 @@ PopupWindow {
                         color: (itemMa.containsMouse && !isSeparator)
                             ? Color.withAlpha(Color.primary, 0.15)
                             : "transparent"
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { CAnim {} }
 
                         Rectangle {
                             visible: menuItem.isSeparator

@@ -385,6 +385,7 @@ Item {
                     }
                 }
 
+                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                 SequentialAnimation {
                     id: scrollAnim
                     loops: Animation.Infinite

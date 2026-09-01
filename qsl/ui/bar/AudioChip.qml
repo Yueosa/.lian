@@ -3,6 +3,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -18,7 +19,7 @@ Rectangle {
     color: Color.withAlpha(Color.text, 0.08)
 
     Behavior on implicitWidth {
-        NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+        Anim { type: Anim.SpatialFast }
     }
 
     readonly property int sinkPct: Math.round((Volume.sinkMuted ? 0 : Volume.sinkVolume) * 100)
@@ -61,9 +62,9 @@ Rectangle {
             opacity: root.isHovered ? 1 : 0
             Layout.preferredWidth: root.isHovered ? sinkLabel.implicitWidth : 0
             clip: true
-            Behavior on opacity { NumberAnimation { duration: 160 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
             Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
         }
 
@@ -83,9 +84,9 @@ Rectangle {
                 ? micIcon.implicitWidth
                 : 0
             clip: true
-            Behavior on opacity { NumberAnimation { duration: 160 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
             Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
         }
 
@@ -103,9 +104,9 @@ Rectangle {
                 ? sourceLabel.implicitWidth
                 : 0
             clip: true
-            Behavior on opacity { NumberAnimation { duration: 160 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
             Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
         }
     }

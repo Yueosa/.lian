@@ -10,6 +10,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -188,7 +189,7 @@ PanelWindow {
         clearing = true
         // 用总条数而非 listView.count：停在应用列表页时详情列表是空的
         const n = Math.min(Notification.entries.length, clearAnimMax)
-        clearFinish.interval = Size.anim.normal + 50 + Math.max(0, n - 1) * clearStaggerMs
+        clearFinish.interval = Size.anim.durNormal + 50 + Math.max(0, n - 1) * clearStaggerMs
         clearFinish.restart()
     }
 
@@ -243,16 +244,16 @@ PanelWindow {
         transitions: [
             Transition {
                 from: "closed"; to: "open"
-                NumberAnimation {
+                Anim {
                     target: anim; property: "slide"
-                    duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.25
+                    type: Anim.Spatial
                 }
             },
             Transition {
                 from: "open"; to: "closed"
-                NumberAnimation {
+                Anim {
                     target: anim; property: "slide"
-                    duration: 280; easing.type: Easing.InBack; easing.overshoot: 0.08
+                    type: Anim.Exit
                 }
             }
         ]
@@ -325,10 +326,7 @@ PanelWindow {
                             : "transparent"
 
                         Behavior on Layout.preferredWidth {
-                            NumberAnimation {
-                                duration: Size.anim.fast
-                                easing.type: Easing.OutCubic
-                            }
+                            Anim { type: Anim.SpatialFast }
                         }
 
                         Text {
@@ -419,10 +417,7 @@ PanelWindow {
                     // 而且回收池要重新填充，来回切几次就明显卡。
                     property real pageShift: root.currentApp === "" ? 0 : -width
                     Behavior on pageShift {
-                        NumberAnimation {
-                            duration: Size.anim.smooth
-                            easing.type: Easing.OutCubic
-                        }
+                        Anim { type: Anim.Spatial }
                     }
 
                     // ---------- 应用列表页 ----------
@@ -587,10 +582,7 @@ PanelWindow {
 
                             Behavior on height {
                                 enabled: row.animateHeight
-                                NumberAnimation {
-                                    duration: Size.anim.normal
-                                    easing.type: Easing.OutCubic
-                                }
+                                Anim { type: Anim.Spatial }
                             }
 
                             // 正文/标题没被截断就没有可展开的内容，不给交互暗示
@@ -671,15 +663,13 @@ PanelWindow {
                             ParallelAnimation {
                                 id: exitAnim
                                 property bool thenDismiss: false
-                                NumberAnimation {
+                                Anim {
                                     target: body; property: "x"
-                                    to: row.width; duration: Size.anim.normal
-                                    easing.type: Easing.InCubic
+                                    to: row.width; type: Anim.Spatial
                                 }
-                                NumberAnimation {
+                                Anim {
                                     target: body; property: "opacity"
-                                    to: 0; duration: Size.anim.fast
-                                    easing.type: Easing.InQuad
+                                    to: 0; type: Anim.EffectsFast
                                 }
                                 onFinished: {
                                     if (thenDismiss)
@@ -759,10 +749,7 @@ PanelWindow {
                                         opacity: row.canExpand && !root.clearing ? 1 : 0
                                         rotation: row.expanded ? 180 : 0
                                         Behavior on rotation {
-                                            NumberAnimation {
-                                                duration: Size.anim.normal
-                                                easing.type: Easing.OutCubic
-                                            }
+                                            Anim { type: Anim.Spatial }
                                         }
                                     }
 

@@ -92,7 +92,7 @@ Item {
                 : Color.surfaceHigh
             border.width: Style.border.width
             border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { CAnim {} }
             clip: true
 
             ColumnLayout {
@@ -302,9 +302,9 @@ Item {
             clip: true
             opacity: Network.wifiScanning ? 1 : 0
             Behavior on Layout.preferredHeight {
-                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
 
             Rectangle {
                 width: parent.width * 0.35
@@ -313,6 +313,7 @@ Item {
                 color: Color.primary
                 visible: Network.wifiScanning
 
+                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                 SequentialAnimation on x {
                     running: Network.wifiScanning
                     loops: Animation.Infinite
@@ -452,9 +453,9 @@ Item {
                     }
 
                     Behavior on height {
-                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.Spatial }
                     }
-                    Behavior on color { ColorAnimation { duration: 140 } }
+                    Behavior on color { CAnim {} }
 
                     ColumnLayout {
                         id: mainCol
@@ -549,6 +550,7 @@ Item {
                                 font.pixelSize: Size.fontSize.lg
                                 color: Color.textMuted
 
+                                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                                 RotationAnimator on rotation {
                                     from: 0
                                     to: 360
@@ -568,9 +570,9 @@ Item {
                             clip: true
 
                             Behavior on Layout.preferredHeight {
-                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                Anim { type: Anim.Spatial }
                             }
-                            Behavior on opacity { NumberAnimation { duration: 160 } }
+                            Behavior on opacity { Anim { type: Anim.EffectsFast } }
 
                             ColumnLayout {
                                 id: passCol
@@ -590,7 +592,7 @@ Item {
                                     border.color: passInput.activeFocus
                                         ? Color.primary
                                         : Color.outlineVariant
-                                    Behavior on border.color { ColorAnimation { duration: 120 } }
+                                    Behavior on border.color { CAnim {} }
 
                                     TextInput {
                                         id: passInput

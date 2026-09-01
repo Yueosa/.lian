@@ -35,7 +35,7 @@ Item {
             font.pixelSize: Size.fontSize.title
             color: root.selected ? Color.textOnBackground : Color.textMuted
             anchors.horizontalCenter: parent.horizontalCenter
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { CAnim {} }
         }
         Text {
             text: root.text
@@ -44,7 +44,7 @@ Item {
             font.bold: root.selected
             color: root.selected ? Color.textOnBackground : Color.textMuted
             anchors.horizontalCenter: parent.horizontalCenter
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { CAnim {} }
         }
     }
 
@@ -56,10 +56,8 @@ Item {
         radius: Size.island.hubTabIndicatorHeight / 2
         color: Color.textOnBackground
         opacity: root.selected ? 1 : 0
-        Behavior on width {
-            NumberAnimation { duration: 300; easing.type: Easing.OutBack }
-        }
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on width { Anim { type: Anim.Spatial } }
+        Behavior on opacity { Anim { type: Anim.Effects } }
     }
 
     MouseArea {

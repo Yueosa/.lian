@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.freewindow.app
 
@@ -240,7 +241,7 @@ Item {
             highlightRangeMode: ListView.StrictlyEnforceRange
             preferredHighlightBegin: 0
             preferredHighlightEnd: height - root.itemHeight
-            highlightMoveDuration: 120
+            highlightMoveDuration: Size.anim.durFast
             highlight: Rectangle {
                 color: Color.primary
                 radius: Size.rounding.md
@@ -264,13 +265,13 @@ Item {
             }
 
             add: Transition {
-                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 }
+                Anim { property: "opacity"; from: 0; to: 1; type: Anim.EffectsFast }
             }
             remove: Transition {
-                NumberAnimation { property: "opacity"; to: 0; duration: 100 }
+                Anim { property: "opacity"; to: 0; type: Anim.EffectsFast }
             }
             displaced: Transition {
-                NumberAnimation { property: "y"; duration: 200 }
+                Anim { property: "y"; type: Anim.Spatial }
             }
 
             delegate: Item {
@@ -289,11 +290,11 @@ Item {
 
                 Behavior on opacity {
                     enabled: root.animEnabled
-                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                    Anim { type: Anim.Exit }
                 }
                 Behavior on x {
                     enabled: root.animEnabled
-                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                    Anim { type: Anim.Exit }
                 }
 
                 MouseArea {
@@ -316,7 +317,7 @@ Item {
 
                     Behavior on scale {
                         enabled: root.animEnabled
-                        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.EffectsFast }
                     }
 
                     Item {

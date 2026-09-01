@@ -3,6 +3,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -21,9 +22,9 @@ Rectangle {
         : Color.withAlpha(Color.text, 0.08)
 
     Behavior on implicitWidth {
-        NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+        Anim { type: Anim.SpatialFast }
     }
-    Behavior on color { ColorAnimation { duration: 200 } }
+    Behavior on color { CAnim {} }
 
     RowLayout {
         id: layout
@@ -56,9 +57,9 @@ Rectangle {
             Layout.maximumWidth: 140
             elide: Text.ElideRight
             clip: true
-            Behavior on opacity { NumberAnimation { duration: 160 } }
+            Behavior on opacity { Anim { type: Anim.EffectsFast } }
             Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+                Anim { type: Anim.SpatialFast }
             }
         }
     }

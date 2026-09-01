@@ -21,7 +21,7 @@ Rectangle {
     color: ma.pressed
         ? Color.withAlpha(Color.text, 0.14)
         : (ma.containsMouse ? Color.withAlpha(Color.text, 0.08) : "transparent")
-    Behavior on color { ColorAnimation { duration: Style.transition.fadeIn } }
+    Behavior on color { CAnim {} }
 
     Text {
         id: glyph
@@ -31,6 +31,7 @@ Rectangle {
         font.pixelSize: root.iconSize
         color: root.busy ? Color.primary : Color.textMuted
 
+        // 装饰性/刷新动画，不走令牌（plan.md 白名单）
         RotationAnimator on rotation {
             from: 0
             to: 360

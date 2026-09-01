@@ -13,6 +13,7 @@ import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.freewindow.clipboard
 
@@ -304,7 +305,7 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
             currentIndex: root.currentRow
             highlightFollowsCurrentItem: true
-            highlightMoveDuration: Size.anim.normal
+            highlightMoveDuration: Size.anim.durFast
             highlightRangeMode: ListView.ApplyRange
             preferredHighlightBegin: root.navInset
             preferredHighlightEnd: height - root.textRowHeight - root.navInset
@@ -327,11 +328,11 @@ Item {
 
                 Behavior on opacity {
                     enabled: root.animEnabled
-                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                    Anim { type: Anim.Exit }
                 }
                 Behavior on x {
                     enabled: root.animEnabled
-                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                    Anim { type: Anim.Exit }
                 }
 
                 Loader {
@@ -365,11 +366,11 @@ Item {
 
                         Behavior on color {
                             enabled: root.animEnabled
-                            ColorAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                            CAnim {}
                         }
                         Behavior on scale {
                             enabled: root.animEnabled
-                            NumberAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                            Anim { type: Anim.EffectsFast }
                         }
 
                         MouseArea {
@@ -396,7 +397,7 @@ Item {
 
                             Behavior on color {
                                 enabled: root.animEnabled
-                                ColorAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                                CAnim {}
                             }
                         }
                     }
@@ -425,11 +426,11 @@ Item {
                                 opacity: cellFade ? 0 : 1
                                 Behavior on opacity {
                                     enabled: root.animEnabled
-                                    NumberAnimation { duration: root.launchAnimMs; easing.type: Easing.InCubic }
+                                    Anim { type: Anim.Exit }
                                 }
                                 Behavior on scale {
                                     enabled: root.animEnabled
-                                    NumberAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                                    Anim { type: Anim.EffectsFast }
                                 }
 
                                 layer.enabled: thumbImg.status === Image.Ready
@@ -482,7 +483,7 @@ Item {
 
                                     Behavior on opacity {
                                         enabled: root.animEnabled
-                                        NumberAnimation { duration: Size.anim.fast; easing.type: Easing.OutCubic }
+                                        Anim { type: Anim.EffectsFast }
                                     }
                                 }
 

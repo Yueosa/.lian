@@ -4,7 +4,7 @@ pragma Singleton
 // 配色方案 — Color
 // ============================================================
 // 只吃 matugen 产物：~/.cache/quickshell_colors.json
-// 换壁纸时对各 color 属性做 ColorAnimation，避免整表闪切
+// 换壁纸时对各 color 属性做 CAnim 渐变，避免整表闪切
 //
 // 注意：不要用 onSurface / onPrimary 这种属性名。
 // ============================================================
@@ -19,6 +19,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Components
 
 Singleton {
     id: root
@@ -64,71 +65,69 @@ Singleton {
     property color textOnPrimary: "#003544"
     property color textOnBackground: "#dee3e6"
 
-    readonly property int _colorAnimMs: 420
-
     Behavior on primary {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on background {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on surface {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on surfaceHigh {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on surfaceHighest {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on secondary {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on tertiary {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on error {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on outline {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on outlineVariant {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on secondaryFixed {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on shadow {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on text {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on textMuted {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on textOnPrimary {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
     Behavior on textOnBackground {
         enabled: root._animateColors
-        ColorAnimation { duration: root._colorAnimMs; easing.type: Easing.InOutSine }
+        CAnim { type: CAnim.Theme }
     }
 
     function _colorOf(snakeKey) {

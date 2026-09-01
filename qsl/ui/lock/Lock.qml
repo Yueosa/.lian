@@ -12,7 +12,7 @@ Scope {
     property string _dismissReason: ""
 
     // 与 LockSurface exitAnim 对齐（略长于动画，避免截断）
-    readonly property int dismissMs: 420
+    readonly property int dismissMs: 250
 
     function lock() {
         if (sessionLock.locked)

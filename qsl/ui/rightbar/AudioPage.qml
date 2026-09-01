@@ -122,7 +122,7 @@ Item {
             color: Volume.hasSink && !Volume.sinkMuted
                 ? Color.withAlpha(Color.primary, 0.12)
                 : Color.withAlpha(Color.text, 0.06)
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { CAnim {} }
             clip: true
 
             ColumnLayout {

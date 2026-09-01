@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.Mpris
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -153,7 +154,7 @@ Item {
 
                 scale: root.isPlaying ? 1.0 : 0.95
                 Behavior on scale {
-                    SpringAnimation { spring: 3.5; damping: 0.6 }
+                    Anim { type: Anim.Spatial }
                 }
 
                 Image {
@@ -200,6 +201,7 @@ Item {
                         radius: 2
                         color: Color.primary
                         Behavior on height {
+                            // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                             NumberAnimation { duration: 60; easing.type: Easing.OutQuad }
                         }
                     }
@@ -350,7 +352,7 @@ Item {
                     highlightRangeMode: ListView.StrictlyEnforceRange
                     preferredHighlightBegin: height / 2 - 28
                     preferredHighlightEnd: height / 2 + 28
-                    highlightMoveDuration: 350
+                    highlightMoveDuration: Size.anim.durFast
                     highlightMoveVelocity: -1
 
                     Connections {
@@ -388,19 +390,16 @@ Item {
                             transformOrigin: Item.Center
 
                             Behavior on font.pixelSize {
-                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                Anim {}
                             }
                             Behavior on opacity {
-                                NumberAnimation { duration: 200 }
+                                Anim { type: Anim.Effects }
                             }
                             Behavior on scale {
-                                SpringAnimation {
-                                    spring: 4.0
-                                    damping: 0.65
-                                }
+                                Anim { type: Anim.Spatial }
                             }
                             Behavior on color {
-                                ColorAnimation { duration: 200 }
+                                CAnim {}
                             }
                         }
                     }
@@ -469,6 +468,7 @@ Item {
                             SmoothedAnimation { velocity: 500; duration: 400 }
                         }
 
+                        // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                         NumberAnimation on phase {
                             loops: Animation.Infinite
                             from: 0

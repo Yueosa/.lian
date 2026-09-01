@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -75,9 +76,9 @@ FocusScope {
             : "transparent"
         scale: area.pressed ? 0.92 : (area.containsMouse ? 1.04 : 1.0)
 
-        Behavior on color { ColorAnimation { duration: 180 } }
+        Behavior on color { CAnim {} }
         Behavior on scale {
-            NumberAnimation { duration: 170; easing.type: Easing.OutCubic }
+            Anim { type: Anim.Effects }
         }
 
         Text {

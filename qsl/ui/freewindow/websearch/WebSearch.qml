@@ -12,6 +12,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 PanelWindow {
@@ -127,14 +128,13 @@ PanelWindow {
     property real _opacity: open ? 1 : 0
 
     Behavior on _slideY {
-        NumberAnimation {
+        Anim {
             id: slideAnim
-            duration: 250
-            easing.type: Easing.OutCubic
+            type: Anim.Spatial
         }
     }
     Behavior on _opacity {
-        NumberAnimation { duration: 200 }
+        Anim { type: Anim.Effects }
     }
 
     FocusScope {

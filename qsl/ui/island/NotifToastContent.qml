@@ -169,6 +169,7 @@ Item {
                     color: row.accent
                     width: row.width - 20
 
+                    // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                     NumberAnimation on width {
                         from: row.width - 20
                         to: 0

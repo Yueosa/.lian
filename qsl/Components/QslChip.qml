@@ -24,7 +24,7 @@ Rectangle {
     color: selected
         ? Color.withAlpha(Color.primary, 0.18)
         : (ma.containsMouse ? Color.withAlpha(Color.text, 0.06) : "transparent")
-    Behavior on color { ColorAnimation { duration: Style.transition.fadeIn } }
+    Behavior on color { CAnim {} }
 
     Row {
         id: row

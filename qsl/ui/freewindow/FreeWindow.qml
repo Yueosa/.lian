@@ -1,7 +1,7 @@
 // FreeWindow — 弹出窗口壳
 //
 // 统一：几何 / 入退场动画 / Esc / 关闭时不挡点击
-// 入场 OutBack(0.3) / 退场 InBack(0.1)
+// 入场 Anim.Spatial（curveSpatial 过冲）/ 退场 Anim.Exit（curveAccel 加速）
 //
 // 关态 visible 保持 true：IPC 开/关若卸 layer 会同步建/拆全屏缓冲，
 // 表现为「卡一下再播动画」。关态靠 mask=0 不挡点击。
@@ -10,6 +10,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 PanelWindow {
@@ -108,22 +109,18 @@ PanelWindow {
         transitions: [
             Transition {
                 from: "closed"; to: "open"
-                NumberAnimation {
+                Anim {
                     target: anim
                     property: "slide"
-                    duration: 500
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 0.3
+                    type: Anim.Spatial
                 }
             },
             Transition {
                 from: "open"; to: "closed"
-                NumberAnimation {
+                Anim {
                     target: anim
                     property: "slide"
-                    duration: 350
-                    easing.type: Easing.InBack
-                    easing.overshoot: 0.1
+                    type: Anim.Exit
                 }
             }
         ]

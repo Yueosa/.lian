@@ -5,6 +5,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -159,7 +160,7 @@ Item {
                     border.width: 2
                     border.color: Color.surfaceHighest
                     Behavior on x {
-                        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+                        Anim {}
                     }
                 }
             }
@@ -199,7 +200,7 @@ Item {
             radius: Math.min(tile.radius, width / 2)
             color: Color.withAlpha(tile.iconColor, 0.16)
             Behavior on width {
-                NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+                Anim {}
             }
         }
 
@@ -366,6 +367,7 @@ Item {
                                 font.pixelSize: Size.fontSize.md
                                 color: refreshMa.containsMouse ? Color.primary : Color.textMuted
 
+                                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                                 NumberAnimation {
                                     id: spinAnim
                                     target: refreshIcon
@@ -375,6 +377,7 @@ Item {
                                     duration: 800
                                     loops: Animation.Infinite
                                 }
+                                // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                                 RotationAnimation {
                                     id: resetAnim
                                     target: refreshIcon
@@ -512,7 +515,7 @@ Item {
                                             border.width: 2
                                             border.color: Color.surfaceHigh
                                             Behavior on x {
-                                                NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+                                                Anim {}
                                             }
                                         }
                                     }
@@ -637,7 +640,7 @@ Item {
                 bottomLeftRadius: 17
                 topRightRadius: root.isHourly ? 17 : 6
                 bottomRightRadius: root.isHourly ? 17 : 6
-                Behavior on color { ColorAnimation { duration: 180 } }
+                Behavior on color { CAnim {} }
 
                 Text {
                     anchors.centerIn: parent
@@ -664,7 +667,7 @@ Item {
                 bottomRightRadius: 17
                 topLeftRadius: !root.isHourly ? 17 : 6
                 bottomLeftRadius: !root.isHourly ? 17 : 6
-                Behavior on color { ColorAnimation { duration: 180 } }
+                Behavior on color { CAnim {} }
 
                 Text {
                     anchors.centerIn: parent
@@ -745,7 +748,7 @@ Item {
             radius: root.isHourly ? Size.rounding.lg : 0
             color: root.isHourly ? Color.surfaceHigh : "transparent"
             clip: true
-            Behavior on color { ColorAnimation { duration: 180 } }
+            Behavior on color { CAnim {} }
 
             Item {
                 anchors.fill: parent
@@ -757,7 +760,7 @@ Item {
                     renderTarget: Canvas.FramebufferObject
                     opacity: root.isHourly ? 1.0 : 0.0
                     visible: opacity > 0.01
-                    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutSine } }
+                    Behavior on opacity { Anim { type: Anim.Effects } }
 
                     Connections {
                         target: Color
@@ -980,7 +983,7 @@ Item {
                     anchors.fill: parent
                     opacity: root.isHourly ? 0.0 : 1.0
                     visible: opacity > 0.01
-                    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutSine } }
+                    Behavior on opacity { Anim { type: Anim.Effects } }
 
                     readonly property int rowH: Math.max(
                         36,

@@ -489,7 +489,7 @@ Item {
                 // 空闲时收成窄条：三个 0.0 加三条平线不值一整行
                 Layout.preferredHeight: (expanded || !Sysmon.psiAvailable) ? 54 : 34
                 Behavior on Layout.preferredHeight {
-                    NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    Anim { type: Anim.Spatial }
                 }
 
                 radius: Size.rounding.lg

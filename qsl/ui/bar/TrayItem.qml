@@ -3,6 +3,7 @@
 
 import QtQuick
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -123,7 +124,7 @@ MouseArea {
         sourceSize.width: 40
         sourceSize.height: 40
         opacity: root.containsMouse ? 1.0 : 0.88
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { Anim { type: Anim.EffectsFast } }
 
         source: {
             const appId = root.detectBundledAppId()

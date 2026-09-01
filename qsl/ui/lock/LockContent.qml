@@ -273,7 +273,7 @@ Item {
                         ? Color.primary
                         : Color.withAlpha(Color.outlineVariant, 0.5))
 
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { CAnim {} }
 
                 Row {
                     anchors.fill: parent
@@ -322,6 +322,7 @@ Item {
         }
     }
 
+    // 装饰性/刷新动画，不走令牌（plan.md 白名单）：密码错误抖动，40–60ms 短档位手写关键帧
     SequentialAnimation {
         id: shakeAnim
         NumberAnimation { target: pwdShake; property: "x"; to: 14; duration: 40 }
@@ -361,7 +362,7 @@ Item {
 
                 scale: root.isPlaying ? 1.0 : 0.94
                 Behavior on scale {
-                    SpringAnimation { spring: 3.5; damping: 0.6 }
+                    Anim { type: Anim.Spatial }
                 }
 
                 Image {

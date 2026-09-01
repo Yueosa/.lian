@@ -23,8 +23,10 @@ pragma Singleton
 //   spacing.xs ~ xl       6 级
 //
 // 动画：
-//   anim.fastIn           bezier 曲线（全局统一）
-//   anim.fast / normal / slow  预设 duration
+//   anim.curveSpatial 等 7 条    bezier 控制点（M3 expressive，与 hypr 同族）
+//   anim.durFast ~ durSlow       spatial 时长档（位移/尺寸）
+//   anim.durFxFast ~ durFxSlow   effects 时长档（透明度/颜色）
+//   anim.durTheme                主题换色专用慢档
 // ============================================================
 
 import QtQuick
@@ -86,20 +88,34 @@ Singleton {
     }
 
     // ============================================================
-    // 动画
-    //     fastIn: 全局统一贝塞尔曲线
-    //     duration: 预设时长，对应 hypr/appearance.lua 的速度
+    // 动画 — M3 expressive（与 hypr/lua/appearance.lua 同族）
+    //     curve*: cubic-bezier 控制点，喂给 easing.bezierCurve
+    //     dur*:   时长档位
+    //     spatial 系第二控制点 y>1：到位后过冲回弹（黏滞感来源）
+    //     effects 系 y≤1：透明度/颜色专用，过冲会闪
     // ============================================================
 
     readonly property QtObject anim: QtObject {
-        // 统一曲线 — cubic-bezier(0.16, 1, 0.3, 1)，快入慢停
-        readonly property var fastIn: ({ type: Easing.Bezier, points: [0.16, 1, 0.3, 1] })
+        // ---- 曲线 ----
+        // bezierCurve 格式：每段 6 个值 = 两个控制点 + 显式终点 (1,1)。
+        // 数量不是 6 的倍数 Qt 会静默丢弃整条曲线（退化成线性），不许简写。
+        // spatial 只有一条：与 hypr/lua/appearance.lua 的 spatial 同族，
+        // 全 shell 位移/尺寸共用，时长由 dur 档控制。
+        // 调口味：第二个 y 值 = 弹性强度（1.21 是 hypr 档，1.67 是 M3 上限）
+        readonly property var curveSpatial:     [0.38, 1.40, 0.22, 1.00, 1.00, 1.00]  // 位移/尺寸
+        readonly property var curveEffects:     [0.34, 0.80, 0.34, 1.00, 1.00, 1.00]  // 透明度/颜色 默认
+        readonly property var curveEffectsSlow: [0.34, 0.88, 0.34, 1.00, 1.00, 1.00]  // 透明度/颜色 慢速
+        readonly property var curveAccel:       [0.30, 0.00, 0.80, 0.15, 1.00, 1.00]  // 离场加速
+        readonly property var curveDecel:       [0.05, 0.70, 0.10, 1.00, 1.00, 1.00]  // 入场减速（不要过冲时用）
 
-        // 预设时长
-        readonly property int fast:   130   // 拖拽/移动
-        readonly property int normal: 170   // 面板收起/窗口关闭
-        readonly property int smooth: 200   // 面板弹出/窗口打开
-        readonly property int slow:   250   // 工作区切换
+        // ---- 时长 ----
+        readonly property int durFast:   400    // spatial 快速（悬停展开/容器 morph）
+        readonly property int durNormal: 500    // spatial 默认（hypr 窗口同档）
+        readonly property int durSlow:   650    // spatial 慢速
+        readonly property int durFxFast: 150    // effects 快速（悬停/按压反馈）
+        readonly property int durFx:     200    // effects 默认
+        readonly property int durFxSlow: 300    // effects 慢速
+        readonly property int durTheme:  600    // 主题换色：放慢，留出感受过程的时间
     }
 
     // ============================================================

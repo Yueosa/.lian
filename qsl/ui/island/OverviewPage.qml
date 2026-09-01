@@ -10,6 +10,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -276,7 +277,7 @@ Item {
                     border.color: Color.withAlpha(Color.outlineVariant, 0.6)
 
                     Behavior on width {
-                        NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.SpatialFast }
                     }
 
                     Text {
@@ -444,7 +445,7 @@ Item {
                             radius: parent.radius
                             color: Color.primary
                             Behavior on width {
-                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                Anim {}
                             }
                         }
                     }

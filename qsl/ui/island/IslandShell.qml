@@ -13,6 +13,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 Variants {
@@ -198,13 +199,13 @@ Variants {
                     property real radius: targetR
 
                     Behavior on width {
-                        NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.SpatialFast }
                     }
                     Behavior on height {
-                        NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.SpatialFast }
                     }
                     Behavior on radius {
-                        NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+                        Anim { type: Anim.SpatialFast }
                     }
 
                     Rectangle {
@@ -305,7 +306,7 @@ Variants {
                         visible: hubMounted
                         opacity: Island.showHub ? 1 : 0
                         Behavior on opacity {
-                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                            Anim { type: Anim.EffectsFast }
                         }
                         sourceComponent: HubContent {
                             onCloseRequested: Island.closeHub()

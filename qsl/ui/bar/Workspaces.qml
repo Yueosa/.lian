@@ -8,6 +8,7 @@ import Quickshell
 import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 
 Item {
@@ -89,18 +90,10 @@ Item {
                 implicitHeight: !belongsToScreen ? 0 : (active ? 20 : 8)
 
                 Behavior on implicitWidth {
-                    NumberAnimation {
-                        duration: Size.anim.slow
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.4
-                    }
+                    Anim {}
                 }
                 Behavior on implicitHeight {
-                    NumberAnimation {
-                        duration: Size.anim.slow
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.4
-                    }
+                    Anim {}
                 }
 
                 Rectangle {
@@ -113,7 +106,7 @@ Item {
                         ? Color.text
                         : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceHighest)
                     Behavior on color {
-                        ColorAnimation { duration: Size.anim.smooth }
+                        CAnim {}
                     }
                 }
 
