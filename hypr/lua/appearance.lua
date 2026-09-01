@@ -17,7 +17,7 @@ hl.config({
     -- 通用设置
     general = {
         gaps_in = 6,                        -- 窗口内边距
-        gaps_out = 12,                      -- 屏幕外边距（四周留白）
+        gaps_out = 6,                       -- 屏幕外边距（四周留白；8px rail 吃掉一部分边宽，故从 12 收到 6）
         border_size = 3,                    -- 边框宽度 3px
         col = {
             -- 活动窗口边框：粉→蓝→白 45° 渐变
@@ -51,12 +51,12 @@ hl.config({
         active_opacity = 0.9,              -- 活动窗口透明度（1.0 为不透明）
         inactive_opacity = 0.8,            -- 非活动窗口透明度
 
-        -- 窗口投影
+        -- 窗口投影：小范围低透明，只留层次感不要辉光
         shadow = {
             enabled = true,
-            range = 15,                     -- 阴影扩散范围
-            render_power = 3,              -- 阴影强度（越大越深）
-            color = "rgba(b19cd933)",       -- 紫色调阴影（b19cd9 = 淡紫，33 = 20% 不透明度）
+            range = 8,                      -- 扩散范围（原 15，大了就是辉光）
+            render_power = 4,              -- 强度（越大阴影越集中，越小越散）
+            color = "rgba(b19cd922)",       -- 淡紫 13% 不透明（原 33 = 20%）
         },
 
         -- 毛玻璃模糊
@@ -76,32 +76,42 @@ hl.config({
 
 
 -- ============================================================
--- 动画曲线 — fastIn
---     自定义贝塞尔曲线：快入慢停，干脆利落不拖沓
---     QML 对应：cubic-bezier(0.16, 1, 0.3, 1)
---     记录于 FEATURES.md 设计令牌，全局统一使用
+-- 动画曲线 — M3 expressive
+--     与 qsl 共用同族曲线，窗口和 shell 面板手感一致
+--     spatial 系：第二个控制点 y > 1，到位后过冲回弹（黏滞感来源）
+--     accel：离场专用，不看过冲（窗口关到一半弹回来会很怪）
 -- ============================================================
 
-hl.curve("fastIn", {
+-- 位移默认：0.38, 1.21, 0.22, 1
+hl.curve("spatial", {
     type = "bezier",
     points = {
-        { 0.16, 1 },
-        { 0.3, 1 },
+        { 0.38, 1.21 },
+        { 0.22, 1 },
+    },
+})
+
+-- 离场加速：0.3, 0, 0.8, 0.15
+hl.curve("accel", {
+    type = "bezier",
+    points = {
+        { 0.3, 0 },
+        { 0.8, 0.15 },
     },
 })
 
 
 -- ============================================================
 -- 窗口动画
---     全部使用 fastIn 曲线，确保全局动画节奏统一
---     speed 越高越快（大致换算：duration ≈ 60/speed * 10 ms）
+--     speed 换算：duration ≈ speed × 100ms（speed 越大越慢）
 -- ============================================================
 
--- 窗口打开：滑入
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 3, bezier = "fastIn", style = "slide" })
--- 窗口关闭：滑出
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 2.5, bezier = "fastIn", style = "slide" })
--- 窗口移动：无样式（瞬移 + 缓动）
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 2, bezier = "fastIn" })
--- 工作区切换：滑 + 淡入
-hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "fastIn", style = "slidefade" })
+-- 窗口打开：滑入 + 过冲回弹（≈500ms）
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "spatial", style = "slide" })
+-- 窗口关闭：加速离场，不拖沓（≈200ms，当前手感已确认）
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 2, bezier = "accel", style = "slide" })
+-- 窗口移动：过冲回弹（≈400ms）
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 4, bezier = "spatial" })
+-- 工作区切换：过冲降到 1.21、时长收到 ≈500ms
+-- 过冲大 + 长尾 = 内容到动画末期才静止，眼睛迟迟无法聚焦读内容
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "spatial", style = "slidefade" })
