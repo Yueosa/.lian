@@ -5,6 +5,13 @@ return {
         config = function()
             require("nvim-tree").setup({
                 update_focused_file = { enable = true },
+                git = {
+                    enable = true,
+                    ignore = false,
+                },
+                filters = {
+                    git_ignored = false,
+                },
                 on_attach = function(bufnr)
                     local api = require("nvim-tree.api")
                     -- 默认键（a 新建 / d 删除 / r 重命名等）只在树里生效
