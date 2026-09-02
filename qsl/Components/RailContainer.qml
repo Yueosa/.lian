@@ -44,7 +44,10 @@ Item {
 
     // 尺寸生长（island 手感）：宽随 progress 长，内容跟随重排；
     // 取整防分数宽度逐帧重采样（Tray 教训）
-    implicitWidth: (edge === "bottom") ? innerW : Math.round(innerW * progress)
+    // right 边例外：槽位保持全宽，裁切框锚右生长（Column 是左对齐打包的，
+    // 根宽度动的话生长方向就反了）
+    implicitWidth: edge === "right" ? innerW
+        : ((edge === "bottom") ? innerW : Math.round(innerW * progress))
     implicitHeight: (edge === "bottom") ? Math.round(innerH * progress) : innerH
 
     onPresentChanged: {
@@ -71,21 +74,25 @@ Item {
         Anim { type: root.present ? Anim.Spatial : Anim.Exit }
     }
 
-    // 裁切框：左缘 = rail 右缘，是滑入的天然裁切线
+    // 裁切框：left 边左缘贴 rail；right 边锚右缘贴 rail、宽度生长
     Item {
         id: clipFrame
-        x: 0
         y: 0
-        width: root.width
         height: root.height
         clip: true
+        x: 0
+        width: root.edge === "right"
+            ? Math.round(root.innerW * root.progress)
+            : root.width
+        anchors.right: root.edge === "right" ? parent.right : null
 
         // 生长体：尺寸跟随 progress，圆角每帧都在（壳随尺寸走）
         Item {
             id: slideBody
-            width: root.implicitWidth
+            width: root.edge === "right" ? root.innerW : root.implicitWidth
             height: root.implicitHeight
-            x: 0
+            // right 边：生长体右缘钉在裁切框右缘（圆角随身）
+            x: root.edge === "right" ? clipFrame.width - slideBody.width : 0
             y: 0
 
             // 背景：贴 rail 侧直边，外侧两角圆角
@@ -107,8 +114,8 @@ Item {
         }
     }
 
-    // 贴 rail 侧上下衔接耳（接近到位才淡入：接缝只在 x≈0 时存在）
-    // TODO: right/bottom 两个方向的耳朵（迁移 V/A/Z/X/N 时补）
+    // 贴 rail 侧上下衔接耳（接近到位才淡入：接缝只在贴合时存在）
+    // TODO: bottom 方向的耳朵（迁移 A/Z/X 时补）
     EarCanvas {
         visible: root.edge === "left"
         x: 0
@@ -126,5 +133,23 @@ Item {
         height: 14
         opacity: root.progress
         corner: EarCanvas.TopRight
+    }
+    EarCanvas {
+        visible: root.edge === "right"
+        x: root.width - 14
+        y: -14
+        width: 14
+        height: 14
+        opacity: root.progress
+        corner: EarCanvas.BottomLeft
+    }
+    EarCanvas {
+        visible: root.edge === "right"
+        x: root.width - 14
+        y: root.height
+        width: 14
+        height: 14
+        opacity: root.progress
+        corner: EarCanvas.TopLeft
     }
 }

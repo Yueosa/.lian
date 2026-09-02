@@ -28,6 +28,9 @@ PanelWindow {
     // 页面饭量不同，时间窄、系统宽
     readonly property int pageWidth: (pages[page] && pages[page].width)
         ? pages[page].width : containerWidth
+    // 垂直停靠："top"（默认，从 56 起向下排）/ "bottom"（贴底 16，N 用）
+    property string valign: "top"
+
     // 页首固定件（pages[page].header）：钉在页面顶部 y=56。
     // 不是容器、不参与派生、不随内容高度变化——tab 条就该是死的
     readonly property var headerComp: (pages[page] && pages[page].header)
@@ -75,6 +78,11 @@ PanelWindow {
             return
         open = false
         Island.restoreFocus()
+    }
+
+    // Esc 默认关窗；有子页的实例可覆盖（N 在应用详情页先退回列表）
+    function escPressed() {
+        closeWindow()
     }
 
     function cycle(step) {
@@ -132,7 +140,7 @@ PanelWindow {
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
-                root.closeWindow()
+                root.escPressed()
                 event.accepted = true
                 return
             }
@@ -173,14 +181,18 @@ PanelWindow {
         visible: root.headerComp !== null
     }
 
-    // 容器列：贴 rail 竖排，全部页面统一从 y=56 起向下排
-    // （有页首件的从页首件下面起；统一置顶，不做居中分支）
+    // 容器列：贴 rail 竖排；left 边 x=8，right 边 x=16（rail 在右）
+    // 无页首件的页从 56 起向下排；valign="bottom" 的页贴底（bottomrail 上方 16）
     Column {
         id: containerCol
-        x: 8
-        y: root.headerComp
-            ? 56 + headerContainer.implicitHeight + Size.spacing.md
-            : 56
+        x: root.edge === "right" ? 16 : 8
+        y: root.valign === "bottom"
+            ? 0
+            : (root.headerComp
+                ? 56 + headerContainer.implicitHeight + Size.spacing.md
+                : 56)
+        anchors.bottom: root.valign === "bottom" ? parent.bottom : undefined
+        anchors.bottomMargin: 16
         spacing: Size.spacing.md
 
         Repeater {

@@ -1,175 +1,52 @@
-// NotifCenter — 右下角通知中心（轻量版）
-// 开栏全屏 mask：点空白关闭；关栏 mask=0
-// 无 gooey；圆角卡片 + 面板 slide；单条右滑淡出
-// 清空：仅前 clearAnimMax 条错开滑出，其余随 dismissAll 消失
-// 无空态文案（关窗 release 时不闪「没有新通知」）
+// NotifCenter — N 面板壳（通知中心 / IPC notif），进入模式容器版
+// 页面 = 从 rightrail 派生、贴底（bottomrail 上方 16）的一组 RailContainer
+// （RailPage 编排：级联派生/收回、Esc/点空白关闭内建）
+// 对外 API 与旧卡片版一致：toggle() / openWindow() / closeWindow()
 //
-// 性能：清空最多 5 路并行动画且不清行高；单条才收 height
+// 共享状态：currentApp / clearing / 分组聚合 / 图标回退上移到 notifState，
+// 头卡与列表卡各持一半 UI，经 sharedState 属性共用（对齐 Leftbar 惯例）
+// Notification 生命周期：开 uiActive+hydrate+refresh；关 uiActive=false；
+//   收回动画播完才 release + 回应用列表（对齐旧 contentActive 语义，不闪空列表）
 
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
-import Quickshell.Wayland
 import qs.Components
 import qs.data.state
 import qs.data.service
 
-PanelWindow {
+RailPage {
     id: root
 
-    color: "transparent"
-    // 关态也保持 visible：卸 layer 会在 IPC 开栏时同步建缓冲卡顿
-    visible: true
+    edge: "right"
+    valign: "bottom"
+    shellNamespace: "qsl-notif"
+    containerWidth: 368
 
-    // 开栏铺满，点空白关闭；关栏 mask=0
-    anchors {
-        left: true
-        right: true
-        top: true
-        bottom: true
-    }
+    order: ["notif"]
+    page: "notif"
+    pages: ({
+        notif: { title: "通知", containers: [notifHeaderCard, notifListCard] }
+    })
 
-    exclusiveZone: 0
+    // 列表卡固定吃屏高 50%（用户实测：72% 太高）；在窗口根取 Screen，
+    // QtObject 拿不到 Screen 附加对象
+    readonly property int listHeight: Math.round(Screen.height * 0.4)
 
-    WlrLayershell.namespace: "qsl-notif"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.exclusionMode: ExclusionMode.Ignore
-
-    property bool open: false
-    property bool clearing: false
-    readonly property int panelWidth: 420
-    // 收起态行高。展开态由正文实际行数决定，见 delegate 的 expandedH。
-    readonly property int rowHeight: 84
-    readonly property int rowIconSize: 44
-    // 展开时正文最多显示多少行；再长就 elide，避免一条通知吃满整个面板
-    readonly property int expandedBodyLines: 12
-    readonly property int appRowHeight: 68
-
-    // 当前进入的应用页；空串表示停在应用列表
-    property string currentApp: ""
-
-    // 分组键用 app_name 而非 notifctl 的 mapped_app：后者只认
-    // telegram/discord/wechat/qq 四个，cursor / notify-send / blueman
-    // 等等全被归成 system，混在一起没法看（库里这类将近 3800 条）。
-    // desktop_entry 也不可靠——同一个 QQ 有带和不带两种记录。
-    function appKeyOf(e) {
-        return String(e.appName || "系统").toLowerCase()
-    }
-
-    // 按应用聚合出列表页的数据。entries 至多 80 条，每次开面板算一遍即可。
-    readonly property var appGroups: {
-        const src = Notification.entries || []
-        const order = []
-        const map = ({})
-        for (let i = 0; i < src.length; i++) {
-            const e = src[i]
-            const k = root.appKeyOf(e)
-            let g = map[k]
-            if (!g) {
-                g = {
-                    key: k,
-                    // 展示用原始大小写，取该应用最新一条的写法
-                    name: e.appName || "系统",
-                    count: 0,
-                    latestAt: 0,
-                    icon: "",
-                    preview: ""
-                }
-                map[k] = g
-                order.push(g)
-            }
-            g.count += 1
-            if (!g.icon)
-                g.icon = root.iconSourceFor(e)
-            if (!g.preview)
-                g.preview = e.summary || ""
-            if (Number(e.receivedAt) > g.latestAt)
-                g.latestAt = Number(e.receivedAt)
-        }
-        // entries 已是最新在前，order 天然按「各应用最新消息」降序
-        return order
-    }
-
-    readonly property var currentAppEntries: {
-        if (root.currentApp === "")
-            return []
-        const src = Notification.entries || []
-        const out = []
-        for (let i = 0; i < src.length; i++) {
-            if (root.appKeyOf(src[i]) === root.currentApp)
-                out.push(src[i])
-        }
-        return out
-    }
-
-    readonly property string currentAppName: {
-        const g = root.appGroups
-        for (let i = 0; i < g.length; i++) {
-            if (g[i].key === root.currentApp)
-                return g[i].name
-        }
-        return ""
-    }
-
-    // 图标三级回退：通知自带 → desktop entry → 应用名。
-    // 只用第一级不够，库里三种失败原因都存在：
-    //   QQ      传 image://qsimage/424/1 这种进程内句柄，重启即失效
-    //   Discord / Telegram  image_path 干脆是空的
-    //   cursor  传的是图标名 co.anysphere.cursor，本来就能用
-    // 后两级统一转小写：图标主题里的文件名是 qq.png，而 desktop_entry 存的是 "QQ"。
-    // 必须先验证图标存不存在：图标 provider 查不到时不会把 Image.status 置为
-    // Error，而是交回一张品红/黑格子的占位图，status 照样是 Ready——
-    // 于是 fallback 永远不触发，界面上直接糊一块格子。
-    // iconPath(name, true) 查不到返回空串，据此提前挡掉。
-    function themeIcon(name) {
-        if (!name)
-            return ""
-        return Quickshell.iconPath(name, true) ? "image://icon/" + name : ""
-    }
-
-    function iconSourceFor(entry) {
-        const p = String(entry.imagePath || "")
-        if (p && p.indexOf("image://qsimage") !== 0) {
-            if (p.startsWith("file://") || p.startsWith("image://"))
-                return p
-            if (p.startsWith("/"))
-                return "file://" + p
-            const byName = root.themeIcon(p)
-            if (byName)
-                return byName
-        }
-        const d = root.themeIcon(String(entry.desktopEntry || "").toLowerCase())
-        if (d)
-            return d
-        return root.themeIcon(String(entry.appName || "").toLowerCase())
-    }
-
-    function openApp(key) { currentApp = key }
-    function backToApps() { currentApp = "" }
-
-    // 该应用当前的全部通知 id，用于「清空本应用」
-    function idsOfCurrentApp() {
-        const src = root.currentAppEntries
-        const ids = []
-        for (let i = 0; i < src.length; i++)
-            ids.push(src[i].notifId)
-        return ids
-    }
-    readonly property int closedOffset: Math.round(Math.min(640, Screen.height - 48) + 80)
-    readonly property bool contentActive: open || anim.slide !== closedOffset
+    // ---- 对外 API（shell.qml IPC target "notif" 在用）----
 
     function toggle() { open ? closeWindow() : openWindow() }
+
     function openWindow() {
-        clearFinish.stop()
-        clearing = false
-        if (!open)
-            Island.captureFocus()
-        open = true
+        notifState.resetClear()
+        openPage(page)
         Notification.uiActive = true
         Notification.hydrate()
         Notification.refresh()
     }
+
+    // 覆盖基类：补 Notification.uiActive 释放。
+    // QML 函数是对象上的属性，基类内部 Esc/点空白/页内 requestClose
+    // 调的 root.closeWindow() 会动态派发到本函数
     function closeWindow() {
         if (!open)
             return
@@ -178,676 +55,197 @@ PanelWindow {
         Island.restoreFocus()
     }
 
-    // 清空：只让前 clearAnimMax 条错开右滑，其余直接随 dismissAll 消失
-    // （后面那些本来也多在屏外；限制并发动画避免后半段卡顿）
-    readonly property int clearAnimMax: 5
-    readonly property int clearStaggerMs: 30
+    // 覆盖基类：在应用详情页时 Esc 先退回列表，再按一次才关窗
+    function escPressed() {
+        if (notifState.currentApp !== "")
+            notifState.backToApps()
+        else
+            closeWindow()
+    }
 
-    function clearAllAnimated() {
-        if (clearing || !Notification.hasNotifications)
-            return
-        clearing = true
-        // 用总条数而非 listView.count：停在应用列表页时详情列表是空的
-        const n = Math.min(Notification.entries.length, clearAnimMax)
-        clearFinish.interval = Size.anim.durNormal + 50 + Math.max(0, n - 1) * clearStaggerMs
-        clearFinish.restart()
+    // 收回动画播完再清展示数据：容器收回期间尺寸冻结、内容照旧，
+    // 播完才 release，避免「列表先空、容器后收」
+    onOpenChanged: {
+        if (open)
+            releaseTimer.stop()
+        else
+            releaseTimer.restart()
     }
 
     Timer {
-        id: clearFinish
+        id: releaseTimer
         repeat: false
+        interval: Size.anim.durFx + 60   // 与 RailPage.swapTimer 同口径：等容器 Exit 播完
         onTriggered: {
-            Notification.dismissAll()
-            root.clearing = false
-            root.closeWindow()
-        }
-    }
-
-    onContentActiveChanged: {
-        if (!contentActive) {
-            Notification.uiActive = false
             Notification.release()
             // 下次开面板回到应用列表，而不是停在上次进的那个应用
-            currentApp = ""
+            notifState.currentApp = ""
         }
     }
 
-    // 进了应用页时，清空键只清该应用；在列表页才是全清
-    function clearScoped() {
-        if (currentApp === "") {
-            clearAllAnimated()
-            return
+    // ---- 页内两卡共享状态 ----
+    QtObject {
+        id: notifState
+
+        // 当前进入的应用页；空串表示停在应用列表
+        property string currentApp: ""
+        property bool clearing: false
+
+        readonly property int listHeight: root.listHeight
+
+        // 清空：只让前 clearAnimMax 条错开右滑，其余直接随 dismissAll 消失
+        // （后面那些本来也多在屏外；限制并发动画避免后半段卡顿）
+        readonly property int clearAnimMax: 5
+        readonly property int clearStaggerMs: 30
+
+        // 分组键用 app_name 而非 notifctl 的 mapped_app：后者只认
+        // telegram/discord/wechat/qq 四个，cursor / notify-send / blueman
+        // 等等全被归成 system，混在一起没法看（库里这类将近 3800 条）。
+        // desktop_entry 也不可靠——同一个 QQ 有带和不带两种记录。
+        function appKeyOf(e) {
+            return String(e.appName || "系统").toLowerCase()
         }
-        Notification.dismissMany(idsOfCurrentApp())
-        // 清完这个应用后一条都不剩，就没必要再退回一个空列表，直接收起面板
-        if (!Notification.hasNotifications)
-            closeWindow()
-        else
-            backToApps()
-    }
 
-    Item {
-        id: inputMask
-        width: root.open ? root.width : 0
-        height: root.open ? root.height : 0
-    }
-    mask: Region { item: inputMask }
-
-    Item {
-        id: anim
-        property int slide: root.closedOffset
-        state: root.open ? "open" : "closed"
-        states: [
-            State { name: "open"; PropertyChanges { target: anim; slide: 0 } },
-            State { name: "closed"; PropertyChanges { target: anim; slide: root.closedOffset } }
-        ]
-        transitions: [
-            Transition {
-                from: "closed"; to: "open"
-                Anim {
-                    target: anim; property: "slide"
-                    type: Anim.Spatial
+        // 按应用聚合出列表页的数据。entries 至多 80 条，每次开面板算一遍即可。
+        readonly property var appGroups: {
+            const src = Notification.entries || []
+            const order = []
+            const map = ({})
+            for (let i = 0; i < src.length; i++) {
+                const e = src[i]
+                const k = notifState.appKeyOf(e)
+                let g = map[k]
+                if (!g) {
+                    g = {
+                        key: k,
+                        // 展示用原始大小写，取该应用最新一条的写法
+                        name: e.appName || "系统",
+                        count: 0,
+                        latestAt: 0,
+                        icon: "",
+                        preview: ""
+                    }
+                    map[k] = g
+                    order.push(g)
                 }
-            },
-            Transition {
-                from: "open"; to: "closed"
-                Anim {
-                    target: anim; property: "slide"
-                    type: Anim.Exit
-                }
+                g.count += 1
+                if (!g.icon)
+                    g.icon = notifState.iconSourceFor(e)
+                if (!g.preview)
+                    g.preview = e.summary || ""
+                if (Number(e.receivedAt) > g.latestAt)
+                    g.latestAt = Number(e.receivedAt)
             }
-        ]
-    }
-
-    FocusScope {
-        anchors.fill: parent
-        enabled: root.open
-        focus: root.open
-        Keys.priority: Keys.BeforeItem
-        Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) {
-                // 在应用页时先退回列表，再按一次才关窗
-                if (root.currentApp !== "")
-                    root.backToApps()
-                else
-                    root.closeWindow()
-                event.accepted = true
-            }
+            // entries 已是最新在前，order 天然按「各应用最新消息」降序
+            return order
         }
 
-        // 点空白关（面板外）
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.open
-            onClicked: root.closeWindow()
+        readonly property var currentAppEntries: {
+            if (notifState.currentApp === "")
+                return []
+            const src = Notification.entries || []
+            const out = []
+            for (let i = 0; i < src.length; i++) {
+                if (notifState.appKeyOf(src[i]) === notifState.currentApp)
+                    out.push(src[i])
+            }
+            return out
         }
 
-        Rectangle {
-            id: card
-            width: root.panelWidth
-            height: Math.min(Math.min(640, root.height - 48) - 24, Math.max(280, listCol.implicitHeight + 88))
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.rightMargin: 16
-            anchors.bottomMargin: 16 - anim.slide
-            visible: root.contentActive
-            radius: Size.rounding.xl
-            // 对齐 Hub：实色 background
-            color: Color.background
-            border.width: 2
-            border.color: Color.secondaryFixed
-            clip: true
-
-            // 吃掉点击，避免穿透到空白 MouseArea
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {}
+        readonly property string currentAppName: {
+            const g = notifState.appGroups
+            for (let i = 0; i < g.length; i++) {
+                if (g[i].key === notifState.currentApp)
+                    return g[i].name
             }
+            return ""
+        }
 
-            ColumnLayout {
-                id: listCol
-                anchors.fill: parent
-                anchors.margins: Size.spacing.lg
-                spacing: Size.spacing.md
+        // 图标三级回退：通知自带 → desktop entry → 应用名。
+        // 只用第一级不够，库里三种失败原因都存在：
+        //   QQ      传 image://qsimage/424/1 这种进程内句柄，重启即失效
+        //   Discord / Telegram  image_path 干脆是空的
+        //   cursor  传的是图标名 co.anysphere.cursor，本来就能用
+        // 后两级统一转小写：图标主题里的文件名是 qq.png，而 desktop_entry 存的是 "QQ"。
+        // 必须先验证图标存不存在：图标 provider 查不到时不会把 Image.status 置为
+        // Error，而是交回一张品红/黑格子的占位图，status 照样是 Ready——
+        // 于是 fallback 永远不触发，界面上直接糊一块格子。
+        // iconPath(name, true) 查不到返回空串，据此提前挡掉。
+        function themeIcon(name) {
+            if (!name)
+                return ""
+            return Quickshell.iconPath(name, true) ? "image://icon/" + name : ""
+        }
 
-                // Header
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Size.spacing.sm
+        function iconSourceFor(entry) {
+            const p = String(entry.imagePath || "")
+            if (p && p.indexOf("image://qsimage") !== 0) {
+                if (p.startsWith("file://") || p.startsWith("image://"))
+                    return p
+                if (p.startsWith("/"))
+                    return "file://" + p
+                const byName = notifState.themeIcon(p)
+                if (byName)
+                    return byName
+            }
+            const d = notifState.themeIcon(String(entry.desktopEntry || "").toLowerCase())
+            if (d)
+                return d
+            return notifState.themeIcon(String(entry.appName || "").toLowerCase())
+        }
 
-                    // 返回：仅在应用页显示，占位宽度随之收掉
-                    Rectangle {
-                        Layout.preferredWidth: root.currentApp === "" ? 0 : 32
-                        Layout.preferredHeight: 32
-                        visible: Layout.preferredWidth > 0
-                        radius: Size.rounding.full
-                        color: backMa.containsMouse
-                            ? Color.withAlpha(Color.primary, 0.18)
-                            : "transparent"
+        function openApp(key) { currentApp = key }
+        function backToApps() { currentApp = "" }
 
-                        Behavior on Layout.preferredWidth {
-                            Anim { type: Anim.SpatialFast }
-                        }
+        // 该应用当前的全部通知 id，用于「清空本应用」
+        function idsOfCurrentApp() {
+            const src = notifState.currentAppEntries
+            const ids = []
+            for (let i = 0; i < src.length; i++)
+                ids.push(src[i].notifId)
+            return ids
+        }
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf060"
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.md
-                            color: Color.text
-                        }
-                        MouseArea {
-                            id: backMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.backToApps()
-                        }
-                    }
+        function resetClear() {
+            _clearFinish.stop()
+            clearing = false
+        }
 
-                    Text {
-                        text: root.currentApp === "" ? "通知中心" : root.currentAppName
-                        color: Color.text
-                        font.pixelSize: Size.fontSize.lg
-                        font.bold: true
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    }
+        function clearAllAnimated() {
+            if (clearing || !Notification.hasNotifications)
+                return
+            clearing = true
+            // 用总条数而非列表 count：停在应用列表页时详情列表是空的
+            const n = Math.min(Notification.entries.length, clearAnimMax)
+            _clearFinish.interval = Size.anim.durNormal + 50 + Math.max(0, n - 1) * clearStaggerMs
+            _clearFinish.restart()
+        }
 
-                    // 免打扰
-                    Rectangle {
-                        width: 32; height: 32
-                        radius: Size.rounding.full
-                        color: dndMa.containsMouse
-                            ? Color.withAlpha(Color.primary, 0.18)
-                            : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Notification.dndEnabled ? "\uf1f6" : "\uf0f3"
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.md
-                            color: Notification.dndEnabled ? Color.secondary : Color.text
-                        }
-                        MouseArea {
-                            id: dndMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Notification.toggleDnd()
-                        }
-                    }
-
-                    // 清空
-                    Rectangle {
-                        width: 32; height: 32
-                        radius: Size.rounding.full
-                        color: clearMa.containsMouse
-                            ? Color.withAlpha(Color.error, 0.18)
-                            : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf1f8"
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.md
-                            color: Notification.hasNotifications ? Color.error : Color.textMuted
-                            opacity: Notification.hasNotifications ? 1 : 0.4
-                        }
-                        MouseArea {
-                            id: clearMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            enabled: Notification.hasNotifications && !root.clearing
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: root.clearScoped()
-                        }
-                    }
-                    // 关窗：Esc / 点外侧（与 Rightbar 一致，无 X）
-                }
-
-                Item {
-                    id: listSlide
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-
-                    // 两页横向滑动：左=应用列表，右=某应用的通知。
-                    // 两个 ListView 都常驻，切页只动 x——重建 delegate 会丢滚动位置，
-                    // 而且回收池要重新填充，来回切几次就明显卡。
-                    property real pageShift: root.currentApp === "" ? 0 : -width
-                    Behavior on pageShift {
-                        Anim { type: Anim.Spatial }
-                    }
-
-                    // ---------- 应用列表页 ----------
-                    ListView {
-                        id: appListView
-                        width: parent.width
-                        height: parent.height
-                        x: listSlide.pageShift
-                        clip: true
-                        spacing: Size.spacing.xs
-                        model: root.appGroups
-                        reuseItems: true
-                        boundsBehavior: Flickable.StopAtBounds
-                        // 滑出去之后别再吃事件
-                        enabled: root.currentApp === ""
-
-                        delegate: Item {
-                            id: appRow
-                            width: ListView.view ? ListView.view.width : 0
-                            height: root.appRowHeight
-
-                            Rectangle {
-                                anchors.fill: parent
-                                anchors.topMargin: 2
-                                anchors.bottomMargin: 2
-                                radius: Size.rounding.lg
-                                color: appMa.containsMouse
-                                    ? Color.withAlpha(Color.surfaceHighest, 0.7)
-                                    : Color.withAlpha(Color.surfaceHighest, 0.35)
-
-                                Rectangle {
-                                    id: appIconBox
-                                    width: root.rowIconSize
-                                    height: root.rowIconSize
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: Size.spacing.md
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    radius: Size.rounding.md
-                                    color: Color.withAlpha(Color.primary, 0.15)
-                                    clip: true
-
-                                    Image {
-                                        id: appGroupImg
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        source: modelData.icon
-                                        fillMode: Image.PreserveAspectFit
-                                        asynchronous: true
-                                        cache: false
-                                        sourceSize.width: root.rowIconSize
-                                        sourceSize.height: root.rowIconSize
-                                        visible: status === Image.Ready
-                                    }
-                                    // 没图标就用应用名首字，比统一的铃铛好认
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: appGroupImg.status !== Image.Ready
-                                        text: (modelData.name || "?").charAt(0).toUpperCase()
-                                        font.family: Size.fontSans
-                                        font.pixelSize: Size.fontSize.lg
-                                        font.bold: true
-                                        color: Color.primary
-                                    }
-                                }
-
-                                Rectangle {
-                                    id: countPill
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: Size.spacing.md
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: countLabel.implicitWidth + Size.spacing.md
-                                    height: 24
-                                    radius: Size.rounding.full
-                                    color: Color.withAlpha(Color.primary, 0.20)
-                                    Text {
-                                        id: countLabel
-                                        anchors.centerIn: parent
-                                        text: modelData.count + " 条"
-                                        color: Color.primary
-                                        font.pixelSize: Size.fontSize.xsm
-                                        font.bold: true
-                                    }
-                                }
-
-                                Column {
-                                    anchors.left: appIconBox.right
-                                    anchors.leftMargin: Size.spacing.md
-                                    anchors.right: countPill.left
-                                    anchors.rightMargin: Size.spacing.sm
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 3
-
-                                    Text {
-                                        width: parent.width
-                                        text: modelData.name
-                                        color: Color.text
-                                        font.pixelSize: Size.fontSize.md
-                                        font.bold: true
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
-                                    }
-                                    Text {
-                                        width: parent.width
-                                        text: modelData.preview
-                                        color: Color.textMuted
-                                        font.pixelSize: Size.fontSize.sm
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
-                                        wrapMode: Text.NoWrap
-                                        height: text.length > 0 ? Math.ceil(font.pixelSize * 1.35) : 0
-                                        visible: text.length > 0
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: appMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.openApp(modelData.key)
-                                }
-                            }
-                        }
-                    }
-
-                    // ---------- 单应用通知页 ----------
-                    ListView {
-                        id: listView
-                        width: parent.width
-                        height: parent.height
-                        x: listSlide.pageShift + parent.width
-                        clip: true
-                        spacing: Size.spacing.sm
-                        model: root.currentAppEntries
-                        reuseItems: true
-                        boundsBehavior: Flickable.StopAtBounds
-                        enabled: root.currentApp !== ""
-
-                        // 无空态文案：关窗 release() 会清空 entries，避免闪「没有新通知」
-
-                        delegate: Item {
-                            id: row
-                            width: ListView.view ? ListView.view.width : 0
-                            clip: true
-
-                            readonly property var entry: modelData
-
-                            property bool exiting: false
-                            property bool expanded: false
-                            // 单条收起要收行高；清空波次只滑不收高（否则 ListView 狂刷布局）
-                            property bool shrinking: false
-                            // 回收池换数据时高度会瞬变，此刻必须关掉动画
-                            property bool animateHeight: false
-                            property int notifId: entry.notifId
-
-                            // 正文展开后由文本实际高度撑开；至少不低于收起态
-                            readonly property int expandedH:
-                                Math.max(root.rowHeight,
-                                         textCol.implicitHeight + Size.spacing.md * 2)
-
-                            height: shrinking ? 0 : (expanded ? expandedH : root.rowHeight)
-
-                            Behavior on height {
-                                enabled: row.animateHeight
-                                Anim { type: Anim.Spatial }
-                            }
-
-                            // 正文/标题没被截断就没有可展开的内容，不给交互暗示
-                            readonly property bool canExpand:
-                                row.expanded || bodyText.truncated || summaryText.truncated
-
-                            function toggleExpand() {
-                                if (!canExpand)
-                                    return
-                                animateHeight = true
-                                expanded = !expanded
-                            }
-
-                            function resetVisual() {
-                                exitAnim.stop()
-                                exitDelay.stop()
-                                // 先关动画再改状态，避免复用时从上一条的高度插值过来
-                                animateHeight = false
-                                exiting = false
-                                shrinking = false
-                                expanded = false
-                                body.x = 0
-                                body.opacity = 1
-                            }
-
-                            // thenDismiss=true：单条关闭（收行高 + dismiss）
-                            // thenDismiss=false：清空波次（只滑不收高，避免 ListView 狂刷布局）
-                            function beginExit(thenDismiss) {
-                                if (exiting)
-                                    return
-                                if (root.clearing && thenDismiss)
-                                    return
-                                exiting = true
-                                if (thenDismiss) {
-                                    animateHeight = true
-                                    shrinking = true
-                                }
-                                exitAnim.thenDismiss = !!thenDismiss
-                                exitAnim.start()
-                            }
-
-                            function relativeTime(ms) {
-                                if (!ms)
-                                    return ""
-                                const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000))
-                                if (sec < 60)
-                                    return "刚刚"
-                                if (sec < 3600)
-                                    return Math.floor(sec / 60) + " 分钟前"
-                                if (sec < 86400)
-                                    return Math.floor(sec / 3600) + " 小时前"
-                                return Math.floor(sec / 86400) + " 天前"
-                            }
-
-                            readonly property string iconSrc: root.iconSourceFor(row.entry)
-
-                            ListView.onPooled: resetVisual()
-                            ListView.onReused: resetVisual()
-
-                            Connections {
-                                target: root
-                                function onClearingChanged() {
-                                    if (!root.clearing || row.exiting)
-                                        return
-                                    if (index >= root.clearAnimMax)
-                                        return
-                                    exitDelay.interval = index * root.clearStaggerMs
-                                    exitDelay.start()
-                                }
-                            }
-
-                            Timer {
-                                id: exitDelay
-                                repeat: false
-                                onTriggered: row.beginExit(false)
-                            }
-
-                            ParallelAnimation {
-                                id: exitAnim
-                                property bool thenDismiss: false
-                                Anim {
-                                    target: body; property: "x"
-                                    to: row.width; type: Anim.Spatial
-                                }
-                                Anim {
-                                    target: body; property: "opacity"
-                                    to: 0; type: Anim.EffectsFast
-                                }
-                                onFinished: {
-                                    if (thenDismiss)
-                                        Notification.dismiss(row.notifId)
-                                }
-                            }
-
-                            Rectangle {
-                                id: body
-                                width: parent.width
-                                height: row.height
-                                radius: Size.rounding.lg
-                                color: rowMa.containsMouse || row.expanded
-                                    ? Color.withAlpha(Color.surfaceHighest, 0.7)
-                                    : Color.withAlpha(Color.surfaceHighest, 0.35)
-
-                                // anchors 布局：避免 RowLayout/ColumnLayout 把子项纵向撑开贴底
-                                readonly property int pad: Size.spacing.md
-
-                                Rectangle {
-                                    id: iconBox
-                                    width: root.rowIconSize
-                                    height: root.rowIconSize
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: body.pad
-                                    // 展开后卡片可能很高，图标浮在正中间会很怪，改为贴顶
-                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
-                                    anchors.top: row.expanded ? parent.top : undefined
-                                    anchors.topMargin: Size.spacing.md
-                                    radius: Size.rounding.md
-                                    color: Color.withAlpha(Color.primary, 0.15)
-                                    clip: true
-
-                                    Image {
-                                        id: appImg
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        source: row.iconSrc
-                                        fillMode: Image.PreserveAspectFit
-                                        asynchronous: true
-                                        cache: false
-                                        sourceSize.width: root.rowIconSize
-                                        sourceSize.height: root.rowIconSize
-                                        visible: status === Image.Ready
-                                    }
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: appImg.status !== Image.Ready
-                                        text: "\uf0f3"
-                                        font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.lg
-                                        color: Color.primary
-                                    }
-                                }
-
-                                // 右侧动作区：展开指示 + 关闭。整块跟着图标一起贴顶，
-                                // 否则展开后关闭按钮会掉到卡片正中间。
-                                Row {
-                                    id: actions
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: body.pad
-                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
-                                    anchors.top: row.expanded ? parent.top : undefined
-                                    anchors.topMargin: Size.spacing.md
-                                    spacing: Size.spacing.sm
-
-                                    Text {
-                                        id: expandBtn
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "\uf078"
-                                        font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.xsm
-                                        color: Color.textMuted
-                                        // 必须用 opacity 而非 visible：Row 的隐式宽度会跳过不可见子项，
-                                        // 一旦 visible 绑到 canExpand 就成环——
-                                        // actions.width → textCol.width → bodyText.truncated → canExpand。
-                                        opacity: row.canExpand && !root.clearing ? 1 : 0
-                                        rotation: row.expanded ? 180 : 0
-                                        Behavior on rotation {
-                                            Anim { type: Anim.Spatial }
-                                        }
-                                    }
-
-                                    Text {
-                                        id: closeBtn
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "\uf00d"
-                                        font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.sm
-                                        color: Color.textMuted
-                                        opacity: root.clearing ? 0.3 : 1
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            anchors.margins: -8
-                                            enabled: !row.exiting && !root.clearing
-                                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                            onClicked: row.beginExit(true)
-                                        }
-                                    }
-                                }
-
-                                Column {
-                                    id: textCol
-                                    anchors.left: iconBox.right
-                                    anchors.leftMargin: Size.spacing.md
-                                    anchors.right: actions.left
-                                    anchors.rightMargin: Size.spacing.sm
-                                    anchors.verticalCenter: row.expanded ? undefined : parent.verticalCenter
-                                    anchors.top: row.expanded ? parent.top : undefined
-                                    anchors.topMargin: Size.spacing.md
-                                    spacing: 2
-
-                                    Row {
-                                        width: parent.width
-                                        spacing: Size.spacing.sm
-                                        Text {
-                                            width: parent.width - timeLabel.width - parent.spacing
-                                            text: row.entry.appName || "系统"
-                                            color: Color.textMuted
-                                            font.pixelSize: Size.fontSize.xsm
-                                            elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            id: timeLabel
-                                            text: row.relativeTime(row.entry.receivedAt)
-                                            color: Color.textMuted
-                                            font.pixelSize: Size.fontSize.xsm
-                                        }
-                                    }
-                                    Text {
-                                        id: summaryText
-                                        width: parent.width
-                                        text: row.entry.summary || "(无标题)"
-                                        color: Color.text
-                                        font.pixelSize: Size.fontSize.md
-                                        font.bold: true
-                                        elide: row.expanded ? Text.ElideNone : Text.ElideRight
-                                        wrapMode: row.expanded ? Text.Wrap : Text.NoWrap
-                                        maximumLineCount: row.expanded ? 3 : 1
-                                    }
-                                    Text {
-                                        id: bodyText
-                                        width: parent.width
-                                        text: row.entry.body || ""
-                                        color: Color.textMuted
-                                        font.pixelSize: Size.fontSize.sm
-                                        // 展开态刻意不用 elide：elide 需要先知道 height 才能决定截断量，
-                                        // 而这里 height 又绑到 implicitHeight，两者会互相拉成环。
-                                        // 收起态 height 是常量，用 elide 安全。
-                                        elide: row.expanded ? Text.ElideNone : Text.ElideRight
-                                        wrapMode: row.expanded ? Text.Wrap : Text.NoWrap
-                                        maximumLineCount: row.expanded ? root.expandedBodyLines : 1
-                                        // 单行高度用字号推算，避开 height↔implicitHeight 环
-                                        height: text.length === 0
-                                            ? 0
-                                            : (row.expanded
-                                               ? Math.ceil(implicitHeight)
-                                               : Math.ceil(font.pixelSize * 1.35))
-                                        visible: text.length > 0
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: rowMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    // 整卡点击折叠；z:-1 让关闭按钮优先拿到事件
-                                    acceptedButtons: Qt.LeftButton
-                                    cursorShape: row.canExpand ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: !row.exiting && !root.clearing
-                                    onClicked: row.toggleExpand()
-                                    z: -1
-                                }
-                            }
-                        }
-                    }
-                }
+        property Timer _clearFinish: Timer {
+            repeat: false
+            onTriggered: {
+                Notification.dismissAll()
+                notifState.clearing = false
+                root.closeWindow()
             }
         }
+
+        // 进了应用页时，清空键只清该应用；在列表页才是全清
+        function clearScoped() {
+            if (currentApp === "") {
+                clearAllAnimated()
+                return
+            }
+            Notification.dismissMany(idsOfCurrentApp())
+            // 清完这个应用后一条都不剩，就没必要再退回一个空列表，直接收起面板
+            if (!Notification.hasNotifications)
+                root.closeWindow()
+            else
+                backToApps()
+        }
     }
+
+    // ---- 容器装配（顺序即派生顺序）----
+    Component { id: notifHeaderCard; NotifHeaderCard { sharedState: notifState } }
+    Component { id: notifListCard; NotifListCard { sharedState: notifState } }
 }

@@ -1,1 +1,3 @@
 NotifCenter 1.0 NotifCenter.qml
+NotifHeaderCard 1.0 NotifHeaderCard.qml
+NotifListCard 1.0 NotifListCard.qml
