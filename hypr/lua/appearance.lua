@@ -17,7 +17,7 @@ hl.config({
     -- 通用设置
     general = {
         gaps_in = 6,                        -- 窗口内边距
-        gaps_out = 6,                       -- 屏幕外边距（四周留白；8px rail 吃掉一部分边宽，故从 12 收到 6）
+        gaps_out = 8,                       -- 屏幕外边距（四周留白；8px rail 吃掉一部分边宽，故从 12 收到 8）
         border_size = 3,                    -- 边框宽度 3px
         col = {
             -- 活动窗口边框：粉→蓝→白 45° 渐变
