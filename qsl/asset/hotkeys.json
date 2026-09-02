@@ -109,7 +109,8 @@
             { "keys": "Super+Left/Right/Up/Down", "desc": "移动焦点" },
             { "keys": "Super+Alt+Left/Right/Up/Down", "desc": "移动窗口" },
             { "keys": "Super+R", "desc": "进入键盘调大小模式" },
-            { "keys": "←→↑↓（调大小时）", "desc": "调整窗口大小" },
+            { "keys": "←→↑↓（调大小时）", "desc": "微调窗口大小（5px，可长按）" },
+            { "keys": "Shift+←→↑↓（调大小时）", "desc": "大幅调整窗口大小（40px，可长按）" },
             { "keys": "Esc / Enter / Super+R", "desc": "退出调大小模式" }
           ]
         },
