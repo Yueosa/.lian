@@ -27,7 +27,15 @@ Item {
         openMenuCount = Math.max(0, openMenuCount + (open ? 1 : -1))
     }
 
-    readonly property bool expanded: hoverMa.containsMouse || openMenuCount > 0
+    // 悬停意图：进入即锁存展开；菜单开着时 collapse 无效（保菜单命）
+    property bool expanded: false
+
+    readonly property bool hovered: hoverMa.containsMouse
+
+    function collapse() {
+        if (openMenuCount === 0)
+            expanded = false
+    }
 
     // 空托盘时整个 chip 消失。不要拿 SystemTray.items.count 做判空——
     // 它没有 count 属性，判空失败会把 chip 宽度压成 0，
@@ -200,6 +208,10 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
+        onContainsMouseChanged: {
+            if (containsMouse)
+                root.expanded = true
+        }
     }
 
     Connections {

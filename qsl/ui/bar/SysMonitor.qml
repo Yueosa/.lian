@@ -14,12 +14,19 @@ Item {
     id: root
 
     property bool isHovered: mouseArea.containsMouse
+    // 悬停意图：进入即锁存展开，由 RightBar 完全离开 1s 后统一回收（见 Bar.qml）
+    property bool expanded: false
+
+    onIsHoveredChanged: {
+        if (isHovered)
+            expanded = true
+    }
 
     // 收起动画期间内容比根宽，不裁会画到栏上
     clip: true
 
     implicitHeight: 36
-    implicitWidth: isHovered
+    implicitWidth: expanded
         ? (contentLayout.implicitWidth + 24)
         : (ramGroup.implicitWidth + 24)
 
@@ -71,7 +78,7 @@ Item {
                 Layout.preferredWidth: 30
                 Layout.preferredHeight: 14
                 Layout.alignment: Qt.AlignVCenter
-                visible: !root.isHovered && Sysmon.memHistory.length > 1
+                visible: !root.expanded && Sysmon.memHistory.length > 1
                 values: Sysmon.memHistory
                 maxValue: 100
                 lineColor: Color.secondary
@@ -84,7 +91,7 @@ Item {
         RowLayout {
             spacing: 4
             visible: opacity > 0
-            opacity: root.isHovered ? 1 : 0
+            opacity: root.expanded ? 1 : 0
             Behavior on opacity { Anim { type: Anim.Effects } }
 
             Text {
@@ -105,7 +112,7 @@ Item {
         RowLayout {
             spacing: 4
             visible: Sysmon.gpuAvailable && opacity > 0
-            opacity: root.isHovered && Sysmon.gpuAvailable ? 1 : 0
+            opacity: root.expanded && Sysmon.gpuAvailable ? 1 : 0
             Behavior on opacity { Anim { type: Anim.Effects } }
 
             // 与 SystemPage 一致：Outlined 无 graphics_card 字形

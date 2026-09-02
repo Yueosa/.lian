@@ -37,6 +37,32 @@ Scope {
             implicitHeight: segHeight
             exclusiveZone: Size.island.collapsedH
 
+            // RightBar 悬停意图：chip 展开即锁存（各自的 onIsHoveredChanged），
+            // 鼠标完全离开右段 1s 后统一回收；在段内移动不回收。
+            // 判定取并集：底层面管缝隙，chip 管自己——
+            // 单独用底层面时，停在 chip 上 hover 事件被上层吃掉会误判离开
+            readonly property bool rightBarHovered: rightBarMa.containsMouse
+                || sysMon.isHovered || statusChips.anyHovered || tray.hovered
+
+            function collapseRightChips() {
+                sysMon.expanded = false
+                statusChips.collapseAll()
+                tray.collapse()
+            }
+
+            onRightBarHoveredChanged: {
+                if (rightBarHovered)
+                    rightCollapseTimer.stop()
+                else
+                    rightCollapseTimer.restart()
+            }
+
+            Timer {
+                id: rightCollapseTimer
+                interval: 1000
+                onTriggered: barWin.collapseRightChips()
+            }
+
             WlrLayershell.namespace: "qsl-bar"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Normal
@@ -77,6 +103,15 @@ Scope {
                 bottomLeftRadius: 22
                 clip: true
 
+                // 右段整体悬停面：z:-1 不抢图标事件，只测在不在栏内
+                MouseArea {
+                    id: rightBarMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
+                    z: -1
+                }
+
                 RowLayout {
                     id: rightHolder
                     anchors.right: parent.right
@@ -84,9 +119,10 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Size.spacing.sm
 
-                    SysMonitor {}
-                    StatusChips {}
+                    SysMonitor { id: sysMon }
+                    StatusChips { id: statusChips }
                     Tray {
+                        id: tray
                         screen: barWin.screen
                     }
                 }

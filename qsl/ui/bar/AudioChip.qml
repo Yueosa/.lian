@@ -11,9 +11,16 @@ Rectangle {
     id: root
 
     property bool isHovered: mouseArea.containsMouse
+    // 悬停意图：进入即锁存展开，由 RightBar 完全离开 1s 后统一回收（见 Bar.qml）
+    property bool expanded: false
+
+    onIsHoveredChanged: {
+        if (isHovered)
+            expanded = true
+    }
 
     implicitHeight: 28
-    implicitWidth: isHovered ? Math.ceil(layout.implicitWidth) + 14 : 28
+    implicitWidth: expanded ? Math.ceil(layout.implicitWidth) + 14 : 28
     radius: height / 2
     clip: true
     color: Color.withAlpha(Color.text, 0.08)
@@ -59,8 +66,8 @@ Rectangle {
             font.bold: true
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
-            opacity: root.isHovered ? 1 : 0
-            Layout.preferredWidth: root.isHovered ? sinkLabel.implicitWidth : 0
+            opacity: root.expanded ? 1 : 0
+            Layout.preferredWidth: root.expanded ? sinkLabel.implicitWidth : 0
             clip: true
             Behavior on opacity { Anim { type: Anim.EffectsFast } }
             Behavior on Layout.preferredWidth {
@@ -79,8 +86,8 @@ Rectangle {
                 ? Color.error
                 : Color.secondary
             text: Volume.sourceMuted ? "mic_off" : "mic"
-            opacity: root.isHovered ? 1 : 0
-            Layout.preferredWidth: (root.isHovered && Volume.hasSource)
+            opacity: root.expanded ? 1 : 0
+            Layout.preferredWidth: (root.expanded && Volume.hasSource)
                 ? micIcon.implicitWidth
                 : 0
             clip: true
@@ -99,8 +106,8 @@ Rectangle {
             font.bold: true
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
-            opacity: root.isHovered ? 1 : 0
-            Layout.preferredWidth: (root.isHovered && Volume.hasSource)
+            opacity: root.expanded ? 1 : 0
+            Layout.preferredWidth: (root.expanded && Volume.hasSource)
                 ? sourceLabel.implicitWidth
                 : 0
             clip: true
@@ -121,7 +128,7 @@ Rectangle {
             const step = 0.05
             const up = wheel.angleDelta.y > 0
             // 展开且指针在右半 → 调麦克风；否则调输出
-            const micSide = Volume.hasSource && root.isHovered
+            const micSide = Volume.hasSource && root.expanded
                 && mouseX > width * 0.5
             if (micSide) {
                 const cur = Volume.sourceVolume || 0

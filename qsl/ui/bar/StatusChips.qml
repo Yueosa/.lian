@@ -10,6 +10,17 @@ Item {
     implicitHeight: 36
     implicitWidth: layout.width + 16
 
+    // RightBar 悬停判定并集（底层 MouseArea 会被 chip 挡住 hover 事件）
+    readonly property bool anyHovered: wifiChip.isHovered
+        || btChip.isHovered || audioChip.isHovered
+
+    // RightBar 统一回收（见 Bar.qml）
+    function collapseAll() {
+        wifiChip.expanded = false
+        btChip.expanded = false
+        audioChip.expanded = false
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Color.background
@@ -21,8 +32,8 @@ Item {
         anchors.centerIn: parent
         spacing: Size.spacing.sm
 
-        WifiChip {}
-        BluetoothChip {}
-        AudioChip {}
+        WifiChip { id: wifiChip }
+        BluetoothChip { id: btChip }
+        AudioChip { id: audioChip }
     }
 }

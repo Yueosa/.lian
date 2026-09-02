@@ -11,9 +11,16 @@ Rectangle {
     id: root
 
     property bool isHovered: mouseArea.containsMouse
+    // 悬停意图：进入即锁存展开，由 RightBar 完全离开 1s 后统一回收（见 Bar.qml）
+    property bool expanded: false
+
+    onIsHoveredChanged: {
+        if (isHovered)
+            expanded = true
+    }
 
     implicitHeight: 28
-    implicitWidth: isHovered ? Math.ceil(layout.implicitWidth) + 14 : 28
+    implicitWidth: expanded ? Math.ceil(layout.implicitWidth) + 14 : 28
     radius: height / 2
     clip: true
     color: (Network.ethernetConnected || Network.wifiConnected)
@@ -50,8 +57,8 @@ Rectangle {
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
             // 收起时占宽 0，展开用真实字宽（封顶），保证胶囊包住文字
-            opacity: root.isHovered ? 1 : 0
-            Layout.preferredWidth: root.isHovered
+            opacity: root.expanded ? 1 : 0
+            Layout.preferredWidth: root.expanded
                 ? Math.min(label.implicitWidth, 140)
                 : 0
             Layout.maximumWidth: 140
