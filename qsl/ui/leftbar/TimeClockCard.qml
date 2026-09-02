@@ -1,6 +1,7 @@
-// TimePage — 时间 / 问候 / 一言（原 LcWelcomeView，无 LianClaw）
-// 显示按分钟节流（环/文案不跟秒钟抖）；一言仅本页存活时 XHR，销毁时 abort
+// TimeClockCard — 时间圆盘 / 日期 / 问候 / 一言（TimePage 上半拆出的容器卡）
+// 显示按分钟节流（环/文案不跟秒钟抖）；一言仅本卡存活时 XHR，销毁时 abort
 //
+// 容器卡：背景/圆角由宿主 RailContainer 提供，本卡只装内容
 // 性能：无会话列表；Shape 双环；无常驻秒级 UI 重绘
 
 import QtQuick
@@ -11,6 +12,10 @@ import qs.data.state
 
 Item {
     id: root
+
+    // 宽度跟随宿主容器（RailPage 按页给宽），不写死
+    anchors.fill: parent
+    implicitHeight: mainCol.implicitHeight + 32   // 上下各 16 留白
 
     // 环与问候只跟「分钟」走，避免 Time 每秒通知带动 PathAngleArc 重算
     property var now: Time.rawDate
@@ -31,7 +36,6 @@ Item {
     property string yiyanText: ""
     property string yiyanFrom: ""
     property var _xhr: null
-    property bool _timerExpanded: false
 
     function pad(n) {
         return n < 10 ? "0" + n : "" + n
@@ -175,9 +179,9 @@ Item {
     ColumnLayout {
         id: mainCol
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: root._timerExpanded ? -(timerPanel.height + 8) / 2 : 0
-        width: Math.min(parent.width - 24, 380)
+        anchors.top: parent.top
+        anchors.topMargin: 16
+        width: Math.min(parent.width - 32, 380)
         spacing: Size.spacing.md
 
         Item {
@@ -297,12 +301,13 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: yiyanCol.implicitHeight + 24
+            // 固定高度：一言是 XHR 异步加载，高度随内容变会让整卡突然长高
+            Layout.preferredHeight: 88
             radius: Size.rounding.lg
             color: Color.surface
             border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
             border.width: Style.border.width
-            // 实色卡面，对齐 Hub 层次
+            // 实色卡面，对齐 Hub 层次（内容内层 surface，非容器背景）
 
             ColumnLayout {
                 id: yiyanCol
@@ -312,13 +317,17 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
                     text: root.yiyanText.length > 0 ? ("「 " + root.yiyanText + " 」") : "……"
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.sm
                     color: Color.text
                     lineHeight: 1.4
+                    elide: Text.ElideRight
+                    maximumLineCount: 2
                 }
                 Text {
                     Layout.fillWidth: true
@@ -340,137 +349,5 @@ Item {
             }
         }
 
-    }
-
-    // ============================================================
-    // 计时器面板（固定底部，不影响圆盘居中）
-    // ============================================================
-
-    Rectangle {
-        id: timerPanel
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: Size.spacing.sm
-        // 高度 = 内容 + 上下 padding（不要 anchors.fill 子布局，否则 implicitHeight 失真）
-        height: timerCol.implicitHeight + Size.spacing.md * 2 + Size.spacing.sm
-        radius: Size.rounding.lg
-        color: Color.surface
-        border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
-        border.width: Style.border.width
-        visible: root._timerExpanded
-
-        ColumnLayout {
-            id: timerCol
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: Size.spacing.md
-            spacing: Size.spacing.sm
-
-            // 标题行 + 收起
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Size.spacing.sm
-                Text {
-                    text: "计时"
-                    font.pixelSize: Size.fontSize.sm
-                    font.bold: true
-                    color: Color.text
-                    Layout.alignment: Qt.AlignVCenter
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: "收起 ▲"
-                    color: collapseMa.containsMouse ? Color.primary : Color.textMuted
-                    font.pixelSize: Size.fontSize.xsm
-                    Layout.alignment: Qt.AlignVCenter
-                    MouseArea {
-                        id: collapseMa
-                        anchors.fill: parent
-                        anchors.margins: -6
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root._timerExpanded = false
-                    }
-                }
-            }
-
-            // ---- 秒表 ----
-            RowLayout {
-                Layout.fillWidth: true; spacing: Size.spacing.sm
-                Text { text: "\ue425"; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.lg; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
-                Text { text: "秒表"; font.pixelSize: Size.fontSize.sm; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
-                Item { Layout.fillWidth: true }
-                Text { text: Timers.formatSec(Timers.stopwatch.elapsed); font.family: Size.fontMono; font.pixelSize: Size.fontSize.lg; color: Timers.stopwatch.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
-            }
-            RowLayout {
-                Layout.fillWidth: true; spacing: Size.spacing.xs
-                Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                    color: Timers.stopwatch.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.stopwatch.running ? "暂停" : "开始"; color: Timers.stopwatch.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.xsm; font.bold: true }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.stopwatch.running ? Timers.pauseStopwatch() : Timers.startStopwatch() }
-                }
-                Rectangle {
-                    visible: Timers.stopwatch.elapsed > 0 && !Timers.stopwatch.running
-                    Layout.preferredWidth: 52; Layout.preferredHeight: 28; radius: Size.rounding.sm; color: Color.withAlpha(Color.text, 0.06)
-                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.xsm }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.resetStopwatch() }
-                }
-            }
-
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Color.withAlpha(Color.outlineVariant, 0.3) }
-
-            // ---- 倒计时 ----
-            RowLayout {
-                Layout.fillWidth: true; spacing: Size.spacing.sm
-                Text { text: "\ue88b"; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.lg; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
-                Text { text: "倒计时"; font.pixelSize: Size.fontSize.sm; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
-                Item { Layout.fillWidth: true }
-                Text { text: Timers.formatSec(Timers.countdown.remaining); font.family: Size.fontMono; font.pixelSize: Size.fontSize.lg; color: Timers.countdown.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
-            }
-            RowLayout {
-                Layout.fillWidth: true; spacing: Size.spacing.xs
-                visible: !Timers.countdown.running && Timers.countdown.remaining <= 0
-                Repeater {
-                    model: [{ label: "1分", secs: 60 }, { label: "5分", secs: 300 }, { label: "15分", secs: 900 }, { label: "25分", secs: 1500 }]
-                    Rectangle {
-                        required property var modelData
-                        Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                        color: cdMa.containsMouse ? Color.withAlpha(Color.primary, 0.15) : Color.withAlpha(Color.text, 0.06)
-                        Text { anchors.centerIn: parent; text: modelData.label; color: cdMa.containsMouse ? Color.primary : Color.textMuted; font.pixelSize: Size.fontSize.xsm; font.bold: cdMa.containsMouse }
-                        MouseArea { id: cdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Timers.startCountdown(modelData.secs) }
-                    }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true; spacing: Size.spacing.xs
-                visible: Timers.countdown.running || Timers.countdown.remaining > 0
-                Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                    color: Timers.countdown.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.countdown.running ? "暂停" : "继续"; color: Timers.countdown.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.xsm; font.bold: true }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.countdown.running ? Timers.pauseCountdown() : Timers.startCountdown(0) }
-                }
-                Rectangle {
-                    Layout.preferredWidth: 52; Layout.preferredHeight: 28; radius: Size.rounding.sm; color: Color.withAlpha(Color.text, 0.06)
-                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.xsm }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.resetCountdown() }
-                }
-            }
-        }
-    }
-
-    // 展开按钮（面板隐藏时）
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: Size.spacing.sm
-        width: 120; height: 28; radius: Size.rounding.full
-        color: ttMa.containsMouse ? Color.withAlpha(Color.text, 0.06) : "transparent"
-        visible: !root._timerExpanded
-        Text { anchors.centerIn: parent; text: "计时器 ▼"; color: Color.textMuted; font.pixelSize: Size.fontSize.xsm }
-        MouseArea { id: ttMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root._timerExpanded = true }
     }
 }

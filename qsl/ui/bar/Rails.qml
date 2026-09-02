@@ -27,6 +27,7 @@ Variants {
 
         // 左竖 rail
         PanelWindow {
+            id: leftRail
             screen: railScope.modelData
             anchors { left: true; top: true; bottom: true }
             margins { top: 0 }   // bar 的 exclusiveZone 已提供段高偏移，再加会叠两次
@@ -36,10 +37,12 @@ Variants {
             WlrLayershell.namespace: "qsl-rail-left"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Normal
+
         }
 
         // 右竖 rail
         PanelWindow {
+            id: rightRail
             screen: railScope.modelData
             anchors { right: true; top: true; bottom: true }
             margins { top: 0 }   // bar 的 exclusiveZone 已提供段高偏移，再加会叠两次
@@ -49,10 +52,12 @@ Variants {
             WlrLayershell.namespace: "qsl-rail-right"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Normal
+
         }
 
         // 底 rail
         PanelWindow {
+            id: bottomRail
             screen: railScope.modelData
             anchors { left: true; right: true; bottom: true }
             implicitHeight: railScope.thickness
@@ -61,6 +66,7 @@ Variants {
             WlrLayershell.namespace: "qsl-rail-bottom"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Normal
+
         }
 
         // 左上：左段 × 左 rail

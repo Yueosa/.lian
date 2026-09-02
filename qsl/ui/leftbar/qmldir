@@ -1,5 +1,12 @@
 Leftbar 1.0 Leftbar.qml
-KeysPage 1.0 KeysPage.qml
-SystemPage 1.0 SystemPage.qml
-TimePage 1.0 TimePage.qml
-TodoPage 1.0 TodoPage.qml
+TimeClockCard 1.0 TimeClockCard.qml
+TimeTimerCard 1.0 TimeTimerCard.qml
+SysResourcesCard 1.0 SysResourcesCard.qml
+SysPsiCard 1.0 SysPsiCard.qml
+SysStatusCard 1.0 SysStatusCard.qml
+SysProcsCard 1.0 SysProcsCard.qml
+KeysTabsCard 1.0 KeysTabsCard.qml
+KeysListCard 1.0 KeysListCard.qml
+TodoTabsCard 1.0 TodoTabsCard.qml
+TodoListCard 1.0 TodoListCard.qml
+TodoDoneCard 1.0 TodoDoneCard.qml

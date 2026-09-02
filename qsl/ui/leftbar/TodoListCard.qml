@@ -1,5 +1,8 @@
-// TodoPage — 待办清单（两级分组：标签芯片 + 优先级排序）
+// TodoListCard — 待办输入 + 列表（todo 页三容器之二；已完成在 TodoDoneCard）
+// 筛选状态在 Leftbar.todoState（activeTag / starredOnly）；过滤/排序模型原样保留，改读 state
+// 列表高度随内容自适应（有上限，超出滚动）
 //
+// 容器卡：背景/圆角由宿主 RailContainer 提供，本卡只装内容
 // 性能：
 //   - ListView reuseItems，delegate 最小化
 //   - 无 Timer；数据变更通过 Todo singleton 的 signal 被动刷新
@@ -14,19 +17,31 @@ import qs.data.service
 Item {
     id: root
 
-    property string activeTag: ""
-    // 星标与标签正交：可以同时「只看重要」和「只看开发」
-    property bool starredOnly: false
-    property bool showDone: false
+    // 宽度跟随宿主容器（RailPage 按页给宽），不写死
+    anchors.fill: parent
+    implicitHeight: mainCol.implicitHeight + 32   // 上下各 16 留白
+
+    // 指向 Leftbar.todoState（activeTag / starredOnly）
+    // 不叫 state：Item 自带同名属性（状态机当前态），避免遮蔽
+    property QtObject sharedState
+
+    // 筛选状态在加载时捕获：回放（收回→派生）时旧实例继续显示旧
+    // 筛选结果播退出，新实例加载时才读新状态——内容不再先于动画变
+    property string _tag: ""
+    property bool _star: false
+    Component.onCompleted: {
+        _tag = sharedState.activeTag
+        _star = sharedState.starredOnly
+    }
 
     // revision 强制依赖：完成态会重排，避免 ListView 吃旧 modelData
     readonly property var _matching: {
         void Todo.revision
         let list = (Todo.items || []).filter(i => !!i)
-        if (root.starredOnly)
+        if (root._star)
             list = list.filter(i => i.starred)
-        if (root.activeTag)
-            list = list.filter(i => i.tag === root.activeTag)
+        if (root._tag)
+            list = list.filter(i => i.tag === root._tag)
         return list
     }
 
@@ -45,187 +60,15 @@ Item {
                    .sort((a, b) => (b.created || 0) - (a.created || 0))
     }
 
-    // 展开时把已完成接在未完成后面，共用一个 ListView，
-    // 两个 ListView 会各自持有一套 delegate 池，没必要
-    readonly property var visibleItems:
-        root.showDone ? root.pendingItems.concat(root.doneItems) : root.pendingItems
-
     ColumnLayout {
-        anchors.fill: parent
+        id: mainCol
+        anchors.top: parent.top
+        anchors.topMargin: 16
+        anchors.left: parent.left
+        anchors.leftMargin: 16
+        anchors.right: parent.right
+        anchors.rightMargin: 16
         spacing: Size.spacing.md
-
-        // ---- 页面标题 + 计数 ----
-        RowLayout {
-            Layout.fillWidth: true
-            Text {
-                text: "待办"
-                color: Color.text
-                font.pixelSize: Size.fontSize.lg
-                font.bold: true
-            }
-            Text {
-                text: Todo.doneCount + "/" + Todo.count
-                color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
-                verticalAlignment: Text.AlignVCenter
-            }
-            Item { Layout.fillWidth: true }
-        }
-
-        // ---- 筛选行：星标开关 + 标签芯片 ----
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Size.spacing.xs
-
-            // 星标是独立开关而非标签，所以放在分隔线左边
-            Rectangle {
-                Layout.preferredWidth: 36
-                Layout.preferredHeight: 32
-                radius: Size.rounding.sm
-                color: root.starredOnly
-                    ? Color.withAlpha(Color.primary, 0.22)
-                    : Color.surfaceHigh
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "star"
-                    font.family: Size.fontIcon
-                    font.pixelSize: 18
-                    // 这套图标是可变字体，实心靠 FILL 轴而不是换字形：
-                    // 老 Material Icons 的 star / star_border 两个码点
-                    // 在 Material Symbols 里被合并成了同一个 star
-                    font.variableAxes: ({ "FILL": root.starredOnly ? 1 : 0,
-                                          "opsz": 20 })
-                    color: root.starredOnly ? Color.primary : Color.textMuted
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.starredOnly = !root.starredOnly
-                }
-            }
-
-            Rectangle {
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 20
-                color: Color.surfaceHighest
-            }
-
-            Flickable {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 36
-                contentWidth: tagRow.implicitWidth
-                clip: true
-                flickableDirection: Flickable.HorizontalFlick
-                boundsBehavior: Flickable.StopAtBounds
-
-                Row {
-                    id: tagRow
-                    spacing: Size.spacing.xs
-
-                    QslChip {
-                        text: "全部"
-                        selected: root.activeTag === ""
-                        chipHeight: 32
-                        onClicked: root.activeTag = ""
-                    }
-
-                    Repeater {
-                        model: Todo.tags
-                        QslChip {
-                            required property string modelData
-                            text: modelData
-                            selected: root.activeTag === modelData
-                            chipHeight: 32
-                            onClicked: root.activeTag = modelData
-                            // 右键删标签：条目不会跟着没，只是退回无标签
-                            onRightClicked: {
-                                if (root.activeTag === modelData)
-                                    root.activeTag = ""
-                                Todo.removeTag(modelData)
-                            }
-                        }
-                    }
-
-                    // 新建标签
-                    Rectangle {
-                        width: 32
-                        height: 32
-                        radius: Size.rounding.sm
-                        color: newTagMa.containsMouse
-                            ? Color.surfaceHighest : Color.surfaceHigh
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "add"
-                            font.family: Size.fontIcon
-                            font.pixelSize: 16
-                            color: Color.textMuted
-                        }
-                        MouseArea {
-                            id: newTagMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.creatingTag = true
-                                newTagInput.forceActiveFocus()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 新标签输入，只在按下 + 后出现
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.creatingTag ? 36 : 0
-            visible: root.creatingTag
-            radius: Size.rounding.sm
-            color: Color.surfaceHigh
-            border.width: Style.border.width
-            border.color: Color.withAlpha(Color.primary, 0.5)
-
-            TextInput {
-                id: newTagInput
-                anchors.fill: parent
-                anchors.leftMargin: Size.spacing.md
-                anchors.rightMargin: Size.spacing.md
-                verticalAlignment: Text.AlignVCenter
-                color: Color.text
-                font.pixelSize: Size.fontSize.sm
-                font.family: Size.fontSans
-                clip: true
-                selectByMouse: true
-
-                Text {
-                    anchors.fill: parent
-                    verticalAlignment: Text.AlignVCenter
-                    visible: !newTagInput.text
-                    text: "新标签名，回车确认，Esc 取消"
-                    color: Color.textMuted
-                    font: newTagInput.font
-                }
-
-                function commit() {
-                    const t = newTagInput.text.trim()
-                    if (t)
-                        Todo.addTag(t)
-                    newTagInput.text = ""
-                    root.creatingTag = false
-                }
-
-                Keys.onReturnPressed: (e) => { commit(); e.accepted = true }
-                Keys.onEnterPressed: (e) => { commit(); e.accepted = true }
-                Keys.onEscapePressed: (e) => {
-                    newTagInput.text = ""
-                    root.creatingTag = false
-                    e.accepted = true
-                }
-            }
-        }
 
         // ---- 输入行 ----
         Rectangle {
@@ -312,11 +155,12 @@ Item {
         ListView {
             id: todoList
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            // 自适应内容：下限留空态文案位置，上限后滚动
+            Layout.preferredHeight: Math.max(120, Math.min(440, contentHeight))
             clip: true
             spacing: Size.spacing.xs
             reuseItems: true
-            model: root.visibleItems
+            model: root.pendingItems
             boundsBehavior: Flickable.StopAtBounds
 
             delegate: Rectangle {
@@ -454,10 +298,10 @@ Item {
                 anchors.centerIn: parent
                 visible: todoList.count === 0
                 text: {
-                    if (root.starredOnly)
+                    if (root._star)
                         return "没有标记为重要的事项"
-                    if (root.activeTag)
-                        return "「" + root.activeTag + "」暂无待办"
+                    if (root._tag)
+                        return "「" + root._tag + "」暂无待办"
                     return root.doneItems.length > 0 ? "都做完了" : "无待办事项"
                 }
                 color: Color.textMuted
@@ -465,77 +309,16 @@ Item {
             }
         }
 
-        // ---- 已完成折叠条 ----
-        // 打完勾的事项从主列表收进来，列表自己保持干净，又还能回头看
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            visible: root.doneItems.length > 0
-            radius: Size.rounding.sm
-            color: doneMa.containsMouse ? Color.surfaceHigh : "transparent"
-
-            MouseArea {
-                id: doneMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.showDone = !root.showDone
-            }
-
-            Text {
-                id: doneChevron
-                anchors.left: parent.left
-                anchors.leftMargin: Size.spacing.sm
-                anchors.verticalCenter: parent.verticalCenter
-                text: "expand_more"
-                font.family: Size.fontIcon
-                font.pixelSize: 18
-                color: Color.textMuted
-                rotation: root.showDone ? 0 : -90
-                Behavior on rotation {
-                    Anim { type: Anim.SpatialFast }
-                }
-            }
-
-            Text {
-                anchors.left: doneChevron.right
-                anchors.leftMargin: 6
-                anchors.verticalCenter: parent.verticalCenter
-                text: "已完成 " + root.doneItems.length
-                color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
-            }
-
-            Text {
-                anchors.right: parent.right
-                anchors.rightMargin: Size.spacing.sm
-                anchors.verticalCenter: parent.verticalCenter
-                visible: doneMa.containsMouse || clearMa.containsMouse
-                text: "清空"
-                color: clearMa.containsMouse ? Color.error : Color.textMuted
-                font.pixelSize: Size.fontSize.xsm
-
-                MouseArea {
-                    id: clearMa
-                    anchors.fill: parent
-                    anchors.margins: -6
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Todo.clearDone()
-                }
-            }
-        }
     }
 
     // ---- 内部状态 ----
     property int _inputPriority: 1
-    property bool creatingTag: false
 
     function _addItem() {
         const txt = inputField.text.trim()
         if (!txt) return
         // 停在某个标签下时按该标签归类，"全部" 下新增则不带标签
-        Todo.add(txt, root.activeTag, root._inputPriority)
+        Todo.add(txt, root.sharedState.activeTag, root._inputPriority)
         inputField.text = ""
     }
 }
