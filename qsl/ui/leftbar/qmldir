@@ -1,9 +1,10 @@
 Leftbar 1.0 Leftbar.qml
 TimeClockCard 1.0 TimeClockCard.qml
 TimeTimerCard 1.0 TimeTimerCard.qml
-SysResourcesCard 1.0 SysResourcesCard.qml
+SysDialCard 1.0 SysDialCard.qml
 SysPsiCard 1.0 SysPsiCard.qml
-SysStatusCard 1.0 SysStatusCard.qml
+SysDiskCard 1.0 SysDiskCard.qml
+SysNetCard 1.0 SysNetCard.qml
 SysProcsCard 1.0 SysProcsCard.qml
 KeysTabsCard 1.0 KeysTabsCard.qml
 KeysListCard 1.0 KeysListCard.qml

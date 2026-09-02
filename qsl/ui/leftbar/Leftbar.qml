@@ -26,7 +26,7 @@ RailPage {
     // 宽度按页定（时间窄、系统宽）；keys/todo 置顶布局：tab 条钉顶，内容从下长
     pages: ({
         time: { title: "时间", icon: "\uf017", width: 400, containers: [timeClockCard, timeTimerCard] },
-        sys:  { title: "系统", icon: "\uf2db", width: 470, containers: [sysResourcesCard, sysPsiCard, sysStatusCard, sysProcsCard] },
+        sys:  { title: "系统", icon: "\uf2db", width: 470, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
         keys: { title: "键位", icon: "\uf11c", width: 460, header: keysTabsCard, containers: [keysListCard] },
         todo: { title: "待办", icon: "\uf0ae", width: 460, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
     })
@@ -132,9 +132,10 @@ RailPage {
     // ---- 容器装配（顺序即派生顺序）----
     Component { id: timeClockCard; TimeClockCard {} }
     Component { id: timeTimerCard; TimeTimerCard {} }
-    Component { id: sysResourcesCard; SysResourcesCard {} }
+    Component { id: sysDialCard; SysDialCard {} }
     Component { id: sysPsiCard; SysPsiCard {} }
-    Component { id: sysStatusCard; SysStatusCard {} }
+    Component { id: sysDiskCard; SysDiskCard {} }
+    Component { id: sysNetCard; SysNetCard {} }
     Component { id: sysProcsCard; SysProcsCard {} }
     Component { id: keysTabsCard; KeysTabsCard { sharedState: keysState } }
     Component { id: keysListCard; KeysListCard { sharedState: keysState } }

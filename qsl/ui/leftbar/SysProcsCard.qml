@@ -16,10 +16,11 @@ Item {
     // 宽度跟随宿主容器（RailPage 按页给宽），不写死
     anchors.fill: parent
     // 头两行（标题+筛选 / 列头）+ 列表区；列表吃剩余高度滚动
-    implicitHeight: 320
+    implicitHeight: 420
 
     property int procFilter: 1
-    property int sortCol: 0
+    // 默认按内存从高到低（用户习惯）；点列头切换
+    property int sortCol: 1
     property bool sortAsc: false
     property int menuPid: -1
     property int menuUid: 0

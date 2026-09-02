@@ -173,14 +173,14 @@ PanelWindow {
         visible: root.headerComp !== null
     }
 
-    // 容器列：贴 rail 竖排；有页首件的页从它下面开始排；
-    // 普通页居中但钳制 y≥56，不许跟 leftbar 黏上（底部空优于顶部黏）
+    // 容器列：贴 rail 竖排，全部页面统一从 y=56 起向下排
+    // （有页首件的从页首件下面起；统一置顶，不做居中分支）
     Column {
         id: containerCol
         x: 8
         y: root.headerComp
             ? 56 + headerContainer.implicitHeight + Size.spacing.md
-            : Math.max(56, Math.round((root.height - containerCol.implicitHeight) / 2))
+            : 56
         spacing: Size.spacing.md
 
         Repeater {
@@ -203,7 +203,7 @@ PanelWindow {
                 naturalWidth: root.pageWidth
                 present: root.open && root.pendingPage === ""
                     && root.replayingIndexes.indexOf(index) === -1
-                staggerMs: index * root.staggerStep
+                staggerMs: (root.headerComp ? index + 1 : index) * root.staggerStep
 
                 // 页内内容可向页面请求关闭（对齐旧 requestClose 惯例）；
                 // bodyItem 用 RailContainer 自带的 alias——在本文件重复声明并
