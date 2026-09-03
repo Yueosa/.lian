@@ -130,6 +130,73 @@ fn resolve_image(n: &IngestInput) -> String {
     String::new()
 }
 
+// FNV-1a 64：内容哈希手写实现（std 的 DefaultHasher 跨编译器版本不稳定，
+// 图标缓存名必须稳定，同内容天然去重）
+fn fnv1a64(bytes: &[u8]) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for &b in bytes {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    h
+}
+
+fn icon_cache_dir() -> PathBuf {
+    PathBuf::from(home()).join(".cache/qsl/notif-icons")
+}
+
+// 通知 DB 持久化，但 /tmp、/run、/var/tmp 下的图标文件活不过重启
+// （Chrome 的 scoped_dir、lya 的 tray 图标都在 /tmp）——收到时拷进持久缓存。
+// 主题图标名 / qsimage 进程句柄没有文件可拷，原样保留。
+fn persist_image(resolved: &str) -> String {
+    let raw = resolved
+        .strip_prefix("image://icon/")
+        .or_else(|| resolved.strip_prefix("file://"))
+        .unwrap_or(resolved);
+    let transient = raw.starts_with("/tmp/")
+        || raw.starts_with("/run/")
+        || raw.starts_with("/var/tmp/");
+    if !transient {
+        return resolved.to_string();
+    }
+    let src = std::path::Path::new(raw);
+    let bytes = match fs::read(src) {
+        Ok(b) => b,
+        Err(_) => return resolved.to_string(),
+    };
+    let ext = src.extension().and_then(|e| e.to_str()).unwrap_or("png");
+    let name = format!("{:x}-{}.{}", fnv1a64(&bytes), bytes.len(), ext);
+    let dir = icon_cache_dir();
+    if fs::create_dir_all(&dir).is_err() {
+        return resolved.to_string();
+    }
+    let dest = dir.join(&name);
+    if !dest.exists() && fs::write(&dest, &bytes).is_err() {
+        return resolved.to_string();
+    }
+    dest.to_string_lossy().into_owned()
+}
+
+// 清掉没有任何行引用的缓存图标（只动缓存目录内的文件）
+fn prune_icon_cache(conn: &Connection) {
+    let mut referenced = std::collections::HashSet::new();
+    if let Ok(mut stmt) = conn.prepare("SELECT DISTINCT image_path FROM notifications") {
+        if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
+            for r in rows.flatten() {
+                referenced.insert(r);
+            }
+        }
+    }
+    if let Ok(rd) = fs::read_dir(icon_cache_dir()) {
+        for entry in rd.flatten() {
+            let path = entry.path();
+            if !referenced.contains(path.to_string_lossy().as_ref()) {
+                let _ = fs::remove_file(&path);
+            }
+        }
+    }
+}
+
 fn write_list_cache(entries: &[ListEntry]) {
     let path = list_cache_path();
     if let Some(parent) = path.parent() {
@@ -201,7 +268,7 @@ fn cmd_ingest(raw: &str) -> i32 {
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0);
     let mapped = map_app(&n.desktop_entry, &n.app_name, &n.summary);
-    let image = resolve_image(&n);
+    let image = persist_image(&resolve_image(&n));
     if let Err(e) = conn.execute(
         "INSERT INTO notifications
          (notif_id, app_name, desktop_entry, summary, body, image_path, mapped_app, received_at, dismissed_at)
@@ -266,6 +333,8 @@ fn cmd_prune(retain_days: i64) -> i32 {
         }
     };
     let removed = prune_old(&conn, retain_days);
+    // 顺手清图标缓存：删的是没有任何行引用的文件（只动缓存目录）
+    prune_icon_cache(&conn);
     let _ = conn.execute_batch("VACUUM");
     println!("{}", removed);
     0
