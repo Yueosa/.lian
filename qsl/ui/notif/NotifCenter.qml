@@ -179,6 +179,18 @@ RailPage {
 
         function iconSourceFor(entry) {
             const p = String(entry.imagePath || "")
+            // /tmp 下的图标活不过重启（Chrome 的 scoped_dir、lya 的 tray 图标都在这）：
+            // 优先主题图标；都没有再转 file://（文件没了由 Image.Error 兜底成首字母）
+            if (p.indexOf("/tmp/") >= 0) {
+                const abs = p.startsWith("image://icon/") ? p.slice(13) : p
+                const dt = notifState.themeIcon(String(entry.desktopEntry || "").toLowerCase())
+                if (dt)
+                    return dt
+                const at = notifState.themeIcon(String(entry.appName || "").toLowerCase())
+                if (at)
+                    return at
+                return abs.startsWith("/") ? "file://" + abs : ""
+            }
             if (p && p.indexOf("image://qsimage") !== 0) {
                 if (p.startsWith("file://") || p.startsWith("image://"))
                     return p
