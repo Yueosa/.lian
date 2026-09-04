@@ -18,9 +18,6 @@ import qs.data.service
 import qs.ui.frame
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
-import qs.ui.leftbar
-import qs.ui.notif
-import qs.ui.rightbar
 import qs.ui.freewindow.websearch
 import qs.ui.lock
 
@@ -77,17 +74,9 @@ ShellRoot {
                 scheduleUnload(webSearchLoader, webSearchUnload)
         }
     }
-    NotifCenter {
-        id: notifCenter
-    }
-
-    Leftbar {
-        id: leftbar
-    }
-
-    Rightbar {
-        id: rightbar
-    }
+    // C/V/N 三个面板与它们的 IPC（target sidebar / rightbar / notif）现在住在
+    // 合并框窗里，见 ui/frame/FramePanels.qml——IpcHandler 的 target 全局唯一，
+    // 只能挂在「只创建一次」的地方，而框窗本身是按屏派生的
 
     Lock {
         id: lockScreen
@@ -105,35 +94,6 @@ ShellRoot {
         function toggle() { clipboardWindow.toggle() }
         function open() { clipboardWindow.openWindow() }
         function close() { clipboardWindow.closeWindow() }
-    }
-
-    IpcHandler {
-        target: "notif"
-        function toggle() { notifCenter.toggle() }
-        function open() { notifCenter.openWindow() }
-        function close() { notifCenter.closeWindow() }
-        function dnd() {
-            Notification.toggleDnd()
-            return Notification.dndEnabled ? "DND_ON" : "DND_OFF"
-        }
-    }
-
-    IpcHandler {
-        target: "rightbar"
-        function toggle() { rightbar.toggle() }
-        function open(view: string) { rightbar.openView(view) }
-        function next() { rightbar.next() }
-        function prev() { rightbar.prev() }
-        function close() { rightbar.closeWindow() }
-    }
-
-    IpcHandler {
-        target: "sidebar"
-        function toggle() { leftbar.toggle() }
-        function open(view: string) { leftbar.openView(view) }
-        function next() { leftbar.next() }
-        function prev() { leftbar.prev() }
-        function close() { leftbar.closeWindow() }
     }
 
     IpcHandler {

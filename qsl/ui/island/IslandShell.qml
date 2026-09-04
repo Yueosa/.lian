@@ -29,6 +29,10 @@ Item {
     // 多屏只让第一块抢键盘，否则 Exclusive 互抢，Esc 无处可去。由框窗传入
     required property bool isKeyOwner
 
+    // 焦点栈里的身份。互斥组 "center"（见 Panels）：将来 A=启动器同区
+    readonly property string panelId: "qsl-island"
+    readonly property string panelGroup: "center"
+
     // ---- 报给 FrameWindow 的三项窗口级诉求 ----
     // Hub 卸载前保持 Overlay，避免关岛瞬间 Overlay→Top 闪一帧
     readonly property bool wantsOverlay: Island.showHub || Island.overlayLayer || hubMounted
@@ -60,7 +64,10 @@ Item {
     FocusScope {
         id: keyScope
         anchors.fill: parent
+        // 栈顶条件：合并框窗只有一个 activeFocusItem，而 Hub 开着时还能开 C/V
+        // （不同区域，不互斥）。谁响应 Esc 由 Panels 的焦点栈裁决
         focus: Island.showHub && root.isKeyOwner
+            && Panels.keyboardOwner === root.panelId
 
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
@@ -305,13 +312,35 @@ Item {
             if (Island.showHub) {
                 hubUnmountTimer.stop()
                 root.hubMounted = true
-                if (root.isKeyOwner)
+                // 只有主屏那份进焦点栈：多屏时另外几份不该跟着抢 Esc
+                if (root.isKeyOwner) {
+                    Panels.claim(root.panelId, root.panelGroup)
                     Qt.callLater(() => keyScope.forceActiveFocus())
+                }
             } else {
                 Island.lyricsHoverRestore = false
+                if (root.isKeyOwner)
+                    Panels.release(root.panelId)
                 // 保持 Hub 节点做淡出，morph 后再拆
                 hubUnmountTimer.restart()
             }
+        }
+    }
+
+    Connections {
+        target: Panels
+
+        // 被同区面板（将来的 A）挤掉：自己关 Hub
+        function onEvicted(id) {
+            if (id === root.panelId)
+                Island.closeHub()
+        }
+
+        // 栈顶换人时主动夺焦，理由同 RailPage 里那条
+        function onKeyboardOwnerChanged() {
+            if (Island.showHub && root.isKeyOwner
+                && Panels.keyboardOwner === root.panelId)
+                Qt.callLater(() => keyScope.forceActiveFocus())
         }
     }
 }

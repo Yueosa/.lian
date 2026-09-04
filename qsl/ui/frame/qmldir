@@ -1,3 +1,4 @@
 Frame 1.0 Frame.qml
 FrameWindow 1.0 FrameWindow.qml
 Exclusions 1.0 Exclusions.qml
+FramePanels 1.0 FramePanels.qml

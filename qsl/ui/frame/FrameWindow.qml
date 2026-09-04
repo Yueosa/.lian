@@ -53,9 +53,17 @@ PanelWindow {
     color: "transparent"
     exclusiveZone: -1
 
+    // 面板只在主屏那份实例化（合并前它们就没套 Variants），所以诉求要过 Loader
+    // 取；未挂载时视为「什么都不要」
+    readonly property bool panelsWantOverlay: panelsLoader.item
+        ? panelsLoader.item.wantsOverlay : false
+    readonly property bool panelsWantKeyboard: panelsLoader.item
+        ? panelsLoader.item.wantsKeyboard : false
+
     WlrLayershell.namespace: "qsl-frame"
-    WlrLayershell.layer: island.wantsOverlay ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: island.wantsKeyboard
+    WlrLayershell.layer: (island.wantsOverlay || panelsWantOverlay)
+        ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.keyboardFocus: (island.wantsKeyboard || panelsWantKeyboard)
         ? WlrKeyboardFocus.Exclusive
         : WlrKeyboardFocus.None
     // 独占区由 Exclusions 的四个小窗声明，本窗只管画，所以要 Ignore：
@@ -73,6 +81,9 @@ PanelWindow {
         Region { item: rails.rightRail }
         Region { item: rails.bottomRail }
         Region { item: island.hitBox }
+        Region { item: panelsLoader.item ? panelsLoader.item.leftbarHitBox : null }
+        Region { item: panelsLoader.item ? panelsLoader.item.rightbarHitBox : null }
+        Region { item: panelsLoader.item ? panelsLoader.item.notifHitBox : null }
     }
 
     Bar {
@@ -96,5 +107,14 @@ PanelWindow {
         anchors.fill: parent
         z: 10
         isKeyOwner: root.isKeyOwner
+    }
+
+    // C/V/N 压在岛之上：合并前它们在 Overlay 层、岛在 Top，就是这个次序
+    Loader {
+        id: panelsLoader
+        anchors.fill: parent
+        z: 20
+        active: root.isKeyOwner
+        sourceComponent: FramePanels {}
     }
 }

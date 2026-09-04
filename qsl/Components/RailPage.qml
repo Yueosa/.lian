@@ -1,18 +1,24 @@
-// RailPage — 进入模式页面窗口：一个锚点上一组 RailContainer 的编排
+// RailPage — 进入模式页面：一个锚点上一组 RailContainer 的编排
 //
-// 窗口：条带（left/right=全高竖条，bottom=全宽横条），Overlay 层。
+// 条带（left/right=全高竖条，bottom=全宽横条）。
 // 开页铺满点空白关闭 + Esc；Tab/Shift+Tab 循环页面。
 // 切页 = 旧容器全部收回（Exit）→ 换模型 → 新容器级联派生（stagger）：
 //   pendingPage 期间所有容器 present=false，swapTimer 等 Exit 播完再换模型。
 // 页面模型：pages = { id: { title, icon, containers: [Component...] } }
+//
+// plan 第 6 轮起不再自带窗口：原先每个实例是一个 Overlay 层的 PanelWindow，
+// 自管 layer / keyboardFocus / mask。现在画在 FrameWindow 里，那三件事交给
+// 框窗归并（一个 surface 只有一份），本文件通过 wantsOverlay / wantsKeyboard /
+// hitBox 三个只读属性把诉求报上去。换来两件东西：
+//   1. 键盘归属从「合成器裁决」变成 Panels 的显式焦点栈
+//   2. 面板之间切换不再重新申请 Exclusive，那 ~190ms 的停顿省掉了
+//      （见 focusSettleMs 与 skipFocusSettle）
 
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
 import qs.Components
 import qs.data.state
 
-PanelWindow {
+Item {
     id: root
 
     property string edge: "left"
@@ -45,13 +51,20 @@ PanelWindow {
     // 切页不重新申请焦点，所以不付这笔钱——这也正是「按 Tab 循环从来不卡」的原因
     property int focusSettleMs: 230
 
+    // 合并框窗之后：只有框窗**真的要新申请**焦点时才值得等这一拍。
+    // 已经有别的面板开着（或岛的 Hub 开着）时，框窗压根没松手，申请是空操作，
+    // 等 230ms 就是白让用户干看着。开窗那一刻记下当时的持有状态（见 openPage），
+    // 之后整个开窗周期都用它——不能写成实时绑定，因为 claim 之后它必然为真。
+    property bool skipFocusSettle: false
+    readonly property int effectiveSettleMs: skipFocusSettle ? 0 : focusSettleMs
+
     // 容器派生的开闸信号
     readonly property bool derivGate: gateOpen
     property bool gateOpen: false
 
     Timer {
         id: gateTimer
-        interval: root.focusSettleMs
+        interval: root.effectiveSettleMs
         repeat: false
         onTriggered: root.gateOpen = true
     }
@@ -62,8 +75,13 @@ PanelWindow {
         target: root
         function onOpenChanged() {
             if (root.open) {
-                root.gateOpen = false
-                gateTimer.restart()
+                if (root.skipFocusSettle) {
+                    // 框窗本来就握着焦点：没有停顿要躲，直接起派生
+                    root.gateOpen = true
+                } else {
+                    root.gateOpen = false
+                    gateTimer.restart()
+                }
             } else {
                 gateTimer.stop()
                 root.gateOpen = false
@@ -87,7 +105,7 @@ PanelWindow {
     // 同理的入场侧：最后一个容器派生完毕的时刻（Anim.Spatial = durNormal）。
     // 给「派生动画期间别做重活」用。要含 focusSettleMs——派生是等焦点结算完
     // 才起的，不算进来的话服务启停会提前 focusSettleMs 落到动画里
-    readonly property int enterAllMs: Size.anim.durNormal + 60 + focusSettleMs
+    readonly property int enterAllMs: Size.anim.durNormal + 60 + effectiveSettleMs
         + staggerStep * Math.max(0, headerComp ? containerCount : containerCount - 1)
 
     // ---- 详情档时序：供数页 = page 的「下降沿滞后」副本 ----
@@ -123,21 +141,19 @@ PanelWindow {
     // 非空 = 这些序号的容器正在回放（子 tab 切换的收回→派生）
     property var replayingIndexes: []
 
-    color: "transparent"
-    visible: true
-
+    // ---- 窗内几何：贴边条带 ----
+    // 合并前靠窗口 anchors 贴边（且 exclusionMode: Ignore，所以从 y=0 起算，
+    // 压在顶栏之上）。现在直接写坐标，语义一样，但改宽不再引起 buffer 重建
     // TODO: bottom 边的布局（Row 横排 + 水平居中，迁移 A/Z/X 时补）
-    anchors {
-        left: root.edge === "left" || root.edge === "bottom"
-        right: root.edge === "right" || root.edge === "bottom"
-        top: root.edge !== "bottom"
-        bottom: true
-    }
-    exclusiveZone: 0
+    implicitWidth: root.edge === "bottom"
+        ? (parent ? parent.width : 0)
+        : 8 + root.pageWidth + 16
+    width: implicitWidth
+    height: parent ? parent.height : 0
+    x: root.edge === "right" && parent ? parent.width - width : 0
+    y: 0
 
-    WlrLayershell.namespace: root.shellNamespace
-    WlrLayershell.layer: WlrLayer.Overlay
-
+    // ---- 报给 FrameWindow 的三项窗口级诉求 ----
     // 键盘焦点的代价：实测申请 Exclusive 会让 qs 主线程停 ~190ms
     // （QSG_RENDER_LOOP=basic 下渲染在主线程同步跑，这是事件循环真的卡住）。
     // A/B 实证：把 keyboardFocus 恒定 None，开关的 ≥50ms 停顿从 4 次 734ms 归零。
@@ -146,12 +162,12 @@ PanelWindow {
     //          于是 190ms 变成「开面板慢一点」而不是「动画掉帧」
     //   关窗——立刻播收回，焦点等收回播完再还（detailDown 跑完），
     //          否则这 190ms 正好砸在退场动画上
-    WlrLayershell.keyboardFocus: (open || detailDown.running)
-        ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.exclusionMode: ExclusionMode.Ignore
-
-    // 窗口宽度：rail(8) + 容器 + 外边距
-    implicitWidth: root.edge === "bottom" ? 0 : 8 + root.pageWidth + 16
+    // 合并之后这两头只在「框窗真的换手」时才发生，面板互切是白拿的（skipFocusSettle）
+    readonly property bool wantsKeyboard: open || detailDown.running
+    // 合并前恒为 Overlay 层。现在跟着开关：关掉后框窗要落回 Top，
+    // 否则 bar/rail 会一直骑在全屏窗之上
+    readonly property bool wantsOverlay: open || detailDown.running
+    readonly property Item hitBox: inputMask
 
     function toggle(p) {
         open ? closeWindow() : openPage(p)
@@ -163,7 +179,9 @@ PanelWindow {
             page = String(p)
         if (!open)
             Island.captureFocus()
-        // 登记互斥：同组（= 同一块屏幕区域）只留一个，见 Panels
+        // 必须抢在 claim 之前问：claim 会把自己压进栈，之后 keyboardHeld 必然为真
+        skipFocusSettle = Panels.keyboardHeld
+        // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels
         Panels.claim(root.shellNamespace, root.panelGroup)
         open = true
         // 每次开窗都主动夺焦：内容里的输入框（密码框/标签框）一旦
@@ -171,6 +189,9 @@ PanelWindow {
         Qt.callLater(() => keyScope.forceActiveFocus())
     }
 
+    // 子类别重写这个：里面三行是记账（退栈、还焦点），抄一遍就会抄漏——
+    // N 就抄漏过 Panels.release，僵尸条目留在 Panels 里，合并框窗之后键盘
+    // 归属会卡死在一个已经关掉的面板上。要加关闭侧清理请挂 onOpenChanged
     function closeWindow() {
         if (!open)
             return
@@ -179,12 +200,21 @@ PanelWindow {
         Island.restoreFocus()
     }
 
-    // 被别的面板挤掉：自己收场，走正常关窗路径（动画/焦点归还都照旧）
     Connections {
         target: Panels
+
+        // 被别的面板挤掉：自己收场，走正常关窗路径（动画/焦点归还都照旧）
         function onEvicted(id) {
             if (id === root.shellNamespace)
                 root.closeWindow()
+        }
+
+        // 栈顶换人（前一个面板关掉了，键盘该落到我头上）：要主动夺焦。
+        // 光靠上面 focus 那条绑定夺不回来——内容里的输入框（密码框/标签框）
+        // 一旦 forceActiveFocus 过就赖着不放，同 openPage 的注释
+        function onKeyboardOwnerChanged() {
+            if (root.open && Panels.keyboardOwner === root.shellNamespace)
+                Qt.callLater(() => keyScope.forceActiveFocus())
         }
     }
 
@@ -233,13 +263,12 @@ PanelWindow {
         }
     }
 
-    // 开页全屏可点空白关；关页清零不挡桌面
+    // 开页整条可点空白关；关页清零不挡桌面。框窗把它并进自己的 mask
     Item {
         id: inputMask
         width: root.open ? root.width : 0
         height: root.open ? root.height : 0
     }
-    mask: Region { item: inputMask }
 
     // 页面框架按序号取容器（子 tab 交换时用）
     function containerAt(i) {
@@ -251,10 +280,14 @@ PanelWindow {
     // 拿到 activeFocus 就把焦点带出了本子树，Keys.onPressed 从此不再触发
     // ——Tab/Esc 同时死、鼠标照常，且重开也回不来（V 面板焦点饥饿的真根因）。
     // 不写 enabled: root.open：禁用项不能持有 activeFocus（岛同注释）
+    //
+    // 合并框窗之后多了一个条件：整个窗只有一个 activeFocusItem，而跨区域可以
+    // 同时开着 C 和 V。谁响应 Esc/Tab 由 Panels 的焦点栈裁决（栈顶），不再是
+    // 「两个窗都申请 Exclusive、看合成器给谁」
     FocusScope {
         id: keyScope
         anchors.fill: parent
-        focus: root.open
+        focus: root.open && Panels.keyboardOwner === root.shellNamespace
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {

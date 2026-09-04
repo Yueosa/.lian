@@ -40,8 +40,7 @@ RailPage {
 
     function openWindow() {
         notifState.resetClear()
-        openPage(page)
-        Notification.uiActive = true
+        openPage(page)   // open=true 同步触发 onOpenChanged → uiActive=true
         // 缓存先上屏（本地文件，快）；notifctl list 的真数据等派生动画播完再灌。
         // entries 是 var 数组，重新赋值 = ListView 整表重置（delegate 全销毁重建
         // + 每行三级图标回退里的 Quickshell.iconPath 同步查询重跑一遍）。
@@ -64,14 +63,6 @@ RailPage {
     // 覆盖基类：补 Notification.uiActive 释放。
     // QML 函数是对象上的属性，基类内部 Esc/点空白/页内 requestClose
     // 调的 root.closeWindow() 会动态派发到本函数
-    function closeWindow() {
-        if (!open)
-            return
-        open = false
-        Notification.uiActive = false
-        Island.restoreFocus()
-    }
-
     // 覆盖基类：在应用详情页时 Esc 先退回列表，再按一次才关窗
     function escPressed() {
         if (notifState.currentApp !== "")
@@ -83,6 +74,11 @@ RailPage {
     // 收回动画播完再清展示数据：容器收回期间尺寸冻结、内容照旧，
     // 播完才 release，避免「列表先空、容器后收」
     onOpenChanged: {
+        // 挂在 onOpenChanged 而不是重写 closeWindow：重写就得把基类那几行
+        // （open=false / Panels.release / Island.restoreFocus）抄一遍，而抄漏
+        // 了 release 就是本文件曾经的 bug——僵尸条目留在 Panels 里，合并框窗
+        // 之后键盘归属会卡死在一个已经关掉的面板上（详见 Panels 的焦点栈）
+        Notification.uiActive = open
         if (open)
             releaseTimer.stop()
         else
