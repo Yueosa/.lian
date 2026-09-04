@@ -18,13 +18,11 @@ Item {
     // 顶栏高度：竖 rail 从这里起
     required property int topOffset
 
-    // 静止时是 8。有面板开着时框窗会把它压到水波的波谷厚度（见 RailRipple）：
-    // rail 自己那 8px 不让开的话，波谷就被它填平，起伏只剩"向外鼓"的半边。
-    // 加 Behavior 是因为这个值会在开合面板时换档，不该啪一下跳
+    // 恒定 8px。曾经让框窗在开面板时把它压到水波的波谷厚度（"从 8px 里拿出
+    // 4px 做起伏"），结果框的接缝——14×14 的凹角耳、顶栏段 r=22 的下外角——
+    // 全是按 8px 配的，一缩就露馅。现在水波只往内鼓，不动这 8px，
+    // 所以这里也不再需要 Behavior 换档
     required property int thickness
-    Behavior on thickness {
-        Anim { type: Anim.Spatial }
-    }
 
     // 给 FrameWindow 算 mask 用
     readonly property Item leftRail: left

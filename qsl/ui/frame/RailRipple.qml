@@ -103,9 +103,9 @@ Item {
     property int pulseHeight: 12
     // 涌浪沿路径的长度。长一点读成"一记缓慢的涌浪"，短了读成"一个疙瘩在跑"
     property int pulseLength: 420
-    // 两发之间的间隔。必须大于 durRipple（一趟的时长 3500），否则前一发还没跑完
+    // 两发之间的间隔。必须大于 durRipple（一趟的时长 4700），否则前一发还没跑完
     // 后一发就出闸，两个包叠在一起
-    property int pulseEveryMs: 4500
+    property int pulseEveryMs: 6000
 
     // ---- 行波路径的累计里程 ----
     // 只走三条 rail：左（自上而下）→ 底（自左而右）→ 右（自下而上），两端收在
@@ -269,11 +269,18 @@ Item {
     // 出生点离拐角多远，按那条 rail 长度的比例。给 0.15（1028px 的竖 rail 上约
     // 154px）：涌浪本身 420px 长，所以出生那一刻包就跨在拐角上，读成"从角上冒
     // 出来"——这正是贴底的 N 该有的样子。给 0 会让一支波前一出闸就跑没了
-    property real originInset: 0.15
-    // 波前离路径两端多少像素内开始淡出。**必须小于出生点的内缩量**
-    // （lenVRail * originInset ≈ 154px），否则 C / V 一出生就是半透明的——它们
-    // 贴顶，出生点就在离端点 154px 的地方
-    property int endFadePx: 100
+    // 出生点离拐角多远，按那条 rail 长度的比例。
+    // **必须大于涌浪的半长**（pulseLength / 2 = 210px），否则包在出生那一刻就
+    // 已经跨在路径端点上、被裁剪框切掉一半。0.15（154px）就踩了这个：C / V 贴顶，
+    // 出生点比半长还靠近顶栏。0.28 → 288px，前沿离端点还有 78px 余量
+    property real originInset: 0.28
+
+    // 波前离路径两端多少像素内开始收势。
+    // 这个值就该等于**半长**：包的前沿正好在中心离端点半长时触到边界，所以从那
+    // 一刻起开始收，收到 0 时中心刚好抵达顶栏——全程没有满振幅的包被硬切。
+    // 之前给 100 是错的：中心还有 210px 时前沿就越界被裁了，而收势 110px 之后
+    // 才开始，于是顶栏下沿被切出一道 12px 的硬边（用户看到的"像素偏移"）
+    readonly property real endTaperPx: pulseLength / 2
 
     // 出生点在面板**自己那一端**，不是 rail 的中点。
     // 竖 rail 上里程的方向不一样：左 rail 从顶（0）往下数，右 rail 从底（s2）
@@ -441,14 +448,26 @@ Item {
                     visible: dist >= 0 && dist <= root.sEnd
                         && u > -half && u < seg.segLen + half
 
-                    // 靠近路径两端（rail 撞上顶栏的那两个拐角）时淡出。不淡的话
-                    // 裁剪框会把满幅的波在拐角切出一条硬边——波是带着全部振幅
-                    // 撞上去的。淡出读成"波拍到边上散掉"。
-                    // 用 opacity 而不是压振幅：振幅进的是静态路径，一动就得重算
-                    opacity: {
+                    // 靠近顶栏时收势，读成"波拍到顶栏上摊平散掉"。
+                    //
+                    // 压的是**厚度**，不是 opacity。两个理由：
+                    // 1. waveColor 是不透明的 Color.background，半透明的深色带子
+                    //    叠在壁纸/应用窗口上是个鬼影，不是"变薄"
+                    // 2. opacity < 1 会让 Qt 有机会把这个 item 渲到离屏纹理再合成，
+                    //    而纹理原点要对齐整数像素——正好是"一像素位移"的来源
+                    // 振幅本身进的是静态路径，一动就得重算，所以用 Scale 变换：
+                    // 原点钉在 rail 的**外沿**，压下去时底边不动
+                    readonly property real taper: {
                         const d = Math.min(bump.dist, root.sEnd - bump.dist)
-                        return d >= root.endFadePx
-                            ? 1 : Math.max(0, d / root.endFadePx)
+                        return d >= root.endTaperPx
+                            ? 1 : Math.max(0, d / root.endTaperPx)
+                    }
+
+                    transform: Scale {
+                        origin.x: seg.index === 2 ? seg.cross : 0
+                        origin.y: seg.index === 1 ? seg.cross : 0
+                        xScale: seg.vertical ? bump.taper : 1
+                        yScale: seg.vertical ? 1 : bump.taper
                     }
 
                     width: seg.vertical ? seg.cross : root.pulseLength
