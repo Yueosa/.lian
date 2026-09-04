@@ -260,17 +260,22 @@ Item {
     }
 
     // 五条带的 phase0 按框内沿的累计里程给，于是波是一路绕过来的。
-    // 顶栏两段的 span 只有起伏带那 8px、base 给 0——顶栏自己那 44px 才是实心
-    // 部分，多给一点顶栏就凭空变高了
+    //
+    // 顶栏两段的带**整体往栏里挪 railThickness**，实心底和 rail 一样给 8。
+    // 这是修一个尖锐锯齿：起初给的是 `base: 0`、带贴着 barHeight 往下，想的是
+    // "顶栏那 44px 才是实心部分，多给就凭空变高"。但那样**形状在每个波谷都掐成
+    // 零厚度**——两条相切的曲线在一点上收口，抗锯齿处理不了，于是顶栏下沿每
+    // 220px 冒一个尖点（用户截图量到的）。rail 上没这毛病，因为实心底是 8，
+    // 波谷厚度就是 8，形状从不掐零。
+    // 往上挪之后可见的边界一模一样（波谷仍落在 barHeight、波峰仍在 +8），
+    // 藏在栏里那 8px 由顶栏自己盖住——所以整个水波压在栏和 rail 之下（z: -1）
     Strip {
         x: root.railThickness
-        y: root.barHeight
+        y: root.barHeight - root.railThickness
         width: root.lenLeftSeg
-        height: 2 * root.waveAmp
+        height: root.maxThick
         axis: "top"
         along: root.lenLeftSeg
-        span: 2 * root.waveAmp
-        base: 0
         phase0: 0
         mirrored: true   // 里程从豁口往左上角走
     }
@@ -310,13 +315,11 @@ Item {
 
     Strip {
         x: root.width - root.railThickness - root.lenRightSeg
-        y: root.barHeight
+        y: root.barHeight - root.railThickness
         width: root.lenRightSeg
-        height: 2 * root.waveAmp
+        height: root.maxThick
         axis: "top"
         along: root.lenRightSeg
-        span: 2 * root.waveAmp
-        base: 0
         phase0: root.s4
         mirrored: true   // 里程从右上角往豁口走
     }
@@ -482,9 +485,10 @@ Item {
             required property int index
 
             readonly property bool vertical: index === 1 || index === 3
-            // 顶栏两段的实心底是 0：顶栏自己那 44px 才是实心部分
-            readonly property real base: (index === 0 || index === 4)
-                ? 0 : root.railThickness
+            // 实心底五条边一致。顶栏两段也给 8 并把裁剪框往栏里挪 8px：
+            // base 给 0 的话钟形剖面在包围盒两头掐成零厚度，每个包的两端各留一个
+            // 尖点（和常驻起伏在波谷掐零是同一个毛病，理由见上面 Strip 的注释）
+            readonly property real base: root.railThickness
             readonly property real cross: base + root.pulseHeight
             readonly property real segLen: root.segLenOf(index)
             readonly property real segStart: root.segStartOf(index)
@@ -511,7 +515,15 @@ Item {
                 default: return root.width - root.railThickness - seg.segLen
                 }
             }
-            y: seg.index === 2 ? root.height - seg.cross : root.barHeight
+            y: {
+                switch (seg.index) {
+                case 2: return root.height - seg.cross
+                // 顶栏两段：往栏里挪 8px，藏起来的那截由顶栏自己盖住
+                case 1:
+                case 3: return root.barHeight
+                default: return root.barHeight - root.railThickness
+                }
+            }
             width: seg.vertical ? seg.cross : seg.segLen
             height: seg.vertical ? seg.segLen : seg.cross
 
@@ -552,9 +564,13 @@ Item {
                     }
 
                     transform: Scale {
-                        // 厚度增长的起点不动：kind 0/1 从 0 侧长，2/3 从 cross 侧长
-                        origin.x: seg.kind === 3 ? seg.cross : 0
-                        origin.y: seg.kind === 2 ? seg.cross : 0
+                        // 原点钉在**波谷那条线**（实心底的外表面），收势时只压
+                        // 鼓包、谷线不动。钉在 0 侧的话实心底会跟着缩，顶栏那两
+                        // 段的谷线就往栏里退，视觉上等于收势收得比实际快
+                        origin.x: seg.kind === 1 ? seg.base
+                                : seg.kind === 3 ? seg.cross - seg.base : 0
+                        origin.y: seg.kind === 0 ? seg.base
+                                : seg.kind === 2 ? seg.cross - seg.base : 0
                         xScale: seg.vertical ? bump.taper : 1
                         yScale: seg.vertical ? 1 : bump.taper
                     }
