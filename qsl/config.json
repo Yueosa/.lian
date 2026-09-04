@@ -1,0 +1,42 @@
+{
+  "_note": [
+    "qsl 的用户偏好。这里只写你想改的键，缺的键走 data/state/Config.qml 里的",
+    "默认值——默认值的真源在那个文件，不在这里。整个文件删掉 = 恢复出厂。",
+    "存盘即生效（FileView watchChanges），不用重启 qs。",
+    "",
+    "JSON 不支持注释，所以说明写在 _note 里（同 asset/hotkeys.json 的规矩）。",
+    "写错类型或写了非法枚举值会静默退回默认值，不会把 shell 弄挂。",
+    "",
+    "UI 代码永不直接读 Config，只读 Size/Color；这里的值由它们转发。",
+    "所以 spacing / rounding / fontSize 这类细粒度令牌不在这里，它们是",
+    "Size.qml 里的字面常量（理由见 plan.md 第 5 轮边界）。"
+  ],
+
+  "_keys": {
+    "theme.scheme": [
+      "matugen 的配色方案，默认 tonal-spot。可选 10 种：",
+      "content / expressive / fidelity / fruit-salad / monochrome /",
+      "neutral / rainbow / smart / tonal-spot / vibrant"
+    ],
+    "theme.mode": "auto | light | dark，默认 auto（按壁纸亮度自动判，luma>140 → light）",
+    "theme.sourceColorIndex": "取壁纸第几个主色，0 = 最主要，默认 0，范围 0-4（matugen 上限）",
+
+    "font.sans": "正文，默认 Noto Sans CJK SC",
+    "font.mono": "等宽（代码/版本号/网速），默认 JetBrainsMono Nerd Font",
+    "font.icon": "图标，默认 Material Symbols Outlined",
+    "font.iconRounded": "圆角图标，默认 Material Symbols Rounded",
+
+    "anim.scale": [
+      "动画时长总缩放，默认 1.0，范围 0-4。曲线不变，只缩时长。",
+      "0 = 关掉动画。调参时把它开到 2 能看清每一段过渡。"
+    ],
+
+    "cursor.theme": "指针主题，默认 BreezeX-RosePineDawn-Linux",
+    "cursor.size": "指针大小，默认 24，范围 8-96",
+
+    "panels.c.width": "C（左栏）页宽，默认 400",
+    "panels.v.width": "V（右栏）页宽，默认 368",
+    "panels.n.width": "N（通知）页宽，默认 368",
+    "panels.a.mode": "A 的形态：card | rail，默认 card（消费方在 plan 第 7 轮）"
+  }
+}

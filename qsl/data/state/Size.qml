@@ -31,6 +31,8 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+// 自引用本模块，为的是拿 Config：可配的令牌在这里转发，UI 只认 Size（约定 7）
+import qs.data.state
 
 Singleton {
     id: root
@@ -38,12 +40,15 @@ Singleton {
     // ============================================================
     // 字体家族
     //     sans: 正文 / mono: 代码与数字 / icon: Material Symbols
+    //
+    //     值由 Config 提供，读取面留在这里：208 个调用点一处不改就拿到了
+    //     热重载。默认值不在这一行，在 Config.qml（约定 7）
     // ============================================================
 
-    readonly property string fontSans: "Noto Sans CJK SC"
-    readonly property string fontMono: "JetBrainsMono Nerd Font"
-    readonly property string fontIcon: "Material Symbols Outlined"
-    readonly property string fontIconRounded: "Material Symbols Rounded"
+    readonly property string fontSans: Config.font.sans
+    readonly property string fontMono: Config.font.mono
+    readonly property string fontIcon: Config.font.icon
+    readonly property string fontIconRounded: Config.font.iconRounded
 
     // ============================================================
     // 字体尺寸（8 级，覆盖 90% 使用场景）
@@ -109,13 +114,30 @@ Singleton {
         readonly property var curveDecel:       [0.05, 0.70, 0.10, 1.00, 1.00, 1.00]  // 入场减速（不要过冲时用）
 
         // ---- 时长 ----
-        readonly property int durFast:   400    // spatial 快速（悬停展开/容器 morph）
-        readonly property int durNormal: 500    // spatial 默认（hypr 窗口同档）
-        readonly property int durSlow:   650    // spatial 慢速
-        readonly property int durFxFast: 150    // effects 快速（悬停/按压反馈）
-        readonly property int durFx:     200    // effects 默认
-        readonly property int durFxSlow: 300    // effects 慢速
-        readonly property int durTheme:  600    // 主题换色：放慢，留出感受过程的时间
+        // 七档全部乘 Config.anim.scale：曲线不动，只缩时长。改 config.json
+        // 存盘即生效，所有动画当场一起变——调参时开到 2 能看清每一段过渡，
+        // 开到 0 就是关掉动画。
+        // 这层转发只有 28 个读取点吃到，因为第 2 轮把动画全收进了 Anim/CAnim；
+        // spacing/rounding/fontSize 不这么做，它们是字面常量（见架构约定 7）
+        readonly property int durFast:   Math.round(400 * Config.anim.scale)  // spatial 快速（悬停展开/容器 morph）
+        readonly property int durNormal: Math.round(500 * Config.anim.scale)  // spatial 默认（hypr 窗口同档）
+        readonly property int durSlow:   Math.round(650 * Config.anim.scale)  // spatial 慢速
+        readonly property int durFxFast: Math.round(150 * Config.anim.scale)  // effects 快速（悬停/按压反馈）
+        readonly property int durFx:     Math.round(200 * Config.anim.scale)  // effects 默认
+        readonly property int durFxSlow: Math.round(300 * Config.anim.scale)  // effects 慢速
+        readonly property int durTheme:  Math.round(600 * Config.anim.scale)  // 主题换色：放慢，留出感受过程的时间
+    }
+
+    // ============================================================
+    // 面板几何
+    //     值由 Config 提供（读取面仍在这里，见约定 7）。C 的四页原来各自
+    //     写着 400，同一个数抄四遍；现在四页共用一个令牌
+    // ============================================================
+
+    readonly property QtObject panel: QtObject {
+        readonly property int cWidth: Config.panels.cWidth
+        readonly property int vWidth: Config.panels.vWidth
+        readonly property int nWidth: Config.panels.nWidth
     }
 
     // ============================================================

@@ -20,7 +20,7 @@ RailPage {
     shellNamespace: "qsl-rightbar"
     // 互斥组：V：rightrail 上，和 N=通知同区
     panelGroup: "right"
-    containerWidth: 368
+    containerWidth: Size.panel.vWidth
 
     order: ["network", "bluetooth", "audio", "updates"]
     page: "network"

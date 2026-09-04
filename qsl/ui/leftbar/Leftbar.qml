@@ -9,6 +9,7 @@
 import QtQuick
 import qs.Components
 import qs.data.service
+import qs.data.state
 
 RailPage {
     id: root
@@ -27,10 +28,10 @@ RailPage {
 
     // 宽度按页定（时间窄、系统宽）；keys/todo 置顶布局：tab 条钉顶，内容从下长
     pages: ({
-        time: { title: "时间", icon: "\uf017", width: 400, containers: [timeClockCard, timeTimerCard] },
-        sys:  { title: "系统", icon: "\uf2db", width: 400, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
-        keys: { title: "键位", icon: "\uf11c", width: 400, header: keysTabsCard, containers: [keysListCard] },
-        todo: { title: "待办", icon: "\uf0ae", width: 400, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
+        time: { title: "时间", icon: "\uf017", width: Size.panel.cWidth, containers: [timeClockCard, timeTimerCard] },
+        sys:  { title: "系统", icon: "\uf2db", width: Size.panel.cWidth, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
+        keys: { title: "键位", icon: "\uf11c", width: Size.panel.cWidth, header: keysTabsCard, containers: [keysListCard] },
+        todo: { title: "待办", icon: "\uf0ae", width: Size.panel.cWidth, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
     })
 
     // 子 tab 切换 → 列表容器播"收回→派生"回放；tab 条是页首固定件，永远不动

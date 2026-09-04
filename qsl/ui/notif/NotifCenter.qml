@@ -22,7 +22,7 @@ RailPage {
     shellNamespace: "qsl-notif"
     // 互斥组：N：rightrail 下，和 V=右附栏同区
     panelGroup: "right"
-    containerWidth: 368
+    containerWidth: Size.panel.nWidth
 
     order: ["notif"]
     page: "notif"

@@ -1,4 +1,5 @@
 singleton Color 1.0 Color.qml
+singleton Config 1.0 Config.qml
 singleton Island 1.0 Island.qml
 singleton Panels 1.0 Panels.qml
 singleton Size 1.0 Size.qml
