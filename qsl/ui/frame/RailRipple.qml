@@ -6,21 +6,36 @@
 // 波只是一个沿路径推进的数——所以这里没有任何跨窗机制，就是普通 QML。
 //
 // ============================================================
-// 两层，职责不同
+// 只有一层：一发一发的移动波
 // ============================================================
-//   常驻起伏（drift）  有面板开着时，框的整条内沿一直在波动。厚度在
-//                      waveMin ~ waveMin+2*waveAmp 之间摆，波谷正好落在静止时
-//                      的框内沿上——所以起伏只朝内鼓、绝不变薄，"框在呼吸"。
-//   周期行波（pulse）  每 pulseEveryMs 放一发，从面板贴的那条边出发绕框跑一趟，
-//                      峰值比起伏的波峰再高，所以能从起伏里认出来。开面板那一
-//                      刻也放一发。
+// 有面板贴着某条 rail 开着时，那条 rail 每隔约 pulseEveryMs 放一发波，沿框的
+// 内沿绕一趟；开、关面板各另放一发（弹出把水推开，缩回把水带回来）。一发出闸
+// 就跟面板脱钩、跑完全程才消失——所以反复开关能攒出好几道波同时在框上跑，面板
+// 关掉之后波还在路上。
 //
-// 全关之后两层都停：Shape 不可见、动画 running 转假、一个像素都不画。渲染循环
-// 是 n=basic（渲染同步在主线程），永久动画等于主线程永远不休息，所以"空闲真的
-// 静止"是硬要求，不是省一点的问题。
+// 波只朝框内鼓、绝不让 rail 变薄，理由见 pulseHeight。
+//
+// "不规律"是伪造的，靠三件事：
+//  1. 每发的长短高矮在出闸那一刻各掷一次骰子，间隔也抖 ±40%
+//  2. 长波跑得快（色散，见 wave.launch）——于是同一条 rail 放出的波会互相追上、
+//     并成一个高峰再穿出去。同速的话它们是一列平行线，里程差恒定，永不相遇
+//  3. 相遇时波峰**相加**（见 wave.boostA），不是各画各的谁高谁盖住
+// 骰子只在出闸时掷、全程不变，所以每帧的开销跟随机无关。
+//
+// 曾经还有第二层「常驻起伏」：面板开着时整条内沿一直在波动，一串等长等高的
+// 波瓣首尾相接。删了，因为**一串全等波瓣在几何上就是正弦**，一眼就读出周期
+// （用户原话："很容易就能看出来是正弦"）。它当时还兼着一件事：给移动波垫一个
+// 起伏的底子，免得一个孤零零的鼓包爬过一条笔直静止的边（那个观感用户报过，
+// 见下面"路径"一节里顶栏的那段）。所以如果哪天嫌静止时的框太死，回来的方式是
+// 给每个波瓣一个**按序号哈希的固定振幅**——波瓣接头处厚度恒为零，所以振幅各
+// 不相同也看不出接缝——而不是恢复等幅波瓣。
+//
+// 全关且波跑完之后彻底停：Shape 不可见、动画 running 转假、一个像素都不画。
+// 渲染循环是 n=basic（渲染同步在主线程），永久动画等于主线程永远不休息，所以
+// "空闲真的静止"是硬要求，不是省一点的问题。
 //
 // ============================================================
-// 为什么两层都是"静态路径 + 只动变换"
+// 为什么是「静态路径 + 只动变换」
 // ============================================================
 // 一眼看去最直接的做法是把整条 rail 切成几百个小矩形、每片厚度按 sin 取值，
 // 每帧推进相位。别这么干：那是每帧上千次 JS 绑定求值 + 上千个临时对象，而渲染
@@ -35,36 +50,8 @@
 // 的片子，就是**一排肉眼可见的矩形台阶**（用户原话："一堆矩形条"）。教训：切片
 // 法的档距是"峰值/片数"，改峰值就得同步改片数，这种耦合不如直接画曲线。
 //
-// 所以两层都烘成**静态**路径（Shape + PathSvg + CurveRenderer），每帧变的只有
+// 所以每发波都烘成**静态**路径（Shape + PathSvg + CurveRenderer），每帧变的只有
 // item 的 x/y 和一个 Scale——都走 C++ 动画/绑定，JS 一行都不跑。
-//
-// ============================================================
-// 起伏为什么拆成一串波瓣，而不是一条长路径
-// ============================================================
-// 第一版起伏是"一条烘死的长正弦路径 + 每帧只平移 x/y"，比现在省 item。它被换掉
-// 是因为**框有两个自由端**（岛的豁口两侧），而那个结构没法在端点收势：
-//
-//   包络要在屏幕上静止，路径却在动。一条静态路径加平移，做不出静止的包络。
-//
-// 于是端点只能靠 clip 硬切，切口高度随漂移在 0~8px 之间来回——波峰漂到端点就是
-// 一道 8px 的垂直台阶。用户逐次截图报的"右上角很尖锐的锯齿""RightBar 最左边、
-// LeftBar 最右边"，都是这一处；拐角反而一直稳，因为相邻两段相位连续。
-//
-// 换法的支点是：那条正弦本来就是**一串一模一样的波瓣**——`base + amp(1-cos)`
-// 在每个波长的两端都正好等于 base。所以拆成独立的波瓣 item 之后：
-//
-//   相邻波瓣的接头处厚度偏移恒为零 → 每个波瓣可以有**自己的振幅倍率**而看不出
-//   接缝。包络成了按波瓣量化的阶梯，却是隐形的。
-//
-// 附带两个好处：
-//  1. 波瓣按**全局里程**索引（第 k 个波瓣的起点 = k*waveLength + drift），四个
-//     拐角自动连续。上一版要靠一个 mirrored 开关把局部坐标镜像过来才能对齐相位
-//     （只反转位移的话相位是反射的，波峰会在角上对撞），那套算术整个删掉了。
-//  2. 振幅从路径里挪进 Scale，路径成了**永久**静态——连开合渐进那十几帧都不用
-//     重算，`ampNow` 只是缩放系数。
-//
-// 代价是 item 数从 5 涨到 ~33。都是十来个三角形的静态 Shape，每帧只更新变换，
-// 换来的是端点能收势。
 //
 // ============================================================
 // 路径
@@ -77,7 +64,6 @@
 
 import QtQuick
 import QtQuick.Shapes
-import qs.Components
 import qs.data.state
 
 Item {
@@ -92,57 +78,31 @@ Item {
     // 只有主屏那份画波（面板只在主屏）
     required property bool keyOwner
 
-    // 贴边 rail 上有面板开着才动。**岛不算**——它是独立体系，理由见 Panels.railHeld
-    readonly property bool active: Panels.railHeld && keyOwner
-
-    // ---- 起伏的厚度预算 ----
-    // waveMin 实心底 + 2*waveAmp 的起伏带 = 厚度在 8~16 之间摆。
-    //
-    // 这里踩过一次，记下来：一开始按"从 8px 里拿出 4px"做成 4~12（均值仍是 8），
-    // 结果是 rail 自己得缩到 4px 才能露出波谷，而框的**接缝全是按 8px 配的**——
-    // 四颗凹角耳是 14×14、顶栏两段的下外角是 r=22，都照 8px 的 rail 对齐。
-    // rail 一缩，这些圆角当场露馅，起伏那条带也从"rail 在呼吸"变成"rail 旁边
-    // 多了一条会动的东西"（用户原话："彻底和 railbar 分离开…圆角也直接露馅了"）。
-    //
-    // 所以改成只朝内鼓、绝不变薄：实心底就是 rail 那 8px 本身，接缝一个都不动，
-    // 波峰盖住应用窗口边缘 8px——用户明确说没关系（开 railbar 时本来不看窗口），
-    // Hyprland 那边还留着外边距
-    property int waveMin: 8
-    property int waveAmp: 4
-    property int waveLength: 220
-    // 起伏走完一个波长的时间。这是"慢"的那个旋钮
-    property int driftMs: Size.anim.durWaveDrift
     property color waveColor: Color.background
 
-    readonly property int maxThick: waveMin + 2 * waveAmp
-
-    // 起伏的幅度是渐进的：面板开合那一下让它长出来/收回去，别啪一下出现。
-    // 这条现在只进 Scale，不进路径——路径是永久静态的
-    property real ampNow: 0
-    Behavior on ampNow {
-        Anim { type: Anim.Spatial }
-    }
-    onActiveChanged: ampNow = active ? waveAmp : 0
-
-    // 波瓣沿里程方向的整体位移，0 → 一个波长就回零。第 k 个波瓣的起点里程是
-    // k*waveLength + drift，所以位移走满一个波长时第 k 个正好接上第 k-1 个原来
-    // 的位置——波瓣彼此全等，接缝处像素级重合，看不出跳
-    property real drift: 0
-    NumberAnimation on drift {
-        running: root.ampNow > 0.01
-        loops: Animation.Infinite
-        from: 0
-        to: root.waveLength
-        duration: root.driftMs
-        // 匀速：水面起伏没有加减速，用 easing 反而像在抽
-        easing.type: Easing.Linear
-    }
-
-    // 起伏在路径两端多少像素内收势。
-    // 给一个波长：顶栏段的行程约 362px，于是段上还留得下一个满振幅的波瓣，靠豁口
-    // 那一两个逐级压平——读成"水往豁口那头平息下去"。给两个波长的话整条顶栏段都
-    // 在收势区里，顶栏就几乎不起伏了，那等于把顶栏又摘出去
-    readonly property real ambientTaperPx: waveLength
+    // ---- 移动波 ----
+    // 波峰高出框内沿多少。
+    //
+    // 「只朝内鼓、绝不变薄」这条踩过一次，记下来：一开始想的是"从 rail 那 8px
+    // 里拿出 4px 来摆"，于是 rail 自己得缩到 4px 才能露出波谷。而框的**接缝全是
+    // 按 8px 配的**——四颗凹角耳是 14×14、顶栏两段的下外角是 r=22，都照 8px 的
+    // rail 对齐。rail 一缩，这些圆角当场露馅，那条波带也从"rail 在呼吸"变成
+    // "rail 旁边多了一条会动的东西"（用户原话："彻底和 railbar 分离开…圆角也
+    // 直接露馅了"）。所以实心底就是 rail 那 8px 本身，接缝一个都不动，波峰盖住
+    // 应用窗口边缘几个像素——用户明确说没关系（开 railbar 时本来不看窗口），
+    // Hyprland 那边还留着外边距。
+    //
+    // 高度、长度、间隔是一起调的，目标是**别读成"一记水波在跑"**：上一版是
+    // 「高 12、长 420、每 6s 一发」，框上大部分时候静止，隔一会儿来一个明显的
+    // 鼓包爬过去——那读起来就是一记水波，很土。现在反过来：矮、长（一记要跑
+    // 一秒多才过完一个点，读成"这一段边在缓缓涨落"）、密（一发没跑完下一发就
+    // 出闸，路上常年三四发）。看到的是好几发叠出来的总和在不规律起落
+    property int pulseHeight: 6
+    // 沿路径的基准长度。每一发在此基础上掷一次骰子（见 wave.launch）
+    property int pulseLength: 900
+    // 两发之间的基准间隔，也要掷骰子。远小于 durRipple（一趟 7000），所以路上
+    // 常年有好几发；等间隔的波列会读成节拍器，所以间隔本身也得抖
+    property int pulseEveryMs: 2200
 
     // ============================================================
     // 端点收势：压厚度之外还得压长度
@@ -153,8 +113,8 @@ Item {
     //
     //   漏出厚度 = h · r · (1-r)²(1+2r)      在 r ≈ 0.42 处取极大
     //
-    // 起伏漏 8 × 0.259 ≈ 2px，行波漏 12 × 0.52 ≈ 6px。每个包往豁口走的路上**必然**
-    // 经过那个峰，所以用户看到的是"波到达的时候一定会泄露几个像素"。
+    // 按当年 12px 的峰值算是漏 12 × 0.52 ≈ 6px。每个包往豁口走的路上**必然**经过
+    // 那个极大点，所以用户看到的是"波到达的时候一定会泄露几个像素"。
     //
     // 所以再压长度：让包的前沿永远够不到端点。锚点钉在包**远离端点**的那一头，
     // 于是和相邻波瓣的接头不动——钉中心的话接头会往里缩，端点附近裂出一段平的。
@@ -174,27 +134,17 @@ Item {
         return (sEnd - c) < c
     }
 
-    // ---- 行波 ----
-    // 涌浪高出框内沿多少。要明显高过起伏的波峰（maxThick=16）才能从起伏里认出来，
-    // 所以给 12 → 框上总厚 20
-    property int pulseHeight: 12
-    // 涌浪沿路径的长度。长一点读成"一记缓慢的涌浪"，短了读成"一个疙瘩在跑"
-    property int pulseLength: 420
-    // 两发之间的间隔。必须大于 durRipple（一趟的时长 4700），否则前一发还没跑完
-    // 后一发就出闸，两个包叠在一起
-    property int pulseEveryMs: 6000
-
     // ---- 框内沿的累计里程 ----
     // 沿框的内边界走一圈（顺时针）：左段底边（岛的豁口 → 左上角）→ 左 rail
     // （自上而下）→ 底 rail（自左而右）→ 右 rail（自下而上）→ 右段底边
     // （右上角 → 岛的豁口）。两端收在岛的豁口两侧，那是框上唯一的开口。
     //
-    // 顶栏进出过一次，教训值得记：第一版把顶栏铺进来但**只铺了行波**，常驻起伏
-    // 还是只在三条 rail 上。于是一个孤零零的鼓包爬过一条笔直静止的边——用户截图
-    // 逐列量出来顶栏下沿鼓出 7~8px，读成"水波超出 Rightbar 的范围"。
-    // 于是砍成三段（只走 rail）；但砍掉之后波拍到顶栏就摊平，框成了个开口的槽。
-    // 现在顶栏的下沿也上常驻起伏，行波经过时只是"已经在起伏的边上涌起一记更大
-    // 的"——和 rail 上读起来一样，这才对。
+    // 顶栏进出过一次，教训值得记：第一版顶栏在路径里，但那时波峰有 12px，一个
+    // 孤零零的高鼓包爬过顶栏那条笔直的下沿——用户截图逐列量出来鼓出 7~8px，读成
+    // "水波超出 Rightbar 的范围"。于是把顶栏从路径里砍掉（只走三条 rail）；但砍
+    // 掉之后波拍到上面两个拐角就摊平，框成了个开口的槽，更糟。
+    // 现在顶栏还在路径里，靠的是**把波压矮**（6px 峰、单发 3~6px）而不是靠给
+    // 顶栏垫一层起伏——那层起伏后来因为"看得出是正弦"删了，见文件头。
     //
     // 顶栏段的行程要减掉 rail 厚度和圆角：段的平底边虽然画到 x=0，但 x∈[0,8]
     // 那截是框的**内部**（上面是段、下面是竖 rail），内边界在 (8, barHeight)
@@ -223,24 +173,23 @@ Item {
     // 一条 rail。固定三个的好处是发射器**永不重建**——跟着数组增删的话，开
     // 第二个面板会把第一个的发射器连带重建，它在飞的那一发波当场消失。
     //
-    // 波相遇：两个鼓包重叠时是**并集**（同色不透明，谁高谁盖住），不是算术
-    // 求和。求和要每帧重算路径形状，而这个文件的整个设计前提是「每帧只动变换、
-    // 一行 JS 都不跑」（理由见文件头）。并集读起来也是两道波峰并成一道，而且
-    // 总厚度还是封顶在 20px——求和会叠到 32px，那已经吃掉应用窗口一大条了。
+    // 波相遇时波峰**相加**，做法见 wave.boostA（不是并集——并集是"谁高谁盖住"，
+    // 两道波穿过彼此时一点反应都没有，假）。
     //
     // 出生点离面板那一端的拐角多远，按那条 rail 长度的比例。
-    // 约束是**出生点离路径两端要大于涌浪的半长**（210px），否则包在出生那一刻
-    // 就跨在端点上、被裁剪框切掉一半。顶栏并进来之后路径的两端在**岛的豁口**，
-    // 离三条 rail 都远，这条约束自动满足了（最紧的是 C 的 434px），所以内缩量
+    // 原先的约束是「出生点离路径两端要大于涌浪的半长」，否则包在出生那一刻就跨
+    // 在端点上被切掉一半。现在半长（450+）已经超过最紧的那个出生点（C 的
+    // 434px），但不再是硬约束了：端点收势是连续的，跨端点出生只是"出闸时振幅
+    // 略小于满值"（434/450 = 96%），不会有硬边。所以内缩量
     // 可以给 0.15——贴着面板那一端，出生那刻包就跨在拐角上，读成"从角上冒出来"
     property real originInset: 0.15
 
-    // 波前离路径两端多少像素内开始收势。
-    // 这个值就该等于**半长**：包的前沿正好在中心离端点半长时触到边界，所以从那
-    // 一刻起开始收，收到 0 时中心刚好抵达端点——全程没有满振幅的包被硬切。
-    // 之前给 100 是错的：中心还有 210px 时前沿就越界被裁了，而收势 110px 之后
-    // 才开始，于是顶栏下沿被切出一道 12px 的硬边（用户看到的"像素偏移"）
-    readonly property real endTaperPx: pulseLength / 2
+    // 波前离路径两端多少像素内开始收势——每一发按**它自己的半长**算（长度是
+    // 掷出来的，见 wave.launch），所以这里只留个函数。
+    // 为什么就该等于半长：包的前沿正好在中心离端点半长时触到边界，所以从那一刻
+    // 起开始收，收到 0 时中心刚好抵达端点——全程没有满振幅的包被硬切。
+    // 之前给固定 100 是错的：中心还有半长时前沿就越界被裁了，而收势 110px 之后
+    // 才开始，于是顶栏下沿被切出一道硬边（用户看到的"像素偏移"）
 
     // 出生点在面板**自己那一端**，不是 rail 的中点。
     // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
@@ -271,10 +220,6 @@ Item {
             readonly property real origin: emitter.armed
                 ? root.originFor(emitter.src.edge, emitter.src.valign) : 0
 
-            // 波前离出生点的距离，0 → 跑完全程
-            property real spread: 0
-            property bool playing: false
-
             // 放波的触发条件只认**波源本身**，不认几何。
             //
             // 这里踩过一次：本来写的是 onArmedChanged + onOriginChanged，结果开
@@ -284,55 +229,235 @@ Item {
             // 一个托盘图标就会把在飞的波重启**。
             //
             // 改成认一个字符串签名：开/关面板、同组换面板（右组 V→N，valign 从
-            // top 变 bottom）都会让它变；几何漂移不会。在飞的波则跟着几何平移，
-            // 这是对的——框变形了，水槽也就变形了
+            // top 变 bottom）都会让它变；几何漂移不会
             readonly property string srcKey: emitter.armed
                 ? (emitter.src.edge + "/" + emitter.src.valign) : ""
-            // 面板关了立刻停：波留在半路上不动更难看
-            onSrcKeyChanged: emitter.srcKey === "" ? emitter.stop() : emitter.fire()
 
-            function fire() {
-                // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
-                const reach = Math.max(emitter.origin, root.sEnd - emitter.origin)
-                    + root.pulseLength
-                spreadAnim.stop()
-                emitter.spread = 0
-                emitter.playing = true
-                spreadAnim.to = reach
-                spreadAnim.restart()
-                pulseTimer.restart()
+            // 最后一次的出生点。关面板时 src 已经没了、origin 归零，得自己记着
+            property real lastOrigin: 0
+
+            // 开一发、关也一发：面板弹出是把水推开，缩回去是把水带回来，两下都该
+            // 有反应。已经出闸的波不受影响——它归波池管，跑完全程为止，所以反复
+            // 开关能攒出好几道波同时在框上跑。
+            //
+            // 启动时不会误放：srcKey 的初值和绑定结果都是空串，不产生变更信号
+            onSrcKeyChanged: {
+                if (emitter.srcKey !== "") {
+                    emitter.lastOrigin = emitter.origin
+                    root.fire(emitter.origin)
+                } else {
+                    root.fire(emitter.lastOrigin)
+                }
             }
 
-            function stop() {
-                spreadAnim.stop()
-                emitter.playing = false
-            }
-
-            // 面板关了就别再发；开着的时候每 pulseEveryMs 来一发
+            // 开着的时候不停地放，间隔在基准值的 ±40% 里抖——固定间隔的波列
+            // 会读成节拍器（每次触发重掷，所以这里是**赋值**、不是绑定）
             Timer {
                 id: pulseTimer
-                interval: root.pulseEveryMs
+                interval: root.pulseEveryMs * (0.6 + Math.random() * 0.8)
                 repeat: true
                 running: emitter.armed
-                onTriggered: emitter.fire()
-            }
-
-            NumberAnimation {
-                id: spreadAnim
-                target: emitter
-                property: "spread"
-                duration: Size.anim.durRipple
-                // 匀速。曾经用减速曲线（"出闸快、远端收势，像真的在扩散"），但一趟
-                // 拉长到 7s 之后，减速段慢得像卡住了；而且要看清波在各条边之间怎么
-                // 交接，速度恒定才跟得住
-                easing.type: Easing.Linear
-                onFinished: emitter.playing = false
+                onTriggered: {
+                    root.fire(emitter.origin)
+                    pulseTimer.interval = root.pulseEveryMs * (0.6 + Math.random() * 0.8)
+                }
             }
         }
     }
 
     // ============================================================
-    // 五段的里程 / 长度 / 波瓣编号
+    // 波池：每一发都是独立的一发
+    // ============================================================
+    // 一发波出闸之后就跟发它的面板脱钩了，跑完全程才消失。于是反复开关面板可以
+    // 攒出好几道波同时在框上跑（用户要的就是这个）。
+    //
+    // 固定 poolSize 个槽位，满了回收**最老**的那一发。不动态创建的理由是老的：
+    // 一发波要 5 段 × 2 波前 = 10 个 Shape，临场同步创建正好砸在动画里
+    // （见 plan.md 第 6 轮「同步创建撞上动画时钟」）。槽位空着时 visible 为假，
+    // 一个像素都不画
+    // 一趟 7000ms×色散系数（0.79~1.41，最慢的一发要 9.9s），平均每 2200ms 一发
+    // → 一条 rail 常年 4~5 发在飞；左右两条同时开着就是 9~10 发，加上间隔抖动的
+    // 尖峰，给 12 个槽位。
+    //
+    // 满了回收**最老**的那一发正好是最不显眼的：最老 = spread 最大 = 两个波前都
+    // 最靠近路径两端 = 端点收势已经把它压到接近零，回收时基本看不见
+    readonly property int poolSize: 12
+    property int _seq: 0
+
+    // 有没有波在飞。裁剪框和 Shape 的可见性要看它——面板全关之后常驻起伏会淡出，
+    // 但那时可能还有波在路上，不能跟着一起藏掉。
+    //
+    // 写成累加而不是「见到一个就 return true」：短路会让绑定只依赖到第一个 alive，
+    // 后面几个的变化收不到通知（QML 绑定的依赖是求值时**读到过**的那些）
+    readonly property bool anyAlive: {
+        let n = 0
+        for (let i = 0; i < waves.count; i++) {
+            const w = waves.itemAt(i)
+            if (w && w.alive)
+                n++
+        }
+        return n > 0
+    }
+
+    function fire(origin) {
+        // 先找空位；全满就回收最老的那一发
+        let slot = null
+        let oldest = null
+        for (let i = 0; i < waves.count; i++) {
+            const w = waves.itemAt(i)
+            if (!w)
+                continue
+            if (!w.alive) {
+                slot = w
+                break
+            }
+            if (!oldest || w.seq < oldest.seq)
+                oldest = w
+        }
+        const target = slot || oldest
+        if (target)
+            target.launch(origin)
+    }
+
+    Repeater {
+        id: waves
+        model: root.poolSize
+
+        Item {
+            id: wave
+
+            required property int index
+            property real origin: 0
+            // 波前离出生点的距离，0 → 跑完全程
+            property real spread: 0
+            property bool alive: false
+            // 越大越新，回收时挑最小的
+            property int seq: 0
+
+            // 这一发的长短和高矮，出闸时掷一次，全程不变
+            property real len: root.pulseLength
+            property real amp: 1
+            readonly property real half: wave.len / 2
+
+            // 两个波前的里程：一个往里程增大的方向跑、一个往减小的方向跑
+            readonly property real distA: wave.origin + wave.spread
+            readonly property real distB: wave.origin - wave.spread
+
+            // ---- 波峰叠加 ----
+            // 两道波撞在一起时波峰要**相加**，不是各画各的然后谁高谁盖住（并集）。
+            // 真正的求和要每帧重算路径形状，而这个文件的设计前提是「每帧只动变换、
+            // 一行 JS 都不跑」（理由见文件头）。所以用一个等价的近似：
+            //
+            //   两个**等长**鼓包完全重合时，和就是「同一个鼓包、两倍高」。
+            //   所以让每个波前按「别人在我这儿的高度之和」放大自己的振幅，重合处
+            //   两个都放大到 2 倍、并集自然就是 2 倍高——峰值处和算术和完全一致，
+            //   部分重叠时形状是近似的（真和会更胖一点）。
+            //
+            // 不算自己那条兄弟波前：同一发的两个波前在出闸那一刻是重合的，那时
+            // 物理上只有**一道**波峰，算进去会变成出生就双倍高再劈开。
+            //
+            // 封顶 2 倍：十二道波叠在一处会是十二倍，而波峰是盖在应用窗口上的。
+            // 封在两倍 = 「两道波相遇」这一个可读的情形，总厚度就封在
+            // 8 + pulseHeight*2 = 24px，裁剪框正好按这个数开（见 seg.cross）。
+            // 两道等幅波相遇时 16 → 24px，一半的增量，看得出来；三道以上才被
+            // 封顶削掉，那种情形本来也读不出"三道"
+            //
+            // 注：波撞不撞得起来跟这里无关，取决于速度**是否有差**（见 launch
+            // 里的色散）。同速的话同一条 rail 的波是一列平行线，永不相遇
+            readonly property real boostA: root.boostAt(wave.index, wave.distA, wave.amp)
+            readonly property real boostB: root.boostAt(wave.index, wave.distB, wave.amp)
+
+            function launch(o) {
+                wave.origin = o
+                wave.seq = ++root._seq
+                wave.alive = true
+
+                // 每一发的长短高矮都掷一次骰子。等长等高等间隔的一列包读起来是
+                // 节拍器（"伪不规律"就伪在这儿：随机只在出闸这一刻掷，全程不变，
+                // 所以每帧的开销依然是零——不规律来自**很多发叠加**，不是来自
+                // 让某一发自己抖）。
+                //
+                // amp 封在 1 以内：裁剪框的厚度是按 pulseHeight*boostCap 算的，
+                // 掷出大于 1 的振幅会被那个框齐齐切平
+                const lenMul = 0.5 + Math.random() * 1.1
+                wave.len = root.pulseLength * lenMul
+                wave.amp = 0.5 + Math.random() * 0.5
+
+                // ---- 色散：长波跑得快 ----
+                // 这一条是为了让波**撞得起来**，不是为了好看。
+                //
+                // 之前所有波同速，于是同一条 rail 放出的波是一列平行线：两个前沿
+                // 的里程差恒等于「出闸时间差 × 速度」，永远不变，永远不相遇。
+                // 一个发射器的波只可能跟**另一条 rail** 的波对撞（C 和 V 同时开
+                // 着时在底 rail 上），只开一个面板就一次叠加都没有——用户说"总
+                // 感觉没有叠加效果"，就是这个，不是封顶封掉了。
+                //
+                // 给每发一个自己的速度，快的就能追上慢的、并成一个高峰再穿出去。
+                // 速度不是另掷一次骰子，而是从长度导出来的：深水波 v ∝ √λ，长的
+                // 快。速度比约 1.8 倍（最长 vs 最短），一个 2.2s 的间隔（约 1700px）
+                // 大概 4s 就追平，一趟之内能撞上好几回
+                anim.duration = Size.anim.durRipple / Math.sqrt(lenMul)
+
+                anim.stop()
+                wave.spread = 0
+                // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
+                anim.to = Math.max(o, root.sEnd - o) + wave.len
+                anim.restart()
+            }
+
+            NumberAnimation {
+                id: anim
+                target: wave
+                property: "spread"
+                // 每发出闸时按自己的长度改写（色散，见 launch），所以这里只是个
+                // 初值、不是绑定
+                duration: Size.anim.durRipple
+                // 单发**匀速**。曾经用减速曲线（"出闸快、远端收势，像真的在扩散"），但一趟
+                // 拉长到 7s 之后，减速段慢得像卡住了；而且要看清波在各条边之间怎么
+                // 交接，速度恒定才跟得住
+                easing.type: Easing.Linear
+                onFinished: wave.alive = false
+            }
+        }
+    }
+
+    // 一个波前的振幅倍率。
+    //
+    // 倍率 = (自己的振幅 + 别人的鼓包在我这个里程上的高度之和) / 自己的振幅，
+    // 于是「振幅 × 倍率」正好等于**算术和**——峰值处和真求和一模一样。
+    // 除以自己的 amp 不怕除零：amp 掷在 [0.5, 1]，除数有下界。
+    //
+    // skip 是自己那一发的槽位号（自己的两个波前都跳过，理由见 boostA 那段注释）
+    readonly property real boostCap: 2
+    function boostAt(skip, d, myAmp) {
+        // 跑出路径的波前不画，也就不用算——一发波有一半时间里至少一个前沿在界外，
+        // 这一行省掉的是每帧上百次 cos
+        if (d < 0 || d > sEnd)
+            return 1
+        let sum = myAmp
+        for (let i = 0; i < waves.count; i++) {
+            if (i === skip)
+                continue
+            const w = waves.itemAt(i)
+            if (!w || !w.alive)
+                continue
+            sum += w.amp * (humpAt(d - w.distA, w.half) + humpAt(d - w.distB, w.half))
+        }
+        return Math.min(root.boostCap, sum / myAmp)
+    }
+
+    // 归一化的鼓包剖面：偏移 0 时为 1，到半长处为 0。和 humpPath 画的是同一条
+    // 曲线的高度（那条是 smoothstep 拼的，这条用 cos 近似——差别在肉眼之下，
+    // 而它每帧要算上百次，便宜要紧）
+    function humpAt(delta, half) {
+        const a = Math.abs(delta)
+        if (a >= half)
+            return 0
+        return 0.5 * (1 + Math.cos(Math.PI * a / half))
+    }
+
+    // ============================================================
+    // 五段的里程 / 长度
     // ============================================================
     // 写成 switch 函数而不是数组常量：绑定里每帧 new 一个数组就是每帧造垃圾，
     // 而渲染循环是 n=basic，JS 和渲染抢同一条主线程
@@ -356,33 +481,16 @@ Item {
         }
     }
 
-    // 本段要摆几个波瓣、从第几号起。
-    //
-    // 波瓣按**全局**里程编号（第 k 个占 [k*wl+drift, (k+1)*wl+drift]），所以每段
-    // 只需要覆盖自己里程区间的那几号。drift ∈ [0, wl)，把两头各多给一个就够：
-    // 需要的 k 落在 (segStart/wl - 2, (segStart+segLen)/wl) 内，而 k0 起、
-    // 数 ceil(segLen/wl)+2 个正好把这个开区间的整数全包住（两边各验过一遍）。
-    // 跨拐角的波瓣会在相邻两段各画一次、各被自己的裁剪框切在角上——这是对的，
-    // 波正在转弯；只让一段画的话，波会在角上先消失再冒出来
-    function lobeK0Of(i) {
-        return Math.floor(segStartOf(i) / waveLength) - 1
-    }
-
-    function lobeCountOf(i) {
-        return Math.ceil(segLenOf(i) / waveLength) + 2
-    }
-
     // ============================================================
-    // 鼓包剖面：起伏的波瓣和涌浪共用一个
+    // 鼓包剖面
     // ============================================================
     // 两段三次贝塞尔拼一个 smoothstep：控制点与端点**同高**，于是 u=0、len/2、
-    // len 三处的切线都是水平的。这一条同时管住两件事——涌浪与平直框边之间没有
-    // 折角，以及相邻波瓣在接头处是 C1 连续的（两边都是水平切线接在同一高度）。
+    // len 三处的切线都是水平的——波和平直的框边之间因此没有折角，两头是"贴上去"
+    // 的而不是"接上去"的。
     //
     // 形状是**对称**的，所以里程方向朝哪都能用同一条路径，不需要镜像。
     //
-    // 实心底 base 别给 0。给 0 的话形状在两端（起伏是每个波谷、涌浪是包围盒两头）
-    // 掐成零厚度——两条相切的曲线在一点上收口，抗锯齿处理不了，就是一个尖点。
+    // 实心底 base 别给 0。给 0 的话形状在包围盒两头掐成零厚度——两条相切的曲线在一点上收口，抗锯齿处理不了，就是一个尖点。
     // 顶栏那两段本来给的是 0（想着"顶栏自己那 44px 才是实心部分"），结果下沿每
     // 220px 冒一个锯齿；改成和 rail 一样给 8、裁剪框往栏里挪 8px，可见边界一模
     // 一样，藏进栏里那 8px 由顶栏自己盖住
@@ -431,8 +539,9 @@ Item {
             // 里程随本段局部坐标**递减**的三段：顶栏两段朝豁口、右 rail 自下而上
             readonly property bool reversed: index === 0 || index === 3 || index === 4
             readonly property real base: root.railThickness
-            // 裁剪框要同时容下起伏的波峰（maxThick）和涌浪的峰值（base+pulseHeight）
-            readonly property real cross: Math.max(root.maxThick, base + root.pulseHeight)
+            // 裁剪框按**叠加封顶**开：两道波相遇时波峰是 base + pulseHeight*boostCap。
+            // 按单发算的话，相遇那一下会被这个框齐齐切平，切出来是一道横着的硬边
+            readonly property real cross: base + root.pulseHeight * root.boostCap
             readonly property real segLen: root.segLenOf(index)
             readonly property real segStart: root.segStartOf(index)
             // 厚度朝哪，见 humpPath 的 kind
@@ -451,10 +560,9 @@ Item {
             }
 
             clip: true
-            // 起伏的幅度大于零就等于「有面板开着」，而行波只在有面板开着时存在
-            // （发射器 disarm 会立刻停波），所以这一个条件就够，不用再聚合六个
-            // 发射器的 playing
-            visible: root.ampNow > 0.01
+            // 路上没波就整段不画。面板关不关无所谓——一发出闸就跟面板脱钩了，
+            // 认 anyAlive 才是对的
+            visible: root.anyAlive
 
             // 裁剪框 = 这条边在屏幕上的真实范围
             x: {
@@ -478,104 +586,37 @@ Item {
             width: seg.vertical ? seg.cross : seg.segLen
             height: seg.vertical ? seg.segLen : seg.cross
 
-            // ---- 常驻起伏：一串波瓣 ----
-            Repeater {
-                model: root.lobeCountOf(seg.index)
-
-                Item {
-                    id: lobe
-
-                    required property int index
-                    readonly property int k: root.lobeK0Of(seg.index) + index
-                    readonly property real len: root.waveLength
-                    // 本波瓣起点的全局里程，以及换算到本段内的局部里程
-                    readonly property real m0: lobe.k * lobe.len + root.drift
-                    readonly property real u0: lobe.m0 - seg.segStart
-
-                    visible: root.ampNow > 0.01
-                        && lobe.u0 < seg.segLen && lobe.u0 + lobe.len > 0
-
-                    width: seg.vertical ? seg.cross : lobe.len
-                    height: seg.vertical ? lobe.len : seg.cross
-                    x: seg.vertical ? 0 : seg.place(lobe.u0, lobe.len)
-                    y: seg.vertical ? seg.place(lobe.u0, lobe.len) : 0
-
-                    // 包络：靠近路径两端（岛的豁口两侧）时按波瓣压幅度。
-                    // 按**波瓣中心**取距离，所以包络是按波长量化的阶梯——但相邻
-                    // 波瓣在接头处厚度偏移恒为零，阶梯是隐形的。这正是拆成波瓣的
-                    // 全部理由，见文件头
-                    readonly property real center: lobe.m0 + lobe.len / 2
-                    readonly property real edgeDist: root.edgeDistOf(lobe.center)
-                    readonly property real taper: lobe.edgeDist >= root.ambientTaperPx
-                        ? 1 : Math.max(0, lobe.edgeDist / root.ambientTaperPx)
-                    // 开合的渐进也走这里，于是路径永久静态
-                    readonly property real amp: lobe.taper * root.ampNow / root.waveAmp
-                    // 压长度那一半的收势，见 root.lenScaleFor
-                    readonly property real lenScale: root.lenScaleFor(lobe.edgeDist, lobe.len)
-                    readonly property bool anchorAtLen:
-                        root.nearHighOf(lobe.center) === seg.reversed
-
-                    // 一个 Scale 管两件事：厚度轴的原点钉在**波谷那条线**（实心底
-                    // 的外表面），压下去时谷线不动；长度轴的原点钉在远离端点的那一
-                    // 头。两根轴互不相干，所以一个变换就够
-                    transform: Scale {
-                        origin.x: seg.vertical
-                            ? (seg.kind === 1 ? seg.base : seg.cross - seg.base)
-                            : (lobe.anchorAtLen ? lobe.len : 0)
-                        origin.y: seg.vertical
-                            ? (lobe.anchorAtLen ? lobe.len : 0)
-                            : (seg.kind === 0 ? seg.base : seg.cross - seg.base)
-                        xScale: seg.vertical ? lobe.amp : lobe.lenScale
-                        yScale: seg.vertical ? lobe.lenScale : lobe.amp
-                    }
-
-                    Shape {
-                        anchors.fill: parent
-                        preferredRendererType: Shape.CurveRenderer
-                        asynchronous: false
-                        ShapePath {
-                            strokeWidth: 0
-                            strokeColor: "transparent"
-                            fillColor: root.waveColor
-                            PathSvg {
-                                // 永久静态：只依赖朝向和几何常量
-                                path: root.humpPath(seg.kind, seg.base, seg.cross,
-                                                    lobe.len, 2 * root.waveAmp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ---- 周期行波：三个发射器 × 两个波前 ----
+            // ---- 周期行波：波池 × 两个波前 ----
             // 出生点在面板贴的那条 rail 上、靠面板那一端，一个波前往里程增大的
             // 方向跑、一个往减小的方向跑。N 贴右 rail 底、将来 A 贴底 rail 中间，
             // 都靠这个天然分成两支——不需要为它们另写逻辑。
             //
-            // 六个里通常只有两个在画（一条 rail 开着面板），其余 visible 为假，
-            // 一个像素都不画。两条 rail 同时开着时两列波各跑各的，重叠处取并集
+            // 池里通常只有一两发在飞，其余 visible 为假，一个像素都不画
             Repeater {
-                model: 6
+                model: 2 * root.poolSize
 
                 Item {
                     id: bump
 
                     required property int index
                     // 偶数号往里程增大的方向跑，奇数号往减小的方向
-                    readonly property int dir: (bump.index % 2 === 0) ? 1 : -1
-                    // 绑 emitters.count 而不是直接 itemAt：itemAt 不是响应式的，
+                    readonly property bool fwd: bump.index % 2 === 0
+                    // 绑 waves.count 而不是直接 itemAt：itemAt 不是响应式的，
                     // 而 Repeater 建完子项那一刻只有 count 会发通知
-                    readonly property var emitter: emitters.count > Math.floor(bump.index / 2)
-                        ? emitters.itemAt(Math.floor(bump.index / 2)) : null
-                    readonly property real len: root.pulseLength
+                    readonly property var wave: waves.count > Math.floor(bump.index / 2)
+                        ? waves.itemAt(Math.floor(bump.index / 2)) : null
+                    readonly property real len: bump.wave ? bump.wave.len : 0
 
                     // 本波前的里程，包的中心落在它上面
-                    readonly property real dist: bump.emitter
-                        ? bump.emitter.origin + bump.dir * bump.emitter.spread : -1
+                    readonly property real dist: bump.wave
+                        ? (bump.fwd ? bump.wave.distA : bump.wave.distB) : -1
+                    // 波峰叠加的振幅倍率，见 wave.boostA
+                    readonly property real boost: bump.wave
+                        ? (bump.fwd ? bump.wave.boostA : bump.wave.boostB) : 1
                     readonly property real u: dist - seg.segStart
                     readonly property real half: bump.len / 2
 
-                    visible: !!bump.emitter && bump.emitter.playing
+                    visible: !!bump.wave && bump.wave.alive
                         && dist >= 0 && dist <= root.sEnd
                         && u > -half && u < seg.segLen + half
 
@@ -592,11 +633,14 @@ Item {
                     // 2. opacity < 1 会让 Qt 有机会把这个 item 渲到离屏纹理再合成，
                     //    而纹理原点要对齐整数像素——正好是"一像素位移"的来源
                     readonly property real edgeDist: root.edgeDistOf(bump.dist)
-                    readonly property real taper: bump.edgeDist >= root.endTaperPx
-                        ? 1 : Math.max(0, bump.edgeDist / root.endTaperPx)
+                    readonly property real taper: bump.edgeDist >= bump.half
+                        ? 1 : Math.max(0, bump.edgeDist / bump.half)
                     readonly property real lenScale: root.lenScaleFor(bump.edgeDist, bump.len)
                     readonly property bool anchorAtLen:
                         root.nearHighOf(bump.dist) === seg.reversed
+                    // 厚度轴的总倍率：端点收势 × 这一发的振幅 × 波峰叠加
+                    readonly property real thick:
+                        bump.taper * (bump.wave ? bump.wave.amp : 1) * bump.boost
 
                     transform: Scale {
                         origin.x: seg.vertical
@@ -605,8 +649,11 @@ Item {
                         origin.y: seg.vertical
                             ? (bump.anchorAtLen ? bump.len : 0)
                             : (seg.kind === 0 ? seg.base : seg.cross - seg.base)
-                        xScale: seg.vertical ? bump.taper : bump.lenScale
-                        yScale: seg.vertical ? bump.lenScale : bump.taper
+                        // 厚度轴上乘了 boost：Scale 的原点钉在**波谷那条线**（实心底
+                        // 的外表面），所以放大只让波峰长高，谷线不动。实心底那一截
+                        // 被一起放大到框外/栏里去了，本来就在裁剪框外，看不见
+                        xScale: seg.vertical ? bump.thick : bump.lenScale
+                        yScale: seg.vertical ? bump.lenScale : bump.thick
                     }
 
                     Shape {

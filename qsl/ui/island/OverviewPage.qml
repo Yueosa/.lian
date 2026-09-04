@@ -39,7 +39,27 @@ Item {
         const wd = Quickshell.env("WAYLAND_DISPLAY") || "wayland-1"
         const xdg = Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000"
         const dbus = Quickshell.env("DBUS_SESSION_BUS_ADDRESS") || ""
-        let cmd = "pkill -x qs; sleep 0.5; "
+
+        // 杀自己按 **PID**，不按进程名。
+        //
+        // 原先写的是 `pkill -x qs`，赌的是「进程名一定叫 qs」。这个赌注输过一次：
+        // 内核里的 comm 取的是 exec 时用的那个名字，我们全套配置起壳都用 qs
+        // （autostart.lua、binds.lua、下面这条重启命令），所以平时确实叫 qs；但
+        // /usr/bin/qs 是指向 quickshell 的符号链接，一旦有谁按**真实文件名**把它
+        // 再 exec 一次（典型是走 /proc/self/exe 自我重启，argv 会变成不带参数的
+        // /usr/bin/quickshell），这一份的 comm 就叫 quickshell 了。那时按钮点下去
+        // 只白起一个新实例、老的还在，两份一起画。
+        //
+        // 所以不改成 `pkill -x quickshell`——那只是把赌注换个面押。也不能用
+        // pkill -f 认命令行：下面这条 bash 的命令行里就带着进程名，会把自己一起
+        // 杀掉（同类陷阱见 Cava.qml 里那个 [q] 写法）。PID 是自己的，谁也改不了。
+        //
+        // 先 TERM、轮询到死、超时再 KILL：直接接 sleep 0.5 是在赌它 500ms 内退得
+        // 干净，退不干净就变成两份实例抢同一批 Wayland surface
+        const pid = Quickshell.processId
+        let cmd = "kill " + pid + "; "
+            + "for i in $(seq 20); do kill -0 " + pid + " 2>/dev/null || break; sleep 0.1; done; "
+            + "kill -9 " + pid + " 2>/dev/null; "
             + "export WAYLAND_DISPLAY=" + wd + "; "
             + "export XDG_RUNTIME_DIR=" + xdg + "; "
         if (dbus)
