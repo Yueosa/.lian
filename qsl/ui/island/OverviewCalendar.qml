@@ -11,7 +11,7 @@ Rectangle {
     id: root
 
     radius: Size.rounding.lg
-    color: Color.surfaceHigh
+    color: Color.surfaceContainerHigh
 
     readonly property var monthNames: [
         "一月", "二月", "三月", "四月", "五月", "六月",
@@ -54,7 +54,7 @@ Rectangle {
         if (!day)
             return Color.textMuted
         if (day.isToday)
-            return Color.textOnPrimary
+            return Color.primaryText
         if (!day.inMonth)
             return Color.withAlpha(Color.textMuted, 0.35)
         if (day.isWorkday)
@@ -63,7 +63,7 @@ Rectangle {
             return Color.tertiary
         if (day.isWeekend)
             return Color.error
-        return Color.textOnBackground
+        return Color.backgroundText
     }
 
     // 节气 / 节日用空心圆标记。数字改主色行不通——主色和周末的红太近，
@@ -91,7 +91,7 @@ Rectangle {
         if (!day)
             return "transparent"
         if (day.isToday)
-            return Color.textOnPrimary
+            return Color.primaryText
         if (day.isWorkday)
             return Color.secondary
         return Color.tertiary
@@ -113,7 +113,7 @@ Rectangle {
         Layout.preferredWidth: 36
         Layout.preferredHeight: 36
         radius: width / 2
-        color: navMa.containsMouse ? Color.withAlpha(Color.primary, 0.18) : Color.surfaceHighest
+        color: navMa.containsMouse ? Color.withAlpha(Color.primary, 0.18) : Color.surfaceContainerHighest
         opacity: root.animating ? 0.5 : 1
         Behavior on color { CAnim {} }
 
@@ -354,7 +354,7 @@ Rectangle {
                         text: cell.subText
                         color: {
                             if (cell.dayData.isToday)
-                                return Color.textOnPrimary
+                                return Color.primaryText
                             if (!cell.dayData.inMonth)
                                 return Color.withAlpha(Color.textMuted, 0.3)
                             // 节日用强调色把自己从一片农历小字里拎出来
@@ -410,7 +410,7 @@ Rectangle {
                     Text {
                         id: monthText
                         text: root.monthLabel
-                        color: Color.textOnBackground
+                        color: Color.backgroundText
                         font.family: Size.fontSans
                         font.pixelSize: 24
                         font.bold: true
@@ -478,7 +478,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Color.surfaceHighest
+            color: Color.surfaceContainerHighest
         }
 
         Item {
@@ -501,7 +501,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Color.surfaceHighest
+            color: Color.surfaceContainerHighest
         }
 
         // 今日条：格子里塞不下的完整信息落在这儿。假期倒数是纯派生值，

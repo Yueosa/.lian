@@ -113,7 +113,7 @@ Item {
             text: root.icon
             font.family: root.iconFamily
             font.pixelSize: root.iconSize
-            color: root.iconActive ? Color.textOnPrimary : Color.text
+            color: root.iconActive ? Color.primaryText : Color.text
             Behavior on color { CAnim {} }
         }
 

@@ -2,7 +2,6 @@
 set -euo pipefail
 
 WALLPAPER_PATH="${1:-}"
-FORCED_MODE="${2:-auto}"
 REQUEST_SEQ="${3:-0}"
 OUT_JSON="${HOME}/.cache/quickshell_colors.json"
 THUMB_DIR_PRIMARY="${HOME}/.cache/Lian/LianWall/thumbnails"
@@ -13,6 +12,7 @@ DISPLAY_PREVIEW="${CACHE_ROFI_DIR}/current_preview"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 MATUGEN_CONFIG="${REPO_ROOT}/matugen/config.toml"
+QSL_CONFIG="${REPO_ROOT}/qsl/config.json"
 mkdir -p "${TMP_DIR}"
 mkdir -p "$(dirname "${OUT_JSON}")"
 mkdir -p "${CACHE_ROFI_DIR}"
@@ -24,6 +24,11 @@ fi
 if [[ ! -f "${WALLPAPER_PATH}" ]]; then
   exit 0
 fi
+
+# 归一成真实路径：lianwall hook 传壁纸原路径，QML 侧重跑时传的是
+# ~/.cache/wallpaper_rofi/current 这个软链。不统一的话两边写进
+# __qs_wallpaper_path 的值不同，同壁纸短路永远不命中
+WALLPAPER_PATH="$(readlink -f "${WALLPAPER_PATH}" 2>/dev/null || printf '%s' "${WALLPAPER_PATH}")"
 
 lower_ext="${WALLPAPER_PATH##*.}"
 lower_ext="${lower_ext,,}"
@@ -122,6 +127,44 @@ detect_mode() {
   }'
 }
 
+# ---- qsl/config.json 里的 matugen 参数 ----
+# 脚本自己读文件而不是等 QML 传参：换壁纸这条链是 lianwall hook 触发的，
+# qs 没在跑的时候也得出正确的配色，所以配置不能只活在 QML 里。
+# 默认值的真源在 qsl/data/state/Config.qml，这里的回退值要和那边对齐。
+cfg_get() {
+  local path="$1" fallback="$2" value
+  [[ -f "${QSL_CONFIG}" ]] || { printf '%s\n' "${fallback}"; return 0; }
+  command -v jq >/dev/null 2>&1 || { printf '%s\n' "${fallback}"; return 0; }
+  value="$(jq -r --arg p "${path}" 'getpath($p | split(".")) // empty' "${QSL_CONFIG}" 2>/dev/null || true)"
+  if [[ -n "${value}" && "${value}" != "null" ]]; then
+    printf '%s\n' "${value}"
+  else
+    printf '%s\n' "${fallback}"
+  fi
+}
+
+# 白名单在这里再过一遍（QML 侧已经过了一次）：配置文件是用户手写的，
+# matugen 收到非法 --type 会整条命令失败，那就成了"改个配置全屏没色"
+normalize_scheme() {
+  local value="${1:-tonal-spot}"
+  value="${value,,}"
+  case "${value}" in
+    content|expressive|fidelity|fruit-salad|monochrome|neutral|rainbow|smart|tonal-spot|vibrant)
+      printf '%s\n' "${value}" ;;
+    *) printf '%s\n' "tonal-spot" ;;
+  esac
+}
+
+# matugen 的 --source-color-index 只认 0-4，非数字或超范围一律退回 0
+normalize_source_index() {
+  local value="${1:-0}"
+  if [[ "${value}" =~ ^[0-4]$ ]]; then
+    printf '%s\n' "${value}"
+  else
+    printf '%s\n' "0"
+  fi
+}
+
 normalize_mode() {
   local value="${1:-auto}"
   value="${value,,}"
@@ -196,6 +239,12 @@ fi
 # 统一为 UI 提供可显示的静态预览图路径。
 ln -sf "${SOURCE_IMAGE}" "${DISPLAY_PREVIEW}" 2>/dev/null || true
 
+# 命令行第二参优先（留给手动调试：`... 壁纸 light`），否则读 config.json。
+# hooks.toml 那边只传 $1，故意的——模式的真源是配置文件，不该在 hook 里再存一份
+FORCED_MODE="$(normalize_mode "${2:-$(cfg_get theme.mode auto)}")"
+SCHEME="$(normalize_scheme "$(cfg_get theme.scheme tonal-spot)")"
+SRC_INDEX="$(normalize_source_index "$(cfg_get theme.sourceColorIndex 0)")"
+
 MODE="$(resolve_mode "${SOURCE_IMAGE}" 2>/dev/null || echo dark)"
 case "${MODE}" in
   light|dark) ;;
@@ -212,8 +261,12 @@ nudge_qt6ct() {
   [[ -f "${conf}" ]] && touch "${conf}" || true
 }
 
+# 同壁纸短路：省掉一次 matugen。判断里必须带上 scheme/取色下标，只比壁纸路径的
+# 话，改 config.json 里的配色方案会被这里静默跳过，表现成"改了没反应"
 if [[ "$(normalize_mode "${FORCED_MODE}")" == "auto" && -f "${OUT_JSON}" ]]; then
-  if jq -e --arg path "${SOURCE_IMAGE}" '."__qs_request_mode" == "auto" and ."__qs_wallpaper_path" == $path' "${OUT_JSON}" >/dev/null 2>&1; then
+  if jq -e --arg path "${SOURCE_IMAGE}" --arg scheme "${SCHEME}" --argjson idx "${SRC_INDEX}" \
+       '."__qs_request_mode" == "auto" and ."__qs_wallpaper_path" == $path
+        and ."__qs_scheme" == $scheme and ."__qs_source_index" == $idx' "${OUT_JSON}" >/dev/null 2>&1; then
     jq --arg request_mode "auto" --argjson request_seq "${REQUEST_SEQ:-0}" --arg wallpaper_path "${SOURCE_IMAGE}" \
       '. + {"__qs_request_mode": $request_mode, "__qs_request_seq": $request_seq, "__qs_wallpaper_path": $wallpaper_path}' \
       "${OUT_JSON}" > "${OUT_JSON}.tmp"
@@ -226,16 +279,18 @@ fi
 
 if command -v matugen >/dev/null 2>&1; then
   tmp_json="${TMP_DIR}/matugen-colors.json"
-  matugen_args=(image "${SOURCE_IMAGE}" --source-color-index 0 --mode "${MODE}" --json hex --old-json-output)
+  matugen_args=(image "${SOURCE_IMAGE}" --type "scheme-${SCHEME}" \
+    --source-color-index "${SRC_INDEX}" --mode "${MODE}" --json hex --old-json-output)
   if [[ -f "${MATUGEN_CONFIG}" ]]; then
     matugen_args+=(-c "${MATUGEN_CONFIG}")
   fi
   if matugen "${matugen_args[@]}" > "${tmp_json}" 2>/dev/null; then
     if jq -e '.colors' "${tmp_json}" >/dev/null 2>&1; then
       jq --arg mode "${MODE}" --arg request_mode "$(normalize_mode "${FORCED_MODE}")" --argjson request_seq "${REQUEST_SEQ:-0}" \
-        --arg wallpaper_path "${SOURCE_IMAGE}" \
+        --arg wallpaper_path "${SOURCE_IMAGE}" --arg scheme "${SCHEME}" --argjson idx "${SRC_INDEX}" \
         '(.colors | with_entries(.value = (.value[$mode] // .value.default // .value.dark // .value.light // .value)))
-         + {"__qs_request_mode": $request_mode, "__qs_request_seq": $request_seq, "__qs_wallpaper_path": $wallpaper_path}' \
+         + {"__qs_request_mode": $request_mode, "__qs_request_seq": $request_seq, "__qs_wallpaper_path": $wallpaper_path,
+            "__qs_scheme": $scheme, "__qs_source_index": $idx}' \
         "${tmp_json}" > "${OUT_JSON}"
       sync_gtk_color_scheme "${MODE}"
       nudge_qt6ct
@@ -244,15 +299,17 @@ if command -v matugen >/dev/null 2>&1; then
   fi
 fi
 
+# 兜底路径也记下参数：不是为了声称"这套色是 matugen 按此方案生成的"，而是
+# 记"这组参数试过了"，好让上面的短路和 QML 侧的重跑判断都不必反复重试
 avg_hex="$(extract_average_hex "${SOURCE_IMAGE}" || true)"
 if [[ -n "${avg_hex}" ]]; then
-  printf '{"source_color":"%s","primary":"%s","__qs_request_mode":"%s","__qs_request_seq":%s}\n' \
-    "${avg_hex}" "${avg_hex}" "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" > "${OUT_JSON}"
+  printf '{"source_color":"%s","primary":"%s","__qs_request_mode":"%s","__qs_request_seq":%s,"__qs_scheme":"%s","__qs_source_index":%s}\n' \
+    "${avg_hex}" "${avg_hex}" "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" "${SCHEME}" "${SRC_INDEX}" > "${OUT_JSON}"
   jq --arg wallpaper_path "${SOURCE_IMAGE}" '. + {"__qs_wallpaper_path": $wallpaper_path}' "${OUT_JSON}" > "${OUT_JSON}.tmp"
   mv "${OUT_JSON}.tmp" "${OUT_JSON}"
 else
-  printf '{"__qs_request_mode":"%s","__qs_request_seq":%s}\n' \
-    "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" > "${OUT_JSON}"
+  printf '{"__qs_request_mode":"%s","__qs_request_seq":%s,"__qs_scheme":"%s","__qs_source_index":%s}\n' \
+    "$(normalize_mode "${FORCED_MODE}")" "${REQUEST_SEQ:-0}" "${SCHEME}" "${SRC_INDEX}" > "${OUT_JSON}"
   jq --arg wallpaper_path "${SOURCE_IMAGE}" '. + {"__qs_wallpaper_path": $wallpaper_path}' "${OUT_JSON}" > "${OUT_JSON}.tmp"
   mv "${OUT_JSON}.tmp" "${OUT_JSON}"
 fi

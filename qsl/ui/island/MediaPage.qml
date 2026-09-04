@@ -149,7 +149,7 @@ Item {
                 Layout.preferredHeight: 200
                 Layout.alignment: Qt.AlignHCenter
                 radius: Size.rounding.xl
-                color: Color.surfaceHighest
+                color: Color.surfaceContainerHighest
                 clip: true
 
                 scale: root.isPlaying ? 1.0 : 0.95
@@ -218,8 +218,8 @@ Item {
                     Layout.preferredHeight: 36
                     radius: Size.rounding.md
                     color: playerChipMa.containsMouse || root.playerExpanded
-                        ? Color.surfaceHighest
-                        : Color.surfaceHigh
+                        ? Color.surfaceContainerHighest
+                        : Color.surfaceContainerHigh
 
                     RowLayout {
                         anchors.fill: parent
@@ -234,7 +234,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: Media.activeIdentity
-                            color: Color.textOnBackground
+                            color: Color.backgroundText
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.sm
                             elide: Text.ElideRight
@@ -270,7 +270,7 @@ Item {
                             color: {
                                 if (modelData === Media.active)
                                     return Color.withAlpha(Color.primary, 0.22)
-                                return itemMa.containsMouse ? Color.surfaceHighest : "transparent"
+                                return itemMa.containsMouse ? Color.surfaceContainerHighest : "transparent"
                             }
 
                             Text {
@@ -278,7 +278,7 @@ Item {
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 8
                                 text: Media.getIdentityIcon(modelData) + "  " + Media.getIdentity(modelData)
-                                color: modelData === Media.active ? Color.primary : Color.textOnBackground
+                                color: modelData === Media.active ? Color.primary : Color.backgroundText
                                 font.pixelSize: Size.fontSize.sm
                                 font.bold: modelData === Media.active
                                 elide: Text.ElideRight
@@ -317,7 +317,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.trackTitle
-                    color: Color.textOnBackground
+                    color: Color.backgroundText
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.title
                     font.bold: true
@@ -489,7 +489,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             height: waveRoot.trackH
                             radius: waveRoot.trackH / 2
-                            color: Color.surfaceHighest
+                            color: Color.surfaceContainerHighest
                         }
 
                         Canvas {
@@ -652,14 +652,14 @@ Item {
                 return Color.primary
             if (active)
                 return Color.withAlpha(Color.primary, 0.25)
-            return ma.containsMouse ? Color.surfaceHighest : Color.surfaceHigh
+            return ma.containsMouse ? Color.surfaceContainerHighest : Color.surfaceContainerHigh
         }
         opacity: enabled ? 1 : 0.35
 
         Text {
             anchors.centerIn: parent
             text: btn.glyph
-            color: primary ? Color.textOnPrimary : (active ? Color.primary : Color.textOnBackground)
+            color: primary ? Color.primaryText : (active ? Color.primary : Color.backgroundText)
             font.family: Size.fontMono
             font.pixelSize: primary ? Size.fontSize.xl : Size.fontSize.lg
         }

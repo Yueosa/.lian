@@ -67,7 +67,7 @@ Item {
                 text: Sysmon.ready
                     ? (Sysmon.ramUsedGB.toFixed(1) + "G")
                     : "—G"
-                color: Color.textOnBackground
+                color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.sm
@@ -102,7 +102,7 @@ Item {
             }
             Text {
                 text: Math.round(Sysmon.cpuPercent) + "%"
-                color: Color.textOnBackground
+                color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.sm
@@ -124,7 +124,7 @@ Item {
             }
             Text {
                 text: Math.round(Sysmon.gpuPercent) + "%"
-                color: Color.textOnBackground
+                color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.sm

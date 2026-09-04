@@ -16,7 +16,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.title
-            color: Color.textOnBackground
+            color: Color.backgroundText
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.title
             font.bold: true

@@ -148,7 +148,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.searchHeight
             radius: Size.rounding.full
-            color: Color.surfaceHighest
+            color: Color.surfaceContainerHighest
 
             RowLayout {
                 anchors.fill: parent
@@ -169,7 +169,7 @@ Item {
                     color: Color.text
                     font.pixelSize: Size.fontSize.lg
                     selectionColor: Color.primary
-                    selectedTextColor: Color.textOnPrimary
+                    selectedTextColor: Color.primaryText
                     clip: true
 
                     Text {
@@ -375,7 +375,7 @@ Item {
                             text: modelData.materialGlyph || "apps"
                             font.family: Size.fontIcon
                             font.pixelSize: Size.fontSize.xl
-                            color: delegateItem.current ? Color.textOnPrimary : Color.text
+                            color: delegateItem.current ? Color.primaryText : Color.text
                         }
                     }
 
@@ -385,7 +385,7 @@ Item {
 
                         readonly property string appName: modelData.name || ""
                         readonly property var match: root.matchRange(appName, searchInput.text)
-                        readonly property color textColor: delegateItem.current ? Color.textOnPrimary : Color.text
+                        readonly property color textColor: delegateItem.current ? Color.primaryText : Color.text
 
                         Text {
                             id: appNameBefore

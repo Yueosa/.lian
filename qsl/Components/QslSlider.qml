@@ -55,7 +55,7 @@ Item {
         text: root.icon
         font.family: Size.fontIcon
         font.pixelSize: 18
-        color: root.shown > 0.85 ? Color.textOnPrimary : Color.textMuted
+        color: root.shown > 0.85 ? Color.primaryText : Color.textMuted
         z: 1
     }
 

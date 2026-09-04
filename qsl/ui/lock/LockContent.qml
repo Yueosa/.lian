@@ -79,7 +79,7 @@ Item {
     // —— 玻璃面板壳（无 title 栏）——
     component Glass: Rectangle {
         radius: Size.rounding.xl
-        color: Color.withAlpha(Color.surfaceHigh, 0.78)
+        color: Color.withAlpha(Color.surfaceContainerHigh, 0.78)
         border.width: Style.border.width
         border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
     }
@@ -265,7 +265,7 @@ Item {
                 id: pwdShell
                 anchors.fill: parent
                 radius: height / 2
-                color: Color.withAlpha(Color.surfaceHighest, 0.88)
+                color: Color.withAlpha(Color.surfaceContainerHighest, 0.88)
                 border.width: 2
                 border.color: root.failed
                     ? Color.error
@@ -357,7 +357,7 @@ Item {
                 Layout.preferredWidth: 52
                 Layout.preferredHeight: 52
                 radius: width / 2
-                color: Color.surfaceHighest
+                color: Color.surfaceContainerHighest
                 clip: true
 
                 scale: root.isPlaying ? 1.0 : 0.94
@@ -554,13 +554,13 @@ Item {
         radius: width / 2
         color: primary
             ? Color.primary
-            : (ma.containsMouse ? Color.surfaceHighest : Color.withAlpha(Color.surfaceHighest, 0.45))
+            : (ma.containsMouse ? Color.surfaceContainerHighest : Color.withAlpha(Color.surfaceContainerHighest, 0.45))
         opacity: enabled ? 1 : 0.35
 
         Text {
             anchors.centerIn: parent
             text: btn.glyph
-            color: primary ? Color.textOnPrimary : Color.text
+            color: primary ? Color.primaryText : Color.text
             font.family: Size.fontIcon
             font.pixelSize: primary ? Size.fontSize.lg : Size.fontSize.md
         }

@@ -51,7 +51,7 @@ Item {
                     return Color.primary
                 }
 
-                readonly property color titleColor: isIslandEvent ? accent : Color.textOnBackground
+                readonly property color titleColor: isIslandEvent ? accent : Color.backgroundText
                 readonly property color bodyColor: isIslandEvent
                     ? Qt.rgba(accent.r, accent.g, accent.b, 0.88)
                     : Color.textMuted

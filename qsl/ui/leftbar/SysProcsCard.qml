@@ -298,7 +298,7 @@ Item {
         width: 148
         height: menuCol.implicitHeight + 12
         radius: Size.rounding.md
-        color: Color.surfaceHighest
+        color: Color.surfaceContainerHighest
         border.width: 1
         border.color: Color.outlineVariant
 

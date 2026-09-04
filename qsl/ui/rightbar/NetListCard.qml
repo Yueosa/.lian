@@ -272,7 +272,7 @@ Item {
                                 verticalAlignment: TextInput.AlignVCenter
                                 echoMode: TextInput.Password
                                 color: Color.text
-                                selectedTextColor: Color.textOnPrimary
+                                selectedTextColor: Color.primaryText
                                 selectionColor: Color.primary
                                 font.pixelSize: Size.fontSize.sm
                                 clip: true

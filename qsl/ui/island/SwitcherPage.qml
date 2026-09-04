@@ -252,7 +252,7 @@ FocusScope {
                     ? groupCol.modelData.ws.id
                     : "?")
                 color: groupCol.groupFocused
-                    ? Color.textOnBackground
+                    ? Color.backgroundText
                     : Color.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.sm
@@ -303,7 +303,7 @@ FocusScope {
                         radius: Size.rounding.md
                         color: card.focused
                             ? Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.18)
-                            : Color.surfaceHigh
+                            : Color.surfaceContainerHigh
                         border.width: card.focused ? 2 : 1
                         border.color: card.focused
                             ? Color.primary
@@ -400,7 +400,7 @@ FocusScope {
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.xsm
                         color: card.focused
-                            ? Color.textOnBackground
+                            ? Color.backgroundText
                             : Color.textMuted
                     }
 

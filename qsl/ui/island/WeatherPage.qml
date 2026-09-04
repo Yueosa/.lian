@@ -84,7 +84,7 @@ Item {
         Layout.fillWidth: true
         Layout.fillHeight: true
         radius: Size.rounding.md
-        color: Color.surfaceHighest
+        color: Color.surfaceContainerHighest
         clip: true
 
         readonly property real ratio: maxValue > 0
@@ -158,7 +158,7 @@ Item {
                     x: Math.round(gauge.ratio * (track.width - width))
                     color: Color.text
                     border.width: 2
-                    border.color: Color.surfaceHighest
+                    border.color: Color.surfaceContainerHighest
                     Behavior on x {
                         Anim {}
                     }
@@ -185,7 +185,7 @@ Item {
         Layout.fillWidth: true
         Layout.fillHeight: true
         radius: Size.rounding.md
-        color: Color.surfaceHighest
+        color: Color.surfaceContainerHighest
         clip: true
 
         // 一个 Rectangle，无渐变无 shader，不额外占显存
@@ -325,7 +325,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 1
                 radius: Size.rounding.lg
-                color: Color.surfaceHigh
+                color: Color.surfaceContainerHigh
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -513,7 +513,7 @@ Item {
                                             x: Math.round(dayScale.ratio * (parent.width - width))
                                             color: Color.text
                                             border.width: 2
-                                            border.color: Color.surfaceHigh
+                                            border.color: Color.surfaceContainerHigh
                                             Behavior on x {
                                                 Anim {}
                                             }
@@ -635,7 +635,7 @@ Item {
             Rectangle {
                 width: 96
                 height: 34
-                color: root.isHourly ? Color.primary : Color.surfaceHighest
+                color: root.isHourly ? Color.primary : Color.surfaceContainerHighest
                 topLeftRadius: 17
                 bottomLeftRadius: 17
                 topRightRadius: root.isHourly ? 17 : 6
@@ -648,7 +648,7 @@ Item {
                     font.family: Size.fontSans
                     font.bold: true
                     font.pixelSize: Size.fontSize.sm
-                    color: root.isHourly ? Color.textOnPrimary : Color.textMuted
+                    color: root.isHourly ? Color.primaryText : Color.textMuted
                 }
                 MouseArea {
                     anchors.fill: parent
@@ -662,7 +662,7 @@ Item {
             Rectangle {
                 width: 96
                 height: 34
-                color: !root.isHourly ? Color.primary : Color.surfaceHighest
+                color: !root.isHourly ? Color.primary : Color.surfaceContainerHighest
                 topRightRadius: 17
                 bottomRightRadius: 17
                 topLeftRadius: !root.isHourly ? 17 : 6
@@ -675,7 +675,7 @@ Item {
                     font.family: Size.fontSans
                     font.bold: true
                     font.pixelSize: Size.fontSize.sm
-                    color: !root.isHourly ? Color.textOnPrimary : Color.textMuted
+                    color: !root.isHourly ? Color.primaryText : Color.textMuted
                 }
                 MouseArea { anchors.fill: parent; onClicked: root.isHourly = false }
             }
@@ -746,7 +746,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: root.isHourly ? Size.rounding.lg : 0
-            color: root.isHourly ? Color.surfaceHigh : "transparent"
+            color: root.isHourly ? Color.surfaceContainerHigh : "transparent"
             clip: true
             Behavior on color { CAnim {} }
 
@@ -952,7 +952,7 @@ Item {
                                 (pt.data.temp - minTemp) / (maxTemp - minTemp))
                             ctx.beginPath()
                             ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
-                            ctx.fillStyle = Color.surfaceHigh
+                            ctx.fillStyle = Color.surfaceContainerHigh
                             ctx.fill()
                             ctx.lineWidth = 2
                             ctx.strokeStyle = dotColor
@@ -966,7 +966,7 @@ Item {
                             else
                                 ctx.textAlign = "center"
 
-                            ctx.fillStyle = Color.textOnBackground
+                            ctx.fillStyle = Color.backgroundText
                             ctx.font = "bold 13px '" + Size.fontMono + "'"
                             ctx.fillText(pt.data.temp + "°", pt.x, pt.y - 14)
 
@@ -1104,7 +1104,7 @@ Item {
         anchors.topMargin: Size.spacing.lg + 36
         anchors.leftMargin: Size.spacing.lg
         radius: Size.rounding.md
-        color: Color.surfaceHighest
+        color: Color.surfaceContainerHighest
         border.color: Color.outlineVariant
         border.width: 1
 

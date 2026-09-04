@@ -139,7 +139,7 @@ FocusScope {
                         text: modelData.icon
                         font.family: Size.fontMono
                         font.pixelSize: Size.fontSize.title
-                        color: active ? Color.textOnBackground : Color.textMuted
+                        color: active ? Color.backgroundText : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter
                         Behavior on color { CAnim {} }
                     }
@@ -148,7 +148,7 @@ FocusScope {
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.md
                         font.bold: active
-                        color: active ? Color.textOnBackground : Color.textMuted
+                        color: active ? Color.backgroundText : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter
                         Behavior on color { CAnim {} }
                     }
@@ -160,7 +160,7 @@ FocusScope {
                     width: active ? Size.island.hubTabIndicatorWidth : 0
                     height: Size.island.hubTabIndicatorHeight
                     radius: Size.island.hubTabIndicatorHeight / 2
-                    color: Color.textOnBackground
+                    color: Color.backgroundText
                     opacity: active ? 1 : 0
                     Behavior on width {
                         Anim {}

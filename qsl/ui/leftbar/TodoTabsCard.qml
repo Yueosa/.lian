@@ -62,7 +62,7 @@ Item {
                 radius: Size.rounding.sm
                 color: root.sharedState.starredOnly
                     ? Color.withAlpha(Color.primary, 0.22)
-                    : Color.surfaceHigh
+                    : Color.surfaceContainerHigh
 
                 Text {
                     anchors.centerIn: parent
@@ -87,7 +87,7 @@ Item {
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 20
-                color: Color.surfaceHighest
+                color: Color.surfaceContainerHighest
             }
 
             Flickable {
@@ -132,7 +132,7 @@ Item {
                         height: 32
                         radius: Size.rounding.sm
                         color: newTagMa.containsMouse
-                            ? Color.surfaceHighest : Color.surfaceHigh
+                            ? Color.surfaceContainerHighest : Color.surfaceContainerHigh
 
                         Text {
                             anchors.centerIn: parent
@@ -162,7 +162,7 @@ Item {
             Layout.preferredHeight: root.creatingTag ? 36 : 0
             visible: root.creatingTag
             radius: Size.rounding.sm
-            color: Color.surfaceHigh
+            color: Color.surfaceContainerHigh
             border.width: Style.border.width
             border.color: Color.withAlpha(Color.primary, 0.5)
 

@@ -26,7 +26,7 @@ Rectangle {
     default property alias contentItem: bodyContainer.data
 
     // 对齐 Hub：实色表面（不再用 cardAlpha 半透明）
-    color: Color.surfaceHigh
+    color: Color.surfaceContainerHigh
     radius: Size.rounding.lg
     border.width: Style.border.width
     border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)

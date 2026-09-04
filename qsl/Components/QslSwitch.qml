@@ -27,7 +27,7 @@ Item {
         id: track
         anchors.fill: parent
         radius: height / 2
-        color: root.checked ? Color.primary : Color.surfaceHighest
+        color: root.checked ? Color.primary : Color.surfaceContainerHighest
         border.width: root.checked ? 0 : Math.max(1, Math.round(2 * root.s))
         border.color: Color.outline
         Behavior on color { CAnim {} }
@@ -45,7 +45,7 @@ Item {
         x: root.checked
             ? parent.width - width - (root.pressed ? 2 : 4) * root.s
             : (root.pressed ? 2 : 8) * root.s
-        color: root.checked ? Color.textOnPrimary : Color.outline
+        color: root.checked ? Color.primaryText : Color.outline
         Behavior on x { Anim { type: Anim.Spatial } }
         Behavior on width { Anim { type: Anim.Spatial } }
         Behavior on color { CAnim {} }

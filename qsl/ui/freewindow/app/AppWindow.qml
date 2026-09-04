@@ -40,7 +40,7 @@ FreeWindow {
                 Rectangle {
                     id: previewPaneBg
                     anchors.fill: parent
-                    color: Color.surfaceHigh
+                    color: Color.surfaceContainerHigh
                     topLeftRadius: Size.rounding.xxl
                     bottomLeftRadius: Size.rounding.xxl
 

@@ -209,7 +209,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.searchHeight
             radius: Size.rounding.full
-            color: Color.withAlpha(Color.surfaceHighest, 0.45)
+            color: Color.withAlpha(Color.surfaceContainerHighest, 0.45)
 
             RowLayout {
                 anchors.fill: parent
@@ -230,7 +230,7 @@ Item {
                     color: Color.text
                     font.pixelSize: Size.fontSize.lg
                     selectionColor: Color.primary
-                    selectedTextColor: Color.textOnPrimary
+                    selectedTextColor: Color.primaryText
                     clip: true
                     Keys.priority: Keys.BeforeItem
 
@@ -360,7 +360,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: Size.rounding.md
-                        color: rowItem.isCurrentRow ? Color.primary : Color.withAlpha(Color.surfaceHighest, 0.35)
+                        color: rowItem.isCurrentRow ? Color.primary : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
                         scale: rowItem.isCurrentRow && !root.launching ? 1.008 : 1.0
                         transformOrigin: Item.Center
 
@@ -391,7 +391,7 @@ Item {
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             text: (modelData.entries[0] && modelData.entries[0].preview) || ""
-                            color: rowItem.isCurrentRow ? Color.textOnPrimary : Color.text
+                            color: rowItem.isCurrentRow ? Color.primaryText : Color.text
                             font.pixelSize: Size.fontSize.md
                             font.family: Size.fontSans
 
@@ -416,7 +416,7 @@ Item {
                                 width: root.imageCellW
                                 height: root.imageCellH
                                 radius: Size.rounding.md
-                                color: Color.withAlpha(Color.surfaceHighest, 0.35)
+                                color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
                                 scale: cell.cellCurrent && !root.launching ? 1.06 : 1.0
                                 transformOrigin: Item.Center
 

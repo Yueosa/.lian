@@ -54,7 +54,7 @@ Item {
         }
 
         radius: Size.rounding.lg
-        color: Color.surfaceHigh
+        color: Color.surfaceContainerHigh
         border.width: Style.border.width
         border.color: psiCard.expanded
             ? Color.withAlpha(psiCard.severity, 0.45)

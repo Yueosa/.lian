@@ -33,7 +33,7 @@ Item {
             text: root.icon
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.title
-            color: root.selected ? Color.textOnBackground : Color.textMuted
+            color: root.selected ? Color.backgroundText : Color.textMuted
             anchors.horizontalCenter: parent.horizontalCenter
             Behavior on color { CAnim {} }
         }
@@ -42,7 +42,7 @@ Item {
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.md
             font.bold: root.selected
-            color: root.selected ? Color.textOnBackground : Color.textMuted
+            color: root.selected ? Color.backgroundText : Color.textMuted
             anchors.horizontalCenter: parent.horizontalCenter
             Behavior on color { CAnim {} }
         }
@@ -54,7 +54,7 @@ Item {
         width: root.selected ? Size.island.hubTabIndicatorWidth : 0
         height: Size.island.hubTabIndicatorHeight
         radius: Size.island.hubTabIndicatorHeight / 2
-        color: Color.textOnBackground
+        color: Color.backgroundText
         opacity: root.selected ? 1 : 0
         Behavior on width { Anim { type: Anim.Spatial } }
         Behavior on opacity { Anim { type: Anim.Effects } }

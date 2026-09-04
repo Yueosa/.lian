@@ -104,7 +104,7 @@ Item {
                     visible: !delegateRoot.active
                     color: delegateRoot.hasWindows
                         ? Color.text
-                        : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceHighest)
+                        : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceContainerHighest)
                     Behavior on color {
                         CAnim {}
                     }

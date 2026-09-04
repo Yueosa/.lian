@@ -165,7 +165,7 @@ PanelWindow {
             visible: root.contentActive
             opacity: root._opacity
             radius: Size.rounding.xl
-            color: Color.withAlpha(Color.surfaceHigh, 0.97)
+            color: Color.withAlpha(Color.surfaceContainerHigh, 0.97)
             border.width: 2
             border.color: Color.secondaryFixed
 

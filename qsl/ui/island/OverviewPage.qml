@@ -76,7 +76,7 @@ Item {
         width: (parent.width - parent.spacing) / 2
         height: 32
         radius: Size.rounding.md
-        color: accent ? Color.withAlpha(Color.primary, 0.12) : Color.surfaceHighest
+        color: accent ? Color.withAlpha(Color.primary, 0.12) : Color.surfaceContainerHighest
 
         Row {
             anchors.centerIn: parent
@@ -178,7 +178,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 124
                 radius: Size.rounding.lg
-                color: Color.surfaceHigh
+                color: Color.surfaceContainerHigh
 
                 Row {
                     id: identityBody
@@ -197,7 +197,7 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             radius: width / 2
-                            color: Color.surfaceHighest
+                            color: Color.surfaceContainerHighest
                             visible: avatarImg.status !== Image.Ready
 
                             Text {
@@ -242,7 +242,7 @@ Item {
 
                         Text {
                             text: root.hostname
-                            color: Color.textOnBackground
+                            color: Color.backgroundText
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.xl
                             font.bold: true
@@ -272,7 +272,7 @@ Item {
                     radius: height / 2
                     color: root.restartArmed
                         ? Color.withAlpha(Color.error, 0.9)
-                        : (restartHover.containsMouse ? Color.surfaceHighest : "transparent")
+                        : (restartHover.containsMouse ? Color.surfaceContainerHighest : "transparent")
                     border.width: root.restartArmed ? 0 : 1
                     border.color: Color.withAlpha(Color.outlineVariant, 0.6)
 
@@ -286,7 +286,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         text: root.restartArmed ? "确认重启" : "\uf021"
-                        color: root.restartArmed ? Color.textOnPrimary : Color.textMuted
+                        color: root.restartArmed ? Color.primaryText : Color.textMuted
                         font.family: root.restartArmed ? Size.fontSans : Size.fontMono
                         font.pixelSize: Size.fontSize.sm
                     }
@@ -314,7 +314,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 78
                 radius: Size.rounding.lg
-                color: Color.surfaceHigh
+                color: Color.surfaceContainerHigh
 
                 WeatherIcon {
                     id: wIcon
@@ -332,7 +332,7 @@ Item {
                     anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     text: Weather.ready ? Weather.tempText : "--"
-                    color: Color.textOnBackground
+                    color: Color.backgroundText
                     font.family: Size.fontMono
                     font.pixelSize: 30
                     font.weight: Font.Black
@@ -396,7 +396,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Size.rounding.lg
-                color: Color.surfaceHigh
+                color: Color.surfaceContainerHigh
 
                 Column {
                     id: todoBody
@@ -414,7 +414,7 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "待办"
-                            color: Color.textOnBackground
+                            color: Color.backgroundText
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.md
                             font.bold: true
@@ -435,7 +435,7 @@ Item {
                         width: parent.width
                         height: 4
                         radius: 2
-                        color: Color.surfaceHighest
+                        color: Color.surfaceContainerHighest
                         visible: Todo.count > 0
 
                         Rectangle {

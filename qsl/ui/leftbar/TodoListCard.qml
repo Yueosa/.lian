@@ -75,7 +75,7 @@ Item {
             Layout.fillWidth: true
             height: 44
             radius: Size.rounding.sm
-            color: Color.surfaceHigh
+            color: Color.surfaceContainerHigh
             border.width: inputField.activeFocus ? 2 : Style.border.width
             border.color: inputField.activeFocus
                 ? Color.primary

@@ -171,7 +171,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: width / 2
-            color: Color.surfaceHighest
+            color: Color.surfaceContainerHighest
             visible: !lyricsRoot.artUrl.length || coverImg.status !== Image.Ready
 
             Text {

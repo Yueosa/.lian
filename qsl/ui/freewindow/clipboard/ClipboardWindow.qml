@@ -28,7 +28,7 @@ FreeWindow {
     Rectangle {
         id: frame
         anchors.fill: parent
-        color: Color.withAlpha(Color.surfaceHigh, Style.bg.panelAlpha)
+        color: Color.withAlpha(Color.surfaceContainerHigh, Style.bg.panelAlpha)
         radius: Size.rounding.xxl
 
         ClipboardPage {

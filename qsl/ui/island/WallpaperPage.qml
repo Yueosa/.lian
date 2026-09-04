@@ -69,7 +69,7 @@ FocusScope {
         radius: Size.rounding.xl
         color: active
             ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.18)
-            : Color.surfaceHighest
+            : Color.surfaceContainerHighest
         border.width: active ? 1 : 0
         border.color: active
             ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.42)
@@ -86,7 +86,7 @@ FocusScope {
             text: button.icon
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.xl
-            color: button.active ? button.accentColor : Color.textOnBackground
+            color: button.active ? button.accentColor : Color.backgroundText
         }
 
         MouseArea {
@@ -173,7 +173,7 @@ FocusScope {
                         Text {
                             Layout.fillWidth: true
                             text: Lianwall.modeLabel + "模式 · " + (Lianwall.engine || "--")
-                            color: Color.textOnBackground
+                            color: Color.backgroundText
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.lg
                             font.bold: true
@@ -238,7 +238,7 @@ FocusScope {
                             radius: Size.rounding.md
                             color: card.focused
                                 ? Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.16)
-                                : Color.surfaceHigh
+                                : Color.surfaceContainerHigh
                             border.width: card.focused || card.wallpaperIsCurrent ? 2 : 1
                             border.color: card.wallpaperIsCurrent
                                 ? Color.primary
@@ -254,7 +254,7 @@ FocusScope {
                                 anchors.margins: 6
                                 height: 102
                                 radius: Size.rounding.sm
-                                color: Color.surfaceHighest
+                                color: Color.surfaceContainerHighest
                                 clip: true
 
                                 Image {
@@ -299,7 +299,7 @@ FocusScope {
                                             text: "\uf04b"
                                             font.family: Size.fontMono
                                             font.pixelSize: Size.fontSize.xsm
-                                            color: Color.textOnPrimary
+                                            color: Color.primaryText
                                         }
                                     }
                                     Rectangle {
@@ -313,7 +313,7 @@ FocusScope {
                                             text: "\uf023"
                                             font.family: Size.fontMono
                                             font.pixelSize: Size.fontSize.xsm
-                                            color: Color.textOnBackground
+                                            color: Color.backgroundText
                                         }
                                     }
                                 }
@@ -331,7 +331,7 @@ FocusScope {
                                         text: card.wallpaperIsVideo ? "\uf03d" : "\uf03e"
                                         font.family: Size.fontMono
                                         font.pixelSize: Size.fontSize.xsm
-                                        color: Color.textOnBackground
+                                        color: Color.backgroundText
                                     }
                                 }
                             }
@@ -345,7 +345,7 @@ FocusScope {
                                 text: card.wallpaperFilename
                                 color: card.wallpaperIsCurrent
                                     ? Color.primary
-                                    : Color.textOnBackground
+                                    : Color.backgroundText
                                 font.family: Size.fontSans
                                 font.pixelSize: Size.fontSize.xsm
                                 font.bold: card.wallpaperIsCurrent

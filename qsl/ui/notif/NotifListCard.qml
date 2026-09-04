@@ -131,8 +131,8 @@ Item {
                     y: 2
                     radius: Size.rounding.lg
                     color: appMa.containsMouse
-                        ? Color.withAlpha(Color.surfaceHighest, 0.7)
-                        : Color.withAlpha(Color.surfaceHighest, 0.35)
+                        ? Color.withAlpha(Color.surfaceContainerHighest, 0.7)
+                        : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
 
                     Rectangle {
                         id: appIconBox
@@ -369,8 +369,8 @@ Item {
                     height: row.height
                     radius: Size.rounding.lg
                     color: rowMa.containsMouse || row.expanded
-                        ? Color.withAlpha(Color.surfaceHighest, 0.7)
-                        : Color.withAlpha(Color.surfaceHighest, 0.35)
+                        ? Color.withAlpha(Color.surfaceContainerHighest, 0.7)
+                        : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
 
                     // anchors 布局：避免 RowLayout/ColumnLayout 把子项纵向撑开贴底
                     readonly property int pad: Size.spacing.md

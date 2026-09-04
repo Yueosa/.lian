@@ -24,7 +24,7 @@ Item {
     component RollingDigit: Item {
         id: digitContainer
         property int targetDigit: 0
-        property color digitColor: Color.textOnBackground
+        property color digitColor: Color.backgroundText
 
         width: digitText.implicitWidth
         height: root.digitCellHeight
@@ -76,7 +76,7 @@ Item {
             RollingDigit { targetDigit: root.h1 }
             Text {
                 text: ":"
-                color: Color.textOnBackground
+                color: Color.backgroundText
                 font.family: Size.fontMono
                 font.pixelSize: root.digitFontSize
                 font.weight: Font.Black
