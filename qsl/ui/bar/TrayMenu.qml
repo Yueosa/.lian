@@ -66,9 +66,19 @@ PopupWindow {
         return menuStack.get(menuStack.count - 1).handle
     }
 
+    // 菜单关着的时候**必须**解除订阅：给 menu 赋值就是向对方的 dbusmenu 订阅，
+    // 对方每发一次 LayoutUpdated，Quickshell 就回一次 GetLayout，回复到达时
+    // children 换成一个新列表 → 下面那个 Repeater 的 model 被重写 → 整棵委托树
+    // 销毁重建 → 每个菜单项的 Text 走一遍 HarfBuzz 排版。实测一次约 160ms，
+    // 而菜单当时根本不可见。
+    //
+    // 这条曾经是壳里最大的卡顿源，而且现场极具误导性：托盘应用会跟着**我们的
+    // 键盘焦点**变化重发 LayoutUpdated（焦点一进一出各一次），于是每次开合面板
+    // 或岛都恰好挨两发。它看起来像是「拿键盘焦点很贵」——查了很久才发现贵的是
+    // 这个闭着的菜单，不是焦点本身（见 plan.md 第 6 轮）
     QsMenuOpener {
         id: rootOpener
-        menu: root.rootMenuHandle
+        menu: root.visible ? root.rootMenuHandle : null
     }
 
     QsMenuOpener {

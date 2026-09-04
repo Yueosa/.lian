@@ -13,8 +13,9 @@
 //   1. 键盘归属从「合成器裁决」变成 Panels 的显式焦点栈
 //   2. 框窗改用 OnDemand + HyprlandFocusGrab 之后，点面板外面能关窗了
 //      （grab 的 cleared 信号；面板自己的 mask 只盖住贴边条带，收不到框外点击）
-// 注：这里以前写着「省掉 ~190ms 的 Exclusive 停顿」，那条结论是错的，
-// 真凶是 QML 的 GC —— 详见 focusSettleMs 和 FrameWindow 里的说明
+// 注：这里以前写着「省掉 ~190ms 的 Exclusive 停顿」，那条结论是错的；后来改写
+// 成「真凶是 QML 的 GC」，同样是错的。真凶是 TrayMenu 里一份菜单关着也不解除的
+// dbusmenu 订阅 —— 焦点只是触发器，详见 FrameWindow 与 TrayMenu 里的说明
 
 import QtQuick
 import qs.Components

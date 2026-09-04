@@ -71,11 +71,15 @@ PanelWindow {
     // 先说清一件事，免得再有人顺着旧结论走：**这不是为了性能**。仓库里长期流传
     // 的「申请 Exclusive 要 ~190ms 主线程停顿」是错的。隔离复现（一个空的全屏
     // PanelWindow 反复切 Exclusive，再叠上 FocusScope 夺焦、TextInput 夺焦，
-    // QT_IM_MODULE=fcitx 照常开着）三轮全程零掉帧。那 190ms 另有其人，是 QML
-    // 的 JS 垃圾回收——显式 gc() 能一发复现出 [156,136]ms，和它一模一样，而且
-    // 空闲时永远量不到（见 plan.md 性能审计一轮）。当年那次 A/B 之所以指向
-    // 焦点，是因为把 keyboardFocus 钉成 None 顺带让内容不再被激活，分配量掉了
-    // 一截，GC 也就没那么容易触发——省掉的从来不是焦点这笔钱。
+    // QT_IM_MODULE=fcitx 照常开着，并用 activeFocus 确认焦点真的交付了）三轮
+    // 全程零掉帧。
+    //
+    // 那 190ms 另有其人，已定案：TrayMenu 里一份**菜单关着也不解除**的 dbusmenu
+    // 订阅。托盘应用会跟着我们的键盘焦点变化重发 LayoutUpdated，我们就去拉一次
+    // GetLayout，回复到达时把整棵闭合菜单的委托树重建一遍（每个 Text 走一趟
+    // HarfBuzz）。所以「焦点」只是触发器，钱花在那棵看不见的菜单上——见
+    // TrayMenu.qml 里 rootOpener 的注释和 plan.md 第 6 轮。当年那次 A/B 之所以
+    // 指向焦点，是因为钉成 None 之后焦点从此不再交付，整条链子跟着断了。
     //
     // 换过来的真实理由是 grab 白送的两样东西：
     //   1. Exclusive 会把应用键盘焦点抢走且不归还，Island 里那套「记下窗口地址
