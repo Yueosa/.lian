@@ -11,8 +11,10 @@
 // 框窗归并（一个 surface 只有一份），本文件通过 wantsOverlay / wantsKeyboard /
 // hitBox 三个只读属性把诉求报上去。换来两件东西：
 //   1. 键盘归属从「合成器裁决」变成 Panels 的显式焦点栈
-//   2. 面板之间切换不再重新申请 Exclusive，那 ~190ms 的停顿省掉了
-//      （见 focusSettleMs 与 skipFocusSettle）
+//   2. 框窗改用 OnDemand + HyprlandFocusGrab 之后，点面板外面能关窗了
+//      （grab 的 cleared 信号；面板自己的 mask 只盖住贴边条带，收不到框外点击）
+// 注：这里以前写着「省掉 ~190ms 的 Exclusive 停顿」，那条结论是错的，
+// 真凶是 QML 的 GC —— 详见 focusSettleMs 和 FrameWindow 里的说明
 
 import QtQuick
 import qs.Components
@@ -44,17 +46,25 @@ Item {
     readonly property var headerComp: (pages[page] && pages[page].header)
         ? pages[page].header : null
 
-    // 焦点结算延迟。申请 Exclusive 会让主线程停 ~180ms（实测），而这笔钱
-    // 是延迟到达的——不能拿「焦点已到位」当信号，它在代价付清之前就已经为真。
-    // 所以用确定性延时：开窗立刻申请焦点，等这一拍过去再起派生动画，
-    // 于是掉帧变成了「面板晚 230ms 才开始出现」。手感不对就调这个值。
-    // 切页不重新申请焦点，所以不付这笔钱——这也正是「按 Tab 循环从来不卡」的原因
+    // 派生动画的起跑延迟。
+    //
+    // 名字里的 "focus" 是历史误判，留着是因为改名要动一串引用：这个延时**不是**
+    // 在等键盘焦点。原先的说法是「申请 Exclusive 要停 ~180ms」，已被隔离复现
+    // 推翻（空窗反复切 Exclusive + 夺焦 + fcitx，零掉帧；详见 FrameWindow 里
+    // 那段）。它真正在躲的是**开窗那一拍的同步重活**：容器的 bodyLoader 是同步
+    // 创建的，页面越大堵得越久，而 Qt 的统一动画时钟在主线程阻塞期间照走——
+    // 就在这一帧起派生动画，动画的起点会被记成阻塞之前那个 tick，第一帧画出来
+    // 时它已经自己跑掉一截（岛那边实测首帧宽度从 202 直接跳到 482，同一个病，
+    // 那边用 FrameAnimation 等一个干净帧边界解决，见 IslandShell.hubShaped）。
+    //
+    // 所以这 230ms 是个粗糙但有效的隔离带。真正的修法是照岛那样改成帧闸，
+    // 已记在 plan.md 性能审计那一轮。手感不对就调这个值。
     property int focusSettleMs: 230
 
-    // 合并框窗之后：只有框窗**真的要新申请**焦点时才值得等这一拍。
-    // 已经有别的面板开着（或岛的 Hub 开着）时，框窗压根没松手，申请是空操作，
-    // 等 230ms 就是白让用户干看着。开窗那一刻记下当时的持有状态（见 openPage），
-    // 之后整个开窗周期都用它——不能写成实时绑定，因为 claim 之后它必然为真。
+    // 面板之间互切时框窗本来就握着键盘，不需要等这一拍。
+    // 注意这条现在只剩「切页比冷开快」这一个效果，跟焦点代价无关（同上）。
+    // 开窗那一刻记下当时的持有状态（见 openPage），之后整个开窗周期都用它——
+    // 不能写成实时绑定，因为 claim 之后它必然为真。
     property bool skipFocusSettle: false
     readonly property int effectiveSettleMs: skipFocusSettle ? 0 : focusSettleMs
 
@@ -154,15 +164,12 @@ Item {
     y: 0
 
     // ---- 报给 FrameWindow 的三项窗口级诉求 ----
-    // 键盘焦点的代价：实测申请 Exclusive 会让 qs 主线程停 ~190ms
-    // （QSG_RENDER_LOOP=basic 下渲染在主线程同步跑，这是事件循环真的卡住）。
-    // A/B 实证：把 keyboardFocus 恒定 None，开关的 ≥50ms 停顿从 4 次 734ms 归零。
-    // 所以两头都把这 190ms 挪出动画窗口，且方向相反：
-    //   开窗——立刻申请（Esc 要能马上用），但派生动画等焦点到位再起，
-    //          于是 190ms 变成「开面板慢一点」而不是「动画掉帧」
-    //   关窗——立刻播收回，焦点等收回播完再还（detailDown 跑完），
-    //          否则这 190ms 正好砸在退场动画上
-    // 合并之后这两头只在「框窗真的换手」时才发生，面板互切是白拿的（skipFocusSettle）
+    // 曾经这里写着「申请 Exclusive 要停 ~190ms，所以两头都要把它挪出动画窗口」，
+    // 那条结论是错的（隔离复现见 FrameWindow 里的说明；真凶是 GC）。
+    // 但这两个属性的**写法**照旧是对的，只是理由换了：
+    //   开窗——open 一置真就要键盘，Esc 得马上能用
+    //   关窗——延到收回播完（detailDown 跑完）才松手，否则退场期间键盘已经还给
+    //          应用，这时候按 Esc 会打到应用身上
     readonly property bool wantsKeyboard: open || detailDown.running
     // 合并前恒为 Overlay 层。现在跟着开关：关掉后框窗要落回 Top，
     // 否则 bar/rail 会一直骑在全屏窗之上
@@ -178,8 +185,7 @@ Item {
         if (p !== undefined && p !== null && String(p).length > 0)
             page = String(p)
         const wasClosed = !open
-        if (wasClosed)
-            Island.captureFocus()
+        // 不再 Island.captureFocus()：框窗用 HyprlandFocusGrab，不抢应用焦点
         // 必须抢在 claim 之前问：claim 会把自己压进栈，之后 keyboardHeld 必然为真
         skipFocusSettle = Panels.keyboardHeld
         // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels
@@ -201,12 +207,9 @@ Item {
             return
         open = false
         Panels.release(root.shellNamespace)
-        // 栈空了才把 Hyprland 焦点还给应用。C 和 V 能同时开，关掉一个时另一个
-        // 还握着键盘，这时候还焦点是错的；而且 restoreFocus 要 spawn 一个
-        // hyprctl，正好砸在退场动画上——合并前没有「还有谁开着」这个信息，
-        // 所以只能每次都还
-        if (!Panels.keyboardHeld)
-            Island.restoreFocus()
+        // 这里曾经要判断「栈空了才把焦点还给应用」，还要 spawn 一个 hyprctl。
+        // 框窗改 HyprlandFocusGrab 之后两件都没了：grab 的存活是
+        // wantsKeyboard 的绑定（横跨整段退场动画），焦点也从没被抢走过
     }
 
     Connections {

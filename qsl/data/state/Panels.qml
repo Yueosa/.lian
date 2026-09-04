@@ -116,4 +116,14 @@ Singleton {
     function activeIn(group) {
         return actives[String(group || "")] || ""
     }
+
+    // 用户点到框外面去了（框窗 HyprlandFocusGrab 的 cleared）：把开着的全关掉。
+    // 复用 evicted 而不是新开一条通路：被同组挤掉和被用户点掉，对面板来说是
+    // 同一件事——「你该自己收场」——而那条路径的关窗动画和记账已经是对的。
+    // 倒着关：evicted 触发的 closeWindow 会 release，正着遍历会边改边读
+    function dismissAll() {
+        const ids = stack.slice().reverse()
+        for (let i = 0; i < ids.length; i++)
+            evicted(ids[i])
+    }
 }

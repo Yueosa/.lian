@@ -75,8 +75,8 @@ RailPage {
     // 播完才 release，避免「列表先空、容器后收」
     onOpenChanged: {
         // 挂在 onOpenChanged 而不是重写 closeWindow：重写就得把基类那几行
-        // （open=false / Panels.release / Island.restoreFocus）抄一遍，而抄漏
-        // 了 release 就是本文件曾经的 bug——僵尸条目留在 Panels 里，合并框窗
+        // （open=false / Panels.release）抄一遍，而抄漏了 release 就是本文件
+        // 曾经的 bug——僵尸条目留在 Panels 里，合并框窗
         // 之后键盘归属会卡死在一个已经关掉的面板上（详见 Panels 的焦点栈）
         Notification.uiActive = open
         if (open)

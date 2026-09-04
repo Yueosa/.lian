@@ -85,9 +85,10 @@ Singleton {
         if (!showHub)
             return
         showHub = false
-        // 等岛 morph 完再还焦点，避免关瞬间抢 client 焦点导致闪一下
-        if (!_activating)
-            hubFocusRestoreTimer.restart()
+        // 曾经这里要起一个 360ms 的定时器，等 morph 播完再 spawn hyprctl 把焦点
+        // 还给应用（Exclusive 抢走了不会自己还）。框窗改用 HyprlandFocusGrab
+        // 之后没有东西被抢，也就没有东西要还：grab 的存活跟着 hubMounted，
+        // 本来就横跨整段收起动画，时序由绑定管，不用再写定时器
     }
 
     Timer {
@@ -97,24 +98,19 @@ Singleton {
         onTriggered: root.hubCollapseHold = false
     }
 
-    // 与 IslandShell body height Behavior(350) 对齐
-    Timer {
-        id: hubFocusRestoreTimer
-        interval: 360
-        repeat: false
-        onTriggered: {
-            if (!root.showHub && !root._activating)
-                root.restoreFocus()
-        }
-    }
-
     function _beginHubCollapseHold() {
         hubCollapseHold = true
         hubCollapseHoldTimer.restart()
     }
 
     // —— Exclusive 层焦点归还 ——
-    // Hypr 卸 layer Exclusive 后不会自动 focus 回 client
+    // Hypr 卸 layer Exclusive 后不会自动 focus 回 client，所以要先记下地址、
+    // 关窗后再 spawn hyprctl 送回去。
+    //
+    // 合并框窗（岛 + C/V/N）已经不走这条路了：框窗用 OnDemand +
+    // HyprlandFocusGrab，grab 从不抢应用焦点，自然没有归还这回事。
+    // 这一段只剩还没迁移的独立 Exclusive 窗在用——WebSearch、FreeWindow
+    // （A / 剪贴板）。第 7 轮把它们搬进框窗之后，整段连同 hyprEval 一起删。
     property string _focusRestoreAddr: ""
 
     function captureFocus() {
@@ -227,7 +223,6 @@ Singleton {
         _pendingAddr = a
         _pendingToplevel = top
         _activating = true
-        clearFocusCapture()
         showHub = false
         activateDispatch.restart()
     }
@@ -263,7 +258,6 @@ Singleton {
         if (showHub) {
             hubCollapseHold = false
             hubCollapseHoldTimer.stop()
-            hubFocusRestoreTimer.stop()
             return
         }
         // 非跳窗关岛时丢掉焦点目标，避免持有 HyprlandToplevel 引用
@@ -281,7 +275,7 @@ Singleton {
     function openHubTab(index) {
         const i = Math.max(0, Math.min(4, Number(index) || 0))
         if (!showHub) {
-            captureFocus()
+            // 不再 captureFocus()：grab 不抢应用焦点，没有要记的东西
             closeTransient()
             hubTabIndex = i
             showHub = true

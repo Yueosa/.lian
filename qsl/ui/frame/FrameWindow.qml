@@ -21,6 +21,7 @@
 
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import QtQuick
 import qs.data.state
 import qs.ui.bar
@@ -60,12 +61,39 @@ PanelWindow {
     readonly property bool panelsWantKeyboard: panelsLoader.item
         ? panelsLoader.item.wantsKeyboard : false
 
+    readonly property bool wantsKeyboard: island.wantsKeyboard || panelsWantKeyboard
+
     WlrLayershell.namespace: "qsl-frame"
     WlrLayershell.layer: (island.wantsOverlay || panelsWantOverlay)
         ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: (island.wantsKeyboard || panelsWantKeyboard)
-        ? WlrKeyboardFocus.Exclusive
+    // OnDemand + focus grab，而不是 Exclusive。
+    //
+    // 先说清一件事，免得再有人顺着旧结论走：**这不是为了性能**。仓库里长期流传
+    // 的「申请 Exclusive 要 ~190ms 主线程停顿」是错的。隔离复现（一个空的全屏
+    // PanelWindow 反复切 Exclusive，再叠上 FocusScope 夺焦、TextInput 夺焦，
+    // QT_IM_MODULE=fcitx 照常开着）三轮全程零掉帧。那 190ms 另有其人，是 QML
+    // 的 JS 垃圾回收——显式 gc() 能一发复现出 [156,136]ms，和它一模一样，而且
+    // 空闲时永远量不到（见 plan.md 性能审计一轮）。当年那次 A/B 之所以指向
+    // 焦点，是因为把 keyboardFocus 钉成 None 顺带让内容不再被激活，分配量掉了
+    // 一截，GC 也就没那么容易触发——省掉的从来不是焦点这笔钱。
+    //
+    // 换过来的真实理由是 grab 白送的两样东西：
+    //   1. Exclusive 会把应用键盘焦点抢走且不归还，Island 里那套「记下窗口地址
+    //      → 关窗后 spawn hyprctl 还回去」（含两个 Timer）就是为了填这个坑。
+    //      grab 从一开始就不抢，坑也不存在
+    //   2. cleared = 用户点到框外面去了，这就是「点空白处关面板」。面板自己那张
+    //      mask 只盖住贴边那条条带，框外的点击它根本收不到——以前只能靠 Esc
+    WlrLayershell.keyboardFocus: root.wantsKeyboard
+        ? WlrKeyboardFocus.OnDemand
         : WlrKeyboardFocus.None
+
+    // OnDemand 的语义是「点了才给键盘」，IPC / 快捷键开的面板没人点，所以键盘
+    // 得靠这个抓取拿——Hypr 的 focus grab 协议本来就是给启动器这类临时面板用的
+    HyprlandFocusGrab {
+        active: root.wantsKeyboard
+        windows: [root]
+        onCleared: Panels.dismissAll()
+    }
     // 独占区由 Exclusions 的四个小窗声明，本窗只管画，所以要 Ignore：
     // 否则它会拿整屏去撑位，把所有应用挤没
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

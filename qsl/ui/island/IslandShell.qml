@@ -51,6 +51,27 @@ Item {
         onTriggered: root.hubMounted = false
     }
 
+    // morph 起跑闸：hubMounted 置真那一下 hubLoader 同步建出整个 HubContent，
+    // 实测把主线程堵住 34~60ms。而 Qt 的统一动画时钟在阻塞期间照走，于是在
+    // 同一帧改 morph 目标的话，动画起点会被记成阻塞开始前那个 tick——下一帧
+    // 画出来时它已经自己跑掉三成（实测首帧岛宽从 202 直接跳到 482，就是你看
+    // 到的"展开时抖一下"）。所以先建内容，等一个真正的帧边界再放行目标值：
+    // 起跑晚一帧，但起跑点是对的。
+    property bool hubShaped: false
+    // 条件必须挂 showHub 而不是 hubMounted：关岛时 hubMounted 还要留 360ms 做
+    // 淡出，只看 hubMounted 的话闸门会在收起动画刚起步时又自己合上，岛就再也
+    // 收不回去了
+    // 要等两帧：第一帧就是被同步创建堵住的那帧，在它上面起跑等于起点还是脏的
+    property int _shapeFrames: 0
+    FrameAnimation {
+        running: Island.showHub && root.hubMounted && !root.hubShaped
+        onTriggered: {
+            root._shapeFrames += 1
+            if (root._shapeFrames >= 2)
+                root.hubShaped = true
+        }
+    }
+
     Item {
         id: hitBoxRegion
         x: Island.showHub ? 0 : maskContainer.x
@@ -163,7 +184,9 @@ Item {
                     }
                 }
 
-                readonly property int targetW: Island.isHubMode
+                // 这里读 hubShaped 而不是 Island.isHubMode：见 hubShaped 的说明，
+                // 内容还没建完就改目标值，动画会从中途开始
+                readonly property int targetW: root.hubShaped
                     ? (hubLoader.item ? hubLoader.item.implicitWidth : hubFallbackW)
                     : Island.isLyricsMode
                         ? (lyricsLoader.item
@@ -172,13 +195,13 @@ Item {
                     : Island.isNotifMode ? Size.island.notifW
                     : (Size.island.collapsedW + hoverGrowW)
 
-                readonly property int targetH: Island.isHubMode
+                readonly property int targetH: root.hubShaped
                     ? (hubLoader.item ? hubLoader.item.implicitHeight : hubFallbackH)
                     : Island.isLyricsMode ? Size.island.lyricsH
                     : Island.isNotifMode ? Island.notifH
                     : (Size.island.collapsedH + hoverGrowH)
 
-                readonly property int targetR: (Island.isHubMode || Island.isLyricsMode || Island.isNotifMode)
+                readonly property int targetR: (root.hubShaped || Island.isLyricsMode || Island.isNotifMode)
                     ? Math.round(24 * Size.islandScale)
                     : (Island.isCollapsedMode && hovered
                         ? Math.round(18 * Size.islandScale)
@@ -318,6 +341,8 @@ Item {
                     Qt.callLater(() => keyScope.forceActiveFocus())
                 }
             } else {
+                root.hubShaped = false
+                root._shapeFrames = 0
                 Island.lyricsHoverRestore = false
                 if (root.isKeyOwner)
                     Panels.release(root.panelId)
