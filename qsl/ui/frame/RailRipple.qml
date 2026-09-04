@@ -63,6 +63,9 @@ Item {
 
     required property int railThickness
     required property int barHeight
+    // 顶栏两段的实际宽度：段宽绑内容宽度，会变
+    required property real leftSegWidth
+    required property real rightSegWidth
 
     // 贴边 rail 上有面板开着才动。**岛不算**——它是独立体系，理由见 Panels.railHeld
     readonly property bool active: Panels.railHeld
@@ -107,22 +110,32 @@ Item {
     // 后一发就出闸，两个包叠在一起
     property int pulseEveryMs: 6000
 
-    // ---- 行波路径的累计里程 ----
-    // 只走三条 rail：左（自上而下）→ 底（自左而右）→ 右（自下而上），两端收在
-    // 左上 / 右上两个"rail 撞上顶栏"的拐角。
+    // ---- 框内沿的累计里程 ----
+    // 沿框的内边界走一圈（顺时针）：左段底边（岛的豁口 → 左上角）→ 左 rail
+    // （自上而下）→ 底 rail（自左而右）→ 右 rail（自下而上）→ 右段底边
+    // （右上角 → 岛的豁口）。两端收在岛的豁口两侧，那是框上唯一的开口。
     //
-    // 顶栏那两段的底边曾经也在路径里（五段），是错的，用户截图逐列量出来了：
-    // 涌浪跑上顶栏时鼓包从栏的下沿往下长 12px，而顶栏底下是壁纸空隙，于是一条
-    // 深色鱼鳍挂在栏外面——"水波超出 Rightbar 的范围"。
-    // 根子在于**顶栏和 rail 不是一类东西**：rail 是 8px 的装饰条，加厚读成水；
-    // 顶栏是 44px 的功能条，下沿挂个鳍只能读成溢出。而且常驻起伏本来就只在三条
-    // rail 上，行波多铺两段本身就不一致。
+    // 顶栏进出过一次，教训值得记：第一版把顶栏铺进来但**只铺了行波**，常驻起伏
+    // 还是只在三条 rail 上。于是一个孤零零的鼓包爬过一条笔直静止的边——用户截图
+    // 逐列量出来顶栏下沿鼓出 7~8px，读成"水波超出 Rightbar 的范围"。
+    // 于是砍成三段（只走 rail）；但砍掉之后波拍到顶栏就摊平，框成了个开口的槽。
+    // 现在顶栏的下沿也上常驻起伏，行波经过时只是"已经在起伏的边上涌起一记更大
+    // 的"——和 rail 上读起来一样，这才对。
+    //
+    // 顶栏段的行程要减掉 rail 厚度和圆角：段的平底边虽然画到 x=0，但 x∈[0,8]
+    // 那截是框的**内部**（上面是段、下面是竖 rail），内边界在 (8, barHeight)
+    // 转弯；另一头 r=22 的下外角处底边开始上翘，波不能画到那儿去
+    readonly property int segCornerR: 22
+    readonly property real lenLeftSeg: Math.max(0, leftSegWidth - segCornerR - railThickness)
     readonly property real lenVRail: Math.max(0, height - railThickness - barHeight)
     readonly property real lenBottom: Math.max(0, width - railThickness * 2)
+    readonly property real lenRightSeg: Math.max(0, rightSegWidth - segCornerR - railThickness)
 
-    readonly property real s1: lenVRail                  // 底 rail 起点
-    readonly property real s2: s1 + lenBottom            // 右 rail 起点
-    readonly property real sEnd: s2 + lenVRail
+    readonly property real s1: lenLeftSeg                // 左 rail 起点
+    readonly property real s2: s1 + lenVRail             // 底 rail 起点
+    readonly property real s3: s2 + lenBottom            // 右 rail 起点
+    readonly property real s4: s3 + lenVRail             // 右段起点
+    readonly property real sEnd: s4 + lenRightSeg
 
     // ============================================================
     // 常驻起伏
@@ -130,25 +143,29 @@ Item {
     // 生成"一条波浪内沿的实心条带"的 SVG 路径，只在几何变化时跑。
     //
     // along   条带延伸长度（已含两头各一个波长的余量）
-    // span    条带的横向占位 = maxThick，实心边贴 0 侧或 span 侧
-    // phase0  这条带在整个框上的起始里程，用来让三条 rail 的波看起来是连着的
+    // span    条带的横向占位，实心边贴 0 侧或 span 侧
+    // phase0  这条带在整个框上的起始里程，用来让五条带的波看起来是连着的
     // axis    "left"   沿 +y 延伸，厚度朝 +x（贴屏幕左沿，实心边在 0 侧）
     //         "right"  沿 +y 延伸，厚度朝 -x（贴屏幕右沿，实心边在 span 侧）
     //         "bottom" 沿 +x 延伸，厚度朝 -y（贴屏幕下沿，实心边在 span 侧）
+    //         "top"    沿 +x 延伸，厚度朝 +y（贴顶栏下沿，实心边在 0 侧）
+    // base    实心底的厚度。rail 上是 railThickness（rail 自己那 8px 就是实心
+    //         部分）；顶栏下沿是 **0**——顶栏自己那 44px 才是实心部分，波只能是
+    //         挂在它下面的一条起伏带，多给一点顶栏就凭空变高了
     //
     // 正弦用两段二次贝塞尔逼近：控制点取 ±amp 的**两倍**偏移，因为二次曲线的
     // 中点只走到控制点的一半（B(0.5)=0.25P0+0.5P1+0.25P2）。于是内沿在
-    // waveMin 和 waveMin+2*amp 之间摆，两段接缝处正好落在中线 waveMin+amp
-    function stripPath(along, span, phase0, axis) {
+    // base 和 base+2*amp 之间摆，两段接缝处正好落在中线 base+amp
+    function stripPath(along, span, phase0, axis, base) {
         const wl = root.waveLength
         const amp = root.ampNow
-        const mid = root.waveMin + amp
-        const lo = root.waveMin + amp - 2 * amp   // 控制点：波峰侧（厚度小）
-        const hi = root.waveMin + amp + 2 * amp   // 控制点：波谷侧（厚度大）
+        const mid = base + amp
+        const lo = base + amp - 2 * amp   // 控制点：波峰侧（厚度小）
+        const hi = base + amp + 2 * amp   // 控制点：波谷侧（厚度大）
         const half = wl / 2
         const q = half / 2
-        const vertical = axis !== "bottom"
-        const mirror = axis !== "left"
+        const vertical = axis === "left" || axis === "right"
+        const mirror = axis === "right" || axis === "bottom"
         // 厚度 → 横向坐标
         const c = t => mirror ? (span - t) : t
         // (厚度, 沿程) → "x,y"
@@ -174,16 +191,35 @@ Item {
         id: strip
 
         required property string axis
-        required property real along     // rail 的可见长度
-        required property real phase0
-        // 波往里程增大的方向跑（左 rail 向下、底 rail 向右）；右 rail 反着，
-        // 这样波在框上是顺着一个方向绕的，不是两边各自乱走
-        property bool reverse: false
+        required property real along     // 这条边的可见长度
+        required property real phase0    // 本带起点在框上的累计里程
+        property real span: root.maxThick
+        property real base: root.railThickness
+
+        // 里程方向和本带局部 +u 相反时要镜像，**不能只反转位移**。
+        //
+        // 这里绕过一次弯，值得写下来：`stripPath` 生成的图案是 f(phase0 + u)，
+        // u 是局部坐标；而物理上要的是 f(里程 - v·t)。当里程随局部 +u **递减**
+        // 时（顶栏两段朝豁口、右 rail 朝上），里程 = 常数 - u，u 的系数是 -1，
+        // 平移换不出来，必须镜像。
+        // 只用 reverse 反转位移的话，流动方向是对的，但相位是反射的——两侧的
+        // 波峰会在拐角处随时间**越走越开**，水在角上对撞。镜像之后，局部 u 就
+        // 等于里程本身，phase0 直接填累计里程，四个拐角全对得上
+        property bool mirrored: false
+
+        readonly property bool horizontal: strip.axis === "bottom" || strip.axis === "top"
 
         visible: root.ampNow > 0.01
         clip: true
 
         readonly property real wl: root.waveLength
+
+        transform: Scale {
+            origin.x: strip.width / 2
+            origin.y: strip.height / 2
+            xScale: (strip.mirrored && strip.horizontal) ? -1 : 1
+            yScale: (strip.mirrored && !strip.horizontal) ? -1 : 1
+        }
 
         Shape {
             id: shape
@@ -191,20 +227,21 @@ Item {
             // 同步构建：这条路径在开合过渡的十几帧里会重算，异步会撕
             asynchronous: false
 
-            // 条带比 rail 长出两个波长：一个给起始相位挪，一个给位移跑
-            width: strip.axis === "bottom" ? strip.along + 2 * strip.wl : root.maxThick
-            height: strip.axis === "bottom" ? root.maxThick : strip.along + 2 * strip.wl
+            // 条带比边长出两个波长：一个给起始相位挪，一个给位移跑
+            width: strip.horizontal ? strip.along + 2 * strip.wl : strip.span
+            height: strip.horizontal ? strip.span : strip.along + 2 * strip.wl
 
-            // 位移：只有这一条属性每帧在变，走 C++ 动画系统
+            // 位移：只有这一条属性每帧在变，走 C++ 动画系统。
+            // 一律 0 → wl 沿局部 +u 跑，方向由 mirrored 决定
             property real drift: 0
-            x: strip.axis === "bottom" ? -strip.wl + drift : 0
-            y: strip.axis === "bottom" ? 0 : -strip.wl + drift
+            x: strip.horizontal ? -strip.wl + drift : 0
+            y: strip.horizontal ? 0 : -strip.wl + drift
 
             NumberAnimation on drift {
                 running: strip.visible
                 loops: Animation.Infinite
-                from: strip.reverse ? strip.wl : 0
-                to: strip.reverse ? 0 : strip.wl
+                from: 0
+                to: strip.wl
                 duration: root.driftMs
                 // 匀速：水面起伏没有加减速，用 easing 反而像在抽
                 easing.type: Easing.Linear
@@ -215,14 +252,29 @@ Item {
                 strokeColor: "transparent"
                 fillColor: root.waveColor
                 PathSvg {
-                    path: root.stripPath(strip.along + 2 * strip.wl,
-                                         root.maxThick, strip.phase0, strip.axis)
+                    path: root.stripPath(strip.along + 2 * strip.wl, strip.span,
+                                         strip.phase0, strip.axis, strip.base)
                 }
             }
         }
     }
 
-    // 三条带的 phase0 按框上的累计里程给，于是波看起来是一路绕过来的
+    // 五条带的 phase0 按框内沿的累计里程给，于是波是一路绕过来的。
+    // 顶栏两段的 span 只有起伏带那 8px、base 给 0——顶栏自己那 44px 才是实心
+    // 部分，多给一点顶栏就凭空变高了
+    Strip {
+        x: root.railThickness
+        y: root.barHeight
+        width: root.lenLeftSeg
+        height: 2 * root.waveAmp
+        axis: "top"
+        along: root.lenLeftSeg
+        span: 2 * root.waveAmp
+        base: 0
+        phase0: 0
+        mirrored: true   // 里程从豁口往左上角走
+    }
+
     Strip {
         x: 0
         y: root.barHeight
@@ -230,18 +282,19 @@ Item {
         height: root.lenVRail
         axis: "left"
         along: root.lenVRail
-        phase0: 0
+        phase0: root.s1
     }
 
     Strip {
-        // 横向不留内缩：竖 rail 缩到 waveMin 时角上不能有豁口，同色叠着最省事
+        // 横向不留内缩：两个下角要被竖 rail 的带盖满，同色叠着最省事
         x: 0
         y: root.height - root.maxThick
         width: root.width
         height: root.maxThick
         axis: "bottom"
         along: root.width
-        phase0: root.lenVRail
+        // 本带从 x=0 起，而底 rail 的里程从 x=railThickness 起，差这一截
+        phase0: root.s2 - root.railThickness
     }
 
     Strip {
@@ -251,8 +304,21 @@ Item {
         height: root.lenVRail
         axis: "right"
         along: root.lenVRail
-        phase0: root.lenVRail + root.width
-        reverse: true
+        phase0: root.s3
+        mirrored: true   // 里程自下而上
+    }
+
+    Strip {
+        x: root.width - root.railThickness - root.lenRightSeg
+        y: root.barHeight
+        width: root.lenRightSeg
+        height: 2 * root.waveAmp
+        axis: "top"
+        along: root.lenRightSeg
+        span: 2 * root.waveAmp
+        base: 0
+        phase0: root.s4
+        mirrored: true   // 里程从右上角往豁口走
     }
 
     // ============================================================
@@ -269,11 +335,12 @@ Item {
     // 出生点离拐角多远，按那条 rail 长度的比例。给 0.15（1028px 的竖 rail 上约
     // 154px）：涌浪本身 420px 长，所以出生那一刻包就跨在拐角上，读成"从角上冒
     // 出来"——这正是贴底的 N 该有的样子。给 0 会让一支波前一出闸就跑没了
-    // 出生点离拐角多远，按那条 rail 长度的比例。
-    // **必须大于涌浪的半长**（pulseLength / 2 = 210px），否则包在出生那一刻就
-    // 已经跨在路径端点上、被裁剪框切掉一半。0.15（154px）就踩了这个：C / V 贴顶，
-    // 出生点比半长还靠近顶栏。0.28 → 288px，前沿离端点还有 78px 余量
-    property real originInset: 0.28
+    // 出生点离面板那一端的拐角多远，按那条 rail 长度的比例。
+    // 约束是**出生点离路径两端要大于涌浪的半长**（210px），否则包在出生那一刻
+    // 就跨在端点上、被裁剪框切掉一半。顶栏并进来之后路径的两端在**岛的豁口**，
+    // 离三条 rail 都远，这条约束自动满足了（最紧的是 C 的 434px），所以内缩量
+    // 可以回到 0.15——贴着面板那一端，出生那刻包就跨在拐角上，读成"从角上冒出来"
+    property real originInset: 0.15
 
     // 波前离路径两端多少像素内开始收势。
     // 这个值就该等于**半长**：包的前沿正好在中心离端点半长时触到边界，所以从那
@@ -283,17 +350,17 @@ Item {
     readonly property real endTaperPx: pulseLength / 2
 
     // 出生点在面板**自己那一端**，不是 rail 的中点。
-    // 竖 rail 上里程的方向不一样：左 rail 从顶（0）往下数，右 rail 从底（s2）
+    // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
     // 往上数——所以同样是 valign "bottom"，左边取远端、右边取近端
     function originFor(edge, valign) {
         if (edge === "bottom")
             // 底 rail 上的面板（将来的 A）是居中的，中点就是它自己那一端
-            return s1 + lenBottom / 2
+            return s2 + lenBottom / 2
 
         const inset = lenVRail * originInset
         if (edge === "right")
-            return valign === "top" ? sEnd - inset : s2 + inset
-        return valign === "bottom" ? s1 - inset : inset
+            return valign === "top" ? s4 - inset : s3 + inset
+        return valign === "bottom" ? s2 - inset : s1 + inset
     }
 
     function trigger(edge, valign) {
@@ -340,14 +407,19 @@ Item {
         switch (i) {
         case 0: return 0
         case 1: return s1
-        default: return s2
+        case 2: return s2
+        case 3: return s3
+        default: return s4
         }
     }
 
     function segLenOf(i) {
         switch (i) {
-        case 1: return lenBottom
-        default: return lenVRail
+        case 0: return lenLeftSeg
+        case 1: return lenVRail
+        case 2: return lenBottom
+        case 3: return lenVRail
+        default: return lenRightSeg
         }
     }
 
@@ -361,7 +433,8 @@ Item {
     //
     // 两段三次贝塞尔拼一个 smoothstep：控制点与端点**同高**，于是 u=0、L/2、L
     // 三处的切线都是水平的，涌浪与平直 rail 之间没有折角。
-    // kind: 1 = 厚度朝 +x（左 rail）  2 = 朝 -y（底 rail）  3 = 朝 -x（右 rail）
+    // kind: 0 = 厚度朝 +y（顶栏两段的底边）  1 = 朝 +x（左 rail）
+    //       2 = 朝 -y（底 rail）             3 = 朝 -x（右 rail）
     function bumpPath(kind, base) {
         const L = pulseLength
         const h = pulseHeight
@@ -372,6 +445,7 @@ Item {
             const tt = t.toFixed(2)
             const inv = (cross - t).toFixed(2)
             switch (kind) {
+            case 0: return `${uu},${tt}`
             case 1: return `${tt},${uu}`
             case 2: return `${uu},${inv}`
             default: return `${inv},${uu}`
@@ -385,45 +459,59 @@ Item {
         return d
     }
 
-    // 六个涌浪包：三条 rail × 两个波前。
+    // 十个涌浪包：五条边 × 两个波前。
     //
     // 两个波前是"往两边发射"的实现：出生点在面板贴的那条 rail 上、靠面板那一端，
     // 一个波前往里程增大的方向跑、一个往减小的方向跑。N 贴右 rail 底、将来 A 贴
     // 底 rail 中间，都靠这个天然分成两支——不需要为它们另写逻辑。
     //
-    // 每段一个包而不是"一个包自己算在哪段"：包的几何朝向随段而变（左 rail 朝
-    // +x、底 rail 朝 -y、右 rail 朝 -x），一个 item 换不了朝向，除非每帧重算
-    // 路径——那又回到造垃圾的老路上。分开之后每个包的路径是**静态**的，每帧只
-    // 动 x/y 和 visible。
+    // 每段一个包而不是"一个包自己算在哪段"：包的几何朝向随段而变（顶栏两段朝
+    // +y、左 rail 朝 +x、底 rail 朝 -y、右 rail 朝 -x），一个 item 换不了朝向，
+    // 除非每帧重算路径——那又回到造垃圾的老路上。分开之后每个包的路径是**静态**
+    // 的，每帧只动 x/y、taper 和 visible。
     //
-    // 外层每段一个**裁剪框**，边界就是那条 rail 在屏幕上的真实范围。涌浪包
-    // 420px 长，靠 visible 判断只能拦住"中心跑出去"，拦不住包围盒探出去——
-    // 而钟形剖面在包围盒两头还有实打实的墨。常驻起伏的 Strip 一直有 clip。
+    // 外层每段一个**裁剪框**，边界就是那条边在屏幕上的真实范围。涌浪包 420px
+    // 长，靠 visible 判断只能拦住"中心跑出去"，拦不住包围盒探出去——而钟形剖面
+    // 在包围盒两头还有实打实的墨。常驻起伏的 Strip 一直有 clip。
     Repeater {
-        model: 3
+        model: 5
 
         Item {
             id: seg
 
             required property int index
 
-            readonly property bool vertical: index !== 1
-            readonly property real cross: root.railThickness + root.pulseHeight
+            readonly property bool vertical: index === 1 || index === 3
+            // 顶栏两段的实心底是 0：顶栏自己那 44px 才是实心部分
+            readonly property real base: (index === 0 || index === 4)
+                ? 0 : root.railThickness
+            readonly property real cross: base + root.pulseHeight
             readonly property real segLen: root.segLenOf(index)
             readonly property real segStart: root.segStartOf(index)
+            // 厚度朝哪，见 bumpPath 的 kind
+            readonly property int kind: {
+                switch (seg.index) {
+                case 1: return 1
+                case 2: return 2
+                case 3: return 3
+                default: return 0
+                }
+            }
 
             clip: true
             visible: root.playing
 
-            // 裁剪框 = 这条 rail 在屏幕上的真实范围
+            // 裁剪框 = 这条边在屏幕上的真实范围
             x: {
                 switch (seg.index) {
-                case 0: return 0
-                case 1: return root.railThickness
-                default: return root.width - seg.cross
+                case 0: return root.railThickness
+                case 1: return 0
+                case 2: return root.railThickness
+                case 3: return root.width - seg.cross
+                default: return root.width - root.railThickness - seg.segLen
                 }
             }
-            y: seg.index === 1 ? root.height - seg.cross : root.barHeight
+            y: seg.index === 2 ? root.height - seg.cross : root.barHeight
             width: seg.vertical ? seg.cross : seg.segLen
             height: seg.vertical ? seg.segLen : seg.cross
 
@@ -448,7 +536,7 @@ Item {
                     visible: dist >= 0 && dist <= root.sEnd
                         && u > -half && u < seg.segLen + half
 
-                    // 靠近顶栏时收势，读成"波拍到顶栏上摊平散掉"。
+                    // 靠近路径两端（岛的豁口两侧）时收势，读成"波散进豁口里"。
                     //
                     // 压的是**厚度**，不是 opacity。两个理由：
                     // 1. waveColor 是不透明的 Color.background，半透明的深色带子
@@ -456,7 +544,7 @@ Item {
                     // 2. opacity < 1 会让 Qt 有机会把这个 item 渲到离屏纹理再合成，
                     //    而纹理原点要对齐整数像素——正好是"一像素位移"的来源
                     // 振幅本身进的是静态路径，一动就得重算，所以用 Scale 变换：
-                    // 原点钉在 rail 的**外沿**，压下去时底边不动
+                    // 原点钉在框的**外沿**，压下去时底边不动
                     readonly property real taper: {
                         const d = Math.min(bump.dist, root.sEnd - bump.dist)
                         return d >= root.endTaperPx
@@ -464,8 +552,9 @@ Item {
                     }
 
                     transform: Scale {
-                        origin.x: seg.index === 2 ? seg.cross : 0
-                        origin.y: seg.index === 1 ? seg.cross : 0
+                        // 厚度增长的起点不动：kind 0/1 从 0 侧长，2/3 从 cross 侧长
+                        origin.x: seg.kind === 3 ? seg.cross : 0
+                        origin.y: seg.kind === 2 ? seg.cross : 0
                         xScale: seg.vertical ? bump.taper : 1
                         yScale: seg.vertical ? 1 : bump.taper
                     }
@@ -473,14 +562,22 @@ Item {
                     width: seg.vertical ? seg.cross : root.pulseLength
                     height: seg.vertical ? root.pulseLength : seg.cross
 
-                    // 坐标相对裁剪框。右 rail 沿 -y 走（从底往上），所以局部
-                    // 坐标要翻过来。包是对称的，只要把包围盒的中心摆对就行
-                    x: seg.index === 1 ? bump.u - bump.half : 0
+                    // 坐标相对裁剪框。顶栏两段沿 -x 走（朝岛的豁口）、右 rail 沿
+                    // -y 走（从底往上），这三段的局部坐标要翻过来。包是对称的，
+                    // 只要把包围盒的中心摆对就行
+                    x: {
+                        switch (seg.index) {
+                        case 0: return seg.segLen - bump.u - bump.half
+                        case 2: return bump.u - bump.half
+                        case 4: return seg.segLen - bump.u - bump.half
+                        default: return 0
+                        }
+                    }
                     y: {
                         switch (seg.index) {
-                        case 0: return bump.u - bump.half
-                        case 1: return 0
-                        default: return seg.segLen - bump.u - bump.half
+                        case 1: return bump.u - bump.half
+                        case 3: return seg.segLen - bump.u - bump.half
+                        default: return 0
                         }
                     }
 
@@ -493,8 +590,8 @@ Item {
                             strokeColor: "transparent"
                             fillColor: root.waveColor
                             PathSvg {
-                                // 静态：只依赖朝向，本段里是常量
-                                path: root.bumpPath(seg.index + 1, root.railThickness)
+                                // 静态：只依赖朝向和实心底，两者在本段里都是常量
+                                path: root.bumpPath(seg.kind, seg.base)
                             }
                         }
                     }
