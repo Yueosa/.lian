@@ -261,6 +261,9 @@ Singleton {
 
     readonly property string _colorFilePath:
         Quickshell.env("HOME") + "/.cache/quickshell_colors.json"
+    // 只当**路径字符串**用（传给下面的主题脚本）。绝不能把它交给 FileView：这条
+    // 软链指向壁纸原文件，视频壁纸就是几百 MB，而 FileView 会把整个文件载进内存。
+    // 详情见 Wallpaper.qml 里那段（那边同样的写法把 RSS 顶到了 4.4GB）。
     readonly property string _wallpaperLinkPath:
         Quickshell.env("HOME") + "/.cache/wallpaper_rofi/current"
 
@@ -285,15 +288,16 @@ Singleton {
                 root.applyFallback()
             }
         }
-        onFileChanged: reload()
-        onLoadFailed: root.applyFallback()
-    }
-
-    FileView {
-        path: root._wallpaperLinkPath
-        watchChanges: true
+        // 不直接 reload()：hook 用重定向写这份 JSON，inotify 在写第一段时就响，
+        // 立刻去读会读到半截、JSON.parse 抛错、于是闪一下 fallback 配色。过 600ms
+        // 再读，让写盘落定。
+        //
+        // 这个防抖原先挂在另一份 FileView 上——那份盯着壁纸软链（换壁纸 → 600ms 后
+        // 重读配色）。软链指向的是壁纸原文件，视频壁纸下 FileView 会把 700MB 整个
+        // 读进内存，所以那份拆了，防抖挪到这里。通知一点没少：配色本身就写在这份
+        // JSON 里，hook 重写它就是「壁纸换了」最准的信号。
         onFileChanged: colorSettle.restart()
-        onLoaded: colorSettle.restart()
+        onLoadFailed: root.applyFallback()
     }
 
     Timer {

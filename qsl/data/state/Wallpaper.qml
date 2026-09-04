@@ -63,12 +63,18 @@ Singleton {
         onFileChanged: reload()
     }
 
-    FileView {
-        path: root.linkPath
-        watchChanges: true
-        onFileChanged: root.version += 1
-    }
-
+    // 只把 FileView 挂在**小文件**上。
+    //
+    // 这里原先还有一份挂在 linkPath 上，只为「软链变了就 version += 1」，从不读它
+    // 的内容。但 FileView 不管你读不读，它总把整个文件载进内存，而且跟随符号链接。
+    // 换成视频壁纸后 current 指向一个 700MB 的 mp4，于是：700MB 进 QByteArray
+    // （jemalloc 装进 768MiB 大块），再翻一倍成字符串（1536MiB）——Color.qml 里还有
+    // 一份同样的写法，两份合起来 4.5GB。这些块用完就释放了，但 jemalloc 把页留在
+    // dirty 缓存里不还给系统（stats 里 allocated 10MB / resident 4.23GB），所以
+    // RSS 一启动就常驻 4.4GB，看着像泄漏，其实是一次性读进来的死重。
+    //
+    // 换壁纸的通知不缺这一份：主题 hook 最后会重写 colors.json（上面那份在看，
+    // 且带 __qs_wallpaper_path），预览软链也会跟着换（下面这份，0.14MB）。
     FileView {
         path: root.previewPath
         watchChanges: true
