@@ -136,8 +136,6 @@ Singleton {
     //   免得为每个面板套一层 QtObject
     // ============================================================
 
-    readonly property var aModeValues: ["card", "rail"]
-
     readonly property QtObject panels: QtObject {
         // C = leftrail：时间/系统/键位/待办四页同宽
         readonly property int cWidth: root._clampInt("panels.c.width", 400, 280, 900)
@@ -145,9 +143,6 @@ Singleton {
         readonly property int vWidth: root._clampInt("panels.v.width", 368, 280, 900)
         // N = rightrail 下
         readonly property int nWidth: root._clampInt("panels.n.width", 368, 280, 900)
-        // A 的形态：card = 现在的卡片式，rail = 仿 Windows 的 rail 式。
-        // 消费方在第 7 轮（迁移 A），这里先把轴留出来
-        readonly property string aMode: root._enum("panels.a.mode", root.aModeValues, "card")
     }
 
     // ============================================================
