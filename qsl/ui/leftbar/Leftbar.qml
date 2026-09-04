@@ -15,6 +15,8 @@ RailPage {
 
     edge: "left"
     shellNamespace: "qsl-leftbar"
+    // 互斥组：C：leftrail，和 Z=剪贴板同区
+    panelGroup: "left"
     order: ["time", "sys", "keys", "todo"]
     page: "time"
 
@@ -26,9 +28,9 @@ RailPage {
     // 宽度按页定（时间窄、系统宽）；keys/todo 置顶布局：tab 条钉顶，内容从下长
     pages: ({
         time: { title: "时间", icon: "\uf017", width: 400, containers: [timeClockCard, timeTimerCard] },
-        sys:  { title: "系统", icon: "\uf2db", width: 470, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
-        keys: { title: "键位", icon: "\uf11c", width: 460, header: keysTabsCard, containers: [keysListCard] },
-        todo: { title: "待办", icon: "\uf0ae", width: 460, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
+        sys:  { title: "系统", icon: "\uf2db", width: 400, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
+        keys: { title: "键位", icon: "\uf11c", width: 400, header: keysTabsCard, containers: [keysListCard] },
+        todo: { title: "待办", icon: "\uf0ae", width: 400, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
     })
 
     // 子 tab 切换 → 列表容器播"收回→派生"回放；tab 条是页首固定件，永远不动
@@ -93,7 +95,9 @@ RailPage {
     function prev() { cycle(-1) }
 
     // Sysmon 详情档生命周期（原 SystemPage Component.onCompleted/onDestruction）
-    readonly property bool sysDetailActive: open && page === "sys"
+    // 走基类的 detailPage（双边滞后）而不是 open && page：setDetailActive 要
+    // fork 三个进程，绑 open 就会砸在派生动画第一帧上
+    readonly property bool sysDetailActive: detailPage === "sys"
     onSysDetailActiveChanged: Sysmon.setDetailActive(sysDetailActive)
 
     // ---- 页内两卡共享状态 ----

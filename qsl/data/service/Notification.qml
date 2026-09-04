@@ -55,7 +55,14 @@ Singleton {
     // 一级岛 toast：与面板 entries 无关；payload 一次拷贝字符串
     signal toastRequested(var payload)
 
+    // 异步代际：清空/关面板之后，任何在途的 list / cache 结果都作废。
+    // notifctl clear 走 execDetached，与在途的 `notifctl list` 没有顺序保证——
+    // 老结果落地就会把刚清掉的行重新灌回 entries（清空时「已滑出的行又闪一下」）
+    property int _epoch: 0
+    property int _inflightEpoch: -1
+
     function hydrate() {
+        _inflightEpoch = _epoch
         listCache.reload()
     }
 
@@ -63,6 +70,7 @@ Singleton {
         if (loading)
             return
         loading = true
+        _inflightEpoch = _epoch
         listProc.running = true
     }
 
@@ -71,6 +79,9 @@ Singleton {
     }
 
     function applyCacheText(raw) {
+        // 期间发生过 dismiss/clear/release：这批结果是删除前的快照，丢掉
+        if (_inflightEpoch !== _epoch)
+            return
         try {
             const t = (raw || "").trim()
             applyParsed(t.length > 0 ? JSON.parse(t) : [])
@@ -165,6 +176,7 @@ Singleton {
                 keep.push(entries[i])
         }
         entries = keep
+        _epoch++
         Quickshell.execDetached([root.ctlPath, "dismiss", String(id)])
     }
 
@@ -189,6 +201,7 @@ Singleton {
                 keep.push(entries[i])
         }
         entries = keep
+        _epoch++
 
         for (let i = 0; i < ids.length; i++)
             Quickshell.execDetached([root.ctlPath, "dismiss", String(ids[i])])
@@ -201,6 +214,7 @@ Singleton {
                 n.tracked = false
         }
         entries = []
+        _epoch++
         Quickshell.execDetached([root.ctlPath, "clear"])
     }
 
@@ -211,6 +225,7 @@ Singleton {
     function release() {
         // 关面板只清展示拷贝；DB / server 保留
         entries = []
+        _epoch++
     }
 
     NotificationServer {

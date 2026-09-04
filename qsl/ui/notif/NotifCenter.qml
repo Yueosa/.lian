@@ -20,6 +20,8 @@ RailPage {
     edge: "right"
     valign: "bottom"
     shellNamespace: "qsl-notif"
+    // 互斥组：N：rightrail 下，和 V=右附栏同区
+    panelGroup: "right"
     containerWidth: 368
 
     order: ["notif"]
@@ -40,8 +42,23 @@ RailPage {
         notifState.resetClear()
         openPage(page)
         Notification.uiActive = true
+        // 缓存先上屏（本地文件，快）；notifctl list 的真数据等派生动画播完再灌。
+        // entries 是 var 数组，重新赋值 = ListView 整表重置（delegate 全销毁重建
+        // + 每行三级图标回退里的 Quickshell.iconPath 同步查询重跑一遍）。
+        // 开面板时 hydrate/refresh 背靠背来两次，两次整表重置正好压在
+        // 容器生长动画上——这是 N 开面板卡顿的主因
         Notification.hydrate()
-        Notification.refresh()
+        refreshDelay.restart()
+    }
+
+    Timer {
+        id: refreshDelay
+        repeat: false
+        interval: root.enterAllMs
+        onTriggered: {
+            if (root.open)
+                Notification.refresh()
+        }
     }
 
     // 覆盖基类：补 Notification.uiActive 释放。
@@ -75,8 +92,15 @@ RailPage {
     Timer {
         id: releaseTimer
         repeat: false
-        interval: Size.anim.durFx + 60   // 与 RailPage.swapTimer 同口径：等容器 Exit 播完
+        interval: root.exitAllMs   // 与 RailPage.swapTimer 同口径：等本页全部容器 Exit 播完
         onTriggered: {
+            // 清空是「先收面板、后真删」：删除必须等列表离屏才做，
+            // 否则 entries 变空会把已滑出的行回收进复用池并 resetVisual，
+            // 行以 x=0/opacity=1 重新露脸（闪一下又消失的那一下）
+            if (notifState.pendingClearAll) {
+                notifState.pendingClearAll = false
+                Notification.dismissAll()
+            }
             Notification.release()
             // 下次开面板回到应用列表，而不是停在上次进的那个应用
             notifState.currentApp = ""
@@ -90,6 +114,8 @@ RailPage {
         // 当前进入的应用页；空串表示停在应用列表
         property string currentApp: ""
         property bool clearing: false
+        // 清空已排好队、等面板收完再真删（见 releaseTimer）
+        property bool pendingClearAll: false
 
         readonly property int listHeight: root.listHeight
 
@@ -221,6 +247,7 @@ RailPage {
         function resetClear() {
             _clearFinish.stop()
             clearing = false
+            pendingClearAll = false
         }
 
         function clearAllAnimated() {
@@ -233,11 +260,13 @@ RailPage {
             _clearFinish.restart()
         }
 
+        // 滑出波次播完 → 只收面板，不动数据。
+        // clearing 保持 true（行留在滑出位，不回弹），真删推到 releaseTimer；
+        // clearing 由下次 openWindow 的 resetClear 复位
         property Timer _clearFinish: Timer {
             repeat: false
             onTriggered: {
-                Notification.dismissAll()
-                notifState.clearing = false
+                notifState.pendingClearAll = true
                 root.closeWindow()
             }
         }
