@@ -101,7 +101,7 @@ Item {
     // bodyLoader.implicitHeight 是 0 → 容器高 0 → Column 把所有容器打包到
     // y=0，卡片陆续建好后高度到位、大家再一起下移。而实例化本来也不是
     // 卡顿源（A/B 实测：2 张轻卡的时间页和 5 张重卡的系统页停顿一样大），
-    // 何况它现在落在 focusSettleMs 那一拍的动画前空档里，不花钱
+    // 何况它现在落在起跑闸那一拍的动画前空档里，不花钱（见 RailPage 的 derivGate）
 
     // 错峰延迟是否已到（开闸的另一半条件）
     property bool _staggerDone: false

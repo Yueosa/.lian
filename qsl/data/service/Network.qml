@@ -205,7 +205,7 @@ Singleton {
     // ---- 当前连接的接口名与 IPv4 ----
     // NetworkDevice.address 是 MAC（实测），Quickshell.Networking 不给 IP，
     // 只能自己取。不轮询：仅开页和连接态变化时拉一次（fork 在 qs 这种
-    // 常驻近 1GiB 的进程里不便宜，见 RailPage 的 focusSettleMs 注释）
+    // 常驻近 1GiB 的进程里不便宜，见 RailPage 的 derivGate 注释）
     readonly property string activeIface: {
         void _netRev
         if (ethernetConnected && _wiredDevice)

@@ -47,37 +47,43 @@ Item {
     readonly property var headerComp: (pages[page] && pages[page].header)
         ? pages[page].header : null
 
-    // 派生动画的起跑延迟。
+    // 派生动画的起跑闸。
     //
-    // 名字里的 "focus" 是历史误判，留着是因为改名要动一串引用：这个延时**不是**
-    // 在等键盘焦点。原先的说法是「申请 Exclusive 要停 ~180ms」，已被隔离复现
-    // 推翻（空窗反复切 Exclusive + 夺焦 + fcitx，零掉帧；详见 FrameWindow 里
-    // 那段）。它真正在躲的是**开窗那一拍的同步重活**：容器的 bodyLoader 是同步
-    // 创建的，页面越大堵得越久，而 Qt 的统一动画时钟在主线程阻塞期间照走——
-    // 就在这一帧起派生动画，动画的起点会被记成阻塞之前那个 tick，第一帧画出来
-    // 时它已经自己跑掉一截（岛那边实测首帧宽度从 202 直接跳到 482，同一个病，
-    // 那边用 FrameAnimation 等一个干净帧边界解决，见 IslandShell.hubShaped）。
+    // 要躲的是**开窗那一拍的同步重活**：容器的 bodyLoader 是同步创建的
+    // （它的 active 挂 present，开窗即真，并不等这道闸），页面越大堵得越久；
+    // 而 Qt 的统一动画时钟在主线程阻塞期间照走——就在这一帧起派生动画，动画的
+    // 起点会被记成阻塞之前那个 tick，第一帧画出来时它已经自己跑掉一截（岛那边
+    // 实测首帧宽度从 202 直接跳到 482，同一个病）。
     //
-    // 所以这 230ms 是个粗糙但有效的隔离带。真正的修法是照岛那样改成帧闸，
-    // 已记在 plan.md 性能审计那一轮。手感不对就调这个值。
-    property int focusSettleMs: 230
-
-    // 面板之间互切时框窗本来就握着键盘，不需要等这一拍。
-    // 注意这条现在只剩「切页比冷开快」这一个效果，跟焦点代价无关（同上）。
-    // 开窗那一刻记下当时的持有状态（见 openPage），之后整个开窗周期都用它——
-    // 不能写成实时绑定，因为 claim 之后它必然为真。
-    property bool skipFocusSettle: false
-    readonly property int effectiveSettleMs: skipFocusSettle ? 0 : focusSettleMs
-
-    // 容器派生的开闸信号
+    // 这里原先是一条 **230ms 固定延时**，属性名叫 focusSettleMs——名字来自
+    // 「申请 Exclusive 要停 180ms」那个已被推翻的结论（真凶是 TrayMenu 那份关着
+    // 也不解除的 dbusmenu 订阅，见 FrameWindow 里那段）。固定延时的毛病是不管
+    // 有没有重活都白等，用户报的「CVN 首次弹出手感差」就是它。
+    //
+    // 换成帧闸：**帧在主线程阻塞期间不会 tick**，所以「数够两帧」天然等价于
+    // 「重活干完，而且落到了干净的帧边界上」——不用猜时长，没重活时也不白等。
+    // 冷开的等待因此从 230ms 降到两帧（约 34ms）。
+    //
+    // 两帧而不是一帧：第一帧可能正是阻塞结束的那一帧（时钟已经偏了），要再等
+    // 一个完整帧间隔才能确认时钟重新对齐。与 IslandShell.hubShaped 同一套。
+    //
+    // 顺带删掉了 skipFocusSettle（曾用来让「面板互切」跳过那 230ms）：帧闸下冷开
+    // 和互切都只等两帧，这个分支没有存在意义了。
     readonly property bool derivGate: gateOpen
     property bool gateOpen: false
+    property int _gateFrames: 0
 
-    Timer {
-        id: gateTimer
-        interval: root.effectiveSettleMs
-        repeat: false
-        onTriggered: root.gateOpen = true
+    // 帧闸的典型耗时。给 enterAllMs 排「派生动画期间别做重活」用——它只需要一个
+    // 量级正确的常数，真实闸门长度由帧决定
+    readonly property int gateLatencyMs: 34
+
+    FrameAnimation {
+        running: root.open && !root.gateOpen
+        onTriggered: {
+            root._gateFrames += 1
+            if (root._gateFrames >= 2)
+                root.gateOpen = true
+        }
     }
 
     // 用 Connections 而不是 onOpenChanged：子类（Rightbar/NotifCenter）
@@ -85,18 +91,8 @@ Item {
     Connections {
         target: root
         function onOpenChanged() {
-            if (root.open) {
-                if (root.skipFocusSettle) {
-                    // 框窗本来就握着焦点：没有停顿要躲，直接起派生
-                    root.gateOpen = true
-                } else {
-                    root.gateOpen = false
-                    gateTimer.restart()
-                }
-            } else {
-                gateTimer.stop()
-                root.gateOpen = false
-            }
+            root._gateFrames = 0
+            root.gateOpen = false
         }
     }
 
@@ -114,17 +110,18 @@ Item {
         + staggerStep * Math.max(0, headerComp ? containerCount : containerCount - 1)
 
     // 同理的入场侧：最后一个容器派生完毕的时刻（Anim.Spatial = durNormal）。
-    // 给「派生动画期间别做重活」用。要含 focusSettleMs——派生是等焦点结算完
-    // 才起的，不算进来的话服务启停会提前 focusSettleMs 落到动画里
-    readonly property int enterAllMs: Size.anim.durNormal + 60 + effectiveSettleMs
+    // 给「派生动画期间别做重活」用。要含起跑闸那一段——派生是等闸开才起的，
+    // 不算进来的话服务启停会提前落到动画里
+    readonly property int enterAllMs: Size.anim.durNormal + 60 + gateLatencyMs
         + staggerStep * Math.max(0, headerComp ? containerCount : containerCount - 1)
 
     // ---- 详情档时序：供数页 = page 的「下降沿滞后」副本 ----
     //
     // 上升沿立刻。服务启动是同步大活（Sysmon.setDetailActive(true) 一次 fork
-    // 三个进程），但派生动画要等 focusSettleMs 才起，所以开窗后那一拍本来就是
-    // 动画前空档，启动开销落在里面不花钱。而且门闸是 Timer：主线程忙着 fork
-    // 时它压根不会触发，动画自然排在后面，不会被插帧。
+    // 三个进程），但派生动画要等起跑闸才起，所以开窗后那一拍本来就是动画前空档，
+    // 启动开销落在里面不花钱。**帧闸把这一条守得比原来的 Timer 更牢**：主线程
+    // 忙着 fork 时帧压根不 tick，闸门自然往后推，动画不会被插帧；而 fork 很快
+    // 时也不会像固定延时那样白等。
     // 上升沿曾经也做过滞后，结果是系统页进程列表肉眼可见地慢（进程 CPU%
     // 还要两次采样，一叠加更明显）——那是白付的代价，已撤。
     //
@@ -187,8 +184,6 @@ Item {
             page = String(p)
         const wasClosed = !open
         // 不再 Island.captureFocus()：框窗用 HyprlandFocusGrab，不抢应用焦点
-        // 必须抢在 claim 之前问：claim 会把自己压进栈，之后 keyboardHeld 必然为真
-        skipFocusSettle = Panels.keyboardHeld
         // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels
         Panels.claim(root.shellNamespace, root.panelGroup)
         // 只在真的从关到开时起水波：IPC 指定页重复开同一个面板不该再放一遍
