@@ -74,7 +74,9 @@ Singleton {
     // 面板从关到开时报一声，edge = 它贴的那条边。框窗的 rail 水波拿它当出生点。
     // 放在这里而不是让面板直接找水波：面板是框窗的租户，互相不该知道对方存在，
     // 而这张表本来就是「框窗的状态」
-    signal opened(string id, string edge)
+    // valign 也带上：水波要从面板**自己那一端**生，不是那条 rail 的中点。
+    // N 贴底、V 贴顶，同一条右 rail 上的两个面板，出生点差着一整条边
+    signal opened(string id, string edge, string valign)
 
     function claim(id, group) {
         const me = String(id || "")

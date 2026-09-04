@@ -270,21 +270,33 @@ Item {
     property bool playing: false
     // 上一次开面板贴的边，周期发射时沿用
     property string lastEdge: "left"
+    property string lastValign: "top"
+    // 出生点离拐角多远，按那条 rail 长度的比例。给 0.15（1028px 的竖 rail 上约
+    // 154px）：涌浪本身 420px 长，所以出生那一刻包就跨在拐角上，读成"从角上冒
+    // 出来"——这正是贴底的 N 该有的样子。给 0 会让一支波前一出闸就跑没了
+    property real originInset: 0.15
 
-    // 面板贴哪条边，出生点就在那条 rail 的中点
-    function originFor(edge) {
-        if (edge === "right")
-            return s3 + lenVRail / 2
+    // 出生点在面板**自己那一端**，不是 rail 的中点。
+    // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
+    // 往上数——所以同样是 valign "bottom"，左边取远端、右边取近端
+    function originFor(edge, valign) {
         if (edge === "bottom")
+            // 底 rail 上的面板（将来的 A）是居中的，中点就是它自己那一端
             return s2 + lenBottom / 2
-        return s1 + lenVRail / 2
+
+        const inset = lenVRail * originInset
+        if (edge === "right")
+            return valign === "top" ? s4 - inset : s3 + inset
+        return valign === "bottom" ? s2 - inset : s1 + inset
     }
 
-    function trigger(edge) {
+    function trigger(edge, valign) {
         if (edge !== undefined && String(edge).length > 0)
             lastEdge = String(edge)
+        if (valign !== undefined && String(valign).length > 0)
+            lastValign = String(valign)
         // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
-        origin = originFor(lastEdge)
+        origin = originFor(lastEdge, lastValign)
         const reach = Math.max(origin, sEnd - origin) + pulseLength
         spreadAnim.stop()
         spread = 0

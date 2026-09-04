@@ -174,10 +174,10 @@ PanelWindow {
 
     Connections {
         target: Panels
-        function onOpened(id, edge) {
+        function onOpened(id, edge, valign) {
             // 只有主屏那份放波：面板本来就只在主屏，别的屏不该跟着抖
             if (root.isKeyOwner)
-                ripple.trigger(edge)
+                ripple.trigger(edge, valign)
         }
     }
 }

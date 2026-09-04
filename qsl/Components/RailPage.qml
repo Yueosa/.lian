@@ -192,7 +192,7 @@ Item {
         Panels.claim(root.shellNamespace, root.panelGroup)
         // 只在真的从关到开时起水波：IPC 指定页重复开同一个面板不该再放一遍
         if (wasClosed)
-            Panels.opened(root.shellNamespace, root.edge)
+            Panels.opened(root.shellNamespace, root.edge, root.valign)
         open = true
         // 每次开窗都主动夺焦：内容里的输入框（密码框/标签框）一旦
         // forceActiveFocus 过，光靠 focus: root.open 绑定夺不回来
