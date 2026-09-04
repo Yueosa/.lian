@@ -57,6 +57,19 @@ Item {
     readonly property bool wantOpen: present && _shownEff
     // 级联延迟：页面框架按容器序号注入，依次派生
     property int staggerMs: 0
+    // 退场的级联延迟。默认跟进场一致，但页面框架会把它**反过来**注入：
+    // 自顶向下排布的列里，退场必须自下而上。
+    //
+    // 理由是 Column 会跳过 visible=false 的子项：上面的容器一收完就从布局里消失，
+    // 下面那些**还在收**的立刻被重新排到新位置，move 过渡把它们一路往上拽（还带
+    // M3 过冲）。实测时间页 Esc：容器 0 的 progress 归零那一帧起，容器 1 从 y=450
+    // 被拽到 -23.7，而它自己的 progress 还在 0.6——用户看到的「第一个容器退出后
+    // 第二个瞬移/闪烁」就是这一下。
+    //
+    // 反过来之后先走的永远排在最后，它离场时前面的项一个都不用重排，回流从根上
+    // 消失了。这和「槽位尺寸恒为自然尺寸」是同一个教训的两面：定位器会跳过的东西
+    // 不止零尺寸，还有不可见
+    property int exitStaggerMs: staggerMs
     // 显式尺寸；0 = 取内容 implicit 尺寸
     property int naturalWidth: 0
     property int naturalHeight: 0
@@ -144,7 +157,7 @@ Item {
 
     Timer {
         id: exitDelay
-        interval: root.staggerMs
+        interval: root.exitStaggerMs
         onTriggered: root.progress = 0
     }
 

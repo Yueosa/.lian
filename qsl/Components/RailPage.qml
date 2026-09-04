@@ -334,6 +334,9 @@ Item {
             present: root.open && root.pendingPage === ""
                 && root.headerComp !== null
             visible: root.headerComp !== null
+            // 进场领头（staggerMs 默认 0），退场压尾——整页读起来就是原路收回。
+            // 表头收回不会推动容器列：列的 y 取的是表头**冻结后的** implicitHeight
+            exitStaggerMs: root.containerCount * root.staggerStep
         }
 
         // 容器列：贴 rail 竖排；left 边 x=8，right 边 x=16（rail 在右）
@@ -385,6 +388,10 @@ Item {
                     present: root.open && root.pendingPage === ""
                         && root.replayingIndexes.indexOf(index) === -1
                     staggerMs: (root.headerComp ? index + 1 : index) * root.staggerStep
+                    // 退场自下而上（见 RailContainer.exitStaggerMs）。表头排在最后，
+                    // 所以这里不含表头那一格：最底下的容器 0 延迟、最上面的
+                    // (count-1) 格。exitAllMs 里那个 max 算的正是这个上界
+                    exitStaggerMs: (root.containerCount - 1 - index) * root.staggerStep
 
                     // 页内内容可向页面请求关闭（对齐旧 requestClose 惯例）；
                     // bodyItem 用 RailContainer 自带的 alias——在本文件重复声明并
