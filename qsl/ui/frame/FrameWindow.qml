@@ -168,8 +168,6 @@ PanelWindow {
         z: 1
         railThickness: root.railThickness
         barHeight: root.barHeight
-        leftSegWidth: bar.leftSeg.width
-        rightSegWidth: bar.rightSeg.width
     }
 
     Connections {

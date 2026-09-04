@@ -63,9 +63,6 @@ Item {
 
     required property int railThickness
     required property int barHeight
-    // 两段的实际宽度：段宽绑内容宽度，会变
-    required property real leftSegWidth
-    required property real rightSegWidth
 
     // 贴边 rail 上有面板开着才动。**岛不算**——它是独立体系，理由见 Panels.railHeld
     readonly property bool active: Panels.railHeld
@@ -106,28 +103,26 @@ Item {
     property int pulseHeight: 12
     // 涌浪沿路径的长度。长一点读成"一记缓慢的涌浪"，短了读成"一个疙瘩在跑"
     property int pulseLength: 420
-    // 两发之间的间隔。必须大于 durRipple（一趟的时长），否则前一发还没跑完
+    // 两发之间的间隔。必须大于 durRipple（一趟的时长 3500），否则前一发还没跑完
     // 后一发就出闸，两个包叠在一起
-    property int pulseEveryMs: 9000
+    property int pulseEveryMs: 4500
 
     // ---- 行波路径的累计里程 ----
-    // 段的圆角半径，和 Bar.qml 的 bottomRightRadius/bottomLeftRadius 对齐
-    readonly property int segCornerR: 22
-
-    // 两段的行程还要再减掉 rail 厚度：段的平底边虽然一直画到 x=0，但 x∈[0,8]
-    // 那一截是框的**内部**（上面是段、下面是竖 rail），不是内边界。内边界在
-    // (railThickness, barHeight) 这个点上转弯——路径必须在那儿接上竖 rail，
-    // 少减这一截波就会跑进框里再跳出来
-    readonly property real lenLeftSeg: Math.max(0, leftSegWidth - segCornerR - railThickness)
+    // 只走三条 rail：左（自上而下）→ 底（自左而右）→ 右（自下而上），两端收在
+    // 左上 / 右上两个"rail 撞上顶栏"的拐角。
+    //
+    // 顶栏那两段的底边曾经也在路径里（五段），是错的，用户截图逐列量出来了：
+    // 涌浪跑上顶栏时鼓包从栏的下沿往下长 12px，而顶栏底下是壁纸空隙，于是一条
+    // 深色鱼鳍挂在栏外面——"水波超出 Rightbar 的范围"。
+    // 根子在于**顶栏和 rail 不是一类东西**：rail 是 8px 的装饰条，加厚读成水；
+    // 顶栏是 44px 的功能条，下沿挂个鳍只能读成溢出。而且常驻起伏本来就只在三条
+    // rail 上，行波多铺两段本身就不一致。
     readonly property real lenVRail: Math.max(0, height - railThickness - barHeight)
     readonly property real lenBottom: Math.max(0, width - railThickness * 2)
-    readonly property real lenRightSeg: Math.max(0, rightSegWidth - segCornerR - railThickness)
 
-    readonly property real s1: lenLeftSeg                // 左 rail 起点
-    readonly property real s2: s1 + lenVRail             // 底 rail 起点
-    readonly property real s3: s2 + lenBottom            // 右 rail 起点
-    readonly property real s4: s3 + lenVRail             // 右段起点
-    readonly property real sEnd: s4 + lenRightSeg
+    readonly property real s1: lenVRail                  // 底 rail 起点
+    readonly property real s2: s1 + lenBottom            // 右 rail 起点
+    readonly property real sEnd: s2 + lenVRail
 
     // ============================================================
     // 常驻起伏
@@ -275,19 +270,23 @@ Item {
     // 154px）：涌浪本身 420px 长，所以出生那一刻包就跨在拐角上，读成"从角上冒
     // 出来"——这正是贴底的 N 该有的样子。给 0 会让一支波前一出闸就跑没了
     property real originInset: 0.15
+    // 波前离路径两端多少像素内开始淡出。**必须小于出生点的内缩量**
+    // （lenVRail * originInset ≈ 154px），否则 C / V 一出生就是半透明的——它们
+    // 贴顶，出生点就在离端点 154px 的地方
+    property int endFadePx: 100
 
     // 出生点在面板**自己那一端**，不是 rail 的中点。
-    // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
+    // 竖 rail 上里程的方向不一样：左 rail 从顶（0）往下数，右 rail 从底（s2）
     // 往上数——所以同样是 valign "bottom"，左边取远端、右边取近端
     function originFor(edge, valign) {
         if (edge === "bottom")
             // 底 rail 上的面板（将来的 A）是居中的，中点就是它自己那一端
-            return s2 + lenBottom / 2
+            return s1 + lenBottom / 2
 
         const inset = lenVRail * originInset
         if (edge === "right")
-            return valign === "top" ? s4 - inset : s3 + inset
-        return valign === "bottom" ? s2 - inset : s1 + inset
+            return valign === "top" ? sEnd - inset : s2 + inset
+        return valign === "bottom" ? s1 - inset : inset
     }
 
     function trigger(edge, valign) {
@@ -327,26 +326,21 @@ Item {
         onFinished: root.playing = false
     }
 
-    // ---- 五段的里程起点 / 长度 ----
+    // ---- 三段的里程起点 / 长度 ----
     // 写成 switch 函数而不是数组常量：绑定里每帧 new 一个数组就是每帧造垃圾，
     // 而 GC 停顿是这个壳最大的卡顿源（实测一次回收停 ~160ms）
     function segStartOf(i) {
         switch (i) {
         case 0: return 0
         case 1: return s1
-        case 2: return s2
-        case 3: return s3
-        default: return s4
+        default: return s2
         }
     }
 
     function segLenOf(i) {
         switch (i) {
-        case 0: return lenLeftSeg
-        case 1: return lenVRail
-        case 2: return lenBottom
-        case 3: return lenVRail
-        default: return lenRightSeg
+        case 1: return lenBottom
+        default: return lenVRail
         }
     }
 
@@ -360,8 +354,7 @@ Item {
     //
     // 两段三次贝塞尔拼一个 smoothstep：控制点与端点**同高**，于是 u=0、L/2、L
     // 三处的切线都是水平的，涌浪与平直 rail 之间没有折角。
-    // kind: 0 = 厚度朝 +y（顶栏两段底边）  1 = 朝 +x（左 rail）
-    //       2 = 朝 -y（底 rail）           3 = 朝 -x（右 rail）
+    // kind: 1 = 厚度朝 +x（左 rail）  2 = 朝 -y（底 rail）  3 = 朝 -x（右 rail）
     function bumpPath(kind, base) {
         const L = pulseLength
         const h = pulseHeight
@@ -372,7 +365,6 @@ Item {
             const tt = t.toFixed(2)
             const inv = (cross - t).toFixed(2)
             switch (kind) {
-            case 0: return `${uu},${tt}`
             case 1: return `${tt},${uu}`
             case 2: return `${uu},${inv}`
             default: return `${inv},${uu}`
@@ -386,80 +378,106 @@ Item {
         return d
     }
 
-    // 十个涌浪包：五段 × 两个波前。
+    // 六个涌浪包：三条 rail × 两个波前。
     //
-    // 两个波前是"往两边发射"的实现：出生点在面板贴的那条 rail 的中点，一个波前
-    // 往里程增大的方向跑、一个往减小的方向跑。N 贴右 rail 下段、将来 A 贴底 rail
-    // 中间，都靠这个天然分成左右两支——不需要为它们另写逻辑。
+    // 两个波前是"往两边发射"的实现：出生点在面板贴的那条 rail 上、靠面板那一端，
+    // 一个波前往里程增大的方向跑、一个往减小的方向跑。N 贴右 rail 底、将来 A 贴
+    // 底 rail 中间，都靠这个天然分成两支——不需要为它们另写逻辑。
     //
-    // 每段一个包而不是"一个包自己算在哪段"：包的几何朝向随段而变（竖边厚度朝
-    // 内、横边朝上/下），一个 item 换不了朝向，除非每帧重算路径——那又回到造
-    // 垃圾的老路上。分开之后每个包的路径是**静态**的，每帧只动 x/y 和 visible。
+    // 每段一个包而不是"一个包自己算在哪段"：包的几何朝向随段而变（左 rail 朝
+    // +x、底 rail 朝 -y、右 rail 朝 -x），一个 item 换不了朝向，除非每帧重算
+    // 路径——那又回到造垃圾的老路上。分开之后每个包的路径是**静态**的，每帧只
+    // 动 x/y 和 visible。
+    //
+    // 外层每段一个**裁剪框**，边界就是那条 rail 在屏幕上的真实范围。涌浪包
+    // 420px 长，靠 visible 判断只能拦住"中心跑出去"，拦不住包围盒探出去——
+    // 而钟形剖面在包围盒两头还有实打实的墨。常驻起伏的 Strip 一直有 clip。
     Repeater {
-        model: 10
+        model: 3
 
         Item {
-            id: bump
+            id: seg
 
             required property int index
-            readonly property int seg: index % 5
-            readonly property int dir: index < 5 ? 1 : -1
 
-            // 本波前的里程，包的中心落在它上面
-            readonly property real dist: root.origin + dir * root.spread
-            // 换算到本段内的局部里程
-            readonly property real u: dist - root.segStartOf(seg)
-            readonly property real segLen: root.segLenOf(seg)
+            readonly property bool vertical: index !== 1
+            readonly property real cross: root.railThickness + root.pulseHeight
+            readonly property real segLen: root.segLenOf(index)
+            readonly property real segStart: root.segStartOf(index)
 
-            readonly property bool vertical: seg === 1 || seg === 3
-            // 顶栏两段没有 rail 厚度可接，涌浪直接从段的底边长出来
-            readonly property real base: (seg === 0 || seg === 4) ? 0 : root.railThickness
-            readonly property real cross: base + root.pulseHeight
-            readonly property real half: root.pulseLength / 2
+            clip: true
+            visible: root.playing
 
-            // 跨拐角时相邻两段会同时可见——这是对的，波正在转弯，两条边上各露
-            // 半个包。只让一段画的话，波会在角上先消失再冒出来
-            visible: root.playing && dist >= 0 && dist <= root.sEnd
-                && u > -half && u < segLen + half
-
-            width: vertical ? cross : root.pulseLength
-            height: vertical ? root.pulseLength : cross
-
-            // 段 0 / 4 沿 -x 走（从岛的豁口往外），段 3 沿 -y 走（从底往上）,
-            // 见文件头的路径说明。包是对称的，所以只要把包围盒的中心摆对就行
+            // 裁剪框 = 这条 rail 在屏幕上的真实范围
             x: {
-                switch (bump.seg) {
-                case 0: return root.leftSegWidth - root.segCornerR - bump.u - bump.half
-                case 1: return 0
-                case 2: return root.railThickness + bump.u - bump.half
-                case 3: return root.width - bump.cross
-                default: return root.width - root.railThickness - bump.u - bump.half
+                switch (seg.index) {
+                case 0: return 0
+                case 1: return root.railThickness
+                default: return root.width - seg.cross
                 }
             }
+            y: seg.index === 1 ? root.height - seg.cross : root.barHeight
+            width: seg.vertical ? seg.cross : seg.segLen
+            height: seg.vertical ? seg.segLen : seg.cross
 
-            y: {
-                switch (bump.seg) {
-                case 0: return root.barHeight
-                case 1: return root.barHeight + bump.u - bump.half
-                case 2: return root.height - bump.cross
-                case 3: return root.height - root.railThickness - bump.u - bump.half
-                default: return root.barHeight
-                }
-            }
+            Repeater {
+                model: 2
 
-            Shape {
-                anchors.fill: parent
-                preferredRendererType: Shape.CurveRenderer
-                asynchronous: false
-                ShapePath {
-                    strokeWidth: 0
-                    strokeColor: "transparent"
-                    fillColor: root.waveColor
-                    PathSvg {
-                        // 静态：只依赖朝向和 base，两者在本 delegate 里都是常量
-                        path: root.bumpPath(bump.vertical ? (bump.seg === 1 ? 1 : 3)
-                                                          : (bump.seg === 2 ? 2 : 0),
-                                            bump.base)
+                Item {
+                    id: bump
+
+                    required property int index
+                    readonly property int dir: index === 0 ? 1 : -1
+
+                    // 本波前的里程，包的中心落在它上面
+                    readonly property real dist: root.origin + dir * root.spread
+                    // 换算到本段内的局部里程
+                    readonly property real u: dist - seg.segStart
+                    readonly property real half: root.pulseLength / 2
+
+                    // 跨拐角时相邻两段会同时可见——这是对的，波正在转弯，两条边
+                    // 上各露半个包（各自被自己的裁剪框切在拐角处）。只让一段画
+                    // 的话，波会在角上先消失再冒出来
+                    visible: dist >= 0 && dist <= root.sEnd
+                        && u > -half && u < seg.segLen + half
+
+                    // 靠近路径两端（rail 撞上顶栏的那两个拐角）时淡出。不淡的话
+                    // 裁剪框会把满幅的波在拐角切出一条硬边——波是带着全部振幅
+                    // 撞上去的。淡出读成"波拍到边上散掉"。
+                    // 用 opacity 而不是压振幅：振幅进的是静态路径，一动就得重算
+                    opacity: {
+                        const d = Math.min(bump.dist, root.sEnd - bump.dist)
+                        return d >= root.endFadePx
+                            ? 1 : Math.max(0, d / root.endFadePx)
+                    }
+
+                    width: seg.vertical ? seg.cross : root.pulseLength
+                    height: seg.vertical ? root.pulseLength : seg.cross
+
+                    // 坐标相对裁剪框。右 rail 沿 -y 走（从底往上），所以局部
+                    // 坐标要翻过来。包是对称的，只要把包围盒的中心摆对就行
+                    x: seg.index === 1 ? bump.u - bump.half : 0
+                    y: {
+                        switch (seg.index) {
+                        case 0: return bump.u - bump.half
+                        case 1: return 0
+                        default: return seg.segLen - bump.u - bump.half
+                        }
+                    }
+
+                    Shape {
+                        anchors.fill: parent
+                        preferredRendererType: Shape.CurveRenderer
+                        asynchronous: false
+                        ShapePath {
+                            strokeWidth: 0
+                            strokeColor: "transparent"
+                            fillColor: root.waveColor
+                            PathSvg {
+                                // 静态：只依赖朝向，本段里是常量
+                                path: root.bumpPath(seg.index + 1, root.railThickness)
+                            }
+                        }
                     }
                 }
             }
