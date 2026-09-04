@@ -11,6 +11,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
+import "rowsync.js" as RowSync
 
 Singleton {
     id: root
@@ -87,9 +88,27 @@ Singleton {
 
     readonly property bool wifiEnabled: Networking.wifiEnabled
     readonly property bool wifiHardwareEnabled: Networking.wifiHardwareEnabled
-    readonly property bool wifiScanning: _wifiDevice ? _wifiDevice.scannerEnabled : false
+    // 扫描态得自己记：Quickshell 的 wifi 设备只给了 scannerEnabled 一个开关，
+    // 既没有"正在扫描"状态，也没有"扫一次"的方法（实测枚举过它的属性表）。
+    // 以前直接把 scannerEnabled 当扫描态，结果是页面开着它就恒为 true——
+    // "扫描中…"和转圈图标常驻，永远看不出这一轮扫完了没有
+    property bool _scanning: false
+    readonly property bool wifiScanning: _scanning
     readonly property bool hasWifiDevice: !!_wifiDevice
     readonly property string lastError: _lastError
+
+    // 数据版本号（公开面）：NM 的网络/设备对象有不少属性不发通知，服务内部靠
+    // _netRev 自增来触发重算。UI 里需要跟着刷新的绑定 void 一下这个就行
+    // ——_netRev 是内部的，别从外面碰。SSID 修正表落地时也会带着它一起自增，
+    // 所以这一个就覆盖了全部迟到数据
+    readonly property int revision: _netRev
+
+    // 当前连接的 Wi‑Fi 名（已过 SSID 修正）。UI 别自己去摸 _activeWifiNetwork
+    readonly property string activeWifiName: {
+        void _netRev
+        const n = _activeWifiNetwork
+        return n ? displayName(n) : ""
+    }
 
     // Bar 芯片用：不依赖 detailActive / 扫描
     readonly property bool wifiConnected: !!(wifiEnabled && _wifiDevice && _wifiDevice.connected)
@@ -183,6 +202,76 @@ Singleton {
         return ""
     }
 
+    // ---- 当前连接的接口名与 IPv4 ----
+    // NetworkDevice.address 是 MAC（实测），Quickshell.Networking 不给 IP，
+    // 只能自己取。不轮询：仅开页和连接态变化时拉一次（fork 在 qs 这种
+    // 常驻近 1GiB 的进程里不便宜，见 RailPage 的 focusSettleMs 注释）
+    readonly property string activeIface: {
+        void _netRev
+        if (ethernetConnected && _wiredDevice)
+            return String(_wiredDevice.name || "")
+        if (wifiConnected && _wifiDevice)
+            return String(_wifiDevice.name || "")
+        return ""
+    }
+
+    property var _ipMap: ({})
+    property int _ipRev: 0
+
+    readonly property string activeIp: {
+        void _ipRev
+        const k = activeIface
+        return (k && _ipMap[k]) ? _ipMap[k] : ""
+    }
+
+    function refreshIp() {
+        if (!detailActive)
+            return
+        ipProc.running = true
+    }
+
+    Process {
+        id: ipProc
+        command: ["ip", "-j", "-4", "addr", "show"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const map = {}
+                try {
+                    const arr = JSON.parse(text || "[]")
+                    for (let i = 0; i < arr.length; i++) {
+                        const d = arr[i]
+                        const infos = d.addr_info || []
+                        for (let j = 0; j < infos.length; j++) {
+                            if (infos[j] && infos[j].local) {
+                                map[d.ifname] = String(infos[j].local)
+                                break
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // ip 不在或输出异常：IP 行自己会因为空串隐藏，不报错
+                }
+                root._ipMap = map
+                root._ipRev++
+            }
+        }
+    }
+
+    onActiveIfaceChanged: refreshIp()
+
+    // 开 Wi‑Fi 后自动扫一次。不能在按开关那一拍 callLater 里扫：
+    // 置 Networking.wifiEnabled 是异步的，那时 rfkill 还没放开，scanWifi()
+    // 只会撞上自己的守卫、报一句「WiFi 已关闭」的假错就退了。
+    // 等 wifiEnabled 真的变 true 再扫，顺带覆盖了从 nmtui/托盘那边开的情况
+    onWifiEnabledChanged: {
+        if (!detailActive)
+            return
+        if (wifiEnabled)
+            scanWifi()
+        else
+            stopScan()
+    }
+
     // 连通性（NM connectivity check；未启用时多为 Unknown）
     readonly property bool internetAvailable:
         Networking.connectivity === NetworkConnectivity.Full
@@ -248,13 +337,35 @@ Singleton {
 
     // 列表扁平行：已保存 / 附近（当前已连的放摘要卡，列表里排除以免重复）
     // 开销：仅 detailActive 时构数组；条目数 = 扫描结果量级
-    readonly property var wifiFlatRows: {
+    // 信号格数（0–4）：行尾信号条和排序分档都用它
+    function signalBars(network) {
+        const s = network ? (network.signalStrength || 0) : 0
+        if (s > 0.8)
+            return 4
+        if (s > 0.6)
+            return 3
+        if (s > 0.4)
+            return 2
+        if (s > 0.2)
+            return 1
+        return 0
+    }
+
+    // ---- 稳定行模型：让新 SSID 滑出来，而不是硬冒出来 ----
+    //
+    // 旧写法是一个扁平 JS 数组（wifiFlatRows），每次扫描 _netRev++ 就整体重算，
+    // ListView 拿到新数组只能整体重建，add/displaced 过渡压根没机会触发——
+    // 这就是「wifi 的 ssid 列表突然增长」。改成两个 ListModel 增量增删移。
+    //
+    // 排序按信号「格数」分档而不是原始强度：强度一直在抖，按强度直排会让行
+    // 在每次扫描里跳舞。跨档才动，而跨档这一动本身是有信息量的。
+    readonly property var wifiRowSource: {
         void _netRev
         if (!detailActive || !wifiEnabled || !_wifiDevice)
-            return []
-        const items = wifiNetworks
+            return ({ saved: [], nearby: [] })
         const saved = []
         const nearby = []
+        const items = wifiNetworks
         for (let i = 0; i < items.length; i++) {
             const n = items[i]
             if (!n || n.connected)
@@ -264,15 +375,33 @@ Singleton {
             else
                 nearby.push(n)
         }
-        const out = []
-        function pushSection(section, title, list) {
-            out.push({ kind: "header", section: section, title: title, count: list.length })
-            for (let j = 0; j < list.length; j++)
-                out.push({ kind: "network", section: section, network: list[j] })
+        const byBars = (a, b) => {
+            const d = root.signalBars(b) - root.signalBars(a)
+            if (d !== 0)
+                return d
+            return String(a.name || "").localeCompare(String(b.name || ""))
         }
-        pushSection("saved", "已保存", saved)
-        pushSection("nearby", "附近网络", nearby)
-        return out
+        saved.sort(byBars)
+        nearby.sort(byBars)
+        return ({ saved: saved, nearby: nearby })
+    }
+
+    ListModel {
+        id: _savedModel
+        dynamicRoles: true
+    }
+
+    ListModel {
+        id: _nearbyModel
+        dynamicRoles: true
+    }
+
+    readonly property var savedRows: _savedModel
+    readonly property var nearbyRows: _nearbyModel
+
+    onWifiRowSourceChanged: {
+        RowSync.sync(_savedModel, wifiRowSource.saved, "network")
+        RowSync.sync(_nearbyModel, wifiRowSource.nearby, "network")
     }
 
     function displayName(network) {
@@ -285,6 +414,11 @@ Singleton {
         if (fixed)
             return fixed
         return n
+    }
+
+    // 是否已保存过（NM 存着这个网络的连接配置）
+    function isKnown(network) {
+        return !!(network && network.known)
     }
 
     function isSecure(network) {
@@ -317,6 +451,7 @@ Singleton {
         if (wifiEnabled)
             scanWifi()
         _scheduleSsidFix()
+        refreshIp()
     }
 
     function toggleWifi() {
@@ -333,7 +468,9 @@ Singleton {
             _setError("WiFi 已关闭")
             return
         }
-        // 先关再开，强制触发一次扫描刷新
+        // 先关再开，强制触发一次扫描刷新（NM 没给"扫一次"的方法，只有这一招）
+        _scanning = true
+        scanWindow.restart()
         _wifiDevice.scannerEnabled = false
         Qt.callLater(() => {
             if (root._wifiDevice && root.wifiEnabled)
@@ -344,8 +481,17 @@ Singleton {
     }
 
     function stopScan() {
+        _scanning = false
+        scanWindow.stop()
         if (_wifiDevice)
             _wifiDevice.scannerEnabled = false
+    }
+
+    // 扫描态的收尾闹钟：NM 扫一轮大约 3–5 秒，且不会告诉我们什么时候扫完
+    Timer {
+        id: scanWindow
+        interval: 5000
+        onTriggered: root._scanning = false
     }
 
     function _clearConnectOp() {

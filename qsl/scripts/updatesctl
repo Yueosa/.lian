@@ -34,7 +34,7 @@ def humanize_ago(ts: int, now: int) -> str:
     return f"{delta // 86400} 天前"
 
 
-def run_capture(timeout_s: float, cmd: list[str]) -> tuple[int, str]:
+def run_capture(timeout_s: float, cmd: list[str]) -> tuple[int, str, str]:
     try:
         r = subprocess.run(
             cmd,
@@ -43,11 +43,30 @@ def run_capture(timeout_s: float, cmd: list[str]) -> tuple[int, str]:
             timeout=timeout_s,
             check=False,
         )
-        return r.returncode, r.stdout or ""
+        return r.returncode, r.stdout or "", r.stderr or ""
     except FileNotFoundError:
-        return 127, ""
+        return 127, "", "命令不存在"
     except subprocess.TimeoutExpired:
-        return 124, ""
+        return 124, "", "超时"
+
+
+def classify(
+    rc: int, out: str, err: str, empty_codes: tuple[int, ...]
+) -> tuple[bool, list[dict]]:
+    # 「无更新」和「查询失败」共用同一个非零退出码（paru -Qua / pacman -Qu
+    # 都是 1），单看 rc 分不出来。实测：成功时 stderr 是空的，AUR RPC 抽了
+    # 的时候 rc=1、stdout 空、stderr 一行
+    #   错误： error sending request for url (https://aur.archlinux.org/rpc)
+    # 所以拿 stderr 当判据。
+    #
+    # 判错方向是故意偏保守的：误判成「失败」只是显示一条错误条并保留上次的
+    # 包列表（可见，下次成功自动恢复），误判成「成功」会把好数据静默清成 0，
+    # 用户会以为真没更新——后者才是真的坑。
+    if rc == 0:
+        return True, parse_pkg_lines(out)
+    if rc in empty_codes and not err.strip():
+        return True, parse_pkg_lines(out)
+    return False, []
 
 
 def parse_pkg_line(line: str) -> dict | None:
@@ -86,21 +105,22 @@ def which(name: str) -> bool:
 
 def fetch_official() -> tuple[bool, list[dict]]:
     # 返回 (ok, packages)
+    # 一路失败就退到下一路（checkupdates 要联网拉库，也会抽）
     if which("checkupdates"):
-        rc, out = run_capture(30, ["checkupdates"])
         # 0 = 有更新；2 = 无更新（pacman-contrib）
-        if rc in (0, 2):
-            return True, parse_pkg_lines(out)
+        ok, pkgs = classify(*run_capture(30, ["checkupdates"]), (2,))
+        if ok:
+            return True, pkgs
 
     if which("paru"):
-        rc, out = run_capture(30, ["paru", "-Qu", "--repo"])
-        if rc in (0, 1):
-            return True, parse_pkg_lines(out)
+        ok, pkgs = classify(*run_capture(30, ["paru", "-Qu", "--repo"]), (1,))
+        if ok:
+            return True, pkgs
 
     if which("pacman"):
-        rc, out = run_capture(15, ["pacman", "-Qu"])
-        if rc in (0, 1):
-            return True, parse_pkg_lines(out)
+        ok, pkgs = classify(*run_capture(15, ["pacman", "-Qu"]), (1,))
+        if ok:
+            return True, pkgs
 
     return False, []
 
@@ -109,10 +129,8 @@ def fetch_aur() -> tuple[bool, list[dict]]:
     if not which("paru"):
         # 无 paru：AUR 计 0，不算失败
         return True, []
-    rc, out = run_capture(30, ["paru", "-Qua"])
-    if rc in (0, 1):
-        return True, parse_pkg_lines(out)
-    return False, []
+    # 失败要如实上报：上层会保留上次成功的包列表，而不是把 AUR 清成 0
+    return classify(*run_capture(30, ["paru", "-Qua"]), (1,))
 
 
 def parse_log_epoch(line: str) -> int:

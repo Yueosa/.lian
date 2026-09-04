@@ -1,5 +1,10 @@
-AudioPage 1.0 AudioPage.qml
-BluetoothPage 1.0 BluetoothPage.qml
-NetworkPage 1.0 NetworkPage.qml
 Rightbar 1.0 Rightbar.qml
-UpdatesPage 1.0 UpdatesPage.qml
+NetToggleCard 1.0 NetToggleCard.qml
+NetListCard 1.0 NetListCard.qml
+BtToggleCard 1.0 BtToggleCard.qml
+BtListCard 1.0 BtListCard.qml
+AudioOutputCard 1.0 AudioOutputCard.qml
+AudioInputCard 1.0 AudioInputCard.qml
+AudioAppsCard 1.0 AudioAppsCard.qml
+UpdStatusCard 1.0 UpdStatusCard.qml
+UpdListCard 1.0 UpdListCard.qml

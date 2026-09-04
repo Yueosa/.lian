@@ -11,6 +11,11 @@ pragma Singleton
 //   sinkVolume / sinkMuted / sinkName / isHeadphone / hasSink
 //   sourceVolume / sourceMuted / sourceName / hasSource
 //   appLinkGroups          详情页应用 linkGroups（关页 null）
+//   sinks / sources        详情页输出/输入设备（关页空）
+//   sinkRows / sourceRows  同上，增量 ListModel（给 ListView 过渡用）
+//   defaultSink / defaultSource
+//   setDefaultSink(node) / setDefaultSource(node)
+//   deviceLabel / deviceHint / deviceIcon
 //   setSinkVolume / volumeUp / volumeDown / toggleSinkMute
 //   setSourceVolume / toggleSourceMute
 //   setAppVolume(node, v) / toggleAppMute(node)
@@ -21,6 +26,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
+import "rowsync.js" as RowSync
 
 Singleton {
     id: root
@@ -88,6 +94,116 @@ Singleton {
     // 关页返回 null，避免 ListView 空绑空转
     readonly property var appLinkGroups: detailActive ? appTracker.linkGroups : null
 
+    // ---- 输出/输入设备：详情页要「点选切默认」----
+    //
+    // Pipewire.nodes 把输出设备、输入设备、应用流混在一起：isStream 区分
+    // 设备和流，isSink 区分方向。只在详情页枚举并追踪——设备的
+    // description/properties 要 PwObjectTracker 绑上才有值，常驻订阅白花钱
+    readonly property var sinks: detailActive ? _audioDevices(true) : []
+    readonly property var sources: detailActive ? _audioDevices(false) : []
+
+    function _audioDevices(wantSink) {
+        const out = []
+        const items = (Pipewire.nodes && Pipewire.nodes.values) || []
+        for (let i = 0; i < items.length; i++) {
+            const n = items[i]
+            if (!n || n.isStream || !n.audio)
+                continue
+            if (!!n.isSink !== wantSink)
+                continue
+            out.push(n)
+        }
+        return out
+    }
+
+    PwObjectTracker {
+        objects: root.detailActive ? root.sinks.concat(root.sources) : []
+    }
+
+    // 稳定行模型：设备行要能滑进滑出（插耳机、连蓝牙音箱）。
+    // 之前设备列表是 Repeater，而 Repeater 压根没有 add/remove 过渡，
+    // 新设备只能硬冒出来。节点是稳定的 QObject，所以按身份比对。见 rowsync.js
+    ListModel {
+        id: _sinkModel
+        dynamicRoles: true
+    }
+
+    ListModel {
+        id: _sourceModel
+        dynamicRoles: true
+    }
+
+    readonly property var sinkRows: _sinkModel
+    readonly property var sourceRows: _sourceModel
+
+    onSinksChanged: RowSync.sync(_sinkModel, sinks, "node")
+    onSourcesChanged: RowSync.sync(_sourceModel, sources, "node")
+
+    readonly property var defaultSink: Pipewire.defaultAudioSink
+    readonly property var defaultSource: Pipewire.defaultAudioSource
+
+    // 切默认走 preferredDefault*：Pipewire 会把它落到 wireplumber 的
+    // 默认节点设置上，重启也记得
+    function setDefaultSink(node) {
+        if (node)
+            Pipewire.preferredDefaultAudioSink = node
+    }
+
+    function setDefaultSource(node) {
+        if (node)
+            Pipewire.preferredDefaultAudioSource = node
+    }
+
+    function deviceLabel(node) {
+        if (!node)
+            return ""
+        return node.nickname || node.description || node.name || ""
+    }
+
+    // 设备类型提示：从节点属性猜，猜不到就留空（不编造）
+    function deviceHint(node) {
+        if (!node)
+            return ""
+        const props = node.properties || {}
+        const api = String(props["device.api"] || "").toLowerCase()
+        const bus = String(props["device.bus"] || "").toLowerCase()
+        const form = String(props["device.form-factor"] || "").toLowerCase()
+        const nm = String(node.name || "").toLowerCase()
+        if (api === "bluez5" || bus === "bluetooth")
+            return "蓝牙音频"
+        if (form === "headphone" || form === "headset")
+            return "耳机"
+        if (nm.indexOf("hdmi") >= 0)
+            return "显示器"
+        if (form === "speaker")
+            return "扬声器"
+        if (bus === "usb")
+            return "USB"
+        if (bus === "pci")
+            return "内置"
+        return ""
+    }
+
+    function deviceIcon(node) {
+        if (!node)
+            return "speaker"
+        const props = node.properties || {}
+        const icon = String(props["device.icon-name"] || "").toLowerCase()
+        const form = String(props["device.form-factor"] || "").toLowerCase()
+        const api = String(props["device.api"] || "").toLowerCase()
+        const nm = String(node.name || "").toLowerCase()
+        if (!node.isSink)
+            return "mic"
+        if (form === "headphone" || form === "headset"
+                || icon.indexOf("headphone") >= 0 || icon.indexOf("headset") >= 0)
+            return "headphones"
+        if (api === "bluez5")
+            return "bluetooth_audio"
+        if (nm.indexOf("hdmi") >= 0)
+            return "tv"
+        return "speaker"
+    }
+
     function setDetailActive(active) {
         detailActive = !!active
     }
@@ -143,6 +259,25 @@ Singleton {
         if (!node || !node.audio || !node.ready)
             return
         node.audio.muted = !node.audio.muted
+    }
+
+    // 应用流的取值口：linkGroup 是 Pipewire 的分组对象，音频节点藏在 .source 里，
+    // 音量/静音又在 node.audio 下面。UI 只拿着分组和节点、不往里钻，
+    // 和 appDisplayName / appIconSource / setAppVolume 一族一致
+    function appNode(linkGroup) {
+        return linkGroup ? linkGroup.source : null
+    }
+
+    function appReady(node) {
+        return !!(node && node.ready)
+    }
+
+    function appMuted(node) {
+        return !!(node && node.ready && node.audio && node.audio.muted)
+    }
+
+    function appVolume(node) {
+        return (node && node.ready && node.audio) ? node.audio.volume : 0
     }
 
     function appDisplayName(node) {

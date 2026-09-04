@@ -11,7 +11,7 @@ pragma Singleton
 //   detailActive / setDetailActive(bool)
 //   enabled / discovering / hasAdapter / lastError
 //   chipLabel / chipConnected     Bar 轻量摘要（不建列表）
-//   connectedDevices / pairedDevices / scannedDevices / flatRows
+//   connectedDevices / pairedDevices / scannedDevices / pairedRows / nearbyRows
 //   toggle / startScan / stopScan / toggleScan
 //   connectDevice / disconnectDevice / pairDevice / forgetDevice
 //   displayName(device) / openBlueman()
@@ -20,6 +20,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
+import "rowsync.js" as RowSync
 
 Singleton {
     id: root
@@ -32,6 +33,13 @@ Singleton {
     readonly property bool hasAdapter: !!adapter
     readonly property bool enabled: adapter ? adapter.enabled : false
     readonly property bool discovering: adapter ? adapter.discovering : false
+    readonly property string adapterName: adapter ? String(adapter.name || "") : ""
+    readonly property bool discoverable: !!(adapter && adapter.discoverable)
+    readonly property int connectedCount: connectedDevices.length
+
+    // 数据版本号（公开面），同 Network.revision：BlueZ 的设备对象有属性不发通知，
+    // 内部靠 _devRev 自增触发重算，UI 只 void 这个公开面
+    readonly property int revision: _devRev
     readonly property string lastError: _lastError
 
     // 摘要卡（详情页）
@@ -102,6 +110,29 @@ Singleton {
 
     function isDisconnecting(device) {
         return !!(device && device.state === BluetoothDeviceState.Disconnecting)
+    }
+
+    function isConnected(device) {
+        return !!(device && device.connected)
+    }
+
+    // 设备图标：BlueZ 给的 icon 名归类到 Material Symbols。
+    // 和 displayName / statusHint / sectionOf 一族放一起——取值口都在服务层
+    function deviceIcon(device) {
+        if (!device)
+            return "bluetooth"
+        const ic = String(device.icon || "").toLowerCase()
+        if (ic.indexOf("audio") >= 0 || ic.indexOf("headset") >= 0 || ic.indexOf("headphone") >= 0)
+            return "headphones"
+        if (ic.indexOf("input") >= 0 || ic.indexOf("keyboard") >= 0)
+            return "keyboard"
+        if (ic.indexOf("mouse") >= 0)
+            return "mouse"
+        if (ic.indexOf("phone") >= 0)
+            return "smartphone"
+        if (ic.indexOf("computer") >= 0 || ic.indexOf("laptop") >= 0)
+            return "laptop"
+        return "bluetooth"
     }
 
     function isBusy(device) {
@@ -192,23 +223,51 @@ Singleton {
         return allDevices.filter(d => !d.paired)
     }
 
-    // ListView 扁平行：section header + device
-    // kind: "header" | "device"
-    // section: "connected" | "paired" | "scanned"
-    readonly property var flatRows: {
+    // 设备属于哪个分区（行的副标题文案和点击行为都看它）
+    function sectionOf(device) {
+        if (!device)
+            return ""
+        if (device.connected)
+            return "connected"
+        if (device.paired)
+            return "paired"
+        return "scanned"
+    }
+
+    // ---- 稳定行模型：让新扫到的设备滑出来，而不是硬冒出来 ----
+    //
+    // 旧写法是一个扁平 JS 数组（flatRows），每次 _devRev++ 整体重算，
+    // ListView 只能整体重建，add/displaced 过渡播不了。见 rowsync.js。
+    //
+    // 已配对卡把「已连接」并进来（设计如此：连接态体现在行的副标题和行尾
+    // 操作上，不单开一节），已连接的排前面。设备顺序跟适配器给的次序，
+    // 不另外按信号排——Quickshell 的 BluetoothDevice 没有 RSSI
+    readonly property var deviceRowSource: {
         void _devRev
         if (!detailActive || !enabled)
-            return []
-        const out = []
-        function pushSection(section, title, list) {
-            out.push({ kind: "header", section: section, title: title, count: list.length })
-            for (let i = 0; i < list.length; i++)
-                out.push({ kind: "device", section: section, device: list[i] })
-        }
-        pushSection("connected", "已连接", connectedDevices)
-        pushSection("paired", "已配对", pairedDevices)
-        pushSection("scanned", "附近设备", scannedDevices)
-        return out
+            return ({ paired: [], nearby: [] })
+        return ({
+            paired: connectedDevices.concat(pairedDevices),
+            nearby: scannedDevices
+        })
+    }
+
+    ListModel {
+        id: _pairedModel
+        dynamicRoles: true
+    }
+
+    ListModel {
+        id: _nearbyModel
+        dynamicRoles: true
+    }
+
+    readonly property var pairedRows: _pairedModel
+    readonly property var nearbyRows: _nearbyModel
+
+    onDeviceRowSourceChanged: {
+        RowSync.sync(_pairedModel, deviceRowSource.paired, "device")
+        RowSync.sync(_nearbyModel, deviceRowSource.nearby, "device")
     }
 
     function setDetailActive(active) {
@@ -229,13 +288,22 @@ Singleton {
             _setError("未找到蓝牙适配器")
             return
         }
-        const turningOn = !adapter.enabled
-        adapter.enabled = turningOn
-        if (turningOn && detailActive)
-            Qt.callLater(() => root.startScan())
-        else if (!turningOn)
-            stopScan()
+        adapter.enabled = !adapter.enabled
+        // 开机后的自动扫描交给 onEnabledChanged：这里 callLater 太早，
+        // 适配器还没上电
         _devRev++
+    }
+
+    // 开蓝牙后自动扫一次。adapter.enabled = true 是 DBus 异步的，紧接着
+    // 调 startScan() 会撞上它自己的「蓝牙已关闭」守卫，不但没扫还报个假错。
+    // 等 enabled 真的翻过来再扫，顺带覆盖了从 blueman 那边开的情况
+    onEnabledChanged: {
+        if (!detailActive)
+            return
+        if (enabled)
+            startScan()
+        else
+            stopScan()
     }
 
     function startScan() {
@@ -248,10 +316,35 @@ Singleton {
             return
         }
         adapter.discovering = true
+        // 刚上电那几拍 BlueZ 会把 StartDiscovery 顶回来，补几次重试，见下
+        scanRetry.left = 8
+        scanRetry.restart()
         _devRev++
     }
 
+    // 开蓝牙后第一次 StartDiscovery 基本一定失败：BlueZ 的 Powered 属性先翻成
+    // true，但适配器还没准备好，实测被顶回来并打
+    //   quickshell.bluetooth.adapter: Failed to start discovery … "Resource Not Ready"
+    // 所以"等 enabled 翻过来再扫"仍然太早，得重试到它肯接。
+    // 8 次 × 400ms 都没成就放弃，且不报错——首卡和分区标题上都有扫描钮
+    Timer {
+        id: scanRetry
+        interval: 400
+        repeat: true
+        property int left: 0
+        onTriggered: {
+            if (root.discovering || !root.enabled || !root.detailActive || left <= 0) {
+                stop()
+                return
+            }
+            left--
+            if (root.adapter)
+                root.adapter.discovering = true
+        }
+    }
+
     function stopScan() {
+        scanRetry.stop()
         if (adapter)
             adapter.discovering = false
     }
