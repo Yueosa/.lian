@@ -18,7 +18,6 @@ import qs.data.service
 import qs.ui.frame
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
-import qs.ui.island
 import qs.ui.leftbar
 import qs.ui.notif
 import qs.ui.rightbar
@@ -26,10 +25,8 @@ import qs.ui.freewindow.websearch
 import qs.ui.lock
 
 ShellRoot {
-    // 合并框窗：顶栏两段 + 三边 rail + 四撑位窗 + 四凹角耳（见 ui/frame/）
+    // 合并框窗：顶栏两段 + 三边 rail + 灵动岛 + 四撑位窗 + 四凹角耳（见 ui/frame/）
     Frame {}
-
-    IslandShell {}
 
     // App / Clipboard 常驻：IPC 现场 create 或 map layer 会卡一帧再播动画
     AppWindow {

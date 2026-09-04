@@ -1,334 +1,316 @@
-// IslandShell — 灵动岛视觉壳（耳朵 + morph）
+// IslandShell — 灵动岛视觉壳（耳朵 + morph），窗内 item
 // 状态真源：qs.data.state.Island（多屏共享）
+//
+// plan 第 6 轮起不再自带窗口：原先它是一个全屏 PanelWindow，自己管层级、
+// 独占焦点和 mask。现在画在 FrameWindow 里，那三件窗口级职责上交给框窗聚合
+// （框窗只有一个 layer / 一个 keyboardFocus / 一个 mask，得把所有租户的诉求
+// 并起来），本文件通过 wantsOverlay / wantsKeyboard / hitBox 三个只读属性
+// 把诉求报上去。
+//
+// morph 动画不受影响：它一直是 body 的 width/height/radius 上的 Behavior，
+// 从来就是 item 级的，不是靠改窗口 buffer 尺寸做的。
 //
 // 性能：
 //   - 无 gooey、无 DropShadow（阴影源/离屏已去掉）
 //   - Hub / 一级时钟均用 Loader，关态销毁
-//   - 窗高常驻 Screen.height（矮窗 IPC 改 buffer 会卡闪）；关态 mask 收岛
+//   - 关态 hitBox 只圈岛体，不挡桌面
 //   - 一级无左/右键；无 L2 媒体卡
 //
-// 关岛：窗口级 FocusScope 吃 Esc（对齐 Leftbar）；Hub 时全屏 mask
-// + 点空白关闭。仅主屏 Exclusive，避免多屏抢键导致 Esc 落到黑洞。
+// 关岛：FocusScope 吃 Esc；Hub 时全屏 hitBox + 点空白关闭。
+// 仅主屏申请键盘，避免多屏抢键导致 Esc 落到黑洞。
 
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
 import qs.Components
 import qs.data.state
 
-Variants {
-    model: Quickshell.screens
+Item {
+    id: root
 
-    PanelWindow {
-        id: islandWindow
-        required property var modelData
-        screen: modelData
+    // 多屏只让第一块抢键盘，否则 Exclusive 互抢，Esc 无处可去。由框窗传入
+    required property bool isKeyOwner
 
-        // 多屏只让第一块抢键盘，否则 Exclusive 互抢，Esc 无处可去
-        readonly property bool isKeyOwner: {
-            const screens = Quickshell.screens
-            return screens.length > 0 && modelData === screens[0]
+    // ---- 报给 FrameWindow 的三项窗口级诉求 ----
+    // Hub 卸载前保持 Overlay，避免关岛瞬间 Overlay→Top 闪一帧
+    readonly property bool wantsOverlay: Island.showHub || Island.overlayLayer || hubMounted
+    readonly property bool wantsKeyboard: (Island.showHub || hubMounted) && isKeyOwner
+    // Hub 全屏可点关；收起只命中岛体
+    readonly property Item hitBox: hitBoxRegion
+
+    readonly property int earRadius: Size.island.earRadius
+
+    // Hub 视觉保活：showHub=false 后仍挂载至 morph 结束，先淡出再拆
+    property bool hubMounted: Island.showHub
+    Timer {
+        id: hubUnmountTimer
+        interval: 360
+        repeat: false
+        onTriggered: root.hubMounted = false
+    }
+
+    Item {
+        id: hitBoxRegion
+        x: Island.showHub ? 0 : maskContainer.x
+        y: Island.showHub ? 0 : maskContainer.y
+        width: Island.showHub ? root.width : maskContainer.width
+        height: Island.showHub ? root.height : maskContainer.height
+    }
+
+    // 按键作用域
+    // 注意：不能 enabled: showHub，否则一级 toast/悬停全部收不到指针
+    FocusScope {
+        id: keyScope
+        anchors.fill: parent
+        focus: Island.showHub && root.isKeyOwner
+
+        Keys.priority: Keys.BeforeItem
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                Island.closeHub()
+                event.accepted = true
+                return
+            }
+            // Switcher：Enter 在壳层处理，避免子页 Keys/Shortcut 双触
+            if (Island.showHub && Island.hubTabIndex === 4
+                && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                Island.activateSwitcherFocus()
+                event.accepted = true
+                return
+            }
+            // Tab 切页：转发给 Hub（若已加载）
+            if (hubLoader.item) {
+                if (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ControlModifier)) {
+                    hubLoader.item.currentIndex = (hubLoader.item.currentIndex + 1) % 5
+                    event.accepted = true
+                    return
+                }
+                if (event.key === Qt.Key_Backtab) {
+                    hubLoader.item.currentIndex = (hubLoader.item.currentIndex + 4) % 5
+                    event.accepted = true
+                }
+            }
         }
 
-        readonly property int earRadius: Size.island.earRadius
-        // 始终占满屏高：矮窗在 Hub IPC 开关时同步改 buffer 会卡/闪；
-        // 关态靠 mask 只命中岛体，不挡桌面。
-        implicitHeight: Screen.height
-
-        anchors {
-            top: true
-            left: true
-            right: true
-        }
-        margins.top: 0
-        color: "transparent"
-        exclusiveZone: -1
-
-        WlrLayershell.namespace: "qsl-island"
-        // Hub 卸载前保持 Overlay，避免关岛瞬间 Overlay→Top 闪一帧
-        WlrLayershell.layer: (Island.showHub || Island.overlayLayer || hubMounted)
-            ? WlrLayer.Overlay : WlrLayer.Top
-        WlrLayershell.keyboardFocus: ((Island.showHub || hubMounted) && isKeyOwner)
-            ? WlrKeyboardFocus.Exclusive
-            : WlrKeyboardFocus.None
-        WlrLayershell.exclusionMode: ExclusionMode.Ignore
-
-        // Hub 视觉保活：showHub=false 后仍挂载至 morph 结束，先淡出再拆
-        property bool hubMounted: Island.showHub
-        Timer {
-            id: hubUnmountTimer
-            interval: 360
-            repeat: false
-            onTriggered: hubMounted = false
-        }
-
-        // Hub 全屏可点关；收起只命中岛体
-        Item {
-            id: hitBoxRegion
-            x: Island.showHub ? 0 : maskContainer.x
-            y: Island.showHub ? 0 : maskContainer.y
-            width: Island.showHub ? islandWindow.width : maskContainer.width
-            height: Island.showHub ? islandWindow.height : maskContainer.height
-        }
-        mask: Region { item: hitBoxRegion }
-
-        // 窗口级按键（必须在根上，不能埋在 Loader 里）
-        // 注意：不能 enabled: showHub，否则一级 toast/悬停全部收不到指针
-        FocusScope {
-            id: keyScope
+        // Hub 时点岛外空白关闭
+        MouseArea {
             anchors.fill: parent
-            focus: Island.showHub && islandWindow.isKeyOwner
+            enabled: Island.showHub
+            onClicked: Island.closeHub()
+        }
 
-            Keys.priority: Keys.BeforeItem
-            Keys.onPressed: (event) => {
-                if (event.key === Qt.Key_Escape) {
-                    Island.closeHub()
-                    event.accepted = true
-                    return
-                }
-                // Switcher：Enter 在壳层处理，避免子页 Keys/Shortcut 双触
-                if (Island.showHub && Island.hubTabIndex === 4
-                    && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
-                    Island.activateSwitcherFocus()
-                    event.accepted = true
-                    return
-                }
-                // Tab 切页：转发给 Hub（若已加载）
-                if (hubLoader.item) {
-                    if (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ControlModifier)) {
-                        hubLoader.item.currentIndex = (hubLoader.item.currentIndex + 1) % 5
-                        event.accepted = true
-                        return
-                    }
-                    if (event.key === Qt.Key_Backtab) {
-                        hubLoader.item.currentIndex = (hubLoader.item.currentIndex + 4) % 5
-                        event.accepted = true
-                    }
-                }
+        // ---------- 可视岛 ----------
+        Item {
+            id: maskContainer
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: body.width + root.earRadius * 2
+            height: body.height
+            z: 1
+
+            EarCanvas {
+                anchors.right: body.left
+                anchors.top: body.top
+                width: root.earRadius
+                height: root.earRadius
+                fillColor: Color.background
             }
 
-            // Hub 时点岛外空白关闭
-            MouseArea {
-                anchors.fill: parent
-                enabled: Island.showHub
-                onClicked: Island.closeHub()
+            EarCanvas {
+                anchors.left: body.right
+                anchors.top: body.top
+                width: root.earRadius
+                height: root.earRadius
+                mirror: true
+                fillColor: Color.background
             }
 
-            // ---------- 可视岛 ----------
             Item {
-                id: maskContainer
+                id: body
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: body.width + islandWindow.earRadius * 2
-                height: body.height
-                z: 1
+                clip: true
+                z: 100
 
-                EarCanvas {
-                    anchors.right: body.left
-                    anchors.top: body.top
-                    width: islandWindow.earRadius
-                    height: islandWindow.earRadius
-                    fillColor: Color.background
+                readonly property bool hovered: islandMouse.containsMouse
+                readonly property int hoverGrowW: Island.isCollapsedMode && hovered ? 16 : 0
+                readonly property int hoverGrowH: Island.isCollapsedMode && hovered ? 6 : 0
+
+                readonly property int hubFallbackW: {
+                    switch (Island.hubTabIndex) {
+                    case 1: return Size.island.mediaWidth
+                    case 2: return Size.island.wallpaperWidth
+                    case 3: return Size.island.weatherWidth
+                    case 4: return Size.island.switcherWidth
+                    default: return Size.island.overviewWidth
+                    }
+                }
+                readonly property int hubFallbackH: {
+                    // 与 HubContent.implicitHeight 对齐：chromeTop(10)+tab+gap+page+chromeBottom(12)
+                    const chrome = 10 + 12
+                    const bar = Size.island.hubTabBarHeight + Size.island.hubContentGap
+                    switch (Island.hubTabIndex) {
+                    case 1: return chrome + bar + Size.island.mediaHeight
+                    case 2: return chrome + bar + Size.island.wallpaperHeight
+                    case 3: return chrome + bar + Size.island.weatherHeight
+                    case 4: return chrome + bar + Size.island.switcherHeight
+                    default: return chrome + bar + Size.island.overviewHeight
+                    }
                 }
 
-                EarCanvas {
-                    anchors.left: body.right
-                    anchors.top: body.top
-                    width: islandWindow.earRadius
-                    height: islandWindow.earRadius
-                    mirror: true
-                    fillColor: Color.background
+                readonly property int targetW: Island.isHubMode
+                    ? (hubLoader.item ? hubLoader.item.implicitWidth : hubFallbackW)
+                    : Island.isLyricsMode
+                        ? (lyricsLoader.item
+                            ? Math.round(lyricsLoader.item.implicitWidth)
+                            : Size.island.lyricsW)
+                    : Island.isNotifMode ? Size.island.notifW
+                    : (Size.island.collapsedW + hoverGrowW)
+
+                readonly property int targetH: Island.isHubMode
+                    ? (hubLoader.item ? hubLoader.item.implicitHeight : hubFallbackH)
+                    : Island.isLyricsMode ? Size.island.lyricsH
+                    : Island.isNotifMode ? Island.notifH
+                    : (Size.island.collapsedH + hoverGrowH)
+
+                readonly property int targetR: (Island.isHubMode || Island.isLyricsMode || Island.isNotifMode)
+                    ? Math.round(24 * Size.islandScale)
+                    : (Island.isCollapsedMode && hovered
+                        ? Math.round(18 * Size.islandScale)
+                        : Math.round(16 * Size.islandScale))
+
+                width: targetW
+                height: targetH
+                property real radius: targetR
+
+                Behavior on width {
+                    Anim { type: Anim.SpatialFast }
+                }
+                Behavior on height {
+                    Anim { type: Anim.SpatialFast }
+                }
+                Behavior on radius {
+                    Anim { type: Anim.SpatialFast }
                 }
 
-                Item {
-                    id: body
-                    anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    clip: true
-                    z: 100
-
-                    readonly property bool hovered: islandMouse.containsMouse
-                    readonly property int hoverGrowW: Island.isCollapsedMode && hovered ? 16 : 0
-                    readonly property int hoverGrowH: Island.isCollapsedMode && hovered ? 6 : 0
-
-                    readonly property int hubFallbackW: {
-                        switch (Island.hubTabIndex) {
-                        case 1: return Size.island.mediaWidth
-                        case 2: return Size.island.wallpaperWidth
-                        case 3: return Size.island.weatherWidth
-                        case 4: return Size.island.switcherWidth
-                        default: return Size.island.overviewWidth
-                        }
-                    }
-                    readonly property int hubFallbackH: {
-                        // 与 HubContent.implicitHeight 对齐：chromeTop(10)+tab+gap+page+chromeBottom(12)
-                        const chrome = 10 + 12
-                        const bar = Size.island.hubTabBarHeight + Size.island.hubContentGap
-                        switch (Island.hubTabIndex) {
-                        case 1: return chrome + bar + Size.island.mediaHeight
-                        case 2: return chrome + bar + Size.island.wallpaperHeight
-                        case 3: return chrome + bar + Size.island.weatherHeight
-                        case 4: return chrome + bar + Size.island.switcherHeight
-                        default: return chrome + bar + Size.island.overviewHeight
-                        }
-                    }
-
-                    readonly property int targetW: Island.isHubMode
-                        ? (hubLoader.item ? hubLoader.item.implicitWidth : hubFallbackW)
-                        : Island.isLyricsMode
-                            ? (lyricsLoader.item
-                                ? Math.round(lyricsLoader.item.implicitWidth)
-                                : Size.island.lyricsW)
-                        : Island.isNotifMode ? Size.island.notifW
-                        : (Size.island.collapsedW + hoverGrowW)
-
-                    readonly property int targetH: Island.isHubMode
-                        ? (hubLoader.item ? hubLoader.item.implicitHeight : hubFallbackH)
-                        : Island.isLyricsMode ? Size.island.lyricsH
-                        : Island.isNotifMode ? Island.notifH
-                        : (Size.island.collapsedH + hoverGrowH)
-
-                    readonly property int targetR: (Island.isHubMode || Island.isLyricsMode || Island.isNotifMode)
-                        ? Math.round(24 * Size.islandScale)
-                        : (Island.isCollapsedMode && hovered
-                            ? Math.round(18 * Size.islandScale)
-                            : Math.round(16 * Size.islandScale))
-
-                    width: targetW
-                    height: targetH
-                    property real radius: targetR
-
-                    Behavior on width {
-                        Anim { type: Anim.SpatialFast }
-                    }
-                    Behavior on height {
-                        Anim { type: Anim.SpatialFast }
-                    }
-                    Behavior on radius {
-                        Anim { type: Anim.SpatialFast }
-                    }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: body.radius
+                    color: Color.background
 
                     Rectangle {
-                        anchors.fill: parent
-                        radius: body.radius
-                        color: Color.background
-
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: parent.radius
-                            color: parent.color
-                        }
-                    }
-
-                    // 挡住外层「点空白关闭」，避免点 Hub 内容也关
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: Island.showHub
-                        onClicked: {}
-                    }
-
-                    MouseArea {
-                        id: islandMouse
-                        anchors.fill: parent
-                        enabled: !Island.isNotifMode
-                        hoverEnabled: true
-                        acceptedButtons: Qt.NoButton
-                        onContainsMouseChanged: {
-                            if (Island.showLyrics || Island.autoLyrics)
-                                Island.lyricsHoverRestore = containsMouse
-                        }
-                    }
-
-                    Loader {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        active: Island.isCollapsedMode
-                        visible: Island.isCollapsedMode
-                        sourceComponent: ClockContent {}
-                    }
-
-                    // 通知堆叠：≤3 + 进度条（对齐旧 DI）
-                    // active 不跟 showHub 绑死——Hub 打开时若卸掉 Loader，Timer 停转，
-                    // 关岛后旧 toast 会「复活」并卡住倒计时。
-                    Loader {
-                        id: notifLoader
                         anchors.top: parent.top
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.margins: 10
-                        height: Math.max(0, Island.notifH - 20)
-                        z: 300
-                        active: Island.notifCount > 0
-                        visible: Island.isNotifMode
-                        sourceComponent: NotifToastContent {}
+                        height: parent.radius
+                        color: parent.color
                     }
+                }
 
-                    // 点通知关：挂在 Loader 之上，不依赖 delegate 内 MouseArea
-                    MouseArea {
-                        anchors.fill: notifLoader
-                        enabled: Island.isNotifMode
-                        z: 301
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: (mouse) => {
-                            const spacing = Math.round(10 * Size.islandScale)
-                            const pitch = 60 + spacing
-                            let idx = Math.floor(mouse.y / pitch)
-                            if (idx < 0)
-                                idx = 0
-                            if (idx >= Island.notifCount)
-                                idx = Island.notifCount - 1
-                            Island.clearNotifIndex(idx)
-                        }
+                // 挡住外层「点空白关闭」，避免点 Hub 内容也关
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: Island.showHub
+                    onClicked: {}
+                }
+
+                MouseArea {
+                    id: islandMouse
+                    anchors.fill: parent
+                    enabled: !Island.isNotifMode
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
+                    onContainsMouseChanged: {
+                        if (Island.showLyrics || Island.autoLyrics)
+                            Island.lyricsHoverRestore = containsMouse
                     }
+                }
 
-                    // 歌词条：按 implicitWidth 定宽（勿 fill，否则 toast 会压扁导致切回后歪/溢出）
-                    // 悬停/toast 时仍保持加载（只藏 UI），避免 Cava 反复启停
-                    Loader {
-                        id: lyricsLoader
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: item ? Math.round(item.implicitWidth) : Size.island.lyricsW
-                        height: Size.island.lyricsH
-                        z: 1
-                        active: (Island.showLyrics || Island.autoLyrics) && !Island.showHub
-                        visible: Island.isLyricsMode
-                        // 隐藏时禁用，防止挡 toast 点击
-                        enabled: Island.isLyricsMode
-                        sourceComponent: LyricsContent {}
+                Loader {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    active: Island.isCollapsedMode
+                    visible: Island.isCollapsedMode
+                    sourceComponent: ClockContent {}
+                }
+
+                // 通知堆叠：≤3 + 进度条（对齐旧 DI）
+                // active 不跟 showHub 绑死——Hub 打开时若卸掉 Loader，Timer 停转，
+                // 关岛后旧 toast 会「复活」并卡住倒计时。
+                Loader {
+                    id: notifLoader
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 10
+                    height: Math.max(0, Island.notifH - 20)
+                    z: 300
+                    active: Island.notifCount > 0
+                    visible: Island.isNotifMode
+                    sourceComponent: NotifToastContent {}
+                }
+
+                // 点通知关：挂在 Loader 之上，不依赖 delegate 内 MouseArea
+                MouseArea {
+                    anchors.fill: notifLoader
+                    enabled: Island.isNotifMode
+                    z: 301
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: (mouse) => {
+                        const spacing = Math.round(10 * Size.islandScale)
+                        const pitch = 60 + spacing
+                        let idx = Math.floor(mouse.y / pitch)
+                        if (idx < 0)
+                            idx = 0
+                        if (idx >= Island.notifCount)
+                            idx = Island.notifCount - 1
+                        Island.clearNotifIndex(idx)
                     }
+                }
 
-                    Loader {
-                        id: hubLoader
-                        anchors.centerIn: parent
-                        active: hubMounted
-                        visible: hubMounted
-                        opacity: Island.showHub ? 1 : 0
-                        Behavior on opacity {
-                            Anim { type: Anim.EffectsFast }
-                        }
-                        sourceComponent: HubContent {
-                            onCloseRequested: Island.closeHub()
-                        }
+                // 歌词条：按 implicitWidth 定宽（勿 fill，否则 toast 会压扁导致切回后歪/溢出）
+                // 悬停/toast 时仍保持加载（只藏 UI），避免 Cava 反复启停
+                Loader {
+                    id: lyricsLoader
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: item ? Math.round(item.implicitWidth) : Size.island.lyricsW
+                    height: Size.island.lyricsH
+                    z: 1
+                    active: (Island.showLyrics || Island.autoLyrics) && !Island.showHub
+                    visible: Island.isLyricsMode
+                    // 隐藏时禁用，防止挡 toast 点击
+                    enabled: Island.isLyricsMode
+                    sourceComponent: LyricsContent {}
+                }
+
+                Loader {
+                    id: hubLoader
+                    anchors.centerIn: parent
+                    active: root.hubMounted
+                    visible: root.hubMounted
+                    opacity: Island.showHub ? 1 : 0
+                    Behavior on opacity {
+                        Anim { type: Anim.EffectsFast }
+                    }
+                    sourceComponent: HubContent {
+                        onCloseRequested: Island.closeHub()
                     }
                 }
             }
         }
+    }
 
-        Connections {
-            target: Island
-            function onShowHubChanged() {
-                if (Island.showHub) {
-                    hubUnmountTimer.stop()
-                    hubMounted = true
-                    if (islandWindow.isKeyOwner)
-                        Qt.callLater(() => keyScope.forceActiveFocus())
-                } else {
-                    Island.lyricsHoverRestore = false
-                    // 保持 Hub 节点做淡出，morph 后再拆
-                    hubUnmountTimer.restart()
-                }
+    Connections {
+        target: Island
+        function onShowHubChanged() {
+            if (Island.showHub) {
+                hubUnmountTimer.stop()
+                root.hubMounted = true
+                if (root.isKeyOwner)
+                    Qt.callLater(() => keyScope.forceActiveFocus())
+            } else {
+                Island.lyricsHoverRestore = false
+                // 保持 Hub 节点做淡出，morph 后再拆
+                hubUnmountTimer.restart()
             }
         }
     }
