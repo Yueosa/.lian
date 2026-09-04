@@ -125,9 +125,10 @@ PanelWindow {
         id: rails
         anchors.fill: parent
         topOffset: root.barHeight
-        // 水波起伏期间让出厚度：波谷就是 waveMin，rail 不缩下去的话波谷被它
-        // 填平，起伏只剩向外鼓的半边（RailRipple 里有完整说明）
-        thickness: ripple.active ? ripple.waveMin : root.railThickness
+        // 恒定 8px，水波期间也不动。曾经让它缩到波谷厚度以便"从 8px 里拿出
+        // 4px 做起伏"，结果框的接缝（14×14 的凹角耳、段的 r=22 下外角）全是
+        // 按 8px 配的，一缩就露馅 —— 详见 RailRipple.waveMin 的注释
+        thickness: root.railThickness
     }
 
     // 岛压在顶栏之上：Hub 展开时它那层「点空白关闭」的面要能盖住段，
@@ -148,11 +149,23 @@ PanelWindow {
         sourceComponent: FramePanels {}
     }
 
-    // 开面板时沿整个框跑一趟的鼓包波。压在最上面：它的鼓包要盖过应用窗口边缘
+    // 框边水波。z 压在 rail 之上、**面板与岛之下**。
+    //
+    // 这里放错过一次，值得记下来：原先给的是 z: 30（最上层），理由写的是"鼓包要
+    // 盖过应用窗口边缘"。那个理由本身是糊涂的——应用窗口在**另一个 Wayland
+    // surface** 上、整个在框窗之下，窗内 z 序跟它没有半点关系；z 只决定水波和
+    // 我们**自己**这几个租户谁盖谁。
+    // 而算一下就知道压在最上面是错的：面板卡片的边缘离屏幕边正好 8px（左边
+    // 卡片左沿 x=8，右边卡片右沿 width-8），水波常驻波峰 16px、行波峰值 20px，
+    // 都从屏幕边量起——于是波每次经过，都是一条 12~20px 宽的背景色横扫过卡片
+    // 边缘。用户报的"水波蔓延到 RightBar 的时候卡卡的"就是这个，不是掉帧
+    // （左右两侧实测都是稳定 16ms、零掉帧）。
+    // 压到面板之下之后语义也对了：rail 是框，面板是坐在框上的东西，波从面板
+    // 背后过去
     RailRipple {
         id: ripple
         anchors.fill: parent
-        z: 30
+        z: 1
         railThickness: root.railThickness
         barHeight: root.barHeight
         leftSegWidth: bar.leftSeg.width

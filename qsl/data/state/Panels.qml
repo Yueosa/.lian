@@ -59,6 +59,16 @@ Singleton {
         ? stack[stack.length - 1] : ""
     readonly property bool keyboardHeld: stack.length > 0
 
+    // 贴边 rail 上是否有面板开着（left/right/bottom 三组），**不含 center**。
+    // 专给框边水波用：岛（center）是独立体系，不参与任何 rail 动画。
+    // 这不是洁癖，是实测——水波开着要多吃约 8 个百分点 CPU，而 n=basic 下渲染
+    // 同步在主线程，这笔开销正好压在岛的 morph/果冻回弹上，岛就又开始抖了。
+    // 所以别图省事写 keyboardHeld：那条把岛也算进来
+    readonly property bool railHeld: {
+        const a = actives
+        return !!(a["left"] || a["right"] || a["bottom"])
+    }
+
     signal evicted(string id)
 
     // 面板从关到开时报一声，edge = 它贴的那条边。框窗的 rail 水波拿它当出生点。

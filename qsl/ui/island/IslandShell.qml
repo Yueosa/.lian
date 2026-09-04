@@ -315,6 +315,12 @@ Item {
                 Loader {
                     id: hubLoader
                     anchors.centerIn: parent
+                    // 异步孵化：同步建整个 HubContent 实测堵主线程 34~60ms，就是
+                    // 展开那一下的硬顿。异步是分片建（每帧切一小块），所以没有
+                    // 单次长阻塞。morph 不用等它——targetW/H 会先用 hubFallback
+                    // （照 HubContent.implicitHeight 的公式算的，尺寸对得上），
+                    // item 建好后自然接管，中途只是一次平滑改目标
+                    asynchronous: true
                     active: root.hubMounted
                     visible: root.hubMounted
                     opacity: Island.showHub ? 1 : 0

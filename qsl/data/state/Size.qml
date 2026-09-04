@@ -131,11 +131,14 @@ Singleton {
         // rail 水波：波要绕整个框走一趟（1080p 下约 3700px），跟别的档不同量级，
         // 所以单开一个。定时长而不是定速度——出生点不同则路程不同，但一趟总是
         // 这么久，观感才一致。
-        // 900 太快了：一秒不到就跑完全程，眼睛跟不上，只看到框闪了一下
-        readonly property int durRipple: Math.round(2600 * Config.anim.scale)
+        // 两次都嫌快：900 是"一秒不到就闪完"，2600 还是跟不住波在各条边之间
+        // 怎么交接。7000 是"能用眼睛跟着走一圈"的量级——这个效果的意义就是让人
+        // 看见框在动，跑得快等于白做
+        readonly property int durRipple: Math.round(7000 * Config.anim.scale)
         // 常驻起伏走完一个波长的时间。这是整套动画里最慢的一档，故意的：
-        // 它要读成"水面在起伏"，任何一点急躁都会读成"框在抽"
-        readonly property int durWaveDrift: Math.round(3200 * Config.anim.scale)
+        // 它要读成"水面在起伏"，任何一点急躁都会读成"框在抽"。
+        // 9000ms / 220px 波长 ≈ 24px/s，慢到得盯着才看出在动，这是对的
+        readonly property int durWaveDrift: Math.round(9000 * Config.anim.scale)
     }
 
     // ============================================================

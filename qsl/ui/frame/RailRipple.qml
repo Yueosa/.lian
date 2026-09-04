@@ -67,15 +67,22 @@ Item {
     required property real leftSegWidth
     required property real rightSegWidth
 
-    // 有面板开着才动。岛的 Hub 也算——它一样进 Panels 的栈
-    readonly property bool active: Panels.keyboardHeld
+    // 贴边 rail 上有面板开着才动。**岛不算**——它是独立体系，理由见 Panels.railHeld
+    readonly property bool active: Panels.railHeld
 
     // ---- 起伏的厚度预算 ----
-    // waveMin 实心底 + 2*waveAmp 的起伏带。4 + 8 → 厚度在 4~12 之间摆，均值 8，
-    // 正好是静止时的 rail 厚度。波峰会盖住应用窗口边缘 4px，这是设计选择：
-    // 开着 rail 面板的时候本来就不在看窗口。
-    // rail 自己要同步缩到 waveMin，否则它那 8px 会把波谷填掉（见 FrameWindow）
-    property int waveMin: 4
+    // waveMin 实心底 + 2*waveAmp 的起伏带 = 厚度在 8~16 之间摆。
+    //
+    // 这里踩过一次，记下来：一开始按"从 8px 里拿出 4px"做成 4~12（均值仍是 8），
+    // 结果是 rail 自己得缩到 4px 才能露出波谷，而框的**接缝全是按 8px 配的**——
+    // 四颗凹角耳是 14×14、顶栏两段的下外角是 r=22，都照 8px 的 rail 对齐。
+    // rail 一缩，这些圆角当场露馅，起伏那条带也从"rail 在呼吸"变成"rail 旁边
+    // 多了一条会动的东西"（用户原话："彻底和 railbar 分离开…圆角也直接露馅了"）。
+    //
+    // 所以改成只朝内鼓、绝不变薄：实心底就是 rail 那 8px 本身，接缝一个都不动，
+    // 波峰盖住应用窗口边缘 8px——用户明确说没关系（开 railbar 时本来不看窗口），
+    // Hyprland 那边还留着外边距
+    property int waveMin: 8
     property int waveAmp: 4
     property int waveLength: 220
     // 起伏走完一个波长的时间。这是"慢"的那个旋钮
@@ -94,12 +101,14 @@ Item {
     readonly property int maxThick: waveMin + 2 * waveAmp
 
     // ---- 行波 ----
-    property int pulseExtra: 4
-    property int pulseEveryMs: 6000
-    property int sliceCount: 12
-    property int pulseLength: 260
-    readonly property real pulseMax: maxThick + pulseExtra
-    readonly property real sliceLen: pulseLength / sliceCount
+    // 涌浪高出 rail 外沿多少。要明显高过起伏的波峰（maxThick=16）才能从起伏里
+    // 认出来，所以给 12 → rail 上总厚 20
+    property int pulseHeight: 12
+    // 涌浪沿路径的长度。长一点读成"一记缓慢的涌浪"，短了读成"一个疙瘩在跑"
+    property int pulseLength: 420
+    // 两发之间的间隔。必须大于 durRipple（一趟的时长），否则前一发还没跑完
+    // 后一发就出闸，两个包叠在一起
+    property int pulseEveryMs: 9000
 
     // ---- 行波路径的累计里程 ----
     // 段的圆角半径，和 Bar.qml 的 bottomRightRadius/bottomLeftRadius 对齐
@@ -299,74 +308,149 @@ Item {
         target: root
         property: "spread"
         duration: Size.anim.durRipple
-        // 减速：出闸快，靠近远端收势，像真的在扩散
-        easing.type: Easing.Bezier
-        easing.bezierCurve: Size.anim.curveDecel
+        // 匀速。曾经用减速曲线（"出闸快、远端收势，像真的在扩散"），但一趟拉长
+        // 到 7s 之后，减速段慢得像卡住了；而且要看清波在各条边之间怎么交接，
+        // 速度恒定才跟得住
+        easing.type: Easing.Linear
         onFinished: root.playing = false
     }
 
-    // 里程 → 落在第几段
-    function segOf(d) {
-        if (d < s1) return 0
-        if (d < s2) return 1
-        if (d < s3) return 2
-        if (d < s4) return 3
-        return 4
+    // ---- 五段的里程起点 / 长度 ----
+    // 写成 switch 函数而不是数组常量：绑定里每帧 new 一个数组就是每帧造垃圾，
+    // 而 GC 停顿是这个壳最大的卡顿源（实测一次回收停 ~160ms）
+    function segStartOf(i) {
+        switch (i) {
+        case 0: return 0
+        case 1: return s1
+        case 2: return s2
+        case 3: return s3
+        default: return s4
+        }
     }
 
-    Repeater {
-        model: root.sliceCount * 2
+    function segLenOf(i) {
+        switch (i) {
+        case 0: return lenLeftSeg
+        case 1: return lenVRail
+        case 2: return lenBottom
+        case 3: return lenVRail
+        default: return lenRightSeg
+        }
+    }
 
-        Rectangle {
-            id: slice
+    // 涌浪的钟形剖面，同起伏一样烘成静态路径。
+    //
+    // 这里换掉过一版切片法（把波包切 12 片薄矩形、每片厚度按 sin 取值）。那版在
+    // 峰值只有 3px 时没问题——12 档档间差 0.25px 是亚像素。但峰值提到 12px 之后
+    // 档间差变成 4px，配 35px 宽的片子，就是**一排肉眼可见的矩形台阶**。
+    // 教训：切片法的档距是"峰值/片数"，改峰值就必须同步改片数，这种耦合不如
+    // 直接画曲线。
+    //
+    // 两段三次贝塞尔拼一个 smoothstep：控制点与端点**同高**，于是 u=0、L/2、L
+    // 三处的切线都是水平的，涌浪与平直 rail 之间没有折角。
+    // kind: 0 = 厚度朝 +y（顶栏两段底边）  1 = 朝 +x（左 rail）
+    //       2 = 朝 -y（底 rail）           3 = 朝 -x（右 rail）
+    function bumpPath(kind, base) {
+        const L = pulseLength
+        const h = pulseHeight
+        const cross = base + h
+        // (沿程 u, 厚度 t) → "x,y"。厚度一律从框的**外沿**量起
+        const P = (u, t) => {
+            const uu = u.toFixed(2)
+            const tt = t.toFixed(2)
+            const inv = (cross - t).toFixed(2)
+            switch (kind) {
+            case 0: return `${uu},${tt}`
+            case 1: return `${tt},${uu}`
+            case 2: return `${uu},${inv}`
+            default: return `${inv},${uu}`
+            }
+        }
+        const q = L * 0.25
+        let d = `M ${P(0, base)} `
+        d += `C ${P(q, base)} ${P(q, base + h)} ${P(L / 2, base + h)} `
+        d += `C ${P(L - q, base + h)} ${P(L - q, base)} ${P(L, base)} `
+        d += `L ${P(L, 0)} L ${P(0, 0)} Z`
+        return d
+    }
+
+    // 十个涌浪包：五段 × 两个波前。
+    //
+    // 两个波前是"往两边发射"的实现：出生点在面板贴的那条 rail 的中点，一个波前
+    // 往里程增大的方向跑、一个往减小的方向跑。N 贴右 rail 下段、将来 A 贴底 rail
+    // 中间，都靠这个天然分成左右两支——不需要为它们另写逻辑。
+    //
+    // 每段一个包而不是"一个包自己算在哪段"：包的几何朝向随段而变（竖边厚度朝
+    // 内、横边朝上/下），一个 item 换不了朝向，除非每帧重算路径——那又回到造
+    // 垃圾的老路上。分开之后每个包的路径是**静态**的，每帧只动 x/y 和 visible。
+    Repeater {
+        model: 10
+
+        Item {
+            id: bump
 
             required property int index
+            readonly property int seg: index % 5
+            readonly property int dir: index < 5 ? 1 : -1
 
-            // 前半批往里程增大的方向跑，后半批反向
-            readonly property int dir: index < root.sliceCount ? 1 : -1
-            readonly property int i: index % root.sliceCount
-            // 本片在波包里的位置，波包中心对齐波前
-            readonly property real offset: (i + 0.5 - root.sliceCount / 2) * root.sliceLen
-            readonly property real dist: root.origin + dir * (root.spread + offset)
-            // 厚度剖面：sin 的一个拱，两端趋零，中间最厚。
-            // 从框的外沿量起（不是从 rail 内沿），所以它是"叠上去"的：波包两头
-            // 薄到被起伏盖住看不见，只有中间那一段冒出起伏的波峰，读成一记涌浪
-            readonly property real thick: root.pulseMax
-                * Math.sin(Math.PI * (slice.i + 0.5) / root.sliceCount)
-            readonly property int seg: root.segOf(slice.dist)
-            readonly property real half: root.sliceLen / 2
+            // 本波前的里程，包的中心落在它上面
+            readonly property real dist: root.origin + dir * root.spread
+            // 换算到本段内的局部里程
+            readonly property real u: dist - root.segStartOf(seg)
+            readonly property real segLen: root.segLenOf(seg)
 
-            visible: root.playing && slice.dist >= 0 && slice.dist <= root.sEnd
-            color: root.waveColor
-            antialiasing: true
+            readonly property bool vertical: seg === 1 || seg === 3
+            // 顶栏两段没有 rail 厚度可接，涌浪直接从段的底边长出来
+            readonly property real base: (seg === 0 || seg === 4) ? 0 : root.railThickness
+            readonly property real cross: base + root.pulseHeight
+            readonly property real half: root.pulseLength / 2
 
-            // 竖 rail 上鼓包朝内（+x / -x）；横边上朝下 / 朝上
+            // 跨拐角时相邻两段会同时可见——这是对的，波正在转弯，两条边上各露
+            // 半个包。只让一段画的话，波会在角上先消失再冒出来
+            visible: root.playing && dist >= 0 && dist <= root.sEnd
+                && u > -half && u < segLen + half
+
+            width: vertical ? cross : root.pulseLength
+            height: vertical ? root.pulseLength : cross
+
+            // 段 0 / 4 沿 -x 走（从岛的豁口往外），段 3 沿 -y 走（从底往上）,
+            // 见文件头的路径说明。包是对称的，所以只要把包围盒的中心摆对就行
             x: {
-                switch (slice.seg) {
-                case 0: return root.leftSegWidth - root.segCornerR - slice.dist - slice.half
+                switch (bump.seg) {
+                case 0: return root.leftSegWidth - root.segCornerR - bump.u - bump.half
                 case 1: return 0
-                case 2: return root.railThickness + (slice.dist - root.s2) - slice.half
-                case 3: return root.width - slice.thick
-                // 右段是由内向外走：路径从右 rail 顶端 (width-railThickness, barHeight)
-                // 接过来，所以 x 递减
-                default: return root.width - root.railThickness
-                    - (slice.dist - root.s4) - slice.half
+                case 2: return root.railThickness + bump.u - bump.half
+                case 3: return root.width - bump.cross
+                default: return root.width - root.railThickness - bump.u - bump.half
                 }
             }
 
             y: {
-                switch (slice.seg) {
+                switch (bump.seg) {
                 case 0: return root.barHeight
-                case 1: return root.barHeight + (slice.dist - root.s1) - slice.half
-                case 2: return root.height - slice.thick
-                case 3: return root.height - root.railThickness
-                    - (slice.dist - root.s3) - slice.half
+                case 1: return root.barHeight + bump.u - bump.half
+                case 2: return root.height - bump.cross
+                case 3: return root.height - root.railThickness - bump.u - bump.half
                 default: return root.barHeight
                 }
             }
 
-            width: (slice.seg === 1 || slice.seg === 3) ? slice.thick : root.sliceLen
-            height: (slice.seg === 1 || slice.seg === 3) ? root.sliceLen : slice.thick
+            Shape {
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+                asynchronous: false
+                ShapePath {
+                    strokeWidth: 0
+                    strokeColor: "transparent"
+                    fillColor: root.waveColor
+                    PathSvg {
+                        // 静态：只依赖朝向和 base，两者在本 delegate 里都是常量
+                        path: root.bumpPath(bump.vertical ? (bump.seg === 1 ? 1 : 3)
+                                                          : (bump.seg === 2 ? 2 : 0),
+                                            bump.base)
+                    }
+                }
+            }
         }
     }
 }
