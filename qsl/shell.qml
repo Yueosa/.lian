@@ -15,7 +15,7 @@ import Quickshell.Io
 import QtQuick
 import qs.data.state
 import qs.data.service
-import qs.ui.bar
+import qs.ui.frame
 import qs.ui.freewindow.app
 import qs.ui.freewindow.clipboard
 import qs.ui.island
@@ -26,7 +26,8 @@ import qs.ui.freewindow.websearch
 import qs.ui.lock
 
 ShellRoot {
-    Bar {}
+    // 合并框窗：顶栏两段 + 三边 rail + 四撑位窗 + 四凹角耳（见 ui/frame/）
+    Frame {}
 
     IslandShell {}
 
