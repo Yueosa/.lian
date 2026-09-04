@@ -182,13 +182,12 @@ Item {
     function openPage(p) {
         if (p !== undefined && p !== null && String(p).length > 0)
             page = String(p)
-        const wasClosed = !open
         // 不再 Island.captureFocus()：框窗用 HyprlandFocusGrab，不抢应用焦点
-        // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels
-        Panels.claim(root.shellNamespace, root.panelGroup)
-        // 只在真的从关到开时起水波：IPC 指定页重复开同一个面板不该再放一遍
-        if (wasClosed)
-            Panels.opened(root.shellNamespace, root.edge, root.valign)
+        // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels。
+        // edge/valign 一起交上去：贴边三组会被登记成框边水波的波源，水波按登记表
+        // 自己决定什么时候放波（原先是发一条 opened 信号让框窗去 trigger，
+        // 那条信号已经删掉——绑定能表达的事不需要信号）
+        Panels.claim(root.shellNamespace, root.panelGroup, root.edge, root.valign)
         open = true
         // 每次开窗都主动夺焦：内容里的输入框（密码框/标签框）一旦
         // forceActiveFocus 过，光靠 focus: root.open 绑定夺不回来

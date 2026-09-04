@@ -25,6 +25,10 @@ Item {
         + header.implicitHeight + Size.spacing.sm
         + listArea.implicitHeight
 
+    // RailPage 的容器占位协议：false 时整卡不占位（同 TodoDoneCard / AudioInputCard）。
+    // 没有应用在播放时这张卡该收回去，而不是留一句「没有应用在播放」占着一格
+    readonly property bool hasContent: appList.count > 0
+
     // 首次填充不播行动画：那一拍容器自己的派生动画正在跑。一次性，触发完自己停
     property bool rowAnim: false
     Timer {
@@ -59,7 +63,8 @@ Item {
         anchors.rightMargin: Size.spacing.lg
         anchors.bottomMargin: Size.spacing.lg
 
-        // 列表自适应内容：留空态文案的位置，上限后滚动
+        // 列表自适应内容，上限后滚动。48 的下限只在收回那一段有意义——
+        // RailContainer 会冻结此刻的高度，别让它冻成 0
         implicitHeight: Math.max(48, Math.min(420, appList.contentHeight))
 
         ListView {
@@ -87,15 +92,8 @@ Item {
                 Anim { properties: "x,y"; type: Anim.SpatialFast }
             }
 
-            Text {
-                anchors.centerIn: parent
-                visible: appList.count === 0
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                text: "没有应用在播放"
-                color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
-            }
+            // 空态文案删掉了：卡自己会收回去（见上面的 hasContent），文案没有观众。
+            // 留着的话只会在收回那 200ms 里闪一下
 
             delegate: QslRow {
                 id: row

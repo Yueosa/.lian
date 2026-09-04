@@ -37,7 +37,9 @@ pragma Singleton
 // RailPage 的 derivGate。）
 // ============================================================
 // 对外接口：
-//   claim(id, group)   我要开了：压栈，登记，再把同组原来那个挤掉
+//   claim(id, group, edge, valign)
+//                      我要开了：压栈，登记，再把同组原来那个挤掉。
+//                      贴边三组还会登记成水波源（见 railSources）
 //   release(id)        我关了（只清自己那条，晚到的 release 不误伤）
 //   activeIn(group)    该组当前开着的面板 id（无则空串）
 //   keyboardOwner      当前该响应 Esc/Tab 的面板 id（栈顶，无则空串）
@@ -60,26 +62,34 @@ Singleton {
         ? stack[stack.length - 1] : ""
     readonly property bool keyboardHeld: stack.length > 0
 
-    // 贴边 rail 上是否有面板开着（left/right/bottom 三组），**不含 center**。
-    // 专给框边水波用：岛（center）是独立体系，不参与任何 rail 动画。
-    // 这不是洁癖，是实测——水波开着要多吃约 8 个百分点 CPU，而 n=basic 下渲染
-    // 同步在主线程，这笔开销正好压在岛的 morph/果冻回弹上，岛就又开始抖了。
-    // 所以别图省事写 keyboardHeld：那条把岛也算进来
+    // ============================================================
+    // 水波源登记表
+    // ============================================================
+    // { 组名: { edge, valign } }，只登记贴边三组（left/right/bottom），**不含
+    // center**——岛是独立体系，不参与任何 rail 动画。这不是洁癖，是实测：水波
+    // 开着要多吃约 8 个百分点 CPU，而 n=basic 下渲染同步在主线程，这笔开销正好
+    // 压在岛的 morph/果冻回弹上，岛就又开始抖了。
+    //
+    // 按**组**存而不是按面板 id 存，是因为一个组同时只可能有一个面板（这个文件
+    // 上半部分就是干这件事的），而一个组正好对应一条 rail。于是水波那边可以摆
+    // 三个固定的发射器（左/右/底），各自看自己这一格是不是空——**不需要**跟着
+    // 面板增删重建，在飞的波不会因为另一条 rail 开了面板而重启。
+    //
+    // 放在这里而不是让面板直接找水波：面板是框窗的租户，互相不该知道对方存在，
+    // 而这张表本来就是「框窗的状态」。
+    //
+    // valign 一起存：水波要从面板**自己那一端**生，不是那条 rail 的中点。
+    // N 贴底、V 贴顶，同一条右 rail 上的两个面板，出生点差着一整条边
+    property var railSources: ({})
+
     readonly property bool railHeld: {
-        const a = actives
-        return !!(a["left"] || a["right"] || a["bottom"])
+        const s = railSources
+        return !!(s["left"] || s["right"] || s["bottom"])
     }
 
     signal evicted(string id)
 
-    // 面板从关到开时报一声，edge = 它贴的那条边。框窗的 rail 水波拿它当出生点。
-    // 放在这里而不是让面板直接找水波：面板是框窗的租户，互相不该知道对方存在，
-    // 而这张表本来就是「框窗的状态」
-    // valign 也带上：水波要从面板**自己那一端**生，不是那条 rail 的中点。
-    // N 贴底、V 贴顶，同一条右 rail 上的两个面板，出生点差着一整条边
-    signal opened(string id, string edge, string valign)
-
-    function claim(id, group) {
+    function claim(id, group, edge, valign) {
         const me = String(id || "")
         if (!me)
             return
@@ -90,6 +100,14 @@ Singleton {
         // 没给组的面板不参与互斥（迁移中的窗口、独立小窗）
         if (!g)
             return
+        // 贴边三组的面板同时是水波的波源。整体替换而不是原地改键——var 属性
+        // 原地改不发通知。同组换面板（右组 V→N）时 edge/valign 跟着换，水波
+        // 那边的 origin 绑定一变就自己重新放一发，不需要额外的信号
+        if (g === "left" || g === "right" || g === "bottom") {
+            const src = Object.assign({}, railSources)
+            src[g] = { "edge": String(edge || ""), "valign": String(valign || "top") }
+            railSources = src
+        }
         const prev = actives[g] || ""
         if (prev === me)
             return
@@ -115,15 +133,23 @@ Singleton {
             return
         stack = stack.filter(x => x !== me)
         const next = Object.assign({}, actives)
+        const src = Object.assign({}, railSources)
         let changed = false
+        let srcChanged = false
         for (const g in next) {
             if (next[g] === me) {
                 delete next[g]
                 changed = true
+                if (src[g] !== undefined) {
+                    delete src[g]
+                    srcChanged = true
+                }
             }
         }
         if (changed)
             actives = next
+        if (srcChanged)
+            railSources = src
     }
 
     function activeIn(group) {

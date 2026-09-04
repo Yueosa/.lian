@@ -179,14 +179,9 @@ PanelWindow {
         barHeight: root.barHeight
         leftSegWidth: bar.leftSeg.width
         rightSegWidth: bar.rightSeg.width
-    }
-
-    Connections {
-        target: Panels
-        function onOpened(id, edge, valign) {
-            // 只有主屏那份放波：面板本来就只在主屏，别的屏不该跟着抖
-            if (root.isKeyOwner)
-                ripple.trigger(edge, valign)
-        }
+        // 只有主屏那份放波：面板本来就只在主屏，别的屏不该跟着抖。
+        // 以前这条写在一个 onOpened 的 Connections 里（水波靠信号触发），现在
+        // 水波直接读 Panels.railSources 自己决定，所以门禁也得挪进它的输入
+        keyOwner: root.isKeyOwner
     }
 }

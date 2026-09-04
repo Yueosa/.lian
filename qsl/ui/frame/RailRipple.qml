@@ -89,8 +89,11 @@ Item {
     required property real leftSegWidth
     required property real rightSegWidth
 
+    // 只有主屏那份画波（面板只在主屏）
+    required property bool keyOwner
+
     // 贴边 rail 上有面板开着才动。**岛不算**——它是独立体系，理由见 Panels.railHeld
-    readonly property bool active: Panels.railHeld
+    readonly property bool active: Panels.railHeld && keyOwner
 
     // ---- 起伏的厚度预算 ----
     // waveMin 实心底 + 2*waveAmp 的起伏带 = 厚度在 8~16 之间摆。
@@ -209,16 +212,22 @@ Item {
     readonly property real sEnd: s4 + lenRightSeg
 
     // ============================================================
-    // 周期行波的发射
+    // 周期行波的发射：一条 rail 一个发射器
     // ============================================================
-    // 出生点的里程
-    property real origin: 0
-    // 波前离出生点的距离，0 → 跑完全程
-    property real spread: 0
-    property bool playing: false
-    // 上一次开面板贴的边，周期发射时沿用
-    property string lastEdge: "left"
-    property string lastValign: "top"
+    // 三条贴边 rail 各摆一个发射器（左/右/底），各自看 Panels.railSources 里
+    // 自己那一格。左组的 C 和右组的 V 本来就不互斥、能同时开着，所以波源本来
+    // 就该是多个——原先只有一个 origin，第二个面板开了只能把第一个的波顶掉。
+    //
+    // 为什么是**固定三个**、而不是跟着 railSources 的条目数增删：一个组同时
+    // 只可能有一个面板（那正是 Panels 上半部分在做的事），而一个组正好对应
+    // 一条 rail。固定三个的好处是发射器**永不重建**——跟着数组增删的话，开
+    // 第二个面板会把第一个的发射器连带重建，它在飞的那一发波当场消失。
+    //
+    // 波相遇：两个鼓包重叠时是**并集**（同色不透明，谁高谁盖住），不是算术
+    // 求和。求和要每帧重算路径形状，而这个文件的整个设计前提是「每帧只动变换、
+    // 一行 JS 都不跑」（理由见文件头）。并集读起来也是两道波峰并成一道，而且
+    // 总厚度还是封顶在 20px——求和会叠到 32px，那已经吃掉应用窗口一大条了。
+    //
     // 出生点离面板那一端的拐角多远，按那条 rail 长度的比例。
     // 约束是**出生点离路径两端要大于涌浪的半长**（210px），否则包在出生那一刻
     // 就跨在端点上、被裁剪框切掉一半。顶栏并进来之后路径的两端在**岛的豁口**，
@@ -247,41 +256,79 @@ Item {
         return valign === "bottom" ? s2 - inset : s1 + inset
     }
 
-    function trigger(edge, valign) {
-        if (edge !== undefined && String(edge).length > 0)
-            lastEdge = String(edge)
-        if (valign !== undefined && String(valign).length > 0)
-            lastValign = String(valign)
-        // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
-        origin = originFor(lastEdge, lastValign)
-        const reach = Math.max(origin, sEnd - origin) + pulseLength
-        spreadAnim.stop()
-        spread = 0
-        playing = true
-        spreadAnim.to = reach
-        spreadAnim.restart()
-        pulseTimer.restart()
-    }
+    // 三个发射器。非可视，只存"这条 rail 的波跑到哪了"
+    Repeater {
+        id: emitters
+        model: ["left", "right", "bottom"]
 
-    // 面板全关了就别再发；开着的时候每 pulseEveryMs 来一发
-    Timer {
-        id: pulseTimer
-        interval: root.pulseEveryMs
-        repeat: true
-        running: root.active
-        onTriggered: root.trigger("")
-    }
+        Item {
+            id: emitter
 
-    NumberAnimation {
-        id: spreadAnim
-        target: root
-        property: "spread"
-        duration: Size.anim.durRipple
-        // 匀速。曾经用减速曲线（"出闸快、远端收势，像真的在扩散"），但一趟拉长
-        // 到 7s 之后，减速段慢得像卡住了；而且要看清波在各条边之间怎么交接，
-        // 速度恒定才跟得住
-        easing.type: Easing.Linear
-        onFinished: root.playing = false
+            required property string modelData
+            // 本组当前开着的面板贴在哪条边、哪一头；没开则为 undefined
+            readonly property var src: Panels.railSources[emitter.modelData]
+            readonly property bool armed: root.keyOwner && !!emitter.src
+            readonly property real origin: emitter.armed
+                ? root.originFor(emitter.src.edge, emitter.src.valign) : 0
+
+            // 波前离出生点的距离，0 → 跑完全程
+            property real spread: 0
+            property bool playing: false
+
+            // 放波的触发条件只认**波源本身**，不认几何。
+            //
+            // 这里踩过一次：本来写的是 onArmedChanged + onOriginChanged，结果开
+            // C 时连放两发——armed 先置真（那一拍 origin 还是 0），几何算完
+            // origin 才跳到 434。两发挨在同一毫秒里，看不出来，但同一个绑定还有
+            // 个真隐患：origin 依赖顶栏两段的宽度，而段宽跟着内容变，于是**多
+            // 一个托盘图标就会把在飞的波重启**。
+            //
+            // 改成认一个字符串签名：开/关面板、同组换面板（右组 V→N，valign 从
+            // top 变 bottom）都会让它变；几何漂移不会。在飞的波则跟着几何平移，
+            // 这是对的——框变形了，水槽也就变形了
+            readonly property string srcKey: emitter.armed
+                ? (emitter.src.edge + "/" + emitter.src.valign) : ""
+            // 面板关了立刻停：波留在半路上不动更难看
+            onSrcKeyChanged: emitter.srcKey === "" ? emitter.stop() : emitter.fire()
+
+            function fire() {
+                // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
+                const reach = Math.max(emitter.origin, root.sEnd - emitter.origin)
+                    + root.pulseLength
+                spreadAnim.stop()
+                emitter.spread = 0
+                emitter.playing = true
+                spreadAnim.to = reach
+                spreadAnim.restart()
+                pulseTimer.restart()
+            }
+
+            function stop() {
+                spreadAnim.stop()
+                emitter.playing = false
+            }
+
+            // 面板关了就别再发；开着的时候每 pulseEveryMs 来一发
+            Timer {
+                id: pulseTimer
+                interval: root.pulseEveryMs
+                repeat: true
+                running: emitter.armed
+                onTriggered: emitter.fire()
+            }
+
+            NumberAnimation {
+                id: spreadAnim
+                target: emitter
+                property: "spread"
+                duration: Size.anim.durRipple
+                // 匀速。曾经用减速曲线（"出闸快、远端收势，像真的在扩散"），但一趟
+                // 拉长到 7s 之后，减速段慢得像卡住了；而且要看清波在各条边之间怎么
+                // 交接，速度恒定才跟得住
+                easing.type: Easing.Linear
+                onFinished: emitter.playing = false
+            }
+        }
     }
 
     // ============================================================
@@ -404,7 +451,10 @@ Item {
             }
 
             clip: true
-            visible: root.ampNow > 0.01 || root.playing
+            // 起伏的幅度大于零就等于「有面板开着」，而行波只在有面板开着时存在
+            // （发射器 disarm 会立刻停波），所以这一个条件就够，不用再聚合六个
+            // 发射器的 playing
+            visible: root.ampNow > 0.01
 
             // 裁剪框 = 这条边在屏幕上的真实范围
             x: {
@@ -497,26 +547,35 @@ Item {
                 }
             }
 
-            // ---- 周期行波：两个波前 ----
+            // ---- 周期行波：三个发射器 × 两个波前 ----
             // 出生点在面板贴的那条 rail 上、靠面板那一端，一个波前往里程增大的
             // 方向跑、一个往减小的方向跑。N 贴右 rail 底、将来 A 贴底 rail 中间，
-            // 都靠这个天然分成两支——不需要为它们另写逻辑
+            // 都靠这个天然分成两支——不需要为它们另写逻辑。
+            //
+            // 六个里通常只有两个在画（一条 rail 开着面板），其余 visible 为假，
+            // 一个像素都不画。两条 rail 同时开着时两列波各跑各的，重叠处取并集
             Repeater {
-                model: 2
+                model: 6
 
                 Item {
                     id: bump
 
                     required property int index
-                    readonly property int dir: index === 0 ? 1 : -1
+                    // 偶数号往里程增大的方向跑，奇数号往减小的方向
+                    readonly property int dir: (bump.index % 2 === 0) ? 1 : -1
+                    // 绑 emitters.count 而不是直接 itemAt：itemAt 不是响应式的，
+                    // 而 Repeater 建完子项那一刻只有 count 会发通知
+                    readonly property var emitter: emitters.count > Math.floor(bump.index / 2)
+                        ? emitters.itemAt(Math.floor(bump.index / 2)) : null
                     readonly property real len: root.pulseLength
 
                     // 本波前的里程，包的中心落在它上面
-                    readonly property real dist: root.origin + dir * root.spread
+                    readonly property real dist: bump.emitter
+                        ? bump.emitter.origin + bump.dir * bump.emitter.spread : -1
                     readonly property real u: dist - seg.segStart
                     readonly property real half: bump.len / 2
 
-                    visible: root.playing
+                    visible: !!bump.emitter && bump.emitter.playing
                         && dist >= 0 && dist <= root.sEnd
                         && u > -half && u < seg.segLen + half
 
