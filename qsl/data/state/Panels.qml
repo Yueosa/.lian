@@ -61,6 +61,11 @@ Singleton {
 
     signal evicted(string id)
 
+    // 面板从关到开时报一声，edge = 它贴的那条边。框窗的 rail 水波拿它当出生点。
+    // 放在这里而不是让面板直接找水波：面板是框窗的租户，互相不该知道对方存在，
+    // 而这张表本来就是「框窗的状态」
+    signal opened(string id, string edge)
+
     function claim(id, group) {
         const me = String(id || "")
         if (!me)

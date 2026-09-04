@@ -27,6 +27,7 @@ pragma Singleton
 //   anim.durFast ~ durSlow       spatial 时长档（位移/尺寸）
 //   anim.durFxFast ~ durFxSlow   effects 时长档（透明度/颜色）
 //   anim.durTheme                主题换色专用慢档
+//   anim.durRipple               rail 水波绕框一趟
 // ============================================================
 
 import QtQuick
@@ -126,6 +127,10 @@ Singleton {
         readonly property int durFx:     Math.round(200 * Config.anim.scale)  // effects 默认
         readonly property int durFxSlow: Math.round(300 * Config.anim.scale)  // effects 慢速
         readonly property int durTheme:  Math.round(600 * Config.anim.scale)  // 主题换色：放慢，留出感受过程的时间
+        // rail 水波：波要绕整个框走一趟（1080p 下约 3700px），跟别的档不同量级，
+        // 所以单开一个。定时长而不是定速度——出生点不同则路程不同，但一趟总是
+        // 这么久，观感才一致
+        readonly property int durRipple: Math.round(900 * Config.anim.scale)
     }
 
     // ============================================================

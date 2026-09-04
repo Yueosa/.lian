@@ -117,4 +117,24 @@ PanelWindow {
         active: root.isKeyOwner
         sourceComponent: FramePanels {}
     }
+
+    // 开面板时沿整个框跑一趟的鼓包波。压在最上面：它的鼓包要盖过应用窗口边缘
+    RailRipple {
+        id: ripple
+        anchors.fill: parent
+        z: 30
+        railThickness: root.railThickness
+        barHeight: root.barHeight
+        leftSegWidth: bar.leftSeg.width
+        rightSegWidth: bar.rightSeg.width
+    }
+
+    Connections {
+        target: Panels
+        function onOpened(id, edge) {
+            // 只有主屏那份放波：面板本来就只在主屏，别的屏不该跟着抖
+            if (root.isKeyOwner)
+                ripple.trigger(edge)
+        }
+    }
 }

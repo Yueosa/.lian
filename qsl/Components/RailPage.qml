@@ -177,12 +177,16 @@ Item {
     function openPage(p) {
         if (p !== undefined && p !== null && String(p).length > 0)
             page = String(p)
-        if (!open)
+        const wasClosed = !open
+        if (wasClosed)
             Island.captureFocus()
         // 必须抢在 claim 之前问：claim 会把自己压进栈，之后 keyboardHeld 必然为真
         skipFocusSettle = Panels.keyboardHeld
         // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels
         Panels.claim(root.shellNamespace, root.panelGroup)
+        // 只在真的从关到开时起水波：IPC 指定页重复开同一个面板不该再放一遍
+        if (wasClosed)
+            Panels.opened(root.shellNamespace, root.edge)
         open = true
         // 每次开窗都主动夺焦：内容里的输入框（密码框/标签框）一旦
         // forceActiveFocus 过，光靠 focus: root.open 绑定夺不回来
@@ -197,7 +201,12 @@ Item {
             return
         open = false
         Panels.release(root.shellNamespace)
-        Island.restoreFocus()
+        // 栈空了才把 Hyprland 焦点还给应用。C 和 V 能同时开，关掉一个时另一个
+        // 还握着键盘，这时候还焦点是错的；而且 restoreFocus 要 spawn 一个
+        // hyprctl，正好砸在退场动画上——合并前没有「还有谁开着」这个信息，
+        // 所以只能每次都还
+        if (!Panels.keyboardHeld)
+            Island.restoreFocus()
     }
 
     Connections {
