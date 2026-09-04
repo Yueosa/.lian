@@ -9,6 +9,7 @@
 // 四颗框角凹角耳不在这里——它们要压在应用窗口之下，见 Ears.qml。
 
 import QtQuick
+import qs.Components
 import qs.data.state
 
 Item {
@@ -16,7 +17,14 @@ Item {
 
     // 顶栏高度：竖 rail 从这里起
     required property int topOffset
+
+    // 静止时是 8。有面板开着时框窗会把它压到水波的波谷厚度（见 RailRipple）：
+    // rail 自己那 8px 不让开的话，波谷就被它填平，起伏只剩"向外鼓"的半边。
+    // 加 Behavior 是因为这个值会在开合面板时换档，不该啪一下跳
     required property int thickness
+    Behavior on thickness {
+        Anim { type: Anim.Spatial }
+    }
 
     // 给 FrameWindow 算 mask 用
     readonly property Item leftRail: left

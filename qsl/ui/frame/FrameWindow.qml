@@ -125,7 +125,9 @@ PanelWindow {
         id: rails
         anchors.fill: parent
         topOffset: root.barHeight
-        thickness: root.railThickness
+        // 水波起伏期间让出厚度：波谷就是 waveMin，rail 不缩下去的话波谷被它
+        // 填平，起伏只剩向外鼓的半边（RailRipple 里有完整说明）
+        thickness: ripple.active ? ripple.waveMin : root.railThickness
     }
 
     // 岛压在顶栏之上：Hub 展开时它那层「点空白关闭」的面要能盖住段，
