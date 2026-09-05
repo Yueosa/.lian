@@ -1,8 +1,11 @@
 // Workspaces — 左上角工作区指示器
-// 非活动：灰点 / 有窗短胶囊；活动：缺口甜甜圈慢转
-// 切入时缺口张开 + 约 300ms 快转一整圈，再缓回日常转速
+// 一个胶囊讲完四态，只变宽度和颜色：空工作区 8px 暗圆点，有窗亮一档，
+// 悬停拉长到 20，活动的那个上主题色
 //
-// 性能：最多 1 个活动项 ~30fps 轻量 stroke arc；无齿轮、无辉光层
+// 性能：全静态图元，没有常驻动画。活动态原本是一张一直在转的 Canvas 甜甜圈，
+// 光它一个就值 10.6 个百分点的 CPU（空闲 11.80% → 0.28%）——因为只要场景里
+// 有动画没停，Qt Quick 的渲染循环就不休眠，整条 bar 按 vsync 陪着重绘。
+// 详见 plan-notes「常驻动画」一节。
 
 import QtQuick
 import QtQuick.Layouts
@@ -67,7 +70,7 @@ Item {
 
                 visible: belongsToScreen
                 implicitWidth: !belongsToScreen ? 0 : (active || isHovered ? 20 : 8)
-                implicitHeight: !belongsToScreen ? 0 : (active ? 20 : 8)
+                implicitHeight: !belongsToScreen ? 0 : 8
 
                 Behavior on implicitWidth {
                     Anim {}
@@ -76,151 +79,20 @@ Item {
                     Anim {}
                 }
 
+                // 一个矩形讲完四个状态，靠宽度和颜色区分——活动态原本是另起炉灶的
+                // 一张 Canvas 甜甜圈，形状、渲染路径、视觉语言都和其余三态对不上
                 Rectangle {
                     anchors.centerIn: parent
                     width: parent.implicitWidth
                     height: 8
                     radius: height / 2
-                    visible: !delegateRoot.active
-                    color: delegateRoot.hasWindows
-                        ? Color.text
-                        : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceContainerHighest)
+                    color: delegateRoot.active
+                        ? Color.primary
+                        : (delegateRoot.hasWindows
+                            ? Color.text
+                            : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceContainerHighest))
                     Behavior on color {
                         CAnim {}
-                    }
-                }
-
-                Item {
-                    id: donut
-                    anchors.centerIn: parent
-                    width: 20
-                    height: 20
-                    visible: delegateRoot.active
-
-                    property real spinAngle: 0
-                    property real gapDeg: 70
-                    property bool flipping: false
-                    // 日常稍快；切换时另做 +360° 快转一圈
-                    readonly property real idleSpeed: 78
-                    readonly property real idleGap: 70
-                    readonly property real burstGap: 168
-                    property real spinDegPerSec: idleSpeed
-
-                    Component.onCompleted: {
-                        ring.requestPaint()
-                        if (visible)
-                            playBurst()
-                    }
-
-                    onVisibleChanged: {
-                        if (visible)
-                            playBurst()
-                        else {
-                            settleAnim.stop()
-                            flipAnim.stop()
-                            flipping = false
-                            spinDegPerSec = idleSpeed
-                            gapDeg = idleGap
-                        }
-                    }
-
-                    function playBurst() {
-                        settleAnim.stop()
-                        flipAnim.stop()
-                        gapDeg = burstGap
-                        // 从当前角快转一整圈（与 idle tick 互斥，避免抢 spinAngle）
-                        const from = ((spinAngle % 360) + 360) % 360
-                        spinAngle = from
-                        flipping = true
-                        flipAnim.from = from
-                        flipAnim.to = from + 360
-                        flipAnim.start()
-                        settleAnim.start()
-                        ring.requestPaint()
-                    }
-
-                    NumberAnimation {
-                        id: flipAnim
-                        target: donut
-                        property: "spinAngle"
-                        duration: 300
-                        easing.type: Easing.OutCubic
-                        onStopped: {
-                            donut.flipping = false
-                            donut.spinAngle = ((donut.spinAngle % 360) + 360) % 360
-                            donut.spinDegPerSec = donut.idleSpeed
-                        }
-                    }
-
-                    ParallelAnimation {
-                        id: settleAnim
-                        NumberAnimation {
-                            target: donut
-                            property: "gapDeg"
-                            to: donut.idleGap
-                            duration: 900
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    // 快转一圈期间停 tick，避免和 flipAnim 抢角度
-                    Timer {
-                        id: spinTick
-                        interval: 33
-                        repeat: true
-                        running: donut.visible && !donut.flipping
-                        onTriggered: {
-                            const step = donut.spinDegPerSec * 0.033
-                            if (step < 0.05)
-                                return
-                            donut.spinAngle = (donut.spinAngle + step) % 360
-                            ring.requestPaint()
-                        }
-                    }
-
-                    Canvas {
-                        id: ring
-                        anchors.fill: parent
-                        antialiasing: true
-
-                        // flipAnim 驱动 spinAngle 时也要重绘
-                        Connections {
-                            target: donut
-                            function onSpinAngleChanged() { ring.requestPaint() }
-                            function onGapDegChanged() { ring.requestPaint() }
-                        }
-
-                        onPaint: {
-                            const ctx = getContext("2d")
-                            const w = width
-                            const h = height
-                            ctx.clearRect(0, 0, w, h)
-                            if (!delegateRoot.active)
-                                return
-
-                            const cx = w / 2
-                            const cy = h / 2
-                            const r = 7.6
-                            const lw = 2.6
-                            const gap = Math.max(24, donut.gapDeg) * Math.PI / 180
-                            const sweep = Math.PI * 2 - gap
-                            const start = donut.spinAngle * Math.PI / 180
-                            const pr = Color.primary.r
-                            const pg = Color.primary.g
-                            const pb = Color.primary.b
-
-                            ctx.beginPath()
-                            ctx.arc(cx, cy, 3.4, 0, Math.PI * 2)
-                            ctx.fillStyle = Qt.rgba(pr, pg, pb, 1.0)
-                            ctx.fill()
-
-                            ctx.beginPath()
-                            ctx.lineWidth = lw
-                            ctx.lineCap = "round"
-                            ctx.strokeStyle = Qt.rgba(pr, pg, pb, 1.0)
-                            ctx.arc(cx, cy, r, start, start + sweep, false)
-                            ctx.stroke()
-                        }
                     }
                 }
 
