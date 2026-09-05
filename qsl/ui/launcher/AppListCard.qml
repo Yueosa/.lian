@@ -14,7 +14,7 @@ import QtQuick.Layouts
 import Quickshell
 import qs.Components
 import qs.data.state
-import qs.data.launcher
+import qs.data.service
 
 Item {
     id: root

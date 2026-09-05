@@ -18,7 +18,6 @@ import QtQuick
 import qs.Components
 import qs.data.service
 import qs.data.state
-import qs.data.tiles
 
 RailPage {
     id: root

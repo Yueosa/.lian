@@ -14,7 +14,7 @@ import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import qs.Components
-import qs.data.clipboard
+import qs.data.service
 import qs.data.state
 
 Item {
