@@ -111,7 +111,6 @@ Item {
     property int slotGapAbove: 0
     // 槽位比内容早开多久 = 「脱离」那一拍的起点
     property int slotStaggerMs: 0
-    readonly property int slotFullH: innerH + slotGapAbove
     property real slotProgress: 0
 
     // 开：等错峰到点再张（三拍的第二拍）。收：跟内容一起缩回去——上面的容器
@@ -160,6 +159,11 @@ Item {
     readonly property int _weldR: root.weldLeft
         ? Math.round(root.radius * root.detached) : root.radius
 
+    // 右沿焊在右 rail 上（底边贴右段的页，X）：上面那段的镜像
+    property bool weldRight: false
+    readonly property int _weldRR: root.weldRight
+        ? Math.round(root.radius * root.detached) : root.radius
+
     // 槽位尺寸恒为自然尺寸，绝不跟 progress 变（底边堆叠除外，见上面 slotGrows）。
     // QQuickBasePositioner 把 width==0 或 height==0 的子项当「不可见」直接跳过，
     // 所以槽位一收到 0，Column 立刻把下面的容器全部上移打包——而它们自己的
@@ -173,22 +177,26 @@ Item {
     // 动画可能还拿着带过冲的开场曲线起跑，1→0 的过冲就是负数。
     // progress 那条没这个毛病是因为它由 exitDelay 定时器隔了一拍才赋值
     implicitHeight: root.slotGrows
-        ? Math.max(0, Math.round(root.slotFullH * root.slotProgress))
-        : innerH
+        ? Math.max(0, Math.round((root.displayH + root.slotGapAbove) * root.slotProgress))
+        : root.displayH
 
-    // 内容长高/变矮要滑，不要跳：扫到新 SSID、来了新更新包、发现新蓝牙设备时，
-    // 卡片的 implicitHeight 会直接跳一截（列表卡是 contentHeight 算出来的），
-    // 槽位跟着瞬变，Column 里下面的容器也一起瞬移。
-    // 只在完全派生之后才动画——派生/收回期间槽位必须严格跟 progress 走，
-    // 不然两套动画会打架。此时卡片本体已是新高度，由裁切框长出来揭开它。
+    // 内容长高/变矮要滑，不要跳。
     //
-    // 曲线可由页面换（默认 spatial 带过冲，是全 shell 的尺寸手感）：高度**高频
-    // 重定目标**的页要换成不过冲的一档。A 搜索时每敲一个键列表就换一次高度，
-    // 过冲会让它长过头再缩回来——多出来那 20 来 px 的行冒出来又被裁掉，
-    // 用户读成「应用回弹得太猛」
+    // 以前 Behavior 挂在 implicitHeight 上：Column 的槽位是在动，但底边卡片
+    // 的可见壳是 clipFrame，高度写的是 innerH * progress——内容一变壳当场跳
+    // 到新高度。用户说的「6 格瞬间变 1 格」就是这层，不是曲线没挂上。
+    //
+    // 所以真正插值的是 displayH（内容目标高度的缓动副本）。槽位、裁切框、
+    // 完全打开后的内容视口都读它，三层同一个钟。派生/收回期间 Behavior
+    // 关掉，displayH 跟 innerH 钉死，揭示还是 progress 的事。
+    //
+    // 曲线可由页面换（默认 spatial 带过冲）：高度**高频重定目标**的页要换成
+    // 不过冲的一档。A 搜索每敲一个键列表就换一次高度，过冲会让它长过头再
+    // 缩回来——多出来那 20 来 px 的行冒出来又被裁掉，读成「应用回弹得太猛」
     property int elasticType: Anim.SpatialFast
+    property int displayH: innerH
 
-    Behavior on implicitHeight {
+    Behavior on displayH {
         enabled: root.wantOpen && root.progress >= 1
         Anim { type: root.elasticType }
     }
@@ -260,7 +268,7 @@ Item {
             ? root.width
             : Math.round(root.innerW * root.progress)
         height: root.edge === "bottom"
-            ? Math.round(root.innerH * root.progress)
+            ? Math.round(root.displayH * root.progress)
             : root.height
         anchors.right: root.edge === "right" ? parent.right : undefined
         anchors.bottom: root.edge === "bottom" ? parent.bottom : undefined
@@ -280,14 +288,15 @@ Item {
                 anchors.fill: parent
                 color: Color.background
                 topLeftRadius: root.edge === "left" ? 0 : root._weldR
-                topRightRadius: root.edge === "right" ? 0 : root.radius
+                topRightRadius: root.edge === "right" ? 0 : root._weldRR
                 bottomLeftRadius: root.edge === "left"
                     ? 0
                     : (root.edge === "bottom"
                         ? Math.min(root._railSideR, root._weldR) : root.radius)
                 bottomRightRadius: root.edge === "right"
                     ? 0
-                    : (root.edge === "bottom" ? root._railSideR : root.radius)
+                    : (root.edge === "bottom"
+                        ? Math.min(root._railSideR, root._weldRR) : root.radius)
             }
 
             Loader {
@@ -306,7 +315,10 @@ Item {
                 anchors.bottom: root.edge === "bottom" ? parent.bottom : undefined
                 anchors.top: root.edge === "bottom" ? undefined : parent.top
                 width: root.innerW
-                height: root.innerH
+                // 打开之后视口跟 displayH 走：列表卡是 anchors.fill，视口一动
+                // 行数就是在收/放，而不是壳在动、里面的格子已经跳完了。
+                // 派生/收回仍钉 innerH，避免内容每帧跟着 progress 重排
+                height: root.progress >= 1 ? root.displayH : root.innerH
                 // 收回动画播完才卸载。看 present 不看 wantOpen：内容自报空时
                 // 它必须继续活着，否则就读不到 hasContent 了（见 shown 的注释）
                 active: root.present || root.progress > 0
@@ -381,12 +393,25 @@ Item {
         corner: EarCanvas.BottomRight
     }
     EarCanvas {
-        visible: root.edge === "bottom"
+        // 同理，焊在右 rail 上时这只整块落在 rail 里，不画
+        visible: root.edge === "bottom" && !root.weldRight
         x: root.width
         y: root.height - 14
         width: 14
         height: 14
         opacity: root.progress * (1 - root.detached)
         corner: EarCanvas.BottomRight
+    }
+
+    // 焊在右 rail 上时的接缝（weldLeft 那只的镜像）：形状同右边页的上耳
+    // ——卡在左、rail 在右、上方空着，所以弧心在左上 → BottomLeft
+    EarCanvas {
+        visible: root.edge === "bottom" && root.weldRight
+        x: root.width - 14
+        y: -14
+        width: 14
+        height: 14
+        opacity: root.progress * (1 - root.detached)
+        corner: EarCanvas.BottomLeft
     }
 }

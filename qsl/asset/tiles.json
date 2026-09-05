@@ -1,0 +1,97 @@
+{
+    "_doc": [
+        "X 磁贴面板（Super+X）。改完存盘即生效——data/tiles/Tiles.qml 那边是",
+        "FileView watchChanges，不用重启 qs。",
+        "",
+        "browser: 页面磁贴用哪个浏览器。cmd 是命令。url 磁贴一律 --new-window",
+        "  在当前工作区开新窗（chrome 单实例，不加这个参数就会把地址塞进",
+        "  别的工作区那扇已有的窗）。newWindow 可改参数，省略则默认 --new-window。",
+        "",
+        "run[]  执行区，点一下就跑。二选一：",
+        "  url   在当前工作区开一扇新的浏览器窗口",
+        "  exec  直接执行，写成数组，不过 shell（所以不要写管道和 ~，要写全路径）",
+        "",
+        "svc[]  服务区，点一下 start/stop 一组 systemd --user unit。",
+        "  units 里全部 active 才算「开着」，点一下按整组切。",
+        "  只放**手动切换有意义、且停了不会拆掉会话**的服务：pipewire /",
+        "  wireplumber / dbus-broker / xdg-desktop-portal* / hyprpolkitagent",
+        "  这些点一下就当场没声音、没截图、没提权框，别往这儿放。",
+        "",
+        "icon 是 Material Symbols 的连字名（同 QslSectionHeader 的 actionIcon）"
+    ],
+
+    "browser": {
+        "cmd": "google-chrome-stable",
+        "classes": ["google-chrome", "chromium", "Chromium", "brave-browser"],
+        "newWindow": ["--new-window"]
+    },
+
+    "run": [
+        {
+            "id": "proxy",
+            "title": "代理面板",
+            "note": "proxy.lian.love",
+            "icon": "vpn_lock",
+            "url": "http://proxy.lian.love/"
+        },
+        {
+            "id": "lya",
+            "title": "lya Agent",
+            "note": "lya.lian.love",
+            "icon": "smart_toy",
+            "url": "http://lya.lian.love/"
+        },
+        {
+            "id": "gmail",
+            "title": "Gmail",
+            "note": "mail.google.com",
+            "icon": "mail",
+            "url": "https://mail.google.com/"
+        },
+        {
+            "id": "github",
+            "title": "GitHub",
+            "note": "github.com",
+            "icon": "code",
+            "url": "https://github.com/"
+        },
+        {
+            "id": "deepseek",
+            "title": "Deepseek",
+            "note": "API用量",
+            "icon": "data_usage",
+            "url": "https://platform.deepseek.com/usage"
+        },
+        {
+            "id": "yeastar",
+            "title": "YukiKoi",
+            "note": "yeastar.xin",
+            "icon": "🌸",
+            "url": "https://yeastar.xin/"
+        }
+    ],
+
+    "svc": [
+        {
+            "id": "mihomo",
+            "title": "代理内核",
+            "note": "mihomo",
+            "icon": "vpn_key",
+            "units": ["mihomo.service"]
+        },
+        {
+            "id": "cliphist",
+            "title": "剪贴板记录",
+            "note": "停了不影响 Ctrl+C/V，只是不进历史",
+            "icon": "content_paste",
+            "units": ["cliphist-watch.service", "cliphist-watch-image.service"]
+        },
+        {
+            "id": "hysp",
+            "title": "在线状态",
+            "note": "hysp → lya",
+            "icon": "sensors",
+            "units": ["hysp.service"]
+        }
+    ]
+}

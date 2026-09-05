@@ -5,6 +5,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.data.service
 
 Scope {
     id: root
@@ -59,6 +60,8 @@ Scope {
         id: lockCtx
         onUnlocked: root.beginDismiss("ok")
     }
+
+    Component.onCompleted: Avatar.ensure()
 
     WlSessionLock {
         id: sessionLock

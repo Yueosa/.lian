@@ -206,8 +206,15 @@ Item {
         }
 
         const inset = lenVRail * originInset
-        if (edge === "right")
-            return valign === "top" ? s4 - inset : s3 + inset
+        if (edge === "right") {
+            if (valign === "top")
+                return s4 - inset
+            if (valign === "center")
+                return (s3 + s4) / 2
+            return s3 + inset
+        }
+        if (valign === "center")
+            return (s1 + s2) / 2
         return valign === "bottom" ? s2 - inset : s1 + inset
     }
 

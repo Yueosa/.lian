@@ -151,6 +151,7 @@ Singleton {
         readonly property int aWidth: Config.panels.aWidth
         readonly property int zWidth: Config.panels.zWidth
         readonly property int zListHeight: Config.panels.zListHeight
+        readonly property int xWidth: Config.panels.xWidth
     }
 
     // ============================================================
@@ -188,7 +189,8 @@ Singleton {
         readonly property int switcherWidth: 900
         readonly property int switcherHeight: 540
 
-        // Overview 用户头像（QQ）
+        // Overview / powerbar 头像的远程原图。展示请绑 Avatar.source
+        // （~/.cache/qsl/avatar.jpg，缓存优先；见 data/service/Avatar.qml）
         readonly property string avatarUrl: "https://q1.qlogo.cn/g?b=qq&nk=1303028790&s=640"
     }
 }

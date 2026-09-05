@@ -103,39 +103,13 @@ Singleton {
         hubCollapseHoldTimer.restart()
     }
 
-    // —— Exclusive 层焦点归还 ——
-    // Hypr 卸 layer Exclusive 后不会自动 focus 回 client，所以要先记下地址、
-    // 关窗后再 spawn hyprctl 送回去。
-    //
-    // 合并框窗（岛 + C/V/N）已经不走这条路了：框窗用 OnDemand +
-    // HyprlandFocusGrab，grab 从不抢应用焦点，自然没有归还这回事。
-    // 这一段只剩还没迁移的独立 Exclusive 窗在用——WebSearch、FreeWindow
-    // （A / 剪贴板）。第 7 轮把它们搬进框窗之后，整段连同 hyprEval 一起删。
-    property string _focusRestoreAddr: ""
-
-    function captureFocus() {
-        const t = Hyprland.activeToplevel
-        let a = t ? String(t.address || "") : ""
-        if (!a.length && t && t.lastIpcObject && t.lastIpcObject.address)
-            a = String(t.lastIpcObject.address)
-        if (a.length > 0 && !a.startsWith("0x"))
-            a = "0x" + a
-        _focusRestoreAddr = a
-    }
-
-    function clearFocusCapture() {
-        _focusRestoreAddr = ""
-        focusRestoreDelay.stop()
-        focusRestoreDelay.addr = ""
-    }
-
-    function restoreFocus() {
-        if (!_focusRestoreAddr.length)
-            return
-        focusRestoreDelay.addr = _focusRestoreAddr
-        _focusRestoreAddr = ""
-        focusRestoreDelay.restart()
-    }
+    // —— Exclusive 层焦点归还：已删 ——
+    // 原来这儿有一套「开窗前记下当前窗口地址、关窗后 spawn hyprctl 送回去」，
+    // 因为 Hypr 卸 layer Exclusive 后不会自动 focus 回 client。
+    // 合并框窗改用 OnDemand + HyprlandFocusGrab 之后就不需要了——grab 从不抢
+    // 应用焦点，自然没有归还这回事。第 7 轮 A / Z / X 三个独立窗全部搬进框窗，
+    // 最后一个用户（WebSearch）也废掉了，于是整段（含 focusRestoreDelay）删掉。
+    // 下面的 hyprEval / hyprFocusWindow 留着：Switcher 跳窗在用
 
     // Hyprland Lua：Hyprland.dispatch("focuswindow …") 会变成
     // hl.dispatch(focuswindow …) 无引号而炸；走 hyprctl eval + hl.dsp
@@ -154,18 +128,6 @@ Singleton {
         if (wsId === null || wsId === undefined || isNaN(Number(wsId)))
             return
         hyprEval("hl.dispatch(hl.dsp.focus({workspace=" + Number(wsId) + "}))")
-    }
-
-    Timer {
-        id: focusRestoreDelay
-        property string addr: ""
-        interval: 60
-        repeat: false
-        onTriggered: {
-            if (addr.length > 0)
-                root.hyprFocusWindow(addr)
-            addr = ""
-        }
     }
 
     // —— Switcher 跳窗 ——

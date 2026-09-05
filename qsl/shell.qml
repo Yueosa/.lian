@@ -16,79 +16,21 @@ import QtQuick
 import qs.data.state
 import qs.data.service
 import qs.ui.frame
-import qs.ui.freewindow.websearch
 import qs.ui.lock
 
 ShellRoot {
-    // 合并框窗：顶栏两段 + 三边 rail + 灵动岛 + C/V/N/A/Z 五面板 + 四撑位窗
-    // + 四凹角耳（见 ui/frame/）。A 和 Z 第 7 轮迁进去了，IPC 也跟着搬到
-    // FramePanels（那边的 IpcHandler 挂在只创建一次的 Loader 里）
+    // 合并框窗：顶栏两段 + 三边 rail + 灵动岛 + C/V/N/A/Z/X/power 七面板 + 四撑位窗
+    // + 四凹角耳（见 ui/frame/）。七个面板的 IPC 全在 FramePanels——IpcHandler
+    // 的 target 全局唯一，只能挂在「只创建一次」的地方，而框窗本身按屏派生。
+    //
+    // 这里原先还养着一个 WebSearch 独立窗（Super+X 的搜索条）和一整套
+    // free-window 的懒加载脚手架（ensureLoader / 480ms 卸载定时器 / Connections）。
+    // 第 7 轮 X 改成磁贴面板，搜索条废掉，那套脚手架跟着整个拆了：框窗里的面板
+    // 由 RailPage 自己管生命周期，不需要外部代持
     Frame {}
-
-    // ---- 冷路径懒加载：WebSearch（低频）----
-    Component { id: webSearchComp; WebSearch {} }
-
-    Loader { id: webSearchLoader; active: false; sourceComponent: webSearchComp }
-
-    function ensureLoader(loader) {
-        if (!loader.active)
-            loader.active = true
-        return loader.item
-    }
-
-    function scheduleUnload(loader, timer) {
-        timer.restart()
-    }
-
-    function maybeUnload(loader) {
-        const w = loader.item
-        if (!w)
-            return
-        if (!w.open && !w.contentActive)
-            loader.active = false
-    }
-
-    Timer {
-        id: webSearchUnload
-        interval: 480
-        repeat: false
-        onTriggered: maybeUnload(webSearchLoader)
-    }
-
-    Connections {
-        target: webSearchLoader.item
-        enabled: webSearchLoader.status === Loader.Ready
-        function onOpenChanged() {
-            if (webSearchLoader.item.open)
-                webSearchUnload.stop()
-            else
-                scheduleUnload(webSearchLoader, webSearchUnload)
-        }
-    }
-    // C/V/N 三个面板与它们的 IPC（target sidebar / rightbar / notif）现在住在
-    // 合并框窗里，见 ui/frame/FramePanels.qml——IpcHandler 的 target 全局唯一，
-    // 只能挂在「只创建一次」的地方，而框窗本身是按屏派生的
 
     Lock {
         id: lockScreen
-    }
-
-    IpcHandler {
-        target: "websearch"
-        function toggle() {
-            const w = ensureLoader(webSearchLoader)
-            if (w)
-                w.toggle()
-        }
-        function open() {
-            const w = ensureLoader(webSearchLoader)
-            if (w)
-                w.openWindow()
-        }
-        function close() {
-            if (webSearchLoader.item)
-                webSearchLoader.item.closeWindow()
-        }
     }
 
     IpcHandler {

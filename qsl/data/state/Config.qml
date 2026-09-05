@@ -153,6 +153,9 @@ Singleton {
         // 按行数：360 大约是 7 条文本或 3 行图片
         readonly property int zListHeight:
             root._clampInt("panels.z.listHeight", 360, 160, 800)
+        // X = bottomrail 右段。3 列磁贴：420 让每格 ~127 宽，装得下
+        // 「剪贴板记录」这种四字标题 + 底下一行注解
+        readonly property int xWidth: root._clampInt("panels.x.width", 420, 300, 900)
     }
 
     // ============================================================

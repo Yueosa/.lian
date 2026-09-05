@@ -214,33 +214,76 @@ RailPage {
             if (!app || !app.appObj)
                 return
 
+            const entry = app.appObj
+            const argv = appState.cleanCommand(entry.command)
+            const desktopId = String(entry.id || "").replace(/\.desktop$/, "")
+            const viaHypr = String(Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "").length > 0
             let launched = false
-            try {
-                if (typeof app.appObj.execute === "function") {
-                    app.appObj.execute()
-                    launched = true
-                }
-            } catch (e) {
-                console.warn("App execute failed:", app.name, e)
-            }
 
-            // DesktopEntry.execute() 不灵时的两级兜底：Exec 行 → gtk-launch
-            if (!launched) {
-                const execStr = String(app.appObj.execString || app.appObj.exec || "").trim()
-                const desktopId = String(app.appObj.desktopId || app.appObj.id || "").trim()
-                if (execStr.length > 0) {
-                    Quickshell.execDetached(["bash", "-lc", execStr])
+            // 用解析后的 command。不要 execute() 假成功，也不要把 Exec
+            // 原样丢给 bash（%U 会变成字面参数）。
+            // hyprctl dispatch exec 在 Lua 配置里会变成 hl.dispatch(exec …)
+            // 直接炸（Island.hyprEval 那段同病）；立即执行走 hl.exec_cmd。
+            if (argv.length > 0) {
+                if (viaHypr)
+                    Island.hyprEval("hl.exec_cmd([=["
+                        + appState.shellJoin(argv) + "]=])")
+                else
+                    Quickshell.execDetached(argv)
+                launched = true
+                console.info("[launcher]", viaHypr ? "hypr-exec" : "exec",
+                    app.name, argv.join(" "))
+            } else if (desktopId.length > 0) {
+                const line = "gtk-launch " + appState.shellQuote(desktopId)
+                if (viaHypr)
+                    Island.hyprEval("hl.exec_cmd([=[" + line + "]=])")
+                else
+                    Quickshell.execDetached(["gtk-launch", desktopId])
+                launched = true
+                console.info("[launcher] gtk-launch", app.name, desktopId)
+            } else if (typeof entry.execute === "function") {
+                try {
+                    entry.execute()
                     launched = true
-                } else if (desktopId.length > 0) {
-                    const escaped = desktopId.replace(/'/g, "'\\''")
-                    Quickshell.execDetached(["bash", "-lc", "gtk-launch '" + escaped + "'"])
-                    launched = true
+                    console.info("[launcher] execute()", app.name)
+                } catch (e) {
+                    console.warn("[launcher] execute() failed", app.name, e)
                 }
             }
 
             if (launched)
                 Apps.recordLaunch(app.name)
             root.closeWindow()
+        }
+
+        function cleanCommand(cmd) {
+            if (!cmd || cmd.length === undefined)
+                return []
+            const out = []
+            for (let i = 0; i < cmd.length; i++) {
+                const a = String(cmd[i] || "").trim()
+                if (!a.length)
+                    continue
+                if (a === "%%") {
+                    out.push("%")
+                    continue
+                }
+                if (/^%[a-zA-Z]$/.test(a))
+                    continue
+                out.push(a)
+            }
+            return out
+        }
+
+        function shellQuote(s) {
+            return "'" + String(s).replace(/'/g, "'\\''") + "'"
+        }
+
+        function shellJoin(argv) {
+            const parts = []
+            for (let i = 0; i < argv.length; i++)
+                parts.push(appState.shellQuote(argv[i]))
+            return parts.join(" ")
         }
     }
 

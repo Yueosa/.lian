@@ -482,12 +482,12 @@ Bar / 启动器 / 剪贴板 / 灵动岛 / 通知中心 / 侧边栏 / 锁屏全�
 | `ALT  + TAB` | 灵动岛 Hub：`qs ipc call island hub` |
 | `SUPER + TAB` | 灵动岛 Switcher：`qs ipc call island switcher` |
 | `SUPER + Z` | 剪贴板：`qs ipc call clipboard toggle` |
-| `SUPER + X` | Web 搜索：`qs ipc call websearch toggle` |
+| `SUPER + X` | 磁贴：`qs ipc call tiles toggle` |
 | `SUPER + C` | 左侧边栏：`qs ipc call sidebar toggle` |
 | `SUPER + V` | 右侧边栏：`qs ipc call rightbar toggle` |
 | `SUPER + N` | 通知中心：`qs ipc call notif toggle` |
 | `SUPER + L` | 锁屏：`qs ipc call lock lock` |
-| `SUPER + SPACE` | 电源菜单：`$sysmenu`（默认走 wlogout） |
+| `SUPER + SPACE` | 电源：`qs ipc call power toggle` |
 | `ALT  + N` / `ALT + S` | 壁纸 next / 模式切换：`lianwall next` / `lianwall switch` |
 
 完整定义见 [hypr/lua/binds.lua](hypr/lua/binds.lua)。
@@ -737,9 +737,9 @@ ln -sf ~/.lian/qsl ~/.config/quickshell
 ###### 锁屏（SessionLock，已替掉 hyprlock）
 
 - IPC：`qs ipc call lock lock` / `status`
-- 绑定：`Super+L`；wlogout 的 lock 同样走 IPC
+- 绑定：`Super+L`；电源条的 lock 同样走这条 IPC
 - PAM：`qsl/ui/lock/pam/password.conf`
-- UI：壁纸降采样 + 遮罩；左上天气 / 右上通知 / 中轴时钟密码 / 底中方案 B 媒体条
+- UI：壁纸降采样 + 遮罩；有媒体以歌词 + cava 为主，待办跟时钟，通知右上 toast，密码右下
 
 ###### 截图
 

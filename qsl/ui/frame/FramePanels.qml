@@ -1,4 +1,4 @@
-// FramePanels — C / V / N / A / Z 五个进入模式面板，只在主屏那份框窗里实例化
+// FramePanels — C / V / N / A / Z / X / power 七个进入模式面板，只在主屏那份框窗里实例化
 //
 // 为什么单独一个文件而不是直接写在 FrameWindow 里：框窗是按屏派生的
 // （bar/rail/岛本来就该每块屏都有一份），而这几个面板是主屏单份——合并前它们
@@ -20,7 +20,9 @@ import qs.ui.clipboard
 import qs.ui.launcher
 import qs.ui.leftbar
 import qs.ui.notif
+import qs.ui.power
 import qs.ui.rightbar
+import qs.ui.tiles
 
 Item {
     id: root
@@ -30,9 +32,11 @@ Item {
     readonly property bool wantsOverlay: leftbar.wantsOverlay
         || rightbar.wantsOverlay || notifCenter.wantsOverlay
         || launcher.wantsOverlay || clipboard.wantsOverlay
+        || tiles.wantsOverlay || power.wantsOverlay
     readonly property bool wantsKeyboard: leftbar.wantsKeyboard
         || rightbar.wantsKeyboard || notifCenter.wantsKeyboard
         || launcher.wantsKeyboard || clipboard.wantsKeyboard
+        || tiles.wantsKeyboard || power.wantsKeyboard
 
     // 框窗算 mask 用：开态是整条，关态 0×0
     readonly property Item leftbarHitBox: leftbar.hitBox
@@ -40,6 +44,8 @@ Item {
     readonly property Item notifHitBox: notifCenter.hitBox
     readonly property Item launcherHitBox: launcher.hitBox
     readonly property Item clipboardHitBox: clipboard.hitBox
+    readonly property Item tilesHitBox: tiles.hitBox
+    readonly property Item powerHitBox: power.hitBox
 
     Leftbar {
         id: leftbar
@@ -61,13 +67,22 @@ Item {
         id: clipboard
     }
 
+    TilePanel {
+        id: tiles
+    }
+
+    PowerBar {
+        id: power
+    }
+
     // ---- IPC ----
 
     // 手动重载。
     //
     // 热重载有个盲区：quickshell 的文件监视只认启动那一遍解析到的目录，而这几个
     // 面板全在框窗的 Loader { active: isKeyOwner } 里懒加载 —— ui/launcher、
-    // ui/clipboard、ui/notif、data/launcher、data/clipboard 里的改动它一概收不到
+    // ui/clipboard、ui/tiles、ui/power、ui/notif、data/launcher、data/clipboard、data/tiles
+    // 里的改动它一概收不到
     // （.js 文件不管在哪都不监视）。改完那些文件保存了却"什么都没变"，多半是这个，
     // 不是改错了。qs ipc call shell reload 手动叫一次即可
     IpcHandler {
@@ -109,6 +124,21 @@ Item {
         function toggle() { clipboard.toggle() }
         function open() { clipboard.openPage("clips") }
         function close() { clipboard.closeWindow() }
+    }
+
+    // X：磁贴。Super+X 原来是 WebSearch 那条搜索条（已废），改指这里
+    IpcHandler {
+        target: "tiles"
+        function toggle() { tiles.toggle() }
+        function open() { tiles.openPage("tiles") }
+        function close() { tiles.closeWindow() }
+    }
+
+    IpcHandler {
+        target: "power"
+        function toggle() { power.toggle() }
+        function open() { power.openPage("power") }
+        function close() { power.closeWindow() }
     }
 
     IpcHandler {

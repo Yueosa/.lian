@@ -112,14 +112,6 @@ hl.window_rule({
 -- 图层规则
 -- ============================================================
 
--- wlogout 电源菜单：开启模糊 + 强制不透明背景
-hl.layer_rule({
-    name = "wlogout-blur",
-    match = { namespace = "wlogout" },
-    blur = true,
-    ignore_alpha = 0,
-})
-
 -- 岛 Overlay↔Top 切换时禁 compositor fade（QML morph 自己做）
 hl.layer_rule({
     name = "qsl-noanim-island",

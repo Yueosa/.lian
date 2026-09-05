@@ -10,7 +10,7 @@ pragma Singleton
 // Esc/Tab，另一个静默失灵。不重叠的面板（左边的 C 和右边的 V）没有理由互斥。
 //
 // 组划分（见 plan.md 术语表与锚点分工）：
-//   "right"   V=右附栏、N=通知，将来 X=磁贴（若落在 bottomrail 右侧）
+//   "right"   V=右附栏、N=通知、X=磁贴（底轨右段）、power=电源（右轨正中）
 //   "left"    C=左附栏、Z=剪贴板（Z 在 bottomrail **左段**，那块地方压着 C 那
 //             一列的下半截，所以跟 C 一组；它和 A 各占底 rail 的一段，不互斥）
 //   "center"  island=灵动岛、A=应用启动器

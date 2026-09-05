@@ -50,7 +50,11 @@ Item {
         x: root.pad
         y: root.pad
         width: parent.width - 2 * root.pad
-        height: root.listH
+        // 视口吃父级的剩余高度，不吃 listH。listH 是目标（implicitHeight
+        // 用它），父级高度由 RailContainer.displayH 缓动；这里跟 listH 就会
+        // 在壳还没收到位时先跳成 1 行
+        height: Math.max(0, parent.height - root.searchH
+            - (root.listH > 0 ? 2 * root.pad : 0))
         clip: true
 
         // 增量模型（见 data/clipboard/Clipboard.qml）：搜索时留下来的行滑动、

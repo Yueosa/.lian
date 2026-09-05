@@ -48,12 +48,15 @@ Item {
     readonly property int pageWidth: (pages[page] && pages[page].width)
         ? pages[page].width : containerWidth
     // 垂直停靠："top"（默认，从 56 起向下排）/ "bottom"（贴底 16，N 用）
+    // / "center"（竖轨正中，powerbar 用）
     property string valign: "top"
     // 贴底锚定：容器列锚在屏幕下沿、向上摞。两条路进来——右边栏里贴底的
     // （N），和长在底 rail 上的（A / Z）。它们的高度变化由**顶边**吸收，
     // 底下那格因此永远不动，是这一族面板的定位口径
     readonly property bool bottomAnchored: root.valign === "bottom"
         || root.edge === "bottom"
+    readonly property bool centerAnchored: root.valign === "center"
+        && root.edge !== "bottom"
 
     // 页首固定件（pages[page].header）：钉在页面顶部 y=56。
     // 不是容器、不参与派生、不随内容高度变化——tab 条就该是死的
@@ -184,13 +187,18 @@ Item {
     y: root.edge === "bottom" && parent ? parent.height - height : 0
 
     // ---- 底边的水平位置 ----
-    // 底 rail 容得下不止一个面板，各占一段：A 在中段、Z/X 在左段（它们和 A
-    // 不重叠，所以不互斥；Z 压着 C 那一列的下半截，跟 C 一组）。
-    // 左段和左边那条 rail 同一个 x=8 口径，卡片左沿与 C 的卡片对齐
-    property string halign: "center"   // "center" | "left"
+    // 底 rail 容得下不止一个面板，各占一段：A 在中段、Z 在左段、X 在右段。
+    // 三个互不重叠，所以彼此**不互斥**、可以同时开着。它们各自的互斥关系是
+    // 跟**竖着那条边**结的：Z 压着 C 那一列的下半截（同 "left" 组），X 压着
+    // V/N 那一列的下半截（同 "right" 组）。
+    // 左/右段与两侧 rail 同一个 x=8 口径，卡片外沿和 C / V 的卡片对齐
+    property string halign: "center"   // "center" | "left" | "right"
     readonly property int colX: root.edge === "bottom"
         ? (root.halign === "left"
-            ? 8 : Math.round((root.width - root.pageWidth) / 2))
+            ? 8
+            : (root.halign === "right"
+                ? root.width - root.pageWidth - 8
+                : Math.round((root.width - root.pageWidth) / 2)))
         : (root.edge === "right" ? 16 : 8)
 
     // 报给水波的沿边锚点（底边给屏幕 x，其余边不给、由水波按定比内缩取）。
@@ -273,6 +281,13 @@ Item {
         closeWindow()
     }
 
+    // Tab 默认在 order 里翻页。可覆盖：X 只有一页，两个区在**卡内部**切——
+    // 走翻页的话每按一次 Tab 都是整卡退场 + 重新派生（~600ms），三个磁贴的
+    // 小面板上这一下太重，而卡内切区只动网格内容和卡高度
+    function tabPressed(step) {
+        cycle(step)
+    }
+
     function cycle(step) {
         if (order.length === 0)
             return
@@ -346,12 +361,12 @@ Item {
                 return
             }
             if (event.key === Qt.Key_Backtab) {
-                root.cycle(-1)
+                root.tabPressed(-1)
                 event.accepted = true
                 return
             }
             if (event.key === Qt.Key_Tab) {
-                root.cycle((event.modifiers & Qt.ShiftModifier) ? -1 : 1)
+                root.tabPressed((event.modifiers & Qt.ShiftModifier) ? -1 : 1)
                 event.accepted = true
             }
         }
@@ -388,11 +403,13 @@ Item {
         Column {
             id: containerCol
             x: root.colX
-            y: root.bottomAnchored
-                ? 0
-                : (root.headerComp
-                    ? 56 + headerContainer.implicitHeight + Size.spacing.md
-                    : 56)
+            y: root.centerAnchored
+                ? Math.round((root.height - containerCol.implicitHeight) / 2)
+                : (root.bottomAnchored
+                    ? 0
+                    : (root.headerComp
+                        ? 56 + headerContainer.implicitHeight + Size.spacing.md
+                        : 56))
             anchors.bottom: root.bottomAnchored ? parent.bottom : undefined
             // 底边的页贴**在** rail 上（8 = rail 厚度，同 left 边的 x: 8），
             // 卡片底边和 rail 顶边严丝合缝，耳朵才有接缝可填。
@@ -472,6 +489,7 @@ Item {
                     // 底边贴左段的页：卡片左沿压在左 rail 内沿上，接缝要改到
                     // 左上角（见 RailContainer.weldLeft）
                     weldLeft: root.edge === "bottom" && root.halign === "left"
+                    weldRight: root.edge === "bottom" && root.halign === "right"
                     gate: root.derivGate
                     present: root.open && root.pendingPage === ""
                         && root.replayingIndexes.indexOf(index) === -1

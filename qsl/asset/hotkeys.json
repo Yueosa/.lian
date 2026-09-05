@@ -35,7 +35,7 @@
           "id": "power",
           "title": "电源管理",
           "items": [
-            { "keys": "Super+Space", "desc": "电源菜单" },
+            { "keys": "Super+Space", "desc": "电源（右轨正中）" },
             { "keys": "Super+L", "desc": "锁屏" }
           ]
         },
@@ -54,7 +54,7 @@
           "items": [
             { "keys": "Super+A", "desc": "应用启动器" },
             { "keys": "Super+Z", "desc": "剪贴板" },
-            { "keys": "Super+X", "desc": "Web 搜索" }
+            { "keys": "Super+X", "desc": "磁贴" }
           ]
         },
         {
@@ -314,11 +314,12 @@
         },
         {
           "id": "ipc-window",
-          "title": "浮动窗 — toggle / open / close",
+          "title": "底 rail 面板 — toggle / open / close",
           "items": [
             { "keys": "launcher", "desc": "应用启动器（A，bottomrail 中段）" },
-            { "keys": "clipboard", "desc": "剪贴板" },
-            { "keys": "websearch", "desc": "搜索条" }
+            { "keys": "clipboard", "desc": "剪贴板（Z，bottomrail 左段）" },
+            { "keys": "tiles", "desc": "磁贴（X，bottomrail 右段）" },
+            { "keys": "power", "desc": "电源（右轨正中）" }
           ]
         },
         {

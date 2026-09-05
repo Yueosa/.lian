@@ -33,7 +33,6 @@ local fileManager = "thunar"
 local browser = "google-chrome-stable"
 
 local scriptDir = "/home/Sakurine/.local/bin"
-local sysmenu = scriptDir .. "/wlogout/wlogout"
 local workspaceTool = scriptDir .. "/qshell/workspaces"
 
 
@@ -66,7 +65,7 @@ hl.bind(mainMod .. " + M", sh("command -v hyprshutdown >/dev/null 2>&1 && hyprsh
 -- 电源管理
 -- ============================================================
 
-hl.bind(mainMod .. " + SPACE", sh(sysmenu))
+hl.bind(mainMod .. " + SPACE", qs("power", "toggle"))  -- 电源（替 wlogout）
 hl.bind(mainMod .. " + L", qs("lock", "lock"))  -- 锁屏（qsl SessionLock）
 
 
@@ -85,7 +84,7 @@ hl.bind(mainMod .. " + B", sh(browser))
 
 hl.bind(mainMod .. " + A", qs("launcher", "toggle"))
 hl.bind(mainMod .. " + Z", qs("clipboard", "toggle"))
-hl.bind(mainMod .. " + X", qs("websearch", "toggle"))  -- Web 搜索
+hl.bind(mainMod .. " + X", qs("tiles", "toggle"))  -- 磁贴（执行区 / 服务区）
 
 
 -- ============================================================
