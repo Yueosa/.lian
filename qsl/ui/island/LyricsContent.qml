@@ -10,9 +10,7 @@ import qs.data.service
 Item {
     id: lyricsRoot
 
-    readonly property var player: Media.active
-    readonly property bool isMusic: Media.isMusicPlayer(player)
-    readonly property string artUrl: player ? (player.trackArtUrl || "") : ""
+    readonly property string artUrl: Media.trackArtUrl
 
     readonly property int pad: 12
     readonly property int coverSize: 26
@@ -47,8 +45,7 @@ Item {
     }
 
     function kickVisible() {
-        if (lyricsRoot.player)
-            Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
+        Lyrics.syncPosition(Media.position())
         const i = Lyrics.currentIndex
         if (i >= 0)
             lyricsView.positionViewAtIndex(i, ListView.Beginning)
@@ -116,47 +113,23 @@ Item {
     }
 
     function refresh() {
-        if (!player) {
-            // 不 clear 全局缓存：Hub Media 可能仍在用
-            Lyrics.setPlaceholder("")
+        // 不 clear 全局缓存：Hub Media 可能仍在用
+        Media.syncLyrics()
+        if (!Media.hasActive)
             lyricsRoot.textW = lyricsRoot.defaultTextW
-            return
-        }
-        if (!isMusic) {
-            Lyrics.setPlaceholder(player.trackTitle || "正在播放")
-            return
-        }
-        Lyrics.fetch(
-            player.trackTitle || "",
-            player.trackArtist || "",
-            Media.playerctlName(player),
-            Media.trackUrl(player)
-        )
     }
 
     Connections {
         target: Media
-        function onActiveChanged() { lyricsRoot.refresh() }
-    }
-    Connections {
-        target: lyricsRoot.player
-        enabled: !!lyricsRoot.player
-        function onTrackTitleChanged() { lyricsRoot.refresh() }
-        function onTrackArtistChanged() { lyricsRoot.refresh() }
-        function onPositionChanged() {
-            if (lyricsRoot.player)
-                Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
-        }
+        function onTrackChanged() { lyricsRoot.refresh() }
+        function onSeeked() { Lyrics.syncPosition(Media.position()) }
     }
 
     Timer {
         interval: 100
-        running: lyricsRoot.visible && !!lyricsRoot.player && Lyrics.lines.length > 1
+        running: lyricsRoot.visible && Media.hasActive && Lyrics.lines.length > 1
         repeat: true
-        onTriggered: {
-            if (lyricsRoot.player)
-                Lyrics.syncPosition(Number(lyricsRoot.player.position) || 0)
-        }
+        onTriggered: Lyrics.syncPosition(Media.position())
     }
 
     // ---- 封面（正圆：clip+radius 裁不住 Image，需 OpacityMask）----

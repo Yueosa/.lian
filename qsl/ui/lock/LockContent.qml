@@ -10,7 +10,6 @@
 // 通知 hydrate 一次，不设 uiActive；封面 sourceSize 小；无 FastBlur
 
 import QtQuick
-import Quickshell.Services.Mpris
 import qs.Components
 import qs.data.state
 import qs.data.service
@@ -29,21 +28,17 @@ Item {
     readonly property color inkDim: Qt.rgba(1, 1, 1, 0.62)
     readonly property color inkFaint: Qt.rgba(1, 1, 1, 0.38)
 
-    readonly property var player: Media.active
-    readonly property bool hasMedia: !!player
+    // 取值全部走 Media 的公开面。这里只留「没播放器时显示什么」——那是呈现决定，
+    // 媒体页同一份数据显示的是「未知曲目」
+    readonly property bool hasMedia: Media.hasActive
     readonly property bool showMedia: root.hasMedia && !root.clockPeek
     readonly property bool showHero: !root.hasMedia || root.clockPeek
-    readonly property bool isMusic: Media.isMusicPlayer(player)
-    readonly property string trackTitle: player ? (player.trackTitle || "未知曲目") : ""
-    readonly property string trackArtist: player ? (player.trackArtist || "") : ""
-    readonly property string artUrl: player ? (player.trackArtUrl || "") : ""
-    readonly property real trackLength: player ? (Number(player.length) || 0) : 0
-    readonly property bool isPlaying: !!(player && player.isPlaying)
-    readonly property bool canSeek: !!(player && player.canSeek)
-    readonly property bool shuffleOn: !!(player && player.shuffle)
-    readonly property bool shuffleOk: !!(player && player.shuffleSupported)
-    readonly property bool loopOk: !!(player && player.loopSupported)
-    readonly property var loopState: player ? player.loopState : MprisLoopState.None
+    readonly property string trackTitle: Media.hasActive
+        ? (Media.trackTitle || "未知曲目")
+        : ""
+    readonly property string trackArtist: Media.trackArtist
+    readonly property string artUrl: Media.trackArtUrl
+    readonly property real trackLength: Media.trackLength
 
     property real seekPos: 0
     property bool seeking: false
@@ -163,56 +158,19 @@ Item {
             Cava.release()
     }
 
-    function refreshLyrics() {
-        if (!player) {
-            Lyrics.setPlaceholder("")
-            return
-        }
-        if (!isMusic) {
-            Lyrics.setPlaceholder(player.trackTitle || "正在播放")
-            return
-        }
-        Lyrics.fetch(
-            player.trackTitle || "",
-            player.trackArtist || "",
-            Media.playerctlName(player),
-            Media.trackUrl(player)
-        )
-    }
-
-    function cycleLoop() {
-        if (!player || !player.loopSupported)
-            return
-        if (player.loopState === MprisLoopState.None)
-            player.loopState = MprisLoopState.Playlist
-        else if (player.loopState === MprisLoopState.Playlist)
-            player.loopState = MprisLoopState.Track
-        else
-            player.loopState = MprisLoopState.None
-    }
-
-    function _posRaw() {
-        return Number(root.player ? root.player.position : 0) || 0
-    }
-
     onHasMediaChanged: {
         if (!hasMedia)
             clockPeek = false
         root._holdCava(hasMedia && !dismissing)
-        root.refreshLyrics()
+        Media.syncLyrics()
     }
 
     onDismissingChanged: root._holdCava(hasMedia && !dismissing)
 
+    // 换播放器或换曲目都由 Media.trackChanged 一个信号覆盖
     Connections {
         target: Media
-        function onActiveChanged() { root.refreshLyrics() }
-    }
-    Connections {
-        target: root.player
-        enabled: root.hasMedia
-        function onTrackTitleChanged() { root.refreshLyrics() }
-        function onTrackArtistChanged() { root.refreshLyrics() }
+        function onTrackChanged() { Media.syncLyrics() }
     }
     Connections {
         target: Cava
@@ -573,14 +531,13 @@ Item {
                 anchors.fill: parent
                 anchors.topMargin: -6
                 anchors.bottomMargin: -6
-                enabled: root.canSeek && root.trackLength > 0
+                enabled: Media.canSeek && root.trackLength > 0
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onPressed: root.seeking = true
                 onReleased: (mouse) => {
-                    if (root.player && root.trackLength > 0 && root.canSeek) {
-                        const ratio = Math.max(0, Math.min(1, mouse.x / width))
-                        root.player.position = ratio * root.trackLength
-                        root.seekPos = Number(root.player.position) || 0
+                    if (root.trackLength > 0) {
+                        Media.seekFraction(mouse.x / width)
+                        root.seekPos = Media.position()
                     }
                     root.seeking = false
                     root.focusInput()
@@ -599,45 +556,41 @@ Item {
 
             LockIconBtn {
                 glyph: "shuffle"
-                active: root.shuffleOn
-                enabled: root.shuffleOk
+                active: Media.shuffleOn
+                enabled: Media.shuffleOk
                 onTriggered: {
-                    if (root.player)
-                        root.player.shuffle = !root.player.shuffle
+                    Media.toggleShuffle()
                     root.focusInput()
                 }
             }
             LockIconBtn {
                 glyph: "skip_previous"
                 onTriggered: {
-                    if (root.player)
-                        root.player.previous()
+                    Media.previousTrack()
                     root.focusInput()
                 }
             }
             LockIconBtn {
-                glyph: root.isPlaying ? "pause" : "play_arrow"
+                glyph: Media.playing ? "pause" : "play_arrow"
                 primary: true
                 onTriggered: {
-                    if (root.player)
-                        root.player.togglePlaying()
+                    Media.playPause()
                     root.focusInput()
                 }
             }
             LockIconBtn {
                 glyph: "skip_next"
                 onTriggered: {
-                    if (root.player)
-                        root.player.next()
+                    Media.nextTrack()
                     root.focusInput()
                 }
             }
             LockIconBtn {
-                glyph: root.loopState === MprisLoopState.Track ? "repeat_one" : "repeat"
-                active: root.loopState !== MprisLoopState.None
-                enabled: root.loopOk
+                glyph: Media.loopOne ? "repeat_one" : "repeat"
+                active: Media.loopOn
+                enabled: Media.loopOk
                 onTriggered: {
-                    root.cycleLoop()
+                    Media.cycleLoop()
                     root.focusInput()
                 }
             }
@@ -950,9 +903,9 @@ Item {
         running: root.hasMedia && !root.dismissing
         repeat: true
         onTriggered: {
-            if (!root.seeking && root.player)
-                root.seekPos = root._posRaw()
-            if (root.isMusic)
+            if (!root.seeking)
+                root.seekPos = Media.position()
+            if (Media.isMusic)
                 Lyrics.syncPosition(root.seekPos)
         }
     }
@@ -962,7 +915,7 @@ Item {
         Qt.callLater(() => Notification.refresh())
         Lyrics.acquire()
         root._holdCava(root.hasMedia && !root.dismissing)
-        root.refreshLyrics()
+        Media.syncLyrics()
         pwdInput.forceActiveFocus()
     }
 

@@ -49,20 +49,8 @@ ShellRoot {
         function close() { Island.closeHub(); return "CLOSED" }
         function togglelayer() { return Island.toggleLayer() }
 
-        function mediatoggle() {
-            if (Media.active)
-                Media.active.togglePlaying()
-            return "OK"
-        }
-        function mediaprevious() {
-            if (Media.active)
-                Media.active.previous()
-            return "OK"
-        }
-        function medianext() {
-            if (Media.active)
-                Media.active.next()
-            return "OK"
-        }
+        function mediatoggle() { Media.playPause(); return "OK" }
+        function mediaprevious() { Media.previousTrack(); return "OK" }
+        function medianext() { Media.nextTrack(); return "OK" }
     }
 }

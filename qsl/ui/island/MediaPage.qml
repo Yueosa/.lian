@@ -19,7 +19,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
-import Quickshell.Services.Mpris
 import qs.Components
 import qs.data.state
 import qs.data.service
@@ -27,62 +26,18 @@ import qs.data.service
 Item {
     id: root
 
-    readonly property var player: Media.active
-    readonly property bool hasPlayer: !!player
-    readonly property bool isMusic: Media.isMusicPlayer(player)
-
-    readonly property string trackTitle: player ? (player.trackTitle || "未知曲目") : "未知曲目"
-    readonly property string trackArtist: player ? (player.trackArtist || "未知艺人") : ""
-    readonly property string artUrl: player ? (player.trackArtUrl || "") : ""
-    readonly property real trackLength: player ? (Number(player.length) || 0) : 0
-    readonly property bool isPlaying: !!(player && player.isPlaying)
-    readonly property bool shuffleOn: !!(player && player.shuffle)
-    readonly property bool shuffleOk: !!(player && player.shuffleSupported)
-    readonly property bool loopOk: !!(player && player.loopSupported)
-    readonly property bool canSeek: !!(player && player.canSeek)
-    readonly property var loopState: player ? player.loopState : MprisLoopState.None
+    // 取值全部走 Media 的公开面。这里只留「没播放器时显示什么」——那是呈现决定，
+    // 锁屏同一份数据显示的是空串
+    readonly property bool hasPlayer: Media.hasActive
+    readonly property string trackTitle: Media.trackTitle || "未知曲目"
+    readonly property string trackArtist: Media.hasActive
+        ? (Media.trackArtist || "未知艺人")
+        : ""
+    readonly property real trackLength: Media.trackLength
 
     property real seekPos: 0
     property bool seeking: false
     property bool playerExpanded: false
-
-    function formatTime(sec) {
-        let s = Number(sec) || 0
-        if (s > 100000)
-            s = s / 1000000
-        s = Math.max(0, Math.floor(s))
-        const m = Math.floor(s / 60)
-        const r = s % 60
-        return m + ":" + String(r).padStart(2, "0")
-    }
-
-    function refreshLyrics() {
-        if (!player) {
-            Lyrics.setPlaceholder("")
-            return
-        }
-        if (!isMusic) {
-            Lyrics.setPlaceholder(player.trackTitle || "正在播放")
-            return
-        }
-        Lyrics.fetch(
-            player.trackTitle || "",
-            player.trackArtist || "",
-            Media.playerctlName(player),
-            Media.trackUrl(player)
-        )
-    }
-
-    function cycleLoop() {
-        if (!player || !player.loopSupported)
-            return
-        if (player.loopState === MprisLoopState.None)
-            player.loopState = MprisLoopState.Playlist
-        else if (player.loopState === MprisLoopState.Playlist)
-            player.loopState = MprisLoopState.Track
-        else
-            player.loopState = MprisLoopState.None
-    }
 
     function centerLyric() {
         if (Lyrics.currentIndex >= 0)
@@ -92,25 +47,19 @@ Item {
     Component.onCompleted: {
         Cava.acquire()
         Lyrics.acquire()
-        refreshLyrics()
+        Media.syncLyrics()
     }
     Component.onDestruction: {
         Cava.release()
         Lyrics.release()
     }
 
+    // 换播放器或换曲目都由 Media.trackChanged 一个信号覆盖，不必再把 Media.active
+    // 当 Connections 的 target 自己盯一遍
     Connections {
         target: Media
-        function onActiveChanged() {
-            root.refreshLyrics()
-            root.playerExpanded = false
-        }
-    }
-    Connections {
-        target: root.player
-        enabled: root.hasPlayer
-        function onTrackTitleChanged() { root.refreshLyrics() }
-        function onTrackArtistChanged() { root.refreshLyrics() }
+        function onTrackChanged() { Media.syncLyrics() }
+        function onActiveChanged() { root.playerExpanded = false }
     }
 
     Timer {
@@ -118,9 +67,9 @@ Item {
         running: root.hasPlayer
         repeat: true
         onTriggered: {
-            if (!root.seeking && root.player)
-                root.seekPos = Number(root.player.position) || 0
-            if (root.isMusic)
+            if (!root.seeking)
+                root.seekPos = Media.position()
+            if (Media.isMusic)
                 Lyrics.syncPosition(root.seekPos)
         }
     }
@@ -177,7 +126,7 @@ Item {
                 radius: Size.rounding.xl
                 color: Color.surfaceContainerHighest
 
-                scale: root.isPlaying ? 1.0 : 0.95
+                scale: Media.playing ? 1.0 : 0.95
                 Behavior on scale {
                     Anim { type: Anim.Spatial }
                 }
@@ -185,7 +134,7 @@ Item {
                 Image {
                     id: artImg
                     anchors.fill: parent
-                    source: root.artUrl
+                    source: Media.trackArtUrl
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     sourceSize: Qt.size(280, 280)
@@ -210,7 +159,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    visible: !root.artUrl.length
+                    visible: !Media.trackArtUrl.length
                     text: Media.activeIdentityIcon
                     color: Color.textMuted
                     font.family: Size.fontMono
@@ -277,8 +226,8 @@ Item {
                         return Math.min(1, (s / 5) * 1.3)
                     }
 
-                    property real energy: root.isPlaying ? cavaEnergy : 0
-                    property real bass: root.isPlaying ? cavaBass : 0
+                    property real energy: Media.playing ? cavaEnergy : 0
+                    property real bass: Media.playing ? cavaBass : 0
 
                     Behavior on energy {
                         SmoothedAnimation { velocity: 2.6 }
@@ -314,7 +263,7 @@ Item {
                     readonly property real phaseSpeed: 4.2 + energy * 9.0
 
                     FrameAnimation {
-                        running: root.isPlaying && root.visible
+                        running: Media.playing && root.visible
                         onTriggered: {
                             waveRoot.phase = (waveRoot.phase
                                 + frameTime * waveRoot.phaseSpeed) % (Math.PI * 2)
@@ -419,10 +368,9 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onPressed: root.seeking = true
                         onReleased: (mouse) => {
-                            if (root.player && root.trackLength > 0 && root.canSeek) {
-                                const ratio = Math.max(0, Math.min(1, mouse.x / width))
-                                root.player.position = ratio * root.trackLength
-                                root.seekPos = Number(root.player.position) || 0
+                            if (root.trackLength > 0) {
+                                Media.seekFraction(mouse.x / width)
+                                root.seekPos = Media.position()
                             }
                             root.seeking = false
                         }
@@ -438,14 +386,14 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 Text {
-                    text: root.formatTime(root.seekPos)
+                    text: Media.formatTime(root.seekPos)
                     color: Color.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.xsm
                 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: root.formatTime(root.trackLength)
+                    text: Media.formatTime(root.trackLength)
                     color: Color.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.xsm
@@ -458,40 +406,28 @@ Item {
 
                 MediaCtrlBtn {
                     glyph: "\uf074"
-                    active: root.shuffleOn
-                    enabled: root.shuffleOk
-                    onTriggered: {
-                        if (root.player)
-                            root.player.shuffle = !root.player.shuffle
-                    }
+                    active: Media.shuffleOn
+                    enabled: Media.shuffleOk
+                    onTriggered: Media.toggleShuffle()
                 }
                 MediaCtrlBtn {
                     glyph: "\uf048"
-                    onTriggered: {
-                        if (root.player)
-                            root.player.previous()
-                    }
+                    onTriggered: Media.previousTrack()
                 }
                 MediaCtrlBtn {
-                    glyph: root.isPlaying ? "\uf04c" : "\uf04b"
+                    glyph: Media.playing ? "\uf04c" : "\uf04b"
                     primary: true
-                    onTriggered: {
-                        if (root.player)
-                            root.player.togglePlaying()
-                    }
+                    onTriggered: Media.playPause()
                 }
                 MediaCtrlBtn {
                     glyph: "\uf051"
-                    onTriggered: {
-                        if (root.player)
-                            root.player.next()
-                    }
+                    onTriggered: Media.nextTrack()
                 }
                 MediaCtrlBtn {
-                    glyph: root.loopState === MprisLoopState.Track ? "\uf021" : "\uf079"
-                    active: root.loopState !== MprisLoopState.None
-                    enabled: root.loopOk
-                    onTriggered: root.cycleLoop()
+                    glyph: Media.loopOne ? "\uf021" : "\uf079"
+                    active: Media.loopOn
+                    enabled: Media.loopOk
+                    onTriggered: Media.cycleLoop()
                 }
             }
         }
@@ -769,10 +705,10 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        // 选播放器会改 Media.active，歌词由 trackChanged 自动跟上
                         onClicked: {
                             Media.selectPlayer(modelData)
                             root.playerExpanded = false
-                            root.refreshLyrics()
                         }
                     }
                 }
