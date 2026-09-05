@@ -3,7 +3,15 @@
 // 用法：
 //   notifctl ingest '<json>'     写入一条（协议字段）
 //   notifctl list [--limit N]     stdout JSON + 写缓存
-//   notifctl dismiss <notif_id>   soft-dismiss
+//   notifctl dismiss <row_id>     soft-dismiss 指定的那一行
+//   notifctl dismiss-live <notif_id>
+//                                 soft-dismiss 持有该协议 id 的**最新**一行
+//
+// 为什么分成两个：notif_id 是 D-Bus 协议 id，各应用各发各的、还会复用，
+// 库里同一个 notif_id 常常横跨好几个应用几十条（实测最多 61 条）。原先
+// dismiss 按 notif_id 全量 UPDATE，面板上关掉一条会连带关掉那一批——
+// 第 9 轮审计时踩到的。只有「刚到达、还没拿到行号」的情况才需要按协议 id
+// 找，那时要的也永远是最新那条，所以单开 dismiss-live 并且限定一行。
 //   notifctl clear                清空全部活动通知
 //   notifctl prune [--days N]     删除已读且超期的历史行
 
@@ -366,7 +374,9 @@ fn cmd_list(limit: usize) -> i32 {
     }
 }
 
-fn cmd_dismiss(notif_id: i64) -> i32 {
+// 按唯一行号关一条。面板里点掉某条走的是这条路——entries 里每条都带着
+// list 给出的 id。
+fn cmd_dismiss(row_id: i64) -> i32 {
     let conn = match open_db() {
         Ok(c) => c,
         Err(e) => {
@@ -374,13 +384,36 @@ fn cmd_dismiss(notif_id: i64) -> i32 {
             return 1;
         }
     };
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0);
+    let now = now_ms();
     let _ = conn.execute(
         "UPDATE notifications SET dismissed_at = ?1
-         WHERE notif_id = ?2 AND dismissed_at = 0",
+         WHERE id = ?2 AND dismissed_at = 0",
+        params![now, row_id],
+    );
+    refresh_cache(&conn);
+    0
+}
+
+// 按协议 id 关**最新**一条。只给「刚从 D-Bus 到达、还没入库拿到行号」的
+// 条目兜底（服务层那边是 id = -1 的临时行）。限定一行是关键：不限定就是
+// 上面注释里说的那个 bug。
+fn cmd_dismiss_live(notif_id: i64) -> i32 {
+    let conn = match open_db() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("notifctl: db: {}", e);
+            return 1;
+        }
+    };
+    let now = now_ms();
+    let _ = conn.execute(
+        "UPDATE notifications SET dismissed_at = ?1
+         WHERE id = (
+             SELECT id FROM notifications
+             WHERE notif_id = ?2 AND dismissed_at = 0
+             ORDER BY received_at DESC, id DESC
+             LIMIT 1
+         )",
         params![now, notif_id],
     );
     refresh_cache(&conn);
@@ -440,11 +473,23 @@ fn main() {
                 .get(2)
                 .and_then(|s| s.parse::<i64>().ok())
                 .unwrap_or(0);
-            if id == 0 {
-                eprintln!("usage: notifctl dismiss <notif_id>");
+            if id <= 0 {
+                eprintln!("usage: notifctl dismiss <row_id>");
                 1
             } else {
                 cmd_dismiss(id)
+            }
+        }
+        "dismiss-live" => {
+            let id = args
+                .get(2)
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(0);
+            if id <= 0 {
+                eprintln!("usage: notifctl dismiss-live <notif_id>");
+                1
+            } else {
+                cmd_dismiss_live(id)
             }
         }
         "clear" => cmd_clear(),
@@ -464,7 +509,9 @@ fn main() {
             cmd_prune(days)
         }
         _ => {
-            eprintln!("usage: notifctl <ingest|list|dismiss|clear|prune>");
+            eprintln!(
+                "usage: notifctl <ingest|list|dismiss|dismiss-live|clear|prune>"
+            );
             1
         }
     };

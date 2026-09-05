@@ -139,10 +139,6 @@ RailPage {
         function openApp(key) { currentApp = key }
         function backToApps() { currentApp = "" }
 
-        // 该应用当前的全部通知 id，用于「清空本应用」
-        function idsOfCurrentApp() {
-            return Notification.idsOfApp(notifState.currentApp)
-        }
 
         function resetClear() {
             _clearFinish.stop()
@@ -177,7 +173,7 @@ RailPage {
                 clearAllAnimated()
                 return
             }
-            Notification.dismissMany(idsOfCurrentApp())
+            Notification.dismissApp(currentApp)
             // 清完这个应用后一条都不剩，就没必要再退回一个空列表，直接收起面板
             if (!Notification.hasNotifications)
                 root.closeWindow()

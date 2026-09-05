@@ -256,8 +256,6 @@ Item {
                 property bool shrinking: false
                 // 回收池换数据时高度会瞬变，此刻必须关掉动画
                 property bool animateHeight: false
-                property int notifId: entry.notifId
-
                 // 正文展开后由文本实际高度撑开；至少不低于收起态
                 readonly property int expandedH:
                     Math.max(root.rowHeight,
@@ -357,8 +355,8 @@ Item {
                         to: 0; type: Anim.EffectsFast
                     }
                     onFinished: {
-                        if (thenDismiss)
-                            Notification.dismiss(row.notifId)
+                          if (thenDismiss)
+                              Notification.dismiss(row.entry)
                     }
                 }
 

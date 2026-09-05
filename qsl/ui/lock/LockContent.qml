@@ -716,7 +716,7 @@ Item {
                                 anchors.margins: -6
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    Notification.dismiss(modelData.notifId)
+                                    Notification.dismiss(modelData)
                                     root.focusInput()
                                 }
                             }

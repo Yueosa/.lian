@@ -16,11 +16,11 @@ pragma Singleton
 //   appKeyOf(entry)   分组键
 //   entriesOfApp(key) 该应用的全部通知
 //   appNameOf(key)    该应用的展示名
-//   idsOfApp(key)     该应用的通知 id 列表（用于「清空本应用」）
 //   loading           list 是否在跑
 //   hydrate()         从 JSON 缓存灌入
 //   refresh()         notifctl list 刷新
-//   dismiss(id)       关单条（协议 id）
+//   dismiss(entry)    关单条，**传整条 entry**（里头两个 id，选错会连带删一批）
+//   dismissEntries(list) / dismissApp(key)   批量关
 //   dismissAll()      清空
 //   toggleDnd()
 //   iconFor(entry)    图标 URL，空串表示没有可用图标（UI 兜底成首字母）
@@ -129,14 +129,6 @@ Singleton {
                 return g[i].name
         }
         return ""
-    }
-
-    function idsOfApp(key) {
-        const src = root.entriesOfApp(key)
-        const ids = []
-        for (let i = 0; i < src.length; i++)
-            ids.push(src[i].notifId)
-        return ids
     }
 
     // 一级岛 toast：与面板 entries 无关；payload 一次拷贝字符串
@@ -284,49 +276,96 @@ Singleton {
         entries = next
     }
 
-    function dismiss(id) {
-        for (let i = 0; i < trackedNotifications.count; i++) {
+    // 关一条。**要传整条 entry**，不是 id。
+    //
+    // 因为这里有两个 id，选错了会连带删掉一批：
+    //   entry.id       list 给的数据库行号，唯一
+    //   entry.notifId  D-Bus 协议 id，各应用各发各的、还会复用
+    // 第 9 轮之前这里按 notifId 过滤、notifctl 也按 notif_id 全量 UPDATE，
+    // 结果是点掉一条会把持有同一个协议 id 的全部关掉（实测最多 61 条，
+    // 还能横跨 5 个应用）。现在一律按行号。
+    //
+    // 例外只有一处：prependLive 造的临时行 id = -1（刚从 D-Bus 到达、
+    // 入库是异步的还没拿到行号），那种才退回按协议 id 找最新一条。
+    function dismiss(entry) {
+        if (!entry)
+            return
+        _untrackLive(entry.notifId)
+
+        const rowId = Number(entry.id)
+        const live = !(rowId > 0)
+        const keep = []
+        for (let i = 0; i < entries.length; i++) {
+            const e = entries[i]
+            const hit = live
+                ? (!(Number(e.id) > 0) && e.notifId === entry.notifId)
+                : (Number(e.id) === rowId)
+            if (!hit)
+                keep.push(e)
+        }
+        entries = keep
+        _epoch++
+
+        if (live)
+            Quickshell.execDetached(
+                [root.ctlPath, "dismiss-live", String(entry.notifId)])
+        else
+            Quickshell.execDetached([root.ctlPath, "dismiss", String(rowId)])
+    }
+
+    // 批量关闭（清空某个应用时用）。逐条调 dismiss 会重建 entries N 次，
+    // 每次都触发面板整表重排，这里合并成一次。
+    function dismissEntries(list) {
+        if (!list || list.length === 0)
+            return
+
+        const doomedRows = {}
+        const doomedLive = {}
+        for (let i = 0; i < list.length; i++) {
+            const e = list[i]
+            if (!e)
+                continue
+            if (Number(e.id) > 0)
+                doomedRows[Number(e.id)] = true
+            else
+                doomedLive[e.notifId] = true
+            _untrackLive(e.notifId)
+        }
+
+        const keep = []
+        for (let i = 0; i < entries.length; i++) {
+            const e = entries[i]
+            const rowId = Number(e.id)
+            const hit = rowId > 0
+                ? doomedRows[rowId]
+                : doomedLive[e.notifId]
+            if (!hit)
+                keep.push(e)
+        }
+        entries = keep
+        _epoch++
+
+        for (const rowId in doomedRows)
+            Quickshell.execDetached([root.ctlPath, "dismiss", String(rowId)])
+        for (const notifId in doomedLive)
+            Quickshell.execDetached(
+                [root.ctlPath, "dismiss-live", String(notifId)])
+    }
+
+    function dismissApp(key) {
+        root.dismissEntries(root.entriesOfApp(key))
+    }
+
+    // 解除常驻。这里用的是协议 id——trackedNotifications 装的是 D-Bus 活对象，
+    // 它们只有协议 id，跟数据库行号无关。
+    function _untrackLive(notifId) {
+        for (let i = trackedNotifications.count - 1; i >= 0; i--) {
             const n = trackedNotifications.get(i)
-            if (n && n.id === id) {
+            if (n && n.id === notifId) {
                 n.tracked = false
                 break
             }
         }
-        const keep = []
-        for (let i = 0; i < entries.length; i++) {
-            if (entries[i].notifId !== id)
-                keep.push(entries[i])
-        }
-        entries = keep
-        _epoch++
-        Quickshell.execDetached([root.ctlPath, "dismiss", String(id)])
-    }
-
-    // 批量关闭（堆叠整摞收起时用）。逐条调 dismiss 会重建 entries N 次，
-    // 每次都触发面板整表重排，这里合并成一次。
-    function dismissMany(ids) {
-        if (!ids || ids.length === 0)
-            return
-        const doomed = {}
-        for (let i = 0; i < ids.length; i++)
-            doomed[ids[i]] = true
-
-        for (let i = trackedNotifications.count - 1; i >= 0; i--) {
-            const n = trackedNotifications.get(i)
-            if (n && doomed[n.id])
-                n.tracked = false
-        }
-
-        const keep = []
-        for (let i = 0; i < entries.length; i++) {
-            if (!doomed[entries[i].notifId])
-                keep.push(entries[i])
-        }
-        entries = keep
-        _epoch++
-
-        for (let i = 0; i < ids.length; i++)
-            Quickshell.execDetached([root.ctlPath, "dismiss", String(ids[i])])
     }
 
     function dismissAll() {
