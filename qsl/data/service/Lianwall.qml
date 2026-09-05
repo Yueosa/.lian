@@ -41,7 +41,13 @@ Singleton {
             items = []
             loading = false
             error = ""
-            subProc.running = false
+            // 这儿原先还有一句 `subProc.running = false`。
+            // subProc 声明的是 `running: root.detailActive`——命令式赋值会把
+            // 这条绑定**打断**，于是壁纸页第一次关闭之后，subscribe 再也起不来，
+            // 整个会话里页面都收不到守护进程的事件了（外部换壁纸、切图片/视频
+            // 模式，页面一律没反应，只有页内按钮能动，因为 _runAction 自己
+            // 另外排了一次 refresh）。
+            // 绑定本身已经能在 detailActive 转 false 时停掉进程，不必多此一举。
         }
     }
 
