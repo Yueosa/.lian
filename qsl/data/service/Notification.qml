@@ -165,8 +165,8 @@ Singleton {
             const t = (raw || "").trim()
             applyParsed(t.length > 0 ? JSON.parse(t) : [])
         } catch (e) {
+            // 同 Clipboard：读坏了就保留上一批，别把「没读成」显示成「没通知」
             console.warn("Notification: parse cache failed", e)
-            applyParsed([])
         }
     }
 

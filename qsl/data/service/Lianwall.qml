@@ -71,10 +71,9 @@ Singleton {
         refreshDelay.restart()
     }
 
-    // Hub 壁纸页不要走这两条：CLI next/prev 会刷新 space，顺序被打乱。
-    // 页内自管 reel，相邻项用 setWallpaper(path)。
-    function next() { _runAction(["lianwall", "next"]) }
-    function previous() { _runAction(["lianwall", "prev"]) }
+    // 这里**故意没有** next() / previous()。CLI 的 lianwall next/prev 每调一次都
+    // 会刷新 space，壁纸顺序整个打乱——第 8 轮踩过。要「上一张/下一张」就在页内
+    // 自管一份有序列表，对相邻项调 setWallpaper(path)，壁纸页就是这么做的。
     function switchMode() { _runAction(["lianwall", "switch"]) }
 
     function setWallpaper(path) {
@@ -126,8 +125,9 @@ Singleton {
             if (d.mode)
                 mode = String(d.mode)
         } catch (e) {
+            // 只报错，不清 items：清掉的话壁纸墙会空成一片，而 applyStatus 那边
+            // 的页头信息还在，看上去像「这个空间真的没有壁纸」而不是「读失败了」
             error = "space 解析失败"
-            items = []
         }
     }
 

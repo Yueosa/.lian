@@ -61,7 +61,9 @@ Scope {
         lastError = ""
         pamReplied = false
 
-        console.info("[lock] tryUnlock user=", pam.user, " pwdLen=", pwd.length)
+        // 只记「空/非空」。原来这里打的是 pwd.length——密码长度进 journal 是白送
+        // 攻击者一个爆破区间，而排障要的只是「回车是不是打在空输入框上」
+        console.info("[lock] tryUnlock user=", pam.user, " empty=", pwd.length === 0)
 
         if (pam.active)
             pam.abort()

@@ -120,8 +120,9 @@ Singleton {
             const t = (raw || "").trim()
             applyParsed(t.length > 0 ? JSON.parse(t) : [])
         } catch (e) {
+            // 解析失败保留上一批好数据。清空的话，面板会从「有历史」变成
+            // 「一条都没有」——那是在把一次读取故障演成一条业务事实
             console.warn("Clipboard: parse cache failed", e)
-            applyParsed([])
         }
     }
 
