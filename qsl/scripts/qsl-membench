@@ -421,13 +421,22 @@ one_round() {
     log "######################## ROUND $r / $ROUNDS ########################"
     sample "r${r}_round_start"
 
-    panel_cycle "$r" app        qsl-frame      launcher open -- launcher close
-    panel_cycle "$r" clipboard  qsl-frame      clipboard open -- clipboard close
-    panel_cycle "$r" sidebar    qsl-leftbar    sidebar open time -- sidebar close
-    panel_cycle "$r" rightbar   qsl-rightbar   rightbar open network -- rightbar close
-    panel_cycle "$r" notif      qsl-notif      notif open -- notif close
-    panel_cycle "$r" websearch  qsl-websearch  websearch open -- websearch close
-    panel_cycle "$r" settings   qsl-settings   settings open arch -- settings close
+    # expect_ns 一律 qsl-frame。第 4~7 轮把七个面板并进一个全屏 layer 之后，
+    # qsl-leftbar / qsl-rightbar / qsl-notif 这些 namespace 就不存在了，而
+    # qsl-frame 是常驻的——也就是说这个校验**已经区分不出哪个面板开着**，
+    # 只能证明「壳还活着、没测到幽灵 qs」，那本来也是它当初的用途。
+    # 想恢复逐面板校验，得先给各面板的 IpcHandler 补一个 status()。
+    #
+    # websearch / settings 两行删掉：第 7 轮 Super+X 改成磁贴面板，搜索条和
+    # 设置页一起废了。STRICT=1 下这两步会让整轮中止（2026-09-06 撞过）。
+    # tiles / power 是那次新增的，补上。
+    panel_cycle "$r" app        qsl-frame  launcher open -- launcher close
+    panel_cycle "$r" clipboard  qsl-frame  clipboard open -- clipboard close
+    panel_cycle "$r" sidebar    qsl-frame  sidebar open time -- sidebar close
+    panel_cycle "$r" rightbar   qsl-frame  rightbar open network -- rightbar close
+    panel_cycle "$r" notif      qsl-frame  notif open -- notif close
+    panel_cycle "$r" tiles      qsl-frame  tiles open -- tiles close
+    panel_cycle "$r" power      qsl-frame  power open -- power close
 
     hub_cycle "$r"
     media_cycle "$r"
@@ -473,7 +482,7 @@ for r in range(1, int(rounds)+1):
 
 lines.append("")
 lines.append("== open_dwell vs close_settled (round1) ==")
-names = ["app","clipboard","sidebar","rightbar","notif","websearch","settings","hub"]
+names = ["app","clipboard","sidebar","rightbar","notif","tiles","power","hub"]
 for n in names:
     o = by.get(f"r1_{n}_open_dwell") or by.get(f"r1_{n}_overview")
     c = by.get(f"r1_{n}_close_settled")

@@ -64,7 +64,7 @@
 | [Hyprland](#hyprland) | 窗口管理器 / 混成器（Lua 主配）  |
 | [systemd/user](#systemduser) | Hyprland 用户会话服务管理  |
 | [nvim](#nvim) | Neovim 配置结构、插件与依赖  |
-| [qsl](#qsl) | 主线桌面外壳：Bar / 灵动岛 / 启动器 / 剪贴板 / 锁屏 / 设置  |
+| [qsl](#qsl) | 主线桌面外壳：Bar / 灵动岛 / 启动器 / 剪贴板 / 磁贴 / 通知 / 电源 / 锁屏  |
 | [matugen](#matugen) | 从当前壁纸生成 Material You palette 派发到 GTK / qt6ct / qsl  |
 | [lianwall](#lianwall) | 壁纸引擎与 hooks（含主题热更钩子）  |
 
@@ -709,13 +709,24 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 当前分层：
 
-- `ui/`：Bar、Island、Left/Rightbar、Notif、Lock、FreeWindow（App / Clipboard / WebSearch）
-- `data/service` + `data/state`：Network / Media / Weather / Color / Style 等单例
-- `Components/`：QslCard / QslSlider / QslShadow …
-- `backend/`：weatherd、sysmond、notifctl、cava relay 等
-- `scripts/`：主题刷新、截图等桥接脚本
+- `ui/frame/`：**合并框窗**。顶栏两段 + 三边 rail + 七个面板全在一个全屏 layer
+  （`namespace=qsl-frame`）里，另有四个凹角耳和四个撑位窗。早期每个面板一个
+  独立 layer，合并之后面板之间的进出可以共用一套动画，也不用再各自算避让
+- `ui/`：`bar` / `island` / `leftbar` / `rightbar` / `notif` / `launcher` /
+  `clipboard` / `tiles` / `power` / `lock`
+- `data/service` + `data/state`：Network / Media / Weather / Color / Size 等单例
+- `Components/`：`QslRow` / `QslSlider` / `QslSwitch` / `QslChip` / `QslActionChip` /
+  `QslIconButton` / `QslSectionHeader` / `QslStateLayer` / `QslStagger` /
+  `RailPage` / `RailContainer` / `Sparkline` / `EarCanvas`
+- `backend/`：weatherd、sysmon、notifctl、clipboard、lyrics、cava relay
+- `scripts/`：主题刷新、截图桥接，以及三个自建闸门
+  （`qsl-archcheck` 架构 / `qsl-qmllint` 静态检查 / `qsl-membench`·`qsl-memtrack` 内存）
 
 也就是说：桌面 UI、状态编排、IPC 都在 qsl 闭环，Hyprland 主要负责窗口管理和按键入口。
+
+> 已经拆掉的：独立的 WebSearch 搜索条（`Super+X` 改成磁贴面板）、设置面板
+> （配置改为直接编辑 `qsl/asset/` 下的 json）。README 早期版本里提过的
+> `FreeWindow` / `QslCard` / `QslShadow` 都已不存在。
 
 ###### 安装依赖
 
@@ -743,13 +754,16 @@ ln -sf ~/.lian/qsl ~/.config/quickshell
 
 ###### 截图
 
+> ⚠️ 下面这批图拍摄于 2025-07-31，**早于合并框窗改造和灵动岛重做**，跟现在的
+> 界面对不上：岛高压低了、tab 条从底部移到了顶部、壁纸页改成了卷轴、媒体页
+> 歌词吃满右侧通高、Overview 重排过。等我重拍。
+
 | 图 | 内容 |
 |---|---|
 | ![Hub 天气](./image/qsl-hub-weather.png) | Island Hub · Weather |
 | ![Hub 媒体](./image/qsl-hub-media.png) | Island Hub · Media（旁侧栏 / 通知） |
 | ![Switcher](./image/qsl-hub-switcher.png) | Island Hub · Switcher |
 | ![启动器](./image/qsl-launcher.png) | `Super+A` 应用启动器 |
-| ![Web 搜索](./image/qsl-websearch.png) | `Super+X` WebSearch |
 | ![剪贴板](./image/qsl-clipboard.png) | `Super+Z` 剪贴板 |
 | ![面板合集](./image/qsl-panels.png) | 左栏键位 + Hub 壁纸 + 右栏 + 通知中心 |
 
