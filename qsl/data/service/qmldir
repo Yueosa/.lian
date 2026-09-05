@@ -12,6 +12,7 @@ singleton Lyrics 1.0 Lyrics.qml
 singleton Media 1.0 Media.qml
 singleton Network 1.0 Network.qml
 singleton Notification 1.0 Notification.qml
+singleton Session 1.0 Session.qml
 singleton Sysmon 1.0 Sysmon.qml
 singleton Systemd 1.0 Systemd.qml
 singleton Tiles 1.0 Tiles.qml

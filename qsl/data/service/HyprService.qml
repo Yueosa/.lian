@@ -258,6 +258,14 @@ Singleton {
         Quickshell.execDetached(["hyprctl", "eval", expr])
     }
 
+    // 让合成器退出。给 Session.logout() 用，它要把这条拼进一整串 shell 回退链
+    // （hyprshutdown 优先），所以给的是命令字串而不是函数。
+    //
+    // 这条不走 luaEval：注销的语义是「合成器自己关掉」，走 CLI 的 dispatch 直达，
+    // 而 luaEval 那条路要先让合成器执行一段 Lua 再由 Lua 去 dispatch——正在退出的
+    // 东西不该多绕一层。原样保留 PowerBar 里用了很久的写法。
+    readonly property string exitCommand: "hyprctl dispatch exit"
+
     // 地址一律补 0x 前缀：IPC 有时给带前缀的，有时不给，Lua 那头必须一致。
     function _normAddr(addr) {
         const a = String(addr || "")

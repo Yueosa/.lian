@@ -11,6 +11,7 @@ import QtQuick
 import Quickshell
 import qs.Components
 import qs.data.state
+import qs.data.service
 
 RailPage {
     id: root
@@ -79,8 +80,7 @@ RailPage {
                     : (current === 3 ? "shutdown" : "reboot"))
             if (id === "lock") {
                 root.closeWindow()
-                Qt.callLater(() =>
-                    Quickshell.execDetached(["qs", "ipc", "call", "lock", "lock"]))
+                Qt.callLater(() => Session.lock())
                 return
             }
             if (armed === id) {
@@ -91,20 +91,14 @@ RailPage {
             armed = id
         }
 
+        // 两段式上膛（armed）留在这儿：那是交互设计。真正的系统调用在 Session。
         function _run(id) {
-            if (id === "logout") {
-                Quickshell.execDetached([
-                    "bash", "-lc",
-                    "command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"
-                ])
-                return
-            }
-            if (id === "shutdown") {
-                Quickshell.execDetached(["systemctl", "poweroff"])
-                return
-            }
-            if (id === "reboot")
-                Quickshell.execDetached(["systemctl", "reboot"])
+            if (id === "logout")
+                Session.logout()
+            else if (id === "shutdown")
+                Session.poweroff()
+            else if (id === "reboot")
+                Session.reboot()
         }
     }
 

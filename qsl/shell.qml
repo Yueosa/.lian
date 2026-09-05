@@ -33,6 +33,13 @@ ShellRoot {
         id: lockScreen
     }
 
+    // 锁屏实例只在这儿，服务够不着（单例先于窗口存在），所以 Session 只发信号，
+    // 由持有者动手。PowerBar 原先是起一个进程调自己的 IPC 绕回来的。
+    Connections {
+        target: Session
+        function onLockRequested() { lockScreen.lock() }
+    }
+
     IpcHandler {
         target: "lock"
         function lock(): string { return lockScreen.lock() }
