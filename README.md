@@ -707,6 +707,9 @@ sudo pacman -S --needed neovim git curl tree-sitter-cli
 
 ![桌面](./image/qsl-desktop.png)
 
+顶栏左起是工作区指示与活动窗口，中间是当前媒体，右侧是 CPU / GPU / 内存、
+网络、蓝牙、电量与托盘；四角那四个小方块是凹角耳，把屏幕圆角补齐。
+
 当前分层：
 
 - `ui/frame/`：**合并框窗**。顶栏两段 + 三边 rail + 七个面板全在一个全屏 layer
@@ -754,18 +757,31 @@ ln -sf ~/.lian/qsl ~/.config/quickshell
 
 ###### 截图
 
-> ⚠️ 下面这批图拍摄于 2025-07-31，**早于合并框窗改造和灵动岛重做**，跟现在的
-> 界面对不上：岛高压低了、tab 条从底部移到了顶部、壁纸页改成了卷轴、媒体页
-> 歌词吃满右侧通高、Overview 重排过。等我重拍。
+灵动岛五个页面（Overview / Media / Wallpaper / Weather / Switcher）共用顶部
+tab 条，`Alt+Tab` 唤出。下面每张都顺带把当时开着的侧栏和面板框了进来。
 
-| 图 | 内容 |
-|---|---|
-| ![Hub 天气](./image/qsl-hub-weather.png) | Island Hub · Weather |
-| ![Hub 媒体](./image/qsl-hub-media.png) | Island Hub · Media（旁侧栏 / 通知） |
-| ![Switcher](./image/qsl-hub-switcher.png) | Island Hub · Switcher |
-| ![启动器](./image/qsl-launcher.png) | `Super+A` 应用启动器 |
-| ![剪贴板](./image/qsl-clipboard.png) | `Super+Z` 剪贴板 |
-| ![面板合集](./image/qsl-panels.png) | 左栏键位 + Hub 壁纸 + 右栏 + 通知中心 |
+**Overview** — 身份卡（发行版 / 会话 / 开机时长 / 电量）、大钟、天气摘要、
+可滚待办、带农历与节气的月历。左栏是系统监控（CPU/GPU/内存环形表、PSI、
+磁盘与 Swap、网络曲线、进程表），右栏是音频（输出 / 输入 / 分应用音量）。
+
+![Hub Overview](./image/qsl-hub-overview.png)
+
+**Media** — 封面与曲目在左，歌词吃满右侧通高、焦点行放大，底部是 cava
+驱动的频谱条，右上角可切播放器。左栏待办（标签页 + T0/T1/T2 优先级），
+右栏更新（AUR 与官方仓库分列）。
+
+![Hub Media](./image/qsl-hub-media.png)
+
+**Wallpaper** — 卷轴布局：焦点壁纸居中放大，左右各两张缩小侧列，`←` `→`
+移焦点、`Enter` 应用。顶部信息条给出文件名、模式（图片 / 视频）、渲染后端与
+本页张数。左下剪贴板，右下通知中心。
+
+![Hub Wallpaper](./image/qsl-hub-wallpaper.png)
+
+**启动器**（`Super+A`）— 左侧剪贴板（`Super+Z`，图文双路历史），右下磁贴
+面板（`Super+X`，「执行 / 服务」两页快捷入口）。
+
+![启动器](./image/qsl-launcher.png)
 
 IPC 目录见左栏 Keys 页的「IPC」组（数据在 [qsl/asset/hotkeys.json](qsl/asset/hotkeys.json)），运行时真实注册表用 `qs ipc show`；键位以 [hypr/lua/binds.lua](hypr/lua/binds.lua) 与左栏 Keys 页为准。
 
