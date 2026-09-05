@@ -59,8 +59,8 @@ Item {
                 Layout.fillWidth: true; spacing: Size.spacing.xs
                 Rectangle {
                     Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                    color: Timers.stopwatch.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.stopwatch.running ? "暂停" : "开始"; color: Timers.stopwatch.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
+                    color: Timers.stopwatch.running ? Color.errorContainer : Color.primaryContainer
+                    Text { anchors.centerIn: parent; text: Timers.stopwatch.running ? "暂停" : "开始"; color: Timers.stopwatch.running ? Color.errorContainerText : Color.primaryContainerText; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.stopwatch.running ? Timers.pauseStopwatch() : Timers.startStopwatch() }
                 }
                 Rectangle {
@@ -101,8 +101,8 @@ Item {
                 visible: Timers.countdown.running || Timers.countdown.remaining > 0
                 Rectangle {
                     Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                    color: Timers.countdown.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.countdown.running ? "暂停" : "继续"; color: Timers.countdown.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
+                    color: Timers.countdown.running ? Color.errorContainer : Color.primaryContainer
+                    Text { anchors.centerIn: parent; text: Timers.countdown.running ? "暂停" : "继续"; color: Timers.countdown.running ? Color.errorContainerText : Color.primaryContainerText; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.countdown.running ? Timers.pauseCountdown() : Timers.startCountdown(0) }
                 }
                 Rectangle {

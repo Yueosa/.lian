@@ -640,29 +640,81 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 
 ## 第 10 轮：代码质量审计（2026-09-04 新增，原第 8 轮）
 
-- [ ] 死代码：未引用的组件 / 函数 / 属性 / qmldir 条目
-- [ ] 重复实现收编：C 和 N 的手写行布局改用 `QslRow` 一族（原「内容 M3 化」
-      轮里 C/N 的那部分）；同类 helper 只留一份——教训是同一轮里
-      `Volume.deviceIcon` 在服务层、`BtListCard.deviceIcon` 在卡片里并存
-- [ ] 注释与实际不符：本文件的动画白名单就过期过（引用了已删的
-      `NetworkPage.qml` / `BluetoothPage.qml` / `UpdatesPage.qml`）
-- [ ] 文件职责过大：超长 QML 拆分（`TodoListCard` / `NotifListCard` 量级）
-- [ ] `qsl-qmllint` 的 import/语法两类为 0、无绑定循环告警
-      （**别用裸 `qmllint`**——PATH 上那个是 Qt5 的空壳，见第 0 轮结档的更正）
-- [ ] 临时调试设施清零：IPC handler、console.log、dbg 属性
-- [ ] 错误路径审计：服务层失败会不会静默清空缓存——教训是 `updatesctl`
-      把 `paru` 查询失败当成"零个更新"，把 AUR 列表整个抹掉了
+- [x] 死代码：未引用的组件 / 函数 / 属性 / qmldir 条目（清了 6 处：
+      `HubPlaceholder.qml`、`Sysmon.openBtop`、`Todo.itemsByTag`、Calendar 的
+      `days` / `_rebuild` / `previousMonth` / `nextMonth` / `_allDates`）
+- [x] 重复实现收编：**C/N 的行不该改 `QslRow`**（2026-09-06 核过：`KeysListCard`
+      是两栏胶囊、`SysProcsCard` 是四列表格且表头要跟表体对齐、`NotifListCard`
+      明确用 anchors 而非 Layout 且图标展开时改锚点——套 `QslRow` 要给它加三个
+      属性，反过来拖累现用它的 8 张卡）。真正的重复是 `TodoListCard` 和
+      `TodoDoneCard` 互相重复 90 行，已抽 `ui/leftbar/TodoRow.qml`。
+      同类 helper：`shellQuote` 三份（HyprService / Weather / Avatar 内联一句）
+      收进 `data/service/shell.js`
+- [x] 注释与实际不符：动画白名单改**按 `id` 锚定**（原来按行号，10 条里 8 条
+      指错，`Workspaces.qml:162/177` 指到 109 行文件的界外）；
+      `NotifToastContent` 那句"不走令牌"说反了（它用的就是 `Island.notifToastMs`）。
+      全库注释扫过一遍，其余提到已删符号的三处都是有意的墓碑注释
+- [~] 文件职责过大：四个 UI 大件已拆（2026-09-06），闸门全绿
+
+      | 原文件 | 行数 | 拆出 |
+      |---|---|---|
+      | `ui/island/WeatherPage` | 1233 → 106 | `WeatherNow` / `WeatherNowcast` / `WeatherForecast` / `WeatherSearch` / `WeatherMetricTile` / `WeatherGaugeTile` |
+      | `ui/lock/LockContent` | 932 → 316 | `LockCava` / `LockClockMini` / `LockClockHero` / `LockLyrics` / `LockMediaControls` / `LockToasts` / `LockPassword` |
+      | `ui/island/MediaPage` | 785 → 275 | `MediaWave` / `MediaLyrics` / `MediaPlayerPicker` / `MediaCtrlBtn` |
+      | `ui/notif/NotifListCard` | 536 → 111 | `NotifAppRow` / `NotifEntryRow` |
+
+      **明天继续拆的（按大小）**：
+
+      - `data/service/Network.qml` **866** — 服务层，拆法跟 UI 不同：
+        应该按「连接管理 / 扫描 / 门户检测 / nmcli 解析」切，不是按视觉分区
+      - `ui/frame/RailRipple.qml` **734** — 单一职责（水波物理本身），
+        真要拆只能把「波形求解」和「Shape 渲染」分开，先评估值不值
+      - `ui/island/OverviewPage.qml` **647**
+      - `ui/island/WallpaperPage.qml` **616**
+      - `ui/island/OverviewCalendar.qml` **584**
+      - `data/service/Bluetooth.qml` **537**
+      - `Components/RailPage.qml` **530**
+
+      拆的手法见已拆四例，两条经验：①「跨区共用的状态留页根，子件回引取用」
+      与「显式往下传」二选一，**同一个文件里别混用**——回引省样板但绑定在
+      赋值前会报 null（锁屏那三档 ink 被引用二十几次，走回引日志就没法看，
+      所以锁屏用显式传）；② 新增 QML 文件热重载看不见，必须整壳重启
+- [x] `qsl-qmllint` 的 import/语法两类为 0、无绑定循环告警
+      （**别用裸 `qmllint`**——PATH 上那个是 Qt5 的空壳，见第 0 轮结档的更正）。
+      顺手把 `unused-imports` 也提成致命项，清了 9 个未用导入
+- [x] 临时调试设施清零：IPC handler、console.log、dbg 属性
+      （只找到一处真问题：`LockContext` 往 journal 记密码长度，改成只记空/非空）
+- [x] 错误路径审计：服务层失败会不会静默清空缓存——教训是 `updatesctl`
+      把 `paru` 查询失败当成"零个更新"，把 AUR 列表整个抹掉了。
+      查出同类三处：`Clipboard` / `Notification` 的 `applyCacheText`、
+      `Lianwall.applySpace`，解析失败都会把已有数据清空，改成保留上一份好数据
 
 ## 第 11 轮：回归轮（动画令牌，原第 9 轮）
 
 目的：前面大量重写页面/卡片/交互后，检查是否有动画又脱离令牌被硬编码。
 第 9/10 轮管结构与卫生，本轮只管动画曲线族有没有被绕开。
 
-- [ ] 审计：`grep -rn 'duration: [0-9]'` 应只剩装饰性动画白名单；
-      `grep -rn 'NumberAnimation\|ColorAnimation'` 应全部来自 Anim/CAnim；
-      `grep -rn 'bezierCurve\|Easing\.'` 应只出现在令牌与封装组件里
+- [x] 审计（2026-09-06）：**没有泄露**。23 处硬编码 `duration` 全部落在白名单内，
+      0 处新增；`bezierCurve` 只出现在 `Size.anim.curve*`；裸 `NumberAnimation`
+      只剩「需要 id 供 JS start/stop」这一类，时长曲线仍取自令牌
 - [ ] 目检：逐个面板过一遍开关/切换/悬停手感，确认曲线族统一
-- [ ] 白名单（装饰性动画）清单写进本文件，后续新增硬编码必须能说清理由
+- [x] 白名单（装饰性动画）清单写进本文件（第 10 轮改 `id` 锚定，
+      第 11 轮跟进拆分挪走的五条路径）
+
+### 附带做掉：M3 容器色收编（2026-09-06）
+
+审计颜色令牌时发现的更大问题：`Color.qml` 暴露 52 个 M3 角色，**35 个引用次数为 0**，
+整套 UI 跑在 primary(161) / textMuted(132) / text(77) / error(50) 四个色上。
+而「选中/激活的有色底」在 27 处用 `withAlpha(primary, 0.12~0.25)` 手搓——
+`Color.qml` 自己第 25 行就写着「优先用 container 家族」，规矩写了从没执行。
+
+- [x] 27 处 primary + 6 处 error 收编成 `primaryContainer` / `errorContainer`，
+      压在上面的字同步换 `*ContainerText`。容器家族用量 0 → 55
+- [x] 2 处真泄露（`SwitcherPage` / `NotifToastContent` 用 `Qt.rgba(c.r,c.g,c.b,a)`
+      绕开 `Color.withAlpha`）改回令牌
+- [ ] **未做**：表面色阶 8 档仍只用 3 档（`surfaceContainerLowest` /
+      `surfaceContainer` / `surfaceDim` / `surfaceBright` / `surfaceVariant` 全 0），
+      卡片套卡片分不出深浅。留给后续
 
 ## 第 12 轮：内存调查与优化 + GC 停顿（原第 10 轮，2026-09-05 扩容）
 
@@ -694,27 +746,47 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 
 ## 动画白名单（第 2 轮确立，回归轮审计依据）
 
+**条目按元素 `id` 锚定，不写行号。** 2026-09-06 第 10 轮核对时，带行号的 10 条
+里 8 条已经指错地方，`Workspaces.qml:162/177` 甚至指到了 109 行文件的界外——
+行号每改一次文件就烂一次，`id` 不会跟着漂。没有 id 的写结构位置。
+
 装饰性/刷新动画，不走令牌（源码处已有注释标记）：
 
-- `Components/QslIconButton.qml` — busy 旋转 RotationAnimator 900ms 无限循环
-- `ui/bar/Workspaces.qml:162,177` — 甜甜圈 flipAnim/settleAnim（Canvas+Timer 手绘系统）
-- `ui/island/LyricsContent.qml` — 歌词跑马灯（无限循环 SequentialAnimation 组）
-- `ui/island/MediaPage.qml:205` — 频谱柱 60ms tick；`:476` 波形相位 1200ms 循环
-- `ui/island/NotifToastContent.qml` — toast 倒计时进度条
-- `ui/island/WeatherPage.qml:377,386` — 刷新 spinner 800ms 循环 + 配套 resetAnim
-- `ui/lock/LockContent.qml:905-910` — 输错密码 shakeAnim 抖动（40/50ms 关键帧）
-- `Components/QslActionChip.qml`、`Components/QslSectionHeader.qml` — busy 旋转 900ms
+- `Components/QslIconButton.qml` `id=glyph` — busy 旋转 RotationAnimator 900ms 无限循环
+- `Components/QslActionChip.qml`、`Components/QslSectionHeader.qml` — 同上，busy 旋转 900ms
+- `ui/island/LyricsContent.qml` `id=scrollAnim` — 歌词跑马灯（无限循环 SequentialAnimation 组）
+- `ui/island/MediaLyrics.qml` `id=cavaStrip` — 频谱柱 60ms tick
+- `ui/island/WeatherNow.qml` `id=spinAnim` — 刷新 spinner 800ms 循环；
+  `id=resetAnim` — 配套复位 300ms
+- `ui/lock/LockPassword.qml` `id=shakeAnim` — 输错密码抖动（40/50ms 关键帧）
 - `ui/rightbar/NetToggleCard.qml`、`ui/rightbar/BtToggleCard.qml` — 扫描跑马灯 1100ms
 - `ui/rightbar/NetListCard.qml` — 连接中旋转；`ui/rightbar/BtListCard.qml` — busy 旋转
 - `ui/rightbar/UpdStatusCard.qml` — 检查中跑马灯
-  （以上四行 2026-09-04 更新：原先指向的 NetworkPage / BluetoothPage /
-  UpdatesPage 已在第 4 轮迁移 V 时删除，条目一直没跟着改——第 10 轮要防的就是这个）
 
 机制受限未转换（封装组件表达不了，保持原样）：
 
-- `ui/island/MediaPage.qml:468` — 播放进度 SmoothedAnimation（velocity 驱动，过冲会抖）
-- `ui/island/OverviewCalendar.qml:192` — 翻页 slideAnim（JS 链式改写 duration）
-- `ui/island/WeatherPage.qml:223` — 风向 RotationAnimation（依赖 direction: Shortest 跨 0° 最短路径）
+- `ui/island/MediaWave.qml` `id=waveRoot` 三条 `SmoothedAnimation`：能量
+  （velocity 2.6）/ 低频（5.0）把 30fps 的 cava 原始值抹平，播放进度
+  （velocity 500）过冲会抖。都是 velocity 驱动，令牌是时长制，表达不了
+- `ui/island/MediaWave.qml` `id=waveRoot` 的 `FrameAnimation` — 波形相位按帧积分。
+  第 8 轮从 1200ms 无限循环换过来的：速度要跟着能量变，而改正在跑的
+  `NumberAnimation` 的 duration 会让波形当帧裂一道口。**逐帧跑 JS，但已用
+  `Media.playing && root.visible` 双闸夹住**，不播/不可见就不转
+- `ui/island/OverviewCalendar.qml` `id=slideAnim` — 翻页，JS 链式改写 duration
+- `ui/frame/RailRipple.qml` `id=birthAnim` — 水波出闸，同样 JS 改写 duration
+  （源码里那个 `duration: 200` 是占位，`launch()` 会按半个波长重算）
+- `ui/island/WeatherMetricTile.qml` 内的 `RotationAnimation` — 风向，
+  依赖 `direction: Shortest` 跨 0° 走最短路径
+- `ui/island/WallpaperPage.qml` `id=slideAnim` / `id=punchAnim`、
+  `ui/island/HubContent.qml` `id=pageFade` — **时长与曲线全部取自
+  `Size.anim.*`，不是泄露**。写成裸 `NumberAnimation` 只因为要有 `id` 供 JS
+  `start()/stop()`，`Anim` 那种 `Behavior` 写法给不了。列在这里免得下轮
+  审计把它们当成漏网的
+- `ui/island/NotifToastContent.qml` — toast 倒计时进度条。**其实没绕开令牌**
+  （`duration: Island.notifToastMs`，就是要跟 Timer 同步），源码那句"不走令牌"
+  是旧话，留在这里只为说明它为什么长得像白名单项
+- ~~`ui/bar/Workspaces.qml` 甜甜圈 flipAnim/settleAnim~~ 第 10 轮删除：
+  那圈自转一个人吃 10.6 个百分点 CPU（空闲 11.80% → 0.28%），换成静态药丸了
 - ~~`ui/leftbar/Leftbar.qml` / `ui/rightbar/Rightbar.qml` 的 panelAnim~~
   已随第 4 轮改 `RailPage` 消失（2026-09-04 核实）
 

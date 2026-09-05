@@ -105,7 +105,7 @@ Item {
         radius: Size.rounding.full
         color: root.iconActive
             ? Color.primary
-            : Color.withAlpha(Color.primary, 0.16)
+            : Color.primaryContainer
         Behavior on color { CAnim {} }
 
         Text {
@@ -114,7 +114,7 @@ Item {
             text: root.icon
             font.family: root.iconFamily
             font.pixelSize: root.iconSize
-            color: root.iconActive ? Color.primaryText : Color.text
+            color: root.iconActive ? Color.primaryText : Color.primaryContainerText
             Behavior on color { CAnim {} }
         }
 

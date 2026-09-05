@@ -43,12 +43,12 @@ Item {
             Layout.preferredWidth: 18
             Layout.preferredHeight: 18
             radius: Size.rounding.md
-            color: Color.withAlpha(Color.primary, 0.18)
+            color: Color.primaryContainer
 
             Text {
                 anchors.centerIn: parent
                 text: HyprService.workspaceLabel(HyprService.focusedWorkspace)
-                color: Color.primary
+                color: Color.primaryContainerText
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.labelSmall
                 font.bold: true

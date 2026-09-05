@@ -199,19 +199,26 @@ gate_session() {
         log "FATAL: hyprctl 连不上 compositor"
         exit 3
     fi
-    local bar_n
-    bar_n="$(layers_count_ns qsl-bar | tr -d '[:space:]')"
-    if [[ "${bar_n:-0}" -lt 1 ]]; then
+    # 认 qsl-frame，不是 qsl-bar。第 4~7 轮把顶栏并进合并框窗之后，顶栏不再
+    # 有自己的 layer——现在整块画布是一个 namespace=qsl-frame 的全屏层，另有
+    # 四个 qsl-rail-ear 和四个 qsl-exclusion 撑位。门禁一直没跟着改，于是
+    # 2026-09-06 这天壳明明好好的，membench 却判「连错 Wayland 会话」直接退出。
+    #
+    # 门禁存在的意义是「别测到幽灵 qs」，所以认哪个层都行，只要它是本 pid 建的、
+    # 且只在壳真正起来后才出现。qsl-frame 正合适。
+    local frame_n
+    frame_n="$(layers_count_ns qsl-frame | tr -d '[:space:]')"
+    if [[ "${frame_n:-0}" -lt 1 ]]; then
         # qs 可能还没起
         if [[ -z "$(qs_pid)" ]]; then
-            log "尚无 qs，将在 restart/启动后复查 qsl-bar"
+            log "尚无 qs，将在 restart/启动后复查 qsl-frame"
         else
-            log "FATAL: qs 在跑但 layers 里没有 qsl-bar（可能连错 Wayland 会话）"
+            log "FATAL: qs 在跑但 layers 里没有 qsl-frame（可能连错 Wayland 会话）"
             hypr layers 2>&1 | head -40 | tee -a "$LOG" >&2 || true
             exit 3
         fi
     else
-        log "OK qsl-bar ×${bar_n}"
+        log "OK qsl-frame ×${frame_n}"
     fi
 }
 
@@ -493,15 +500,15 @@ run_main() {
         wait_qs || { log "FATAL: qs 未运行"; exit 2; }
     fi
 
-    # 复查 bar
-    local bar_n
-    bar_n="$(layers_count_ns qsl-bar | tr -d '[:space:]')"
-    if [[ "${bar_n:-0}" -lt 1 ]]; then
-        log "FATAL: 启动后仍无 qsl-bar — 停止，避免测到幽灵 qs"
+    # 复查框窗
+    local frame_n
+    frame_n="$(layers_count_ns qsl-frame | tr -d '[:space:]')"
+    if [[ "${frame_n:-0}" -lt 1 ]]; then
+        log "FATAL: 启动后仍无 qsl-frame — 停止，避免测到幽灵 qs"
         hypr layers 2>&1 | tee -a "$LOG" >&2 || true
         exit 3
     fi
-    log "门禁通过：qsl-bar ×${bar_n}  qs_pid=$(qs_pid)"
+    log "门禁通过：qsl-frame ×${frame_n}  qs_pid=$(qs_pid)"
 
     sample "cold_after_ready"
     sleep 2

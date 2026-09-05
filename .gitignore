@@ -41,3 +41,4 @@ fcitx5/rime/custom_phrase.txt
 # 改主题、动一下设置类程序就变），入库只会一直脏在 git status 上
 /gtk-3.0/settings.ini
 /gtk-4.0/settings.ini
+shell/

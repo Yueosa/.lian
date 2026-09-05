@@ -257,7 +257,7 @@ FocusScope {
         implicitHeight: 36
         radius: Size.rounding.md
         color: active
-            ? Color.withAlpha(Color.primary, 0.16)
+            ? Color.primaryContainer
             : Color.surfaceContainerHigh
 
         Text {
@@ -265,7 +265,7 @@ FocusScope {
             text: button.icon
             font.family: Size.fontMono
             font.pixelSize: Size.iconSize.lg
-            color: button.active ? Color.primary : Color.backgroundText
+            color: button.active ? Color.primaryContainerText : Color.backgroundText
         }
 
         MouseArea {

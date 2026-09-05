@@ -157,7 +157,7 @@ Item {
 
                 // 「开着」是持久状态，用底色表达；悬停另外叠一层
                 color: tile.on
-                    ? Color.withAlpha(Color.primary, Color.state.selected)
+                    ? Color.primaryContainer
                     : Color.withAlpha(Color.text, 0.04)
 
                 border.width: tile.selected ? 2 : 0
@@ -167,7 +167,7 @@ Item {
 
                 QslStateLayer {
                     source: ma
-                    tint: tile.on ? Color.primary : Color.text
+                    tint: tile.on ? Color.primaryContainerText : Color.text
                 }
 
                 Column {
@@ -186,7 +186,7 @@ Item {
                         font.family: ligature ? Size.fontIcon : "Noto Color Emoji"
                         font.pixelSize: ligature ? 24 : 22
                         color: ligature
-                            ? (tile.on ? Color.primary : Color.text)
+                            ? (tile.on ? Color.primaryContainerText : Color.text)
                             : "#000000"
                         Behavior on color { CAnim {} }
                     }
@@ -198,7 +198,7 @@ Item {
                             ? tile.modelData.title : ""
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.bodySmall
-                        color: Color.text
+                        color: tile.on ? Color.primaryContainerText : Color.text
                         elide: Text.ElideRight
                     }
 

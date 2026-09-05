@@ -8,9 +8,18 @@
 //
 // 性能：Cava 只在有媒体时 acquire；歌词随 surface 生命周期；
 // 通知 hydrate 一次，不设 uiActive；封面 sourceSize 小；无 FastBlur
+//
+// 第 10 轮拆分（原 932 行）：七个分区各自成文件，本文件只剩
+//   ① 派生数据（时间/日期/节气/通知行/待办/歌词窗/音量图标）
+//   ② 跨区状态（clockPeek / seekPos / seeking / expandedNotif / _cavaHeld）
+//   ③ 编排与转接
+// 子件**不回引页根**，要什么由这里显式传。锁屏那三档 ink 被引用二十几次，
+// 走回引的话每个绑定在 page 赋值前都要报一次 null，日志就没法看了。
+//
+//   LockCava / LockClockMini / LockClockHero / LockLyrics /
+//   LockMediaControls / LockToasts / LockPassword
 
 import QtQuick
-import qs.data.state
 import qs.data.service
 
 Item {
@@ -135,22 +144,11 @@ Item {
         return "volume_mute"
     }
 
-    function focusInput() {
-        if (!dismissing)
-            pwdInput.forceActiveFocus()
-    }
-
-    function clearInput() {
-        pwdInput.text = ""
-    }
-
-    function passwordText() {
-        return pwdInput.text
-    }
-
-    function shakePassword() {
-        shakeAnim.restart()
-    }
+    // ---- 对 LockSurface 的公开面：原样转发给密码框 ----
+    function focusInput() { pwd.forceFocus() }
+    function clearInput() { pwd.clear() }
+    function passwordText() { return pwd.text() }
+    function shakePassword() { pwd.shake() }
 
     function _holdCava(want) {
         if (want === root._cavaHeld)
@@ -176,730 +174,116 @@ Item {
         target: Media
         function onTrackChanged() { Media.syncLyrics() }
     }
-    Connections {
-        target: Cava
-        enabled: root._cavaHeld
-        function onValuesChanged() { cavaCanvas.requestPaint() }
-    }
 
     // ---- cava：下半屏背景，不是控件 ----
-    Canvas {
-        id: cavaCanvas
+    LockCava {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: parent.height * 0.46
-        opacity: root.hasMedia ? 0.5 : 0.16
-        z: 0
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-        onPaint: {
-            const ctx = getContext("2d")
-            const w = width
-            const h = height
-            ctx.reset()
-            const vals = Cava.values || []
-            const n = 30
-            const gap = 3
-            const barW = Math.max(2, (w - gap * (n - 1)) / n)
-            const c0 = String(Color.primary)
-            const c1 = String(Color.inversePrimary)
-            for (let i = 0; i < n; i++) {
-                const v = Math.max(0, Math.min(1, Number(vals[i]) || 0))
-                const bh = Math.max(4, v * h)
-                const x = i * (barW + gap)
-                ctx.globalAlpha = 0.2 + 0.8 * v
-                const g = ctx.createLinearGradient(0, h, 0, h - bh)
-                g.addColorStop(0, c0)
-                g.addColorStop(1, c1)
-                ctx.fillStyle = g
-                ctx.fillRect(x, h - bh, barW, bh)
-            }
-        }
-        Behavior on opacity { Anim { type: Anim.Effects } }
+        hasMedia: root.hasMedia
+        cavaHeld: root._cavaHeld
     }
 
     // ---- 顶：有媒体时的小钟 + 下一件待办 ----
-    // MouseArea 不能当 Column 的子项再 anchors.fill：会把后面的行顶到 y=0
-    Item {
-        id: clockMini
+    LockClockMini {
         visible: root.showMedia
-        opacity: visible ? 1 : 0
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: 26
-        width: miniCol.implicitWidth
-        height: miniCol.implicitHeight
-        z: 2
-        Behavior on opacity { Anim { type: Anim.Effects } }
-
-        Column {
-            id: miniCol
-            spacing: 6
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: root.timeStr
-                color: root.ink
-                font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.displayLarge
-                font.weight: Font.ExtraLight
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: root.dateStr
-                color: root.inkDim
-                font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.bodyLarge
-            }
-            Text {
-                visible: root.openTodos.length > 0
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 480
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
-                text: {
-                    const t = root.openTodos[0]
-                    if (!t)
-                        return ""
-                    const head = (t.starred ? "★ " : "") + (t.text || "")
-                    return root.openTodos.length > 1
-                        ? (head + "  ·  还有 " + (root.openTodos.length - 1) + " 件")
-                        : head
-                }
-                color: root.inkDim
-                font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.bodyLarge
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.clockPeek = true
-        }
+        ink: root.ink
+        inkDim: root.inkDim
+        timeStr: root.timeStr
+        dateStr: root.dateStr
+        openTodos: root.openTodos
+        onPeekRequested: root.clockPeek = true
     }
 
     // ---- 大钟（没媒体，或点小钟 peek）+ 待办列表 ----
-    Column {
-        id: clockHero
+    LockClockHero {
         visible: root.showHero
-        opacity: visible ? 1 : 0
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: Math.round(parent.width * 0.07)
         width: Math.min(560, parent.width * 0.5)
-        spacing: 10
-        z: 2
-        Behavior on opacity { Anim { type: Anim.Effects } }
-
-        Text {
-            text: root.timeStr
-            color: root.ink
-            font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.displayHero
-            font.weight: Font.ExtraLight
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (root.hasMedia)
-                        root.clockPeek = false
-                    else
-                        root.focusInput()
-                }
-            }
-        }
-        Text {
-            text: root.dateStr
-            color: root.inkDim
-            font.family: Size.fontSans
-            font.pixelSize: 22
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (root.hasMedia)
-                        root.clockPeek = false
-                    else
-                        root.focusInput()
-                }
-            }
-        }
-        Text {
-            visible: root.holidayLine.length > 0
-            text: root.holidayLine
-            color: root.inkFaint
-            font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.bodyMedium
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (root.hasMedia)
-                        root.clockPeek = false
-                    else
-                        root.focusInput()
-                }
-            }
-        }
-
-        Column {
-            visible: root.openTodos.length > 0
-            width: parent.width
-            topPadding: 18
-            spacing: 6
-
-            Repeater {
-                model: root.todoRows
-                delegate: Item {
-                    required property var modelData
-                    width: clockHero.width
-                    height: todoCol.implicitHeight + 14
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 10
-
-                        Rectangle {
-                            width: 18
-                            height: 18
-                            radius: 5
-                            y: 4
-                            color: "transparent"
-                            border.width: 1.5
-                            border.color: root.inkFaint
-                        }
-
-                        Column {
-                            id: todoCol
-                            width: parent.width - 28
-                            spacing: 3
-                            Text {
-                                width: parent.width
-                                text: modelData.text || ""
-                                color: root.ink
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.titleLarge
-                                wrapMode: Text.NoWrap
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                visible: (modelData.tag || "").length > 0 || modelData.starred
-                                text: (modelData.starred ? "★ 重要  " : "") + (modelData.tag || "")
-                                color: modelData.starred ? Color.inversePrimary : root.inkFaint
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.bodySmall
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (modelData.id)
-                                Todo.toggle(modelData.id)
-                            root.focusInput()
-                        }
-                    }
-                }
-            }
-        }
+        ink: root.ink
+        inkDim: root.inkDim
+        inkFaint: root.inkFaint
+        timeStr: root.timeStr
+        dateStr: root.dateStr
+        holidayLine: root.holidayLine
+        openTodos: root.openTodos
+        todoRows: root.todoRows
+        hasMedia: root.hasMedia
+        onPeekDismissed: root.clockPeek = false
+        onFocusWanted: root.focusInput()
     }
 
     // ---- 左：歌词 ----
-    Column {
+    LockLyrics {
         visible: root.showMedia
-        opacity: visible ? 1 : 0
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: 56
         anchors.verticalCenterOffset: -20
         width: Math.min(520, parent.width * 0.46)
-        spacing: 10
-        z: 1
-        Behavior on opacity { Anim { type: Anim.Effects } }
-
-        Repeater {
-            model: root.lyricWindow
-            delegate: Text {
-                required property var modelData
-                width: parent.width
-                text: modelData.text
-                color: modelData.current ? root.ink : root.inkFaint
-                font.family: Size.fontSans
-                font.pixelSize: modelData.current ? 32 : 16
-                font.weight: modelData.current ? Font.DemiBold : Font.Normal
-                wrapMode: Text.WordWrap
-                Behavior on font.pixelSize { Anim { type: Anim.Effects } }
-                Behavior on color { CAnim {} }
-            }
-        }
+        ink: root.ink
+        inkFaint: root.inkFaint
+        lyricWindow: root.lyricWindow
     }
 
     // ---- 左下：媒体控件 ----
-    Column {
+    LockMediaControls {
         visible: root.showMedia
-        opacity: visible ? 1 : 0
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: 56
         anchors.bottomMargin: 36
         width: Math.min(560, parent.width * 0.5)
-        spacing: 8
-        z: 2
-        Behavior on opacity { Anim { type: Anim.Effects } }
-
-        Row {
-            spacing: 14
-
-            Rectangle {
-                width: 56
-                height: 56
-                radius: 12
-                color: Color.withAlpha(Color.primary, 0.45)
-                clip: true
-
-                Image {
-                    anchors.fill: parent
-                    source: root.artUrl
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    sourceSize.width: 112
-                    sourceSize.height: 112
-                    visible: status === Image.Ready
-                }
-                Text {
-                    anchors.centerIn: parent
-                    visible: root.artUrl.length === 0
-                    text: "album"
-                    color: root.ink
-                    font.family: Size.fontIcon
-                    font.pixelSize: 26
-                }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 400
-                spacing: 3
-                Text {
-                    width: parent.width
-                    text: root.trackTitle
-                    color: root.ink
-                    font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.titleMedium
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: root.trackArtist.length
-                        ? root.trackArtist
-                        : (Media.activeIdentity || "")
-                    color: root.inkDim
-                    font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.bodySmall
-                    elide: Text.ElideRight
-                }
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: 16
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 3
-                radius: 1.5
-                color: Qt.rgba(1, 1, 1, 0.18)
-                Rectangle {
-                    height: parent.height
-                    width: {
-                        const len = root.trackLength
-                        if (len <= 0)
-                            return 0
-                        return parent.width * Math.max(0, Math.min(1, root.seekPos / len))
-                    }
-                    radius: parent.radius
-                    color: root.ink
-                }
-            }
-            MouseArea {
-                anchors.fill: parent
-                anchors.topMargin: -6
-                anchors.bottomMargin: -6
-                enabled: Media.canSeek && root.trackLength > 0
-                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onPressed: root.seeking = true
-                onReleased: (mouse) => {
-                    if (root.trackLength > 0) {
-                        Media.seekFraction(mouse.x / width)
-                        root.seekPos = Media.position()
-                    }
-                    root.seeking = false
-                    root.focusInput()
-                }
-                onPositionChanged: (mouse) => {
-                    if (!pressed || root.trackLength <= 0)
-                        return
-                    root.seekPos = Math.max(0, Math.min(1, mouse.x / width)) * root.trackLength
-                }
-            }
-        }
-
-        Row {
-            width: parent.width
-            spacing: 4
-
-            LockIconBtn {
-                glyph: "shuffle"
-                active: Media.shuffleOn
-                enabled: Media.shuffleOk
-                onTriggered: {
-                    Media.toggleShuffle()
-                    root.focusInput()
-                }
-            }
-            LockIconBtn {
-                glyph: "skip_previous"
-                onTriggered: {
-                    Media.previousTrack()
-                    root.focusInput()
-                }
-            }
-            LockIconBtn {
-                glyph: Media.playing ? "pause" : "play_arrow"
-                primary: true
-                onTriggered: {
-                    Media.playPause()
-                    root.focusInput()
-                }
-            }
-            LockIconBtn {
-                glyph: "skip_next"
-                onTriggered: {
-                    Media.nextTrack()
-                    root.focusInput()
-                }
-            }
-            LockIconBtn {
-                glyph: Media.loopOne ? "repeat_one" : "repeat"
-                active: Media.loopOn
-                enabled: Media.loopOk
-                onTriggered: {
-                    Media.cycleLoop()
-                    root.focusInput()
-                }
-            }
-
-            Item { width: 12; height: 1 }
-
-            Item {
-                width: 132
-                height: 36
-                anchors.verticalCenter: parent.verticalCenter
-                opacity: Volume.hasSink ? 1 : 0.4
-
-                Text {
-                    id: volGlyph
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.volIcon
-                    color: Volume.sinkMuted ? Color.error : root.inkDim
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.iconSize.xl
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -6
-                        enabled: Volume.hasSink
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: {
-                            Volume.toggleSinkMute()
-                            root.focusInput()
-                        }
-                    }
-                }
-
-                Item {
-                    anchors.left: volGlyph.right
-                    anchors.leftMargin: 8
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 16
-
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        height: 3
-                        radius: 1.5
-                        color: Qt.rgba(1, 1, 1, 0.18)
-                        Rectangle {
-                            height: parent.height
-                            width: parent.width * (Volume.sinkMuted ? 0 : (Volume.sinkVolume || 0))
-                            radius: parent.radius
-                            color: root.ink
-                        }
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.topMargin: -8
-                        anchors.bottomMargin: -8
-                        enabled: Volume.hasSink
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        preventStealing: true
-                        onPressed: (mouse) => {
-                            Volume.setSinkVolume(Math.max(0, Math.min(1, mouse.x / width)))
-                        }
-                        onPositionChanged: (mouse) => {
-                            if (pressed)
-                                Volume.setSinkVolume(Math.max(0, Math.min(1, mouse.x / width)))
-                        }
-                        onReleased: root.focusInput()
-                    }
-                }
-            }
-        }
+        ink: root.ink
+        inkDim: root.inkDim
+        artUrl: root.artUrl
+        trackTitle: root.trackTitle
+        trackArtist: root.trackArtist
+        trackLength: root.trackLength
+        volIcon: root.volIcon
+        seekPos: root.seekPos
+        seeking: root.seeking
+        onSeekPosChangeRequested: (pos) => root.seekPos = pos
+        onSeekingChangeRequested: (active) => root.seeking = active
+        onFocusWanted: root.focusInput()
     }
 
     // ---- 右上：通知 toast ----
-    Column {
+    LockToasts {
         visible: root.notifRows.length > 0
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: 28
         anchors.rightMargin: 36
-        width: 300
-        spacing: 8
-        z: 3
-
-        Repeater {
-            model: root.notifRows
-            delegate: Rectangle {
-                id: toastCard
-                required property var modelData
-                readonly property bool open: root.expandedNotif === modelData.notifId
-                width: 300
-                height: toastCol.implicitHeight + 20
-                radius: 14
-                color: Qt.rgba(1, 1, 1, 0.08)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.1)
-
-                Column {
-                    id: toastCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 12
-                    spacing: 3
-
-                    Row {
-                        width: parent.width
-                        Text {
-                            width: parent.width - 20
-                            text: modelData.appName || "应用"
-                            color: Color.inversePrimary
-                            font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.labelSmall
-                            font.weight: Font.DemiBold
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            text: "close"
-                            color: root.inkFaint
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.lg
-                            MouseArea {
-                                anchors.fill: parent
-                                anchors.margins: -6
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    Notification.dismiss(modelData)
-                                    root.focusInput()
-                                }
-                            }
-                        }
-                    }
-                    Text {
-                        width: parent.width
-                        text: modelData.summary || ""
-                        color: root.ink
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.labelMedium
-                        font.weight: Font.Medium
-                        elide: toastCard.open ? Text.ElideNone : Text.ElideRight
-                        wrapMode: toastCard.open ? Text.Wrap : Text.NoWrap
-                        maximumLineCount: toastCard.open ? 4 : 1
-                    }
-                    Text {
-                        width: parent.width
-                        visible: toastCard.open
-                            && (modelData.body || "").length > 0
-                            && modelData.body !== modelData.summary
-                        text: modelData.body || ""
-                        color: root.inkDim
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.labelSmall
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 4
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    z: -1
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root.expandedNotif = open ? -1 : modelData.notifId
-                        root.focusInput()
-                    }
-                }
-            }
-        }
-
-        Text {
-            visible: root.notifRows.length > 0
-            anchors.right: parent.right
-            text: "全部清除"
-            color: root.inkFaint
-            font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.labelMedium
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -4
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    Notification.dismissAll()
-                    root.focusInput()
-                }
-            }
-        }
+        ink: root.ink
+        inkDim: root.inkDim
+        inkFaint: root.inkFaint
+        notifRows: root.notifRows
+        expandedNotif: root.expandedNotif
+        onExpandRequested: (notifId) => root.expandedNotif = notifId
+        onFocusWanted: root.focusInput()
     }
 
     // ---- 右下：密码 ----
-    Item {
-        id: pwdWrap
+    LockPassword {
+        id: pwd
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: 36
         anchors.bottomMargin: 36
-        width: 300
-        height: 54
-        z: 3
-        transform: Translate { id: pwdShake; x: 0 }
-
-        Rectangle {
-            anchors.fill: parent
-            radius: height / 2
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.width: 1.5
-            border.color: root.failed
-                ? Color.error
-                : (pwdInput.activeFocus
-                    ? Qt.rgba(1, 1, 1, 0.7)
-                    : Qt.rgba(1, 1, 1, 0.22))
-            Behavior on border.color { CAnim {} }
-
-            Row {
-                anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 18
-                spacing: 10
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "lock"
-                    font.family: Size.fontIcon
-                    font.pixelSize: Size.iconSize.xl
-                    color: root.failed ? Color.error : root.inkFaint
-                }
-
-                TextInput {
-                    id: pwdInput
-                    width: parent.width - 40
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: root.ink
-                    font.pixelSize: 15
-                    font.family: Size.fontSans
-                    echoMode: TextInput.Password
-                    passwordCharacter: "●"
-                    clip: true
-                    focus: true
-                    selectByMouse: true
-                    enabled: !root.unlocking && !root.dismissing
-                    horizontalAlignment: Text.AlignHCenter
-
-                    Keys.onReturnPressed: root.submit()
-                    Keys.onEnterPressed: root.submit()
-                    Keys.onEscapePressed: {
-                        if (root.clockPeek)
-                            root.clockPeek = false
-                    }
-
-                    Text {
-                        anchors.fill: parent
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        visible: !pwdInput.text
-                        text: root.unlocking ? "验证中…" : (root.failed ? "密码错误" : "输入密码")
-                        color: root.failed ? Color.error : root.inkFaint
-                        font: pwdInput.font
-                    }
-                }
-            }
-        }
-    }
-
-    // 装饰性/刷新动画，不走令牌（plan.md 白名单）：密码错误抖动
-    SequentialAnimation {
-        id: shakeAnim
-        NumberAnimation { target: pwdShake; property: "x"; to: 14; duration: 40 }
-        NumberAnimation { target: pwdShake; property: "x"; to: -12; duration: 50 }
-        NumberAnimation { target: pwdShake; property: "x"; to: 8; duration: 40 }
-        NumberAnimation { target: pwdShake; property: "x"; to: -6; duration: 40 }
-        NumberAnimation { target: pwdShake; property: "x"; to: 0; duration: 40 }
-    }
-
-    component LockIconBtn: Item {
-        id: btn
-        property string glyph: ""
-        property bool primary: false
-        property bool active: false
-        signal triggered()
-
-        width: primary ? 44 : 36
-        height: width
-
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            color: primary
-                ? Qt.rgba(1, 1, 1, 0.16)
-                : (ma.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
-            opacity: btn.enabled ? 1 : 0.35
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: btn.glyph
-            color: btn.active ? Color.inversePrimary : root.ink
-            font.family: Size.fontIcon
-            font.pixelSize: btn.primary ? 24 : 20
-        }
-        MouseArea {
-            id: ma
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: btn.triggered()
-        }
+        ink: root.ink
+        inkFaint: root.inkFaint
+        failed: root.failed
+        unlocking: root.unlocking
+        dismissing: root.dismissing
+        clockPeek: root.clockPeek
+        onSubmit: root.submit()
+        onPeekDismissed: root.clockPeek = false
     }
 
     Timer {
@@ -920,7 +304,7 @@ Item {
         Lyrics.acquire()
         root._holdCava(root.hasMedia && !root.dismissing)
         Media.syncLyrics()
-        pwdInput.forceActiveFocus()
+        pwd.forceFocus()
     }
 
     Component.onDestruction: {

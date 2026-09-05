@@ -87,7 +87,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Bluetooth.discovering ? 3 : 0
             radius: 2
-            color: Color.withAlpha(Color.primary, 0.25)
+            color: Color.primaryContainer
             clip: true
             opacity: Bluetooth.discovering ? 1 : 0
             Behavior on Layout.preferredHeight {
@@ -122,7 +122,7 @@ Item {
             visible: Bluetooth.lastError !== ""
             Layout.preferredHeight: visible ? 34 : 0
             radius: Size.rounding.sm
-            color: Color.withAlpha(Color.error, 0.12)
+            color: Color.errorContainer
             clip: true
 
             RowLayout {
@@ -135,12 +135,12 @@ Item {
                     text: "error"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.error
+                    color: Color.errorContainerText
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Bluetooth.lastError
-                    color: Color.error
+                    color: Color.errorContainerText
                     font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }

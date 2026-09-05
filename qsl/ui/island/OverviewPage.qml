@@ -60,7 +60,7 @@ Item {
         width: (parent.width - parent.spacing) / 2
         height: 32
         radius: Size.rounding.md
-        color: accent ? Color.withAlpha(Color.primary, 0.12) : Color.surfaceContainerHighest
+        color: accent ? Color.primaryContainer : Color.surfaceContainerHighest
 
         Row {
             anchors.centerIn: parent
@@ -69,14 +69,14 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.glyph
-                color: parent.parent.accent ? Color.primary : Color.textMuted
+                color: parent.parent.accent ? Color.primaryContainerText : Color.textMuted
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.sm
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.text
-                color: parent.parent.accent ? Color.primary : Color.textMuted
+                color: parent.parent.accent ? Color.primaryContainerText : Color.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
                 font.bold: parent.parent.accent
@@ -128,13 +128,13 @@ Item {
         implicitWidth: pillText.implicitWidth + 16
         implicitHeight: 20
         radius: height / 2
-        color: accent ? Color.withAlpha(Color.primary, 0.16) : Color.surfaceContainerHighest
+        color: accent ? Color.primaryContainer : Color.surfaceContainerHighest
 
         Text {
             id: pillText
             anchors.centerIn: parent
             text: parent.text
-            color: parent.accent ? Color.primary : Color.textMuted
+            color: parent.accent ? Color.primaryContainerText : Color.textMuted
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.labelSmall
         }

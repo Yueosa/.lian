@@ -61,7 +61,7 @@ Item {
                 Layout.preferredHeight: 32
                 radius: Size.rounding.sm
                 color: root.sharedState.starredOnly
-                    ? Color.withAlpha(Color.primary, 0.22)
+                    ? Color.primaryContainer
                     : Color.surfaceContainerHigh
 
                 Text {
@@ -74,7 +74,7 @@ Item {
                     // 在 Material Symbols 里被合并成了同一个 star
                     font.variableAxes: ({ "FILL": root.sharedState.starredOnly ? 1 : 0,
                                           "opsz": 20 })
-                    color: root.sharedState.starredOnly ? Color.primary : Color.textMuted
+                    color: root.sharedState.starredOnly ? Color.primaryContainerText : Color.textMuted
                 }
 
                 MouseArea {

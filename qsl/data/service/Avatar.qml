@@ -19,6 +19,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "shell.js" as Sh
 
 Singleton {
     id: root
@@ -64,7 +65,7 @@ Singleton {
         command: [
             "bash", "-lc",
             "out=\"$HOME/.cache/qsl/avatar.jpg\"; "
-            + "url='" + root.remoteUrl.replace(/'/g, "'\\''") + "'; "
+            + "url=" + Sh.quote(root.remoteUrl) + "; "
             + "mkdir -p \"$HOME/.cache/qsl\"; "
             + "if [ -s \"$out\" ]; then "
             + "  age=$(( $(date +%s) - $(stat -c %Y \"$out\") )); "

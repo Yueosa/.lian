@@ -175,12 +175,12 @@ Item {
                 && !Network.ethernetConnected
             radius: Size.rounding.full
             // 静息就带底色——这条只在需要登录时长出来，本身就是在喊人点它
-            color: Color.withAlpha(Color.primary, Color.state.selected)
+            color: Color.primaryContainer
             Behavior on color { CAnim {} }
 
             QslStateLayer {
                 source: portalMa
-                tint: Color.primary
+                tint: Color.primaryContainerText
                 accent: true
             }
 
@@ -189,7 +189,7 @@ Item {
                 text: "打开网络门户"
                 font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
-                color: Color.primary
+                color: Color.primaryContainerText
             }
             MouseArea {
                 id: portalMa
@@ -205,7 +205,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Network.wifiScanning ? 3 : 0
             radius: 2
-            color: Color.withAlpha(Color.primary, 0.25)
+            color: Color.primaryContainer
             clip: true
             opacity: Network.wifiScanning ? 1 : 0
             Behavior on Layout.preferredHeight {
@@ -240,7 +240,7 @@ Item {
             visible: Network.lastError !== ""
             Layout.preferredHeight: visible ? 34 : 0
             radius: Size.rounding.sm
-            color: Color.withAlpha(Color.error, 0.12)
+            color: Color.errorContainer
             clip: true
 
             RowLayout {
@@ -253,12 +253,12 @@ Item {
                     text: "error"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.error
+                    color: Color.errorContainerText
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Network.lastError
-                    color: Color.error
+                    color: Color.errorContainerText
                     font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }

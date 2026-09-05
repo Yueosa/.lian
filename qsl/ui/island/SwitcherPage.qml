@@ -229,7 +229,7 @@ FocusScope {
                         anchors.fill: parent
                         radius: Size.rounding.md
                         color: card.focused
-                            ? Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.18)
+                            ? Color.primaryContainer
                             : Color.surfaceContainerHigh
                         border.width: card.focused ? 2 : 1
                         border.color: card.focused

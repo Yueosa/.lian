@@ -10,7 +10,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -131,12 +130,12 @@ Item {
                             width: 28; height: 24
                             radius: Size.rounding.xs
                             color: selected
-                                ? Color.withAlpha(Color.primary, 0.22)
+                                ? Color.primaryContainer
                                 : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                color: selected ? Color.primary : Color.textMuted
+                                color: selected ? Color.primaryContainerText : Color.textMuted
                                 font.pixelSize: Size.fontSize.labelSmall
                                 font.bold: selected
                             }
@@ -163,134 +162,12 @@ Item {
             model: root.pendingItems
             boundsBehavior: Flickable.StopAtBounds
 
-            delegate: Rectangle {
+            // 行本体见 TodoRow.qml，跟已完成列表共用一份
+            delegate: TodoRow {
                 required property var modelData
-                required property int index
                 width: ListView.view ? ListView.view.width : 0
                 height: 52
-                radius: Size.rounding.md
-                color: Color.surfaceContainerLow
-
-                QslStateLayer { source: delegateMa }
-
-                MouseArea {
-                    id: delegateMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                }
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Size.spacing.md
-                    anchors.rightMargin: Size.spacing.md
-                    spacing: Size.spacing.sm
-
-                    // 勾选框
-                    Rectangle {
-                        width: 24; height: 24
-                        radius: Size.rounding.xs
-                        color: modelData.done
-                            ? Color.primary
-                            : "transparent"
-                        border.width: modelData.done ? 0 : 2
-                        border.color: Color.outlineVariant
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Text {
-                            anchors.centerIn: parent
-                            visible: modelData.done
-                            text: "check"
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.lg
-                            font.variableAxes: ({ "opsz": 20 })
-                            color: Color.surfaceContainerLow
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.toggle(modelData.id)
-                        }
-                    }
-
-                    // 内容
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: modelData.text || ""
-                            color: modelData.done ? Color.textMuted : Color.text
-                            font.pixelSize: Size.fontSize.bodyMedium
-                            font.strikeout: modelData.done
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-
-                        Text {
-                            visible: text.length > 0
-                            text: {
-                                const t = modelData.tag || ""
-                                const p = "T" + modelData.priority
-                                return t.length > 0 ? t + " · " + p : p
-                            }
-                            color: Color.textMuted
-                            font.pixelSize: Size.fontSize.labelSmall
-                        }
-                    }
-
-                    // 两个按钮都给固定尺寸，热区严格等于自身：
-                    // 原先用 anchors.margins:-4 各自外扩，正好吃掉中间的
-                    // 间距而互相重叠，点星标右缘会误触删除
-                    Item {
-                        Layout.preferredWidth: 34
-                        Layout.preferredHeight: 34
-                        Layout.alignment: Qt.AlignVCenter
-
-                        // 24 正是这个字体 opsz 轴的默认值，也就是轮廓的原生
-                        // 设计尺寸，不用再拿 opsz 去补偿缩小造成的笔画变细
-                        Text {
-                            anchors.centerIn: parent
-                            text: "star"
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.xxl
-                            font.variableAxes: ({ "FILL": modelData.starred ? 1 : 0 })
-                            color: modelData.starred ? Color.primary : Color.textMuted
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.star(modelData.id)
-                        }
-                    }
-
-                    // 用 opacity 而非 visible：RowLayout 会把不可见项踢出布局，
-                    // 于是每次划过一行，垃圾桶冒出来都把左边整排往左推一下
-                    Item {
-                        Layout.preferredWidth: 34
-                        Layout.preferredHeight: 34
-                        Layout.alignment: Qt.AlignVCenter
-                        opacity: delegateMa.containsMouse ? 1 : 0
-                        Behavior on opacity {
-                            Anim { type: Anim.EffectsFast }
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "delete"
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.xxl
-                            color: Color.error
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            enabled: delegateMa.containsMouse
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.remove(modelData.id)
-                        }
-                    }
-                }
+                item: modelData
             }
 
             // 空状态

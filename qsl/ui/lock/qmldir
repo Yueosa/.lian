@@ -3,3 +3,10 @@ Lock 1.0 Lock.qml
 LockSurface 1.0 LockSurface.qml
 LockContent 1.0 LockContent.qml
 LockContext 1.0 LockContext.qml
+LockCava 1.0 LockCava.qml
+LockClockHero 1.0 LockClockHero.qml
+LockClockMini 1.0 LockClockMini.qml
+LockLyrics 1.0 LockLyrics.qml
+LockMediaControls 1.0 LockMediaControls.qml
+LockPassword 1.0 LockPassword.qml
+LockToasts 1.0 LockToasts.qml

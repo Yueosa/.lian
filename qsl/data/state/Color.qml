@@ -24,6 +24,19 @@ pragma Singleton
 // ---- 用法 ----
 // 想要"带色调的底"优先用 container 家族（primaryContainer + primaryContainerText），
 // 对比度由 M3 标准保证；withAlpha 手搓叠色是下策，只在 M3 没给对应角色时用。
+//
+// 这条规矩写在这儿很久，但第 11 轮之前一次都没执行过：52 个角色有 35 个引用次数
+// 为 0，整套 UI 跑在 primary/textMuted/text 等六个色上，而"选中/激活的有色底"
+// 在 27 处用 withAlpha(primary, 0.12~0.25) 手搓。两者不等价——withAlpha 是把
+// primary 往背后的底色上兑，出来永远是褪了色的一层，且结果随背景变；container
+// 是独立调出来的色调（#374379），还配一个保证读得清的 on 色（#dde1ff）。
+// 第 11 轮把这 27 处 + 6 处 error 收编成 container，容器家族用量 0 → 55。
+//
+// 例外（有意保留 withAlpha 的）：
+//   · 描边——container 是填充色，描边该用 primary 本身
+//   · QslStateLayer / QslActionChip 的 hover-press 叠层——M3 的 state layer
+//     本来就定义为 alpha 叠加，不是 container
+//   · 锁屏那套 ink（自成一系，浮在壁纸上）、MediaLyrics 的频谱柱（装饰）
 // ============================================================
 
 import QtQuick

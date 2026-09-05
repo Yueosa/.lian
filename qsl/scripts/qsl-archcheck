@@ -62,18 +62,20 @@ PIXEL_LITERAL = re.compile(r"\bfont\.pixelSize\s*:\s*(\d+)\b")
 # 行号会随着上下游改动漂走，字号不会。
 BESPOKE_PX = {
     "Components/QslSlider.qml:18",        # 滑块把手上的刻度字形
+    "ui/island/MediaLyrics.qml:26",       # 歌词焦点行，行高按它算死（见该处注释）
     "ui/island/MediaPage.qml:48",         # 无播放器时的空态音符
     "ui/island/MediaPage.qml:56",         # 封面缺图时的占位字形
-    "ui/island/MediaPage.qml:26",         # 歌词焦点行，行高按它算死（见该处注释）
     "ui/island/OverviewCalendar.qml:9",   # 格子右上角的农历/节气角标
     "ui/island/WallpaperPage.qml:22",     # 模式切换的大图标
-    "ui/island/WeatherPage.qml:18",       # 分区标题旁的小图标
-    "ui/island/WeatherPage.qml:52",       # 当前气温那个大数字
+    "ui/island/WeatherMetricTile.qml:18",  # 指标格左边那个字形图标
+    "ui/island/WeatherNow.qml:52",        # 当前气温那个大数字
     "ui/leftbar/TimeClockCard.qml:38",    # 时钟主体
     "ui/leftbar/TodoTabsCard.qml:18",     # 标签页加号
-    "ui/lock/LockContent.qml:22",         # 锁屏自成一套：浮在壁纸上，字号跟壳内不同源
-    "ui/lock/LockContent.qml:26",
-    "ui/lock/LockContent.qml:15",
+    "ui/lock/LockClockHero.qml:22",       # 锁屏自成一套：浮在壁纸上，字号跟壳内不同源
+    "ui/lock/LockMediaControls.qml:26",
+    "ui/lock/LockPassword.qml:15",
+    "ui/lock/LockLyrics.qml:32",          # 歌词焦点行 / 非焦点行
+    "ui/lock/LockLyrics.qml:16",
     "ui/power/PowerCard.qml:22",          # 电源菜单的大图标
 }
 
@@ -137,7 +139,7 @@ REGEX_PRECEDERS = "(,=:[!&|?{};+-*~%"
 def strip_noise(text: str) -> str:
     """去掉注释、字符串和正则字面量，免得里面的花括号和引号干扰深度计数。
 
-    正则那一条是踩出来的：HyprService.shellQuote 里有
+    正则那一条是踩出来的：shell.js 的 quote() 里有（当时还在 HyprService）
 
         String(s).replace(/'/g, "'\\''")
 

@@ -24,7 +24,7 @@ Rectangle {
     clip: true
     // 有已连设备才 primary，对齐 WiFi「已连接」语义
     color: Bluetooth.chipConnected
-        ? Color.withAlpha(Color.primary, 0.22)
+        ? Color.primaryContainer
         : Color.withAlpha(Color.text, 0.08)
 
     Behavior on implicitWidth {
@@ -44,7 +44,7 @@ Rectangle {
             font.pixelSize: Size.iconSize.lg
             Layout.alignment: Qt.AlignVCenter
             color: Bluetooth.chipConnected
-                ? Color.primary
+                ? Color.primaryContainerText
                 : (Bluetooth.enabled ? Color.text : Color.textMuted)
             text: Bluetooth.chipConnected ? "bluetooth_connected" : "bluetooth"
         }
@@ -54,7 +54,7 @@ Rectangle {
             text: Bluetooth.chipLabel
             font.bold: true
             font.pixelSize: Size.fontSize.labelMedium
-            color: Color.text
+            color: Bluetooth.chipConnected ? Color.primaryContainerText : Color.text
             Layout.alignment: Qt.AlignVCenter
             opacity: root.expanded ? 1 : 0
             Layout.preferredWidth: root.expanded

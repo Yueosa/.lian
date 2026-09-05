@@ -7,7 +7,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -91,98 +90,14 @@ Item {
             model: root.doneItems
             boundsBehavior: Flickable.StopAtBounds
 
-            delegate: Rectangle {
+            // 行本体见 TodoRow.qml，跟主列表共用一份
+            delegate: TodoRow {
                 required property var modelData
-                required property int index
                 width: doneList.width
                 height: 44
-                radius: Size.rounding.md
-                color: Color.surfaceContainerLow
-
-                QslStateLayer { source: delegateMa }
-
-                MouseArea {
-                    id: delegateMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                }
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Size.spacing.md
-                    anchors.rightMargin: Size.spacing.md
-                    spacing: Size.spacing.sm
-
-                    // 勾选框（点 = 打回未完成）
-                    Rectangle {
-                        width: 24; height: 24
-                        radius: Size.rounding.xs
-                        color: Color.primary
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "check"
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.lg
-                            font.variableAxes: ({ "opsz": 20 })
-                            color: Color.surfaceContainerLow
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.toggle(modelData.id)
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-                        Text {
-                            Layout.fillWidth: true
-                            text: modelData.text || ""
-                            color: Color.textMuted
-                            font.pixelSize: Size.fontSize.bodyMedium
-                            font.strikeout: true
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-                        Text {
-                            visible: text.length > 0
-                            text: {
-                                const t = modelData.tag || ""
-                                const p = "T" + modelData.priority
-                                return t.length > 0 ? t + " · " + p : p
-                            }
-                            color: Color.textMuted
-                            font.pixelSize: Size.fontSize.labelSmall
-                        }
-                    }
-
-                    // 热区严格等于自身（对齐主列表的误触教训）
-                    Item {
-                        Layout.preferredWidth: 34
-                        Layout.preferredHeight: 34
-                        Layout.alignment: Qt.AlignVCenter
-                        opacity: delegateMa.containsMouse ? 1 : 0
-                        Behavior on opacity {
-                            Anim { type: Anim.EffectsFast }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "delete"
-                            font.family: Size.fontIcon
-                            font.pixelSize: Size.iconSize.xxl
-                            color: Color.error
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            enabled: delegateMa.containsMouse
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.remove(modelData.id)
-                        }
-                    }
-                }
+                item: modelData
+                // 已完成这儿只有「打回」和「删」，星标是主列表的事
+                showStar: false
             }
 
             Text {

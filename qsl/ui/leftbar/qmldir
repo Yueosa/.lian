@@ -8,6 +8,7 @@ SysNetCard 1.0 SysNetCard.qml
 SysProcsCard 1.0 SysProcsCard.qml
 KeysTabsCard 1.0 KeysTabsCard.qml
 KeysListCard 1.0 KeysListCard.qml
+TodoRow 1.0 TodoRow.qml
 TodoTabsCard 1.0 TodoTabsCard.qml
 TodoListCard 1.0 TodoListCard.qml
 TodoDoneCard 1.0 TodoDoneCard.qml

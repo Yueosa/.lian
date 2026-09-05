@@ -12,6 +12,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "shell.js" as Sh
 
 Singleton {
     id: root
@@ -237,14 +238,10 @@ Singleton {
         ensureDaemon()
         cmdProc.command = [
             "bash", "-lc",
-            "mkdir -p \"$XDG_RUNTIME_DIR/qsl\" && printf '%s\\n' " + shellQuote(line)
+            "mkdir -p \"$XDG_RUNTIME_DIR/qsl\" && printf '%s\\n' " + Sh.quote(line)
             + " > \"$XDG_RUNTIME_DIR/qsl/weather_cmd\""
         ]
         cmdProc.running = true
-    }
-
-    function shellQuote(s) {
-        return "'" + String(s).replace(/'/g, "'\\''") + "'"
     }
 
     function iconSlug(name, code, isDay) {

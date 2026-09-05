@@ -53,7 +53,7 @@ Item {
 
                 readonly property color titleColor: isIslandEvent ? accent : Color.backgroundText
                 readonly property color bodyColor: isIslandEvent
-                    ? Qt.rgba(accent.r, accent.g, accent.b, 0.88)
+                    ? Color.withAlpha(accent, 0.88)
                     : Color.textMuted
 
                 // icon:xxx / image://icon/xxx / 无路径裸名 → 主题图标
@@ -169,7 +169,8 @@ Item {
                     color: row.accent
                     width: row.width - 20
 
-                    // 装饰性/刷新动画，不走令牌（plan.md 白名单）
+                    // 时长直接借 Timer 的令牌：进度条走完那一刻就是 toast 该走的
+                    // 那一刻，两边各写各的迟早对不齐
                     NumberAnimation on width {
                         from: row.width - 20
                         to: 0
