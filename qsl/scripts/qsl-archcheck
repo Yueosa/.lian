@@ -53,6 +53,11 @@ DECL = re.compile(
 # 只查第一级等于闸门对着最大的一股流量敞开。
 GROUP = re.compile(r"^\s*(?:readonly\s+)?property\s+QtObject\s+(\w+)\s*:\s*QtObject\s*\{")
 
+# Connections { target: X; function onFooChanged() {...} }
+CONN_HEAD = re.compile(r"\bConnections\s*\{")
+TARGET = re.compile(r"\btarget\s*:\s*(?:root\.)?(\w+)\b")
+HANDLER = re.compile(r"\bfunction\s+(on[A-Z]\w*)\s*\(")
+
 # 从 QtObject / Singleton 继承来的，不在源文件里但确实存在。
 INHERITED = {"objectName", "destroy", "toString"}
 
@@ -196,6 +201,24 @@ def public_api(path: Path) -> set[str]:
     return members
 
 
+def connections_blocks(src: str):
+    """产出 (target, body, 起始行号)。花括号配对着数，别拿正则啃嵌套。"""
+    for head in CONN_HEAD.finditer(src):
+        i = head.end() - 1  # 指向那个 {
+        depth = 0
+        for j in range(i, len(src)):
+            if src[j] == "{":
+                depth += 1
+            elif src[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    body = src[i + 1 : j]
+                    t = TARGET.search(body)
+                    if t:
+                        yield t.group(1), body, src[:i].count("\n") + 1
+                    break
+
+
 def _named(m: re.Match) -> str:
     return m.group("alias") or m.group("prop") or m.group("func") or m.group("sig")
 
@@ -282,6 +305,42 @@ def main() -> int:
                     findings["令牌入口"].append(
                         f"{rel}:{lineno}  Config.{member}  —— 令牌只能走 Size.* / Color.*"
                     )
+
+    # Connections 里的 on<属性>Changed / on<信号名>
+    # ------------------------------------------------------------------
+    # 上面那轮扫的是 `Service.member` 这种写法，扫不到
+    #     Connections { target: Clipboard; function onRevisionChanged() {...} }
+    # ——这里对服务的引用只出现在 target 上，成员名藏在处理器名里。
+    #
+    # 第 9 轮就因为这个吃过亏：grep `.revision` 得出「没人读」，把
+    # Clipboard.revision 删了，其实 ClipHistory 正靠 onRevisionChanged 夹选择。
+    # QML 只在运行时 WARN 一句「no signal of the target matches the name」，
+    # 不报错、不中断，很容易漏过去。
+    for path in consumers:
+        rel = _rel(path)
+        src = strip_noise(path.read_text(encoding="utf-8"))
+        for target, body, lineno in connections_blocks(src):
+            if target not in api:
+                continue
+            for handler in HANDLER.findall(body):
+                # onXxx 有歧义，两种都得认：
+                #   onTrackChanged  → 信号 trackChanged（Media 就是这么声明的）
+                #   onRevisionChanged → 属性 revision 的变更信号
+                # 任一存在就算数。
+                bare = handler[2:]
+                cands = {bare[:1].lower() + bare[1:]}
+                if bare.endswith("Changed"):
+                    prop = bare[:-7]
+                    if prop:
+                        cands.add(prop[:1].lower() + prop[1:])
+                if cands & api[target]:
+                    continue
+                member = " / ".join(sorted(cands))
+                findings["接口不存在"].append(
+                    f"{rel}:~{lineno}  Connections(target: {target}) "
+                    f"{handler}  —— {_rel(singletons[target])} 里 {member} 都不存在，"
+                    f"这个处理器永远不会被调用"
+                )
 
     if not findings:
         print("架构闸门全绿：分层方向、私有成员、令牌入口、接口存在性四项无违规。")

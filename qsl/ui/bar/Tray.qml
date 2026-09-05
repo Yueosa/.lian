@@ -112,9 +112,8 @@ Item {
 
                         Component.onCompleted: syncShow()
                         Connections {
-                            target: TrayService
-                            function onPinSignatureChanged() { ovSlot.syncShow() }
-                            function onRevisionChanged() { ovSlot.syncShow() }
+                              target: TrayService
+                              function onPinSignatureChanged() { ovSlot.syncShow() }
                         }
 
                         visible: show
@@ -161,9 +160,8 @@ Item {
 
                 Component.onCompleted: syncShow()
                 Connections {
-                    target: TrayService
-                    function onPinSignatureChanged() { barSlot.syncShow() }
-                    function onRevisionChanged() { barSlot.syncShow() }
+                      target: TrayService
+                      function onPinSignatureChanged() { barSlot.syncShow() }
                 }
 
                 visible: show

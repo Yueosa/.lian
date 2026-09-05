@@ -53,8 +53,11 @@ Singleton {
     property string query: ""
     property bool loading: false
 
-    // 内容版本。条数不变但内容换了（删掉一条又来了一条）时绑定也要重算，
-    // 而 filtered 是整体替换的数组，绑它的地方拿不到"内容变了"这件事
+    // 内容版本。rows 是增量 ListModel，行数变化它自己会通知；但**行数不变而
+    // 行内容变了**（删掉一条又来了一条、图片组从 3 张变 2 张）它推不出去，
+    // 而 ClipHistory 的 clampSelection() 要读当前行的 entries.length 来夹列号。
+    // 消费方是 `Connections { function onRevisionChanged() }`，不是属性绑定，
+    // 所以 grep `.revision` 搜不到它——第 9 轮差点当死代码删掉。
     readonly property int revision: _rev
     property int _rev: 0
 

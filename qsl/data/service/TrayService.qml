@@ -12,7 +12,7 @@ pragma Singleton
 //   iconFor(item)    图标 URL，空串表示没有可用图标（由 glyphFor 兜底）
 //   glyphFor(item)   Material 字形名，图标不可用时显示
 //   setPinned / togglePin 及 *Key / *Item 变体
-//   pinSignature / revision   pin 布局变了会变，UI 据此重算
+//   pinSignature     pin 布局变了会变，UI 据此重算
 //
 // QQ 与 Cursor 的 SNI Id 都是 chrome_status_icon_1，itemKey 必须带 icon/menu
 // 写盘用 Process；suppressLoad 防止 onLoaded 回滚
@@ -49,7 +49,6 @@ Singleton {
     property bool filterPassive: true
     property bool dirty: false
     property bool suppressLoad: false
-    property int revision: 0
     property string pinSignature: ""
     property int unpinnedCount: 0
 
@@ -246,7 +245,6 @@ Singleton {
         root.pinSignature = pinnedKeys.join("\x1e")
             + "\x1eP:" + root.extraPinnedIds.join(",")
             + "\x1eU:" + root.extraUnpinnedIds.join(",")
-        root.revision = root.revision + 1
     }
 
     function save() {

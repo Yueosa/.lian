@@ -31,7 +31,13 @@ Singleton {
 
     // 单元名 → ActiveState 字符串（"active" / "inactive" / "failed" / "activating" …）
     property var states: ({})
-    // states 是 var，内容改了不发通知，靠这个数推动绑定
+    // 推动绑定用的。原注释写的理由（"states 是 var，内容改了不发通知"）是错的
+    // ——states 每次都整体重赋值（见下面 `states = next`），那本来就会发通知。
+    //
+    // 真正需要它的是**绑了函数调用**的地方：TileCard 写的是
+    //     Systemd.revision >= 0 && Systemd.groupActive(tile.units)
+    // groupActive() 的返回值 QML 追踪不到，光靠 states 变化推不动这条绑定，
+    // 得有一个它能看见的属性摆在同一个表达式里。
     property int revision: 0
     property string lastError: ""
 
