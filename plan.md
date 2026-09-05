@@ -181,6 +181,13 @@ hypr speed 换算：duration ≈ speed × 100ms（speed 越大越慢）
 同时结档的健康检查：活体 IPC 目标 8 个全是正经的（第 6 轮调试的 `dbg` 探针已
 不在树里）、`qmllint` 全树全绿、壳的冷启动基线 438MB。
 
+> **2026-09-05 更正**：上面那条「`qmllint` 全树全绿」不作数。当时用的
+> `/usr/bin/qmllint` 是 `qt5-declarative` 装的 Qt5 版本，而 Quickshell 是 Qt6——
+> 它不是查得浅，是完全失灵：`Item { NoSuchType {} }` 和 `Item { width: }` 都零
+> 输出零退出码。改用 `qsl/scripts/qsl-qmllint`（锁 Qt6 二进制 + 造 `qs/` 模块
+> 映射），真实结果是 import/语法 0 条，另有约 1200 条 missing-property /
+> unqualified，多为 qmllint 对 Quickshell 类型注册的盲区。
+
 ## 第 1 轮：hypr 动画 + 边距（先做，独立验证）
 
 文件：`hypr/lua/appearance.lua`
@@ -485,7 +492,8 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 - [ ] 注释与实际不符：本文件的动画白名单就过期过（引用了已删的
       `NetworkPage.qml` / `BluetoothPage.qml` / `UpdatesPage.qml`）
 - [ ] 文件职责过大：超长 QML 拆分（`TodoListCard` / `NotifListCard` 量级）
-- [ ] `qmllint` 全绿、无绑定循环告警
+- [ ] `qsl-qmllint` 的 import/语法两类为 0、无绑定循环告警
+      （**别用裸 `qmllint`**——PATH 上那个是 Qt5 的空壳，见第 0 轮结档的更正）
 - [ ] 临时调试设施清零：IPC handler、console.log、dbg 属性
 - [ ] 错误路径审计：服务层失败会不会静默清空缓存——教训是 `updatesctl`
       把 `paru` 查询失败当成"零个更新"，把 AUR 列表整个抹掉了

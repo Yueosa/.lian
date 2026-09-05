@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# qsl-qmllint —— 用**对的那个** qmllint 跑全树
+#
+# 这个脚本存在的唯一理由是 2026-09-05 发现的一件事：
+#
+#   /usr/bin/qmllint 是 qt5-declarative 装的 Qt5 版本，而 Quickshell 是 Qt6。
+#   它不是「查得浅」，是**完全失灵**——喂给它一个 `Item { NoSuchType {} }`
+#   或者 `Item { width: }`，两者都零输出、零退出码。
+#
+# 也就是说 plan.md 里「qmllint 全树全绿」那条基线，以及此前每一轮 commit 里
+# 写的「qmllint 0 告警」，全都是这个空壳给的。真正的在 /usr/lib/qt6/bin/。
+#
+# 第二个坑：模块前缀。壳里所有 import 写的是 `qs.data.state`，而 `qs` 映射的是
+# 壳根目录本身。直接 `-I .` 解析不出来，会满屏 "Failed to import qs.data.state"，
+# 连带把 318 条类型找不到的假告警一起报出来。得先造一个含 `qs/` 软链的目录再 -I。
+#
+# 用法：
+#     scripts/qsl-qmllint          只报要命的（import / 语法 / 类型没解析）
+#     scripts/qsl-qmllint -a       全部类别，含 missing-property / unqualified
+#     scripts/qsl-qmllint -s       只打各类别计数
+# 退出码非 0 = 有「要命的」那几类告警。
+
+set -uo pipefail
+
+QSL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# ---- 找 Qt6 的 qmllint，找不到就明确报错，绝不悄悄退回 Qt5 ----
+QMLLINT=""
+for cand in /usr/lib/qt6/bin/qmllint /usr/lib/qt6/qmllint "$(command -v qmllint6 2>/dev/null)"; do
+    [ -x "$cand" ] || continue
+    case "$("$cand" --version 2>&1)" in
+        *" 6."*) QMLLINT="$cand"; break ;;
+    esac
+done
+if [ -z "$QMLLINT" ]; then
+    echo "找不到 Qt6 的 qmllint。" >&2
+    echo "  /usr/bin/qmllint 是 Qt5 的空壳，对语法错误都零输出，不能用。" >&2
+    echo "  装 qt6-declarative，或把 Qt6 的 qmllint 放进上面的候选列表。" >&2
+    exit 127
+fi
+
+# ---- 造模块映射：需要一个目录，其下 qs/ 指向壳根 ----
+MODROOT="$(mktemp -d)"
+trap 'rm -rf "$MODROOT"' EXIT
+ln -sfn "$QSL" "$MODROOT/qs"
+
+MODE="fatal"
+case "${1:-}" in
+    -a|--all) MODE="all" ;;
+    -s|--summary) MODE="summary" ;;
+esac
+
+cd "$QSL"
+mapfile -t FILES < <(find Components data ui -name '*.qml' -type f | sort)
+FILES+=("shell.qml")
+
+OUT="$(mktemp)"
+trap 'rm -rf "$MODROOT" "$OUT"' EXIT
+"$QMLLINT" -I "$MODROOT" "${FILES[@]}" > "$OUT" 2>&1
+
+echo "$(basename "$QMLLINT") $("$QMLLINT" --version | grep -o '6\.[0-9.]*')  ·  ${#FILES[@]} 个文件"
+echo
+
+echo "── 各类别计数 ──"
+grep -oE '\[[a-z-]+\]$' "$OUT" | sort | uniq -c | sort -rn | sed 's/^/  /'
+echo
+
+# import / 语法 = 真的坏了，改坏一次重构就会亮。其余另算：
+#
+#   unresolved-type  是 qmllint 对 Quickshell 类型注册的盲区，不是代码问题。
+#                    Quickshell 是带 qmltypes 的，但 PanelWindow.margins 这种
+#                    分组属性和 BluetoothAdapter 没有声明式暴露出来。这 5 条
+#                    对应的界面（四个圆角耳朵、蓝牙卡）都在正常工作。
+#   missing-property / unqualified  存量近 1200 条，多半也是同一个盲区的连带，
+#                    真要治得先让 Quickshell 把类型补全，不是这个脚本的活。
+FATAL='\[(import|syntax)\]'
+NFATAL="$(grep -cE "$FATAL" "$OUT" || true)"
+
+if [ "$MODE" = "summary" ]; then
+    :
+elif [ "$MODE" = "all" ]; then
+    echo "── 全部告警 ──"
+    sed 's/^/  /' "$OUT"
+else
+    if [ "$NFATAL" -gt 0 ]; then
+        echo "── 要命的（import / 语法）──"
+        grep -E "$FATAL" "$OUT" | sed 's/^/  /'
+    fi
+fi
+
+echo
+if [ "$NFATAL" -gt 0 ]; then
+    echo "有 $NFATAL 条 import / 语法告警——这类是真坏了。"
+    exit 1
+fi
+echo "import / 语法：0 条。其余类别是 qmllint 对 Quickshell 类型的盲区及其连带，"
+echo "见脚本里 FATAL 那段的说明；用 -a 看全部。"
