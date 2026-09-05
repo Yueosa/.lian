@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""qsl-archcheck —— 分层与接口的静态闸门
+
+plan.md 的「架构约定」有 8 条，其中 4 条是机械可查的。这里把它们固化下来，
+省得每一轮架构审计都重新手搓一遍 ripgrep（第 9 轮就是这么开场的）。
+
+查四件事：
+
+  1. 分层方向     谁能 import 谁。data 不许 import ui，Components 不许 import 业务
+  2. 私有成员     UI 不得引用服务层 `_` 开头的成员（约定第 2 条）
+  3. 令牌单一入口 UI 不得直接读 `Config.*`，只能走 `Size.*` / `Color.*`（约定第 7 条）
+  4. 反向核对     UI 里写的每个 `Svc.member`，服务层必须真有这个成员
+
+**第 4 条是本脚本存在的主要理由，也是 qmllint 查不出的那类。** QML 读一个不存在
+的属性不报错，就是 `undefined`，然后一路静默地流进绑定——界面上是一块空白或者
+一个 NaN，没有任何日志。2026-09-04 手工跑这条时当场抓到 `Bluetooth.connectedCount`：
+UI 在用，服务层从来没定义过。
+
+用法：
+    scripts/qsl-archcheck            只报违规
+    scripts/qsl-archcheck -v         连带打印每个单例的公开面尺寸
+退出码非 0 = 有违规。
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+QSL = Path(__file__).resolve().parent.parent
+
+# 单例根一律是 `Singleton {`，成员在深度 1。深度靠数花括号，不靠缩进——
+# 缩进现在是一致的 4 空格，但那是习惯不是保证。
+DECL = re.compile(
+    r"""^\s*
+    (?:readonly\s+)?
+    (?:
+        property\s+alias\s+(?P<alias>\w+)\s*:
+      | property\s+[\w.<>]+\s+(?P<prop>\w+)
+      | function\s+(?P<func>\w+)
+      | signal\s+(?P<sig>\w+)
+    )
+    """,
+    re.VERBOSE,
+)
+
+# `readonly property QtObject spacing: QtObject {` —— Size 把令牌按组收在嵌套的
+# QtObject 里，于是调用点写的是两级：`Size.spacing.md`、`Size.island.overviewWidth`。
+# 这两级恰恰是全树读得最多的东西（spacing 211 处、fontSize 272 处），
+# 只查第一级等于闸门对着最大的一股流量敞开。
+GROUP = re.compile(r"^\s*(?:readonly\s+)?property\s+QtObject\s+(\w+)\s*:\s*QtObject\s*\{")
+
+# 从 QtObject / Singleton 继承来的，不在源文件里但确实存在。
+INHERITED = {"objectName", "destroy", "toString"}
+
+# 分层规则：路径前缀 -> 不许 import 的模块前缀 + 一句人话理由。
+FORBIDDEN = [
+    ("data/", "qs.ui.", "数据层反过来依赖 UI，改一个面板会牵动服务"),
+    ("data/", "qs.Components", "数据层依赖通用件层，Components 是给 UI 用的"),
+    ("Components/", "qs.data.service", "通用件知道了业务，换个项目就搬不走"),
+    ("Components/", "qs.ui.", "通用件依赖具体面板，等于不通用"),
+    ("data/state/", "qs.data.service", "状态层依赖服务层，两层的启动顺序会互相咬"),
+]
+
+# ui/frame 是框窗聚合器，它的本职就是把各个面板装进同一个 surface，
+# 所以只有它可以横向 import qs.ui.*。
+UI_AGGREGATOR = "ui/frame/"
+
+
+def strip_noise(text: str) -> str:
+    """去掉注释和字符串字面量，免得里面的花括号和引号干扰深度计数。"""
+    out = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "/" and i + 1 < n:
+            if text[i + 1] == "/":
+                j = text.find("\n", i)
+                i = n if j < 0 else j
+                continue
+            if text[i + 1] == "*":
+                j = text.find("*/", i + 2)
+                # 块注释里的换行要留着，否则行号会错位
+                chunk = text[i : n if j < 0 else j + 2]
+                out.append("\n" * chunk.count("\n"))
+                i = n if j < 0 else j + 2
+                continue
+        if c in "\"'":
+            quote, i = c, i + 1
+            while i < n and text[i] != quote:
+                i += 2 if text[i] == "\\" else 1
+            i += 1
+            out.append('""')
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def public_api(path: Path) -> set[str]:
+    """单例的公开面，含分组令牌的第二级，返回点分路径的集合。
+
+    深度 1 = 根元素直属的 property / function / signal。
+    深度 2 只在「上一级是 QtObject 分组」时才算——别的深度 2 是子元素
+    （Timer、Process、Connections…）的内部，外面够不着。
+    """
+    members: set[str] = set()
+    group: str | None = None  # 当前所在的 QtObject 分组名，None = 不在分组里
+    group_depth = 0
+    depth = 0
+    for line in strip_noise(path.read_text(encoding="utf-8")).splitlines():
+        if depth == 1:
+            g = GROUP.match(line)
+            if g:
+                group, group_depth = g.group(1), depth
+                members.add(group)
+            else:
+                m = DECL.match(line)
+                if m:
+                    members.add(_named(m))
+        elif group is not None and depth == group_depth + 1:
+            m = DECL.match(line)
+            if m:
+                members.add(f"{group}.{_named(m)}")
+        depth += line.count("{") - line.count("}")
+        if group is not None and depth <= group_depth:
+            group = None
+    return members
+
+
+def _named(m: re.Match) -> str:
+    return m.group("alias") or m.group("prop") or m.group("func") or m.group("sig")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("-v", "--verbose", action="store_true")
+    args = ap.parse_args()
+
+    qml = sorted(QSL.rglob("*.qml"))
+    singletons = {
+        p.stem: p for p in qml if "pragma Singleton" in p.read_text(encoding="utf-8")
+    }
+    api = {name: public_api(p) | INHERITED for name, p in singletons.items()}
+
+    if args.verbose:
+        print("单例公开面：")
+        for name in sorted(api):
+            rel = singletons[name].relative_to(QSL)
+            print(f"  {name:<14} {len(api[name]) - len(INHERITED):>3} 个成员  {rel}")
+        print()
+
+    # 消费方：UI 和通用件。数据层内部互相调不在本脚本的管辖范围
+    # （那是「谁该依赖谁」的问题，由分层方向那一节管）。
+    consumers = [p for p in qml if _rel(p).startswith(("ui/", "Components/"))]
+    use_re = re.compile(r"\b(" + "|".join(sorted(singletons)) + r")\.(\w+)(?:\.(\w+))?")
+    # 哪些一级成员是 QtObject 分组（有二级可查）。不是分组的，后面那一截是
+    # 不透明句柄的属性（`Media.activePlayer.title`），本脚本无从校验，放过。
+    groups = {
+        name: {m.split(".", 1)[0] for m in members if "." in m}
+        for name, members in api.items()
+    }
+
+    findings: dict[str, list[str]] = defaultdict(list)
+
+    for path in qml:
+        rel = _rel(path)
+        text = path.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            imp = line.strip()
+            if not imp.startswith("import "):
+                continue
+            mod = imp.split()[1]
+            for prefix, banned, why in FORBIDDEN:
+                if rel.startswith(prefix) and mod.startswith(banned):
+                    findings["分层方向"].append(f"{rel}:{lineno}  import {mod}  —— {why}")
+            if (
+                rel.startswith("ui/")
+                and not rel.startswith(UI_AGGREGATOR)
+                and mod.startswith("qs.ui.")
+            ):
+                findings["分层方向"].append(
+                    f"{rel}:{lineno}  import {mod}  —— 面板之间横向依赖，"
+                    f"只有 {UI_AGGREGATOR} 可以聚合"
+                )
+
+    for path in consumers:
+        rel = _rel(path)
+        for lineno, line in enumerate(
+            strip_noise(path.read_text(encoding="utf-8")).splitlines(), 1
+        ):
+            for name, member, sub in use_re.findall(line):
+                deep = member in groups[name]
+                ref = f"{member}.{sub}" if deep and sub else member
+                if member.startswith("_") or (deep and sub.startswith("_")):
+                    findings["私有成员"].append(
+                        f"{rel}:{lineno}  {name}.{ref}  —— 服务层私有，要什么就加公开面"
+                    )
+                elif ref not in api[name]:
+                    findings["接口不存在"].append(
+                        f"{rel}:{lineno}  {name}.{ref}  —— "
+                        f"{_rel(singletons[name])} 里没有这个成员，运行时是 undefined"
+                    )
+                if name == "Config":
+                    findings["令牌入口"].append(
+                        f"{rel}:{lineno}  Config.{member}  —— 令牌只能走 Size.* / Color.*"
+                    )
+
+    if not findings:
+        print("架构闸门全绿：分层方向、私有成员、令牌入口、接口存在性四项无违规。")
+        return 0
+
+    total = 0
+    for section in ("分层方向", "接口不存在", "私有成员", "令牌入口"):
+        items = sorted(set(findings.get(section, [])))
+        if not items:
+            continue
+        total += len(items)
+        print(f"## {section}（{len(items)}）")
+        for item in items:
+            print(f"  {item}")
+        print()
+    print(f"合计 {total} 处违规。")
+    return 1
+
+
+def _rel(path: Path) -> str:
+    return str(path.relative_to(QSL))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
