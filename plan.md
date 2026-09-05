@@ -504,11 +504,18 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 - [ ] 版本号统一 `revision`：Network / Bluetooth 已改，其余服务待查
       —— 现有 7 个服务带 `revision`（Apps / Bluetooth / Clipboard / Network /
       Systemd / Todo / TrayService），其余未逐个核对「有没有原地改对象却不发信号」
-- [ ] 列表全部走增量模型：Network / Bluetooth / Updates / Volume / Apps 已改
+- [x] 列表全部走增量模型：Network / Bluetooth / Updates / Volume / Apps 已改
       （Apps 是 2026-09-05 补的，见 `plan-notes.md` 第 7 轮 / 换增量模型）；
       `Notification.entries` 仍是整体重算的 JS 数组（N 的行动画靠手写
       `clearing` 波次顶着），待评估
-      —— 复核过，`entries` 仍是 `property var` 五处整体重赋值，没动
+      —— **评估完了：不换**。这条原本的预期是「换成增量模型就能拆掉手写的
+      `clearing` 波次」，但那个预期不成立。第 7 轮自己定过一条规矩：一次同步
+      动的行超过一屏时，行级过渡是按格播的中间态，那一拍反而该关掉动画。
+      而「全部清空」恰好就是超过一屏——`clearing` 波次正是为此存在的，换了
+      增量模型也删不掉。真正能改善的只剩单条通知增删那一半，代价却是重写
+      `NotifListCard`（535 行、两个常驻 ListView、动画全是手调的）。收益一半、
+      风险整个子系统，不划算。
+      这一轮在 N 上做的是另一件事：把「按应用分组」从面板挪进服务（见下）。
 - [ ] StateLayer 原语（原「内容 M3 化」轮）：M3 悬停 8% 叠加层组件，统一替换各处手写
       hover 变色。`QslRow` / `QslActionChip` / `QslSectionHeader` 现在各写了
       一遍，是重灾区

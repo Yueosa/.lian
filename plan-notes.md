@@ -42,6 +42,11 @@
 | 止闪的正确条件是「**`source` 不在可见时改**」，不是「同步加载」。把 source 改在 dist 5（看不见）那一刻，异步一样不闪 | 第 8 轮 / 壁纸页卡 1.5 秒 |
 | 量卡顿别用进程 CPU / IPC 往返当代理——两者都被通用开销淹没（实测同一改动 CPU 只从 260 降到 220，真实卡顿却是 1.5 秒 → 0）。挂个 16ms 定时器量**实际间隔**，那才是主线程被堵了多久 | 第 8 轮 / 壁纸页卡 1.5 秒 |
 | 改完没效果先确认**壳到底重载了没有**。`qs -d -n` 下热重载不可靠，A/B 对比必须各自带一次显式重启，否则量的是同一份代码 | 第 8 轮 / 壁纸页卡 1.5 秒 |
+| **同一个东西有两个都叫 id 的字段时，函数签名里别留 `id` 这个名字**——让它收整条记录。通知那两个（数据库行号 vs 会复用的 D-Bus 协议 id）选错一个，点掉一条会连带删掉 61 条 | 第 9 轮 / 关一条删一批 |
+| `Connections { function onXxxChanged() }` 里**对服务的引用只在 `target` 上，成员名藏在处理器名里**——按属性名 grep 一定漏。QML 只在运行时 WARN 一句，不报错 | 第 9 轮 / revision 核对 |
+| 一次性清理脚本先在 `cp` 出来的**库副本**上跑一遍。代价几秒钟，省下的是"误删 42 条再按毫秒时间戳捞回来" | 第 9 轮 / 关一条删一批 |
+| zsh **不对未加引号的变量做分词**。`for x in $list` 会把整份多行输出当一个参数；写 `printf` 出来再 `while IFS= read -r` | 第 9 轮 / 清理脚本空转 |
+| **理由写错的注释比没有注释更坏**。`Systemd.revision` 那条说"states 是 var 不发通知"，可它每次整体重赋值——真实理由是绑定里有个函数调用追踪不到 | 第 9 轮 / revision 核对 |
 
 ---
 
@@ -1054,6 +1059,96 @@ ZD model=1 items=2 [idx=-1 y=0 h=112 op=1.00 vis=true images:13989]   （连报 
 平时看不出来，是因为页内按钮走 `_runAction`，它自己另外排了一次 `refresh()`；
 只有外部变化（CLI 换壁纸、别处切模式）才暴露。删掉那句就行，绑定本身已经能在
 `detailActive` 转 false 时停掉进程。
+
+## 第 9 轮：架构审计
+
+### 关一条通知，会连带关掉共用协议 id 的那一批
+
+一条通知身上有两个 id，长得都像"通知的 id"：
+
+| 字段 | 是什么 | 唯不唯一 |
+|---|---|---|
+| `entry.id` | `notifctl list` 给的数据库行号 | 唯一 |
+| `entry.notifId` | D-Bus 协议 id | **各应用各发各的，还会复用** |
+
+QML 和 Rust 两边都挑了后者：服务层 `entries[i].notifId !== id` 整批过滤，
+`notifctl` 那边是 `UPDATE ... WHERE notif_id = ?2 AND dismissed_at = 0`，
+没有行号限定。于是面板上点掉一条，库里所有持有同一个协议 id 的活动通知
+一起被软删。
+
+规模不小。当时库里 `notif_id = 1` 挂着 25 条活动通知，横跨 QQ / lya /
+cursor / qsl-capture 四个应用；最坏的一个协议 id 挂着 61 条。在数据库副本上
+拿旧二进制实测 `dismiss 1`：**30 条 → 0 条**。
+
+改法是一律按行号，另开一个只动最新一行的命令给"还没入库"的情形兜底：
+
+```
+notifctl dismiss <row_id>          WHERE id = ?2
+notifctl dismiss-live <notif_id>   子查询 ORDER BY received_at DESC LIMIT 1
+```
+
+为什么还需要后者：`prependLive` 会给刚从 D-Bus 到达的通知造一个 `id = -1`
+的临时行（入库是异步的，此刻还没有行号）。那种只能按协议 id 找，而要的
+永远是最新那条——所以限定一行是这个命令的全部要点，不限定就退回原 bug。
+
+服务层 `dismiss()` 相应改成**收整条 entry 而不是 id**：函数签名里只要还留着
+一个叫 `id` 的参数，下一个人就还会传错那个。解除常驻抽成 `_untrackLive()`
+单列，那一步用的仍是协议 id——`trackedNotifications` 装的是 D-Bus 活对象，
+本来就跟数据库行号无关，这是唯一正当的协议 id 用法。
+
+发现过程值得记一笔：是我自己清理测试数据时踩中的，两条 `notifctl dismiss`
+误软删了 42 条真实通知。soft-dismiss 只置 `dismissed_at` 不删行，按时间戳
+定位那两簇（相隔 10ms）全部还原了。**这类"一次性清理脚本"下手前先在
+`cp` 出来的库副本上跑一遍**，代价是几秒钟。
+
+### 增量模型：Notification 评估后决定不换
+
+计划里写的是"换成增量模型就能拆掉手写的 `clearing` 波次"。这个预期不成立。
+
+第 7 轮自己定过一条规矩：一次同步动的行超过一屏时，行级过渡是按格播的
+中间态，那一拍反而该关掉动画。而"全部清空"恰好就是超过一屏——`clearing`
+波次正是为此存在的，换成增量模型也删不掉它。剩下能改善的只有单条通知增删
+那一半，代价却是重写 `NotifListCard`（535 行、两个常驻 ListView、动画全是
+手调的）。收益一半、风险整个子系统。
+
+改做了另一件更该做的：把"按应用分组"（`appKeyOf` / `appGroups` /
+`entriesOfApp` / `appNameOf`）从 `NotifCenter` 挪进服务。原先那个 `notifState`
+同时管两类东西——分组规则和"现在停在哪个应用页、清空波次播到哪儿"。后者
+是交互状态该留在面板，前者是领域规则。`NotifCenter` 242 → 192 行。
+
+留了个坑要记住：`entriesOfApp` / `appNameOf` 是**函数**，QML 追踪不到它们
+读了 `entries`，绑定处得 `void Notification.entries` 一下，否则只跟着
+`currentApp` 走，来了新通知不重算。
+
+### `revision` 核对：grep 属性名搜不到信号处理器
+
+逐个服务查"原地改公开 `var` 却不发通知"。结论是没有服务缺 `revision`。
+
+但差点删错东西。`Clipboard.revision` 按 `rg '\.revision'` 搜出来是零读取，
+看着像增量模型落地后被架空的遗留——其实它的消费方是
+
+```qml
+Connections { target: Clipboard; function onRevisionChanged() { … } }
+```
+
+**这种写法里对服务的引用只出现在 `target` 上，成员名藏在处理器名里**，
+按属性名 grep 一定漏。而且它确实必要：`clampSelection()` 要读当前行的
+`entries.length` 来夹列号，行数不变而行内容变了（图片组 3 张变 2 张）
+也得夹一次。
+
+QML 对这种情况只在运行时 WARN 一句 `no signal of the target matches the
+name`，不报错、不中断，滚两屏日志就过去了。已给 `qsl-archcheck` 补上这条：
+`onXxx` 有歧义（信号 `xxx` / 属性 `x` 的变更信号），两种解释任一存在即
+放行，都不存在才报。
+
+真死的是 `TrayService.revision`：它和 `pinSignature` 在同一处一起更新，
+`Tray.qml` 里两个 `Connections` 各挂一份处理器、调的是同一个 `syncShow()`。
+同一个事件戳两下，删掉没人读的那份。
+
+顺带修了 `Systemd` 一条陈旧注释。它写着"states 是 var，内容改了不发通知"，
+可 `states` 每次都整体重赋值，那本来就会发通知。真正需要 `revision` 的是
+`TileCard` 绑了**函数调用** `groupActive()`，返回值 QML 追踪不到，得有个
+它看得见的属性摆在同一个表达式里。理由写错的注释比没有注释更坏。
 
 ## 第 12 轮：内存
 
