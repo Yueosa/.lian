@@ -470,26 +470,60 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 对整个 `qsl/` 逐文件核对「架构约定」那一节。2026-09-04 只顺手修了 V 的四页和
 三个服务（6 处私有引用 + 7 处裸解引用，全在当轮新写的卡片里），全目录还没过。
 
-- [ ] 分层核对：UI 不解引用服务对象、不引用 `_` 私有成员，
+**依赖路线与职责分层这半边已经收完（2026-09-05/06）**，剩下的六项里有三项其实是
+「内容 M3 化」轮并进来的设计系统活，跟依赖审计不是一回事。
+
+这一轮实际落地的重构，按「同一件事散在几处」归的类：
+
+| 收上来的 | 原先散在 |
+|---|---|
+| `HyprService` | SwitcherPage / Workspaces / ActiveWindow / Island 的 hyprEval |
+| `Media` | MediaPage 与 LockContent 里 60+ 处 `player.*`（两处近乎逐行同构） |
+| `Session` | PowerBar 的 systemctl + OverviewPage 的自我重启壳 |
+| `TrayService` + `Icons` | Tray / TrayItem / NotifCenter / AppSearch 各问了一遍「这是哪个应用」，答案还不一样 |
+| `Hitokoto` | TimeClockCard——全树唯一一处 UI 自己发 HTTP |
+| `Apps.parseExec` + `HyprService.execArgv` | Launcher 里的 Exec 字段码解析与 shell 引号 |
+| `Sysmon.refreshBasics` | OverviewPage 自己起 Process 读 hostname / uptime |
+
+外加：死代码清链（`QslCard` / `QslShadow` / `QslHubTab` + `Style.shadow` / `bg`）、
+断开 state ↔ Components 循环（`Anim` / `CAnim` 挪进 `data/state`，`avatarUrl` 归位
+`Avatar`）、`clipboard` / `launcher` / `tiles` 三个 feature 目录并入 `service`。
+
+- [x] 分层核对：UI 不解引用服务对象、不引用 `_` 私有成员，
       `rg -n '(Network|Bluetooth|Volume|Notification|Updates|Sysmon)\._' ui/` 应为 0
-- [ ] 反向核对固化成脚本：`ui/` 里每个 `Service.member` 都要在服务层真的存在。
+      —— 现为 0，且四道闸门（分层方向 / 私有成员 / 令牌入口 / 接口存在性）全绿
+- [x] 反向核对固化成脚本：`ui/` 里每个 `Service.member` 都要在服务层真的存在。
       这次它当场抓到 `Bluetooth.connectedCount` 用了但没定义（运行时是
       undefined），值得和 `qmllint` 一起常驻
+      —— 落地为 `scripts/qsl-archcheck`。同时发现 PATH 上的 `qmllint` 是 Qt5 空壳
+      （静默放过一切，此前所有「0 警告」都不作数），另建 `scripts/qsl-qmllint`
+- [x] `data/service` 与 `data/state` 职责边界：有没有放错层的单例
+      —— 方向定为 service → state → Components → ui，并写进闸门；
+      `ui/` 不得直接 import `Quickshell.Services.*` / `Quickshell.Io`
+      （例外两处：`ui/lock/LockContext.qml` 的 PAM、`ui/frame/FramePanels.qml` 的 IPC 汇总）
 - [ ] 版本号统一 `revision`：Network / Bluetooth 已改，其余服务待查
+      —— 现有 7 个服务带 `revision`（Apps / Bluetooth / Clipboard / Network /
+      Systemd / Todo / TrayService），其余未逐个核对「有没有原地改对象却不发信号」
 - [ ] 列表全部走增量模型：Network / Bluetooth / Updates / Volume / Apps 已改
       （Apps 是 2026-09-05 补的，见 `plan-notes.md` 第 7 轮 / 换增量模型）；
       `Notification.entries` 仍是整体重算的 JS 数组（N 的行动画靠手写
       `clearing` 波次顶着），待评估
-- [ ] `data/service` 与 `data/state` 职责边界：有没有放错层的单例
+      —— 复核过，`entries` 仍是 `property var` 五处整体重赋值，没动
 - [ ] StateLayer 原语（原「内容 M3 化」轮）：M3 悬停 8% 叠加层组件，统一替换各处手写
       hover 变色。`QslRow` / `QslActionChip` / `QslSectionHeader` 现在各写了
       一遍，是重灾区
+      —— 复核：`Components` 里没有 StateLayer，17 个文件仍手写 `hovered ?` 变色
 - [ ] 排版阶（原「内容 M3 化」轮）：M3 display/headline/title/body/label 映射
       `Size.fontSize`，按角色引用，不再随手挑字号
+      —— 复核：`Size.fontSize` 仍是 xsm/sm/md/lg/title 这套按**尺寸**命名的
 - [ ] 卡片分级（原「内容 M3 化」轮）：surface 亮一档 = 浮得更高
-      —— 依赖第 5 轮：需要 `surface_container_*` / `surface_bright` /
-      `surface_dim`，而这些现在正在被扔掉的 34 个角色里
+      —— **前置依赖已解除**：第 5 轮之后 `Color` 里 surface / surfaceBright /
+      surfaceDim / surfaceContainer{,Low,Lowest,High,Highest} 八个角色都在了，
+      可以随时开做
 - [ ] Loader / 生命周期策略统一：谁该卸、谁该留（与第 12 轮内存互为输入）
+      —— 18 个文件用了 Loader，20 处各写各的策略，没有统一约定。
+      壁纸页那次卡顿（见 `plan-notes.md` 第 8 轮）就是这条的一个实例：
+      「一屏只显示 5 个」和「只加载 5 个」被当成了一回事
 
 ## 第 10 轮：代码质量审计（2026-09-04 新增，原第 8 轮）
 
