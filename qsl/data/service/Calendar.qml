@@ -14,13 +14,13 @@ pragma Singleton
 //   monthTitle     string   月份标题  "2026 / 7"
 //   sourceTitle    string   数据来源标题
 //   sourceUrl      string   数据来源 URL
-//   days           model    当月日期列表（兼容其它消费者）
+
 //
 // 方法：
-//   setMonth(year, month, rebuildDays=true)
+//   setMonth(year, month)
 //   buildDays(year, month)  → 42 格数组（Overview 轮转用）
 //   shiftMonth(y, m, delta) → { year, month }
-//   previousMonth / nextMonth / resetToToday
+
 // ============================================================
 
 import QtQuick
@@ -42,7 +42,6 @@ Singleton {
     property var _holidays: ({})    // "YYYY-MM-DD" → "元旦"
     property var _workdays: ({})    // "YYYY-MM-DD" → "春节调休"
     property var _festivals: ({})   // "YYYY-MM-DD" → ["节气"]
-    property var _allDates: []
     property var _holidayRanges: []  // [{ name, start, end }]，按年份顺序
 
     // 今天的农历，例：六月二十
@@ -75,11 +74,6 @@ Singleton {
 
     function _key(y, m, d) { return y + "-" + String(m).padStart(2,'0') + "-" + String(d).padStart(2,'0') }
 
-    // ---- 日期模型 ----
-    readonly property ListModel days: ListModel {
-        id: _daysModel
-    }
-
     // ---- 加载 JSON 数据 ----
     FileView {
         id: _dataFile
@@ -106,7 +100,7 @@ Singleton {
                 root._holidays = h
                 root._workdays = w
                 root._festivals = f
-                root._allDates = Object.keys(Object.assign({}, h, w, f)).sort()
+
 
                 // sourceTitle 是「数据已就位」的对外信号，消费者靠它重建视图。
                 // QML 属性赋值同步发信号，所以它必须排在三张表之后——
@@ -193,33 +187,19 @@ Singleton {
         return out
     }
 
-    // rebuildDays=false：只改显示年月（Overview 轮转每步调用，避免白刷 ListModel）
-    function setMonth(year, month, rebuildDays) {
+    // 只改显示年月。这里原先还带一个 rebuildDays 参数，用来顺带刷一个对外的
+    // days ListModel——而那个模型全树无人读（Overview 直接调 buildDays 自己拼），
+    // 唯一的真实调用点又都传 false。整套跟着删了，参数也就没了。
+    function setMonth(year, month) {
         displayYear = year
         displayMonth = month
-        if (rebuildDays !== false)
-            _rebuild()
     }
 
-    function previousMonth() {
-        const p = shiftMonth(displayYear, displayMonth, -1)
-        setMonth(p.year, p.month)
-    }
-
-    function nextMonth() {
-        const p = shiftMonth(displayYear, displayMonth, 1)
-        setMonth(p.year, p.month)
-    }
-
+    // 数据装载完把显示月归到当月。是本文件内部调用（_dataFile.onLoaded），
+    // 全树搜 `Calendar.resetToToday` 搜不到它——同文件内的无限定调用是死代码
+    // 盘点的盲区，这条差点被当成没人用删掉
     function resetToToday() {
         const now = new Date()
         setMonth(now.getFullYear(), now.getMonth() + 1)
-    }
-
-    function _rebuild() {
-        _daysModel.clear()
-        const built = buildDays(displayYear, displayMonth)
-        for (let i = 0; i < built.length; i++)
-            _daysModel.append(built[i])
     }
 }

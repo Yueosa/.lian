@@ -183,7 +183,7 @@ Rectangle {
             return
         centerYear = mid.year
         centerMonth = mid.month
-        Calendar.setMonth(centerYear, centerMonth, false)
+        Calendar.setMonth(centerYear, centerMonth)
     }
 
     function bootstrap(year, month) {
@@ -195,7 +195,7 @@ Rectangle {
         fillPanel(panelC, n.year, n.month)
         centerYear = year
         centerMonth = month
-        Calendar.setMonth(year, month, false)
+        Calendar.setMonth(year, month)
         slideOffset = 0
         layoutPanels(0)
     }

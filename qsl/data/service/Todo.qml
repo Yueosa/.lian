@@ -128,13 +128,6 @@ Singleton {
         _save()
     }
 
-    function itemsByTag(tag) {
-        void revision
-        if (!tag || tag === "")
-            return items
-        return items.filter(i => i.tag === tag)
-    }
-
     function _save() {
         if (!_storeReady) {
             _dirty = true

@@ -1,7 +1,6 @@
 IslandShell 1.0 IslandShell.qml
 ClockContent 1.0 ClockContent.qml
 HubContent 1.0 HubContent.qml
-HubPlaceholder 1.0 HubPlaceholder.qml
 LyricsContent 1.0 LyricsContent.qml
 MediaPage 1.0 MediaPage.qml
 NotifToastContent 1.0 NotifToastContent.qml
