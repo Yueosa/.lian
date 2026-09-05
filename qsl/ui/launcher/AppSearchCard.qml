@@ -39,7 +39,7 @@ Item {
         Text {
             text: "search"
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.iconSize.lg
             color: Color.textMuted
         }
 
@@ -47,7 +47,7 @@ Item {
             id: input
             Layout.fillWidth: true
             color: Color.text
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.fontSize.bodyLarge
             selectionColor: Color.primary
             selectedTextColor: Color.primaryText
             clip: true
@@ -83,7 +83,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "搜索应用..."
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.titleMedium
                 visible: input.text.length === 0
             }
 
@@ -98,14 +98,14 @@ Item {
         Text {
             text: root.sharedState.count + " 个"
             color: Color.textMuted
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             visible: root.sharedState.count > 0
         }
 
         Text {
             text: "close"
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.iconSize.sm
             color: Color.textMuted
             visible: input.text.length > 0
 

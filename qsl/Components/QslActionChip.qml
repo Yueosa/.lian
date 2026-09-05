@@ -49,7 +49,7 @@ Rectangle {
             visible: root.icon !== ""
             text: root.icon
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.iconSize.sm
             color: root.accent
             anchors.verticalCenter: parent.verticalCenter
 
@@ -64,7 +64,7 @@ Rectangle {
         }
         Text {
             text: root.text
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             font.bold: root.filled
             color: root.accent
             anchors.verticalCenter: parent.verticalCenter

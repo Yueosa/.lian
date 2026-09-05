@@ -131,7 +131,7 @@ Item {
                     return Network.wifiScanning ? "正在扫描…" : "附近没有网络"
                 }
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
             }
 
             delegate: QslRow {
@@ -194,7 +194,7 @@ Item {
                     visible: row.secure && !root.isSaved
                     text: "lock"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.textMuted
                 }
 
@@ -202,7 +202,7 @@ Item {
                     visible: row.connecting
                     text: "sync"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.primary
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -229,7 +229,7 @@ Item {
                         id: forgetLbl
                         anchors.centerIn: parent
                         text: "忘记"
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: Color.error
                     }
                     MouseArea {
@@ -272,7 +272,7 @@ Item {
                                 color: Color.text
                                 selectedTextColor: Color.primaryText
                                 selectionColor: Color.primary
-                                font.pixelSize: Size.fontSize.sm
+                                font.pixelSize: Size.fontSize.bodySmall
                                 clip: true
                                 inputMethodHints: Qt.ImhSensitiveData
                                 onAccepted: Network.submitPassword(row.network, text)
@@ -284,7 +284,7 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     text: Network.passwordHint || "密码"
                                     color: Color.outline
-                                    font.pixelSize: Size.fontSize.sm
+                                    font.pixelSize: Size.fontSize.bodySmall
                                     visible: !passInput.text && !passInput.activeFocus
                                 }
                             }
@@ -335,7 +335,7 @@ Item {
                             Layout.fillWidth: true
                             text: "忘记此网络？"
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                         QslActionChip {
                             text: "取消"

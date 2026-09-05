@@ -61,7 +61,7 @@ Item {
                 text: "memory"
                 color: Color.secondary
                 font.family: Size.fontIcon
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
             }
             Text {
                 text: Sysmon.ready
@@ -70,7 +70,7 @@ Item {
                 color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
             }
             // 只在收起时画：曲线是余光扫一眼的趋势，
             // hover 展开是为了读准确数字，两者挤在一起反而都看不清
@@ -98,14 +98,14 @@ Item {
                 text: "speed"
                 color: Color.primary
                 font.family: Size.fontIcon
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
             }
             Text {
                 text: Math.round(Sysmon.cpuPercent) + "%"
                 color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
             }
         }
 
@@ -120,14 +120,14 @@ Item {
                 text: "developer_board"
                 color: Color.tertiary
                 font.family: Size.fontIcon
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
             }
             Text {
                 text: Math.round(Sysmon.gpuPercent) + "%"
                 color: Color.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
             }
         }
     }

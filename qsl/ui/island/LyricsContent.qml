@@ -153,7 +153,7 @@ Item {
                 text: "\uf001"
                 color: Color.textMuted
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.iconSize.sm
             }
         }
 
@@ -395,7 +395,7 @@ Item {
                     textFormat: Text.PlainText
                     color: row.isCurrent ? Color.primary : Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.titleSmall
                     font.weight: Font.Bold
                 }
             }

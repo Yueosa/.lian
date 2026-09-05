@@ -71,14 +71,14 @@ Item {
                 text: parent.parent.glyph
                 color: parent.parent.accent ? Color.primary : Color.textMuted
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.iconSize.sm
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.text
                 color: parent.parent.accent ? Color.primary : Color.textMuted
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.bold: parent.parent.accent
             }
         }
@@ -136,7 +136,7 @@ Item {
             text: parent.text
             color: parent.accent ? Color.primary : Color.textMuted
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
         }
     }
 
@@ -208,7 +208,7 @@ Item {
                                     text: root.avatarLetter
                                     color: Color.primary
                                     font.family: Size.fontSans
-                                    font.pixelSize: Size.fontSize.title
+                                    font.pixelSize: Size.fontSize.headlineSmall
                                     font.bold: true
                                 }
                             }
@@ -251,7 +251,7 @@ Item {
                                     text: root.hostname
                                     color: Color.backgroundText
                                     font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.lg
+                                    font.pixelSize: Size.fontSize.titleMedium
                                     font.bold: true
                                 }
                                 Text {
@@ -259,7 +259,7 @@ Item {
                                     text: root.greetText
                                     color: Color.textMuted
                                     font.family: Size.fontSans
-                                    font.pixelSize: Size.fontSize.xsm
+                                    font.pixelSize: Size.fontSize.labelSmall
                                 }
                             }
                             // 三个平台标签本来是三颗药丸，横着要 204px。顶条收窄
@@ -271,7 +271,7 @@ Item {
                                 text: "Arch · Hyprland · Wayland"
                                 color: Color.withAlpha(Color.textMuted, 0.8)
                                 font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.xsm
+                                font.pixelSize: Size.fontSize.labelSmall
                                 elide: Text.ElideRight
                             }
                             // 原系统页那两条（uptime / 电量）落在这儿。没电池的
@@ -322,7 +322,7 @@ Item {
                             text: root.restartArmed ? "确认重启" : "\uf021"
                             color: root.restartArmed ? Color.primaryText : Color.textMuted
                             font.family: root.restartArmed ? Size.fontSans : Size.fontMono
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                         }
 
                         MouseArea {
@@ -367,7 +367,7 @@ Item {
                             text: Time.hours + ":" + Time.minutes
                             color: Color.backgroundText
                             font.family: Size.fontMono
-                            font.pixelSize: 36
+                            font.pixelSize: Size.fontSize.displaySmall
                             font.weight: Font.Black
                         }
                         Text {
@@ -381,7 +381,7 @@ Item {
                             }
                             color: Color.textMuted
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                     }
                 }
@@ -423,7 +423,7 @@ Item {
                     text: Weather.ready ? Weather.tempText : "--"
                     color: Color.backgroundText
                     font.family: Size.fontMono
-                    font.pixelSize: 28
+                    font.pixelSize: Size.fontSize.headlineMedium
                     font.weight: Font.Black
                 }
 
@@ -436,7 +436,7 @@ Item {
                     text: Weather.ready ? (Weather.weatherText || "") : "天气加载中…"
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }
 
@@ -496,7 +496,7 @@ Item {
                             text: "待办"
                             color: Color.backgroundText
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
                         }
                         Item { Layout.fillWidth: true }
@@ -506,7 +506,7 @@ Item {
                                 : "空"
                             color: Color.textMuted
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                         }
                     }
 
@@ -570,7 +570,7 @@ Item {
                                 text: modelData.text || ""
                                 color: Color.text
                                 font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.sm
+                                font.pixelSize: Size.fontSize.bodySmall
                                 elide: Text.ElideRight
                             }
                             Rectangle {
@@ -589,7 +589,7 @@ Item {
                                     text: modelData.tag || ""
                                     color: Color.secondary
                                     font.family: Size.fontSans
-                                    font.pixelSize: Size.fontSize.xsm
+                                    font.pixelSize: Size.fontSize.labelSmall
                                 }
                             }
                         }
@@ -600,7 +600,7 @@ Item {
                             text: Todo.count > 0 ? "全部完成" : "没有待办"
                             color: Todo.count > 0 ? Color.primary : Color.textMuted
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                         }
                     }
 

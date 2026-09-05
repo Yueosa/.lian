@@ -123,7 +123,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 text: Bluetooth.discovering ? "正在扫描…" : "附近没有设备"
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
             }
 
             delegate: QslRow {
@@ -166,7 +166,7 @@ Item {
                     visible: row.busy
                     text: "sync"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.primary
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -221,7 +221,7 @@ Item {
                             Layout.fillWidth: true
                             text: "忘记此设备？"
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                         QslActionChip {
                             text: "取消"

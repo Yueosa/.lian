@@ -56,6 +56,27 @@ GROUP = re.compile(r"^\s*(?:readonly\s+)?property\s+QtObject\s+(\w+)\s*:\s*QtObj
 LOADER_HEAD = re.compile(r"\bLoader\s*\{")
 ACTIVE_DECL = re.compile(r"^\s*active\s*:", re.M)
 
+PIXEL_LITERAL = re.compile(r"\bfont\.pixelSize\s*:\s*(\d+)\b")
+
+# 第 9 轮盘下来真的是一次性尺寸的，挂在这。键是「文件:字号」而不是「文件:行号」——
+# 行号会随着上下游改动漂走，字号不会。
+BESPOKE_PX = {
+    "Components/QslSlider.qml:18",        # 滑块把手上的刻度字形
+    "ui/island/MediaPage.qml:48",         # 无播放器时的空态音符
+    "ui/island/MediaPage.qml:56",         # 封面缺图时的占位字形
+    "ui/island/MediaPage.qml:26",         # 歌词焦点行，行高按它算死（见该处注释）
+    "ui/island/OverviewCalendar.qml:9",   # 格子右上角的农历/节气角标
+    "ui/island/WallpaperPage.qml:22",     # 模式切换的大图标
+    "ui/island/WeatherPage.qml:18",       # 分区标题旁的小图标
+    "ui/island/WeatherPage.qml:52",       # 当前气温那个大数字
+    "ui/leftbar/TimeClockCard.qml:38",    # 时钟主体
+    "ui/leftbar/TodoTabsCard.qml:18",     # 标签页加号
+    "ui/lock/LockContent.qml:22",         # 锁屏自成一套：浮在壁纸上，字号跟壳内不同源
+    "ui/lock/LockContent.qml:26",
+    "ui/lock/LockContent.qml:15",
+    "ui/power/PowerCard.qml:22",          # 电源菜单的大图标
+}
+
 # Connections { target: X; function onFooChanged() {...} }
 CONN_HEAD = re.compile(r"\bConnections\s*\{")
 TARGET = re.compile(r"\btarget\s*:\s*(?:root\.)?(\w+)\b")
@@ -344,6 +365,29 @@ def main() -> int:
                     f"「建了就不卸」，常驻也请写明 active: true"
                 )
 
+    # 字号必须走排版阶
+    # ------------------------------------------------------------------
+    # 第 9 轮改名前，258 处走令牌、32 处直接写数字，后者散出 17 种字号。其中
+    # 14/16/20/24 跟令牌上的档一模一样——纯属绕过，改版时改了令牌它们不跟着动。
+    #
+    # 剩下 15 处是真的一次性尺寸（9px 的日历角标、38/52px 的时钟与气温、
+    # 48/56px 的装饰字形）。给每个装饰字形都发一个令牌，那就不是阶而是清单了，
+    # 所以这些留字面量，在下面挂账。这条规则守的是「不再长出新的」。
+    for path in qml:
+        rel = _rel(path)
+        if rel.startswith(("backend/", "scripts/")) or rel == "data/state/Size.qml":
+            continue
+        for lineno, line in enumerate(
+            strip_noise(path.read_text(encoding="utf-8")).splitlines(), 1
+        ):
+            m = PIXEL_LITERAL.search(line)
+            if m and f"{rel}:{m.group(1)}" not in BESPOKE_PX:
+                findings["排版阶"].append(
+                    f"{rel}:{lineno}  font.pixelSize: {m.group(1)}  —— "
+                    f"字号走 Size.fontSize.* / 图标走 Size.iconSize.*；"
+                    f"确实是一次性尺寸就加进 BESPOKE_PX 挂账"
+                )
+
     # Connections 里的 on<属性>Changed / on<信号名>
     # ------------------------------------------------------------------
     # 上面那轮扫的是 `Service.member` 这种写法，扫不到
@@ -383,13 +427,13 @@ def main() -> int:
     if not findings:
         print(
             "架构闸门全绿：分层方向、私有成员、令牌入口、接口存在性、"
-            "生命周期五项无违规。"
+            "生命周期、排版阶六项无违规。"
         )
         return 0
 
     total = 0
     for section in (
-        "分层方向", "接口不存在", "私有成员", "令牌入口", "生命周期"
+        "分层方向", "接口不存在", "私有成员", "令牌入口", "生命周期", "排版阶"
     ):
         items = sorted(set(findings.get(section, [])))
         if not items:

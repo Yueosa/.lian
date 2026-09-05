@@ -67,7 +67,7 @@ Item {
             text: ""
             color: Color.primary
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.labelLarge
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -75,7 +75,7 @@ Item {
             text: root.activeTitle
             color: Color.primary
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.bodyMedium
             Layout.maximumWidth: root.titleMax
             Layout.alignment: Qt.AlignVCenter
             elide: Text.ElideRight

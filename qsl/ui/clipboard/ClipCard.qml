@@ -192,7 +192,7 @@ Item {
                             textFormat: Text.PlainText
                             text: rowItem.row.entries[0].preview || ""
                             color: rowItem.isCurrent ? Color.primaryText : Color.text
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.bodyMedium
                             font.family: Size.fontSans
 
                             Behavior on color {
@@ -210,7 +210,7 @@ Item {
                             visible: textHover.containsMouse
                             text: "close"
                             font.family: Size.fontIcon
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.iconSize.md
                             color: rowItem.isCurrent ? Color.primaryText : Color.textMuted
 
                             MouseArea {
@@ -298,7 +298,7 @@ Item {
                                         || thumb.status !== Image.Ready
                                     text: "\uf03e"
                                     font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.xl
+                                    font.pixelSize: Size.iconSize.xl
                                     color: Color.textMuted
                                 }
 
@@ -340,7 +340,7 @@ Item {
                                         anchors.centerIn: parent
                                         text: "close"
                                         font.family: Size.fontIcon
-                                        font.pixelSize: Size.fontSize.sm
+                                        font.pixelSize: Size.iconSize.sm
                                         color: Color.text
                                     }
 
@@ -373,7 +373,7 @@ Item {
         Text {
             text: "content_paste"
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.iconSize.lg
             color: Color.textMuted
         }
 
@@ -381,7 +381,7 @@ Item {
             id: input
             Layout.fillWidth: true
             color: Color.text
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.fontSize.bodyLarge
             selectionColor: Color.primary
             selectedTextColor: Color.primaryText
             clip: true
@@ -406,7 +406,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "搜索剪贴板..."
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.titleMedium
                 visible: input.text.length === 0
             }
 
@@ -445,7 +445,7 @@ Item {
         Text {
             text: Clipboard.filtered.length + " 条"
             color: Color.textMuted
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             visible: Clipboard.filtered.length > 0
         }
 

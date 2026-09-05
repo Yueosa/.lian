@@ -94,7 +94,7 @@ Item {
             text: "没有媒体播放器"
             color: Color.textMuted
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.fontSize.titleMedium
         }
     }
 
@@ -172,7 +172,7 @@ Item {
                 text: root.trackTitle
                 color: Color.backgroundText
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
                 elide: Text.ElideRight
             }
@@ -181,7 +181,7 @@ Item {
                 text: root.trackArtist
                 color: Color.textMuted
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 elide: Text.ElideRight
             }
 
@@ -389,14 +389,14 @@ Item {
                     text: Media.formatTime(root.seekPos)
                     color: Color.textMuted
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                 }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: Media.formatTime(root.trackLength)
                     color: Color.textMuted
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                 }
             }
 
@@ -550,7 +550,7 @@ Item {
                     visible: Lyrics.loading && Lyrics.lines.length === 0
                     text: "搜寻歌词…"
                     color: Color.textMuted
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.labelLarge
                 }
             }
 
@@ -644,21 +644,21 @@ Item {
                     text: Media.activeIdentityIcon
                     color: Color.primary
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.iconSize.sm
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Media.activeIdentity
                     color: Color.primary
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
                 }
                 Text {
                     text: root.playerExpanded ? "\uf077" : "\uf078"
                     color: Color.primary
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.iconSize.xs
                 }
             }
 
@@ -705,7 +705,7 @@ Item {
                         text: Media.getIdentityIcon(modelData) + "  " + Media.getIdentity(modelData)
                         color: modelData === Media.active ? Color.primaryText : Color.backgroundText
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         font.bold: modelData === Media.active
                         elide: Text.ElideRight
                         verticalAlignment: Text.AlignVCenter
@@ -758,7 +758,7 @@ Item {
             text: btn.glyph
             color: primary ? Color.primaryText : (active ? Color.primary : Color.backgroundText)
             font.family: Size.fontMono
-            font.pixelSize: primary ? Size.fontSize.lg : Size.fontSize.md
+            font.pixelSize: primary ? Size.iconSize.lg : Size.iconSize.md
         }
         MouseArea {
             id: ma

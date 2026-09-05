@@ -47,7 +47,7 @@ Item {
                 Text {
                     text: Updates.totalCount > 0 ? String(Updates.totalCount) : "—"
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.title
+                    font.pixelSize: Size.fontSize.headlineSmall
                     font.bold: true
                     color: Updates.totalCount > 0 ? Color.primary : Color.textMuted
                 }
@@ -62,7 +62,7 @@ Item {
                             : "从未检查")
                         return parts.join(" · ")
                     }
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.textMuted
                     elide: Text.ElideRight
                 }
@@ -93,7 +93,7 @@ Item {
             Layout.fillWidth: true
             visible: Updates.lastAppliedCount > 0
             text: "上次升级 " + Updates.lastAppliedCount + " 个包 · " + Updates.lastAppliedAgo
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             color: Color.textMuted
             elide: Text.ElideRight
         }
@@ -150,14 +150,14 @@ Item {
                 Text {
                     text: "error"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.error
                 }
                 Text {
                     Layout.fillWidth: true
                     text: "检查失败 · " + Updates.errorAgo
                     color: Color.error
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.labelMedium
                     elide: Text.ElideRight
                 }
             }

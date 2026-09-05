@@ -63,7 +63,7 @@ Item {
 
             QslIconButton {
                 buttonSize: 32
-                iconSize: Size.fontSize.lg
+                iconSize: Size.iconSize.lg
                 icon: "settings"
                 onClicked: {
                     Bluetooth.openBlueman()
@@ -134,14 +134,14 @@ Item {
                 Text {
                     text: "error"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.error
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Bluetooth.lastError
                     color: Color.error
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }
             }

@@ -38,13 +38,13 @@ Item {
             Text {
                 text: "待办"
                 color: Color.text
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
             }
             Text {
                 text: Todo.doneCount + "/" + Todo.count
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 verticalAlignment: Text.AlignVCenter
             }
             Item { Layout.fillWidth: true }
@@ -139,7 +139,7 @@ Item {
                             anchors.centerIn: parent
                             text: "add"
                             font.family: Size.fontIcon
-                            font.pixelSize: 16
+                            font.pixelSize: Size.iconSize.lg
                             color: Color.textMuted
                         }
                         MouseArea {
@@ -174,7 +174,7 @@ Item {
                 anchors.rightMargin: Size.spacing.md
                 verticalAlignment: Text.AlignVCenter
                 color: Color.text
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.family: Size.fontSans
                 clip: true
                 selectByMouse: true

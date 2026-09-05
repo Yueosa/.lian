@@ -42,14 +42,14 @@ Rectangle {
             visible: root.icon !== ""
             text: root.icon
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.iconSize.sm
             color: root.selected ? Color.primary : Color.textMuted
             anchors.verticalCenter: parent.verticalCenter
         }
         Text {
             text: root.text
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.bodySmall
             font.bold: root.selected
             color: root.selected ? Color.primary : Color.textMuted
             anchors.verticalCenter: parent.verticalCenter

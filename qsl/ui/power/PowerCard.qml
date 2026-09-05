@@ -125,7 +125,7 @@ Item {
                         text: root.s ? root.s.avatarLetter : "?"
                         color: Color.primary
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xl
+                        font.pixelSize: Size.fontSize.titleLarge
                         font.bold: true
                     }
                 }

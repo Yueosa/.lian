@@ -140,7 +140,7 @@ Rectangle {
             text: nav.glyph
             color: Color.primary
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.iconSize.md
         }
         MouseArea {
             id: navMa
@@ -355,7 +355,7 @@ Rectangle {
                         text: String(cell.dayData.day)
                         color: root.dayColor(cell.dayData)
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.lg
+                        font.pixelSize: Size.fontSize.bodyLarge
                         font.bold: cell.dayData.isToday || cell.dayData.isHoliday
                     }
 
@@ -426,7 +426,7 @@ Rectangle {
                         text: root.monthLabel
                         color: Color.backgroundText
                         font.family: Size.fontSans
-                        font.pixelSize: 24
+                        font.pixelSize: Size.fontSize.headlineSmall
                         font.bold: true
                     }
                     Text {
@@ -434,7 +434,7 @@ Rectangle {
                         text: root.centerYear > 0 ? String(root.centerYear) : ""
                         color: Color.textMuted
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.bodyMedium
                     }
                 }
             }
@@ -481,7 +481,7 @@ Rectangle {
                         text: modelData.t
                         color: modelData.weekend ? Color.error : Color.textMuted
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.titleSmall
                         font.bold: true
                         opacity: modelData.weekend ? 0.95 : 0.85
                     }
@@ -541,7 +541,7 @@ Rectangle {
                 }
                 color: Color.text
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
             }
 
             Text {
@@ -558,7 +558,7 @@ Rectangle {
                 }
                 color: Color.primary
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
             }
         }

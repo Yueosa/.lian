@@ -114,7 +114,7 @@ FocusScope {
         text: "没有可切换的窗口"
         color: Color.textMuted
         font.family: Size.fontSans
-        font.pixelSize: Size.fontSize.xl
+        font.pixelSize: Size.fontSize.titleLarge
     }
 
     QslStagger { id: stagger }
@@ -179,7 +179,7 @@ FocusScope {
                     ? Color.backgroundText
                     : Color.textMuted
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.bold: groupCol.groupFocused
             }
 
@@ -322,7 +322,7 @@ FocusScope {
                         horizontalAlignment: Text.AlignHCenter
                         text: HyprService.windowTitle(card.win)
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: card.focused
                             ? Color.backgroundText
                             : Color.textMuted

@@ -237,7 +237,7 @@ Item {
                 text: root.timeStr
                 color: root.ink
                 font.family: Size.fontMono
-                font.pixelSize: 56
+                font.pixelSize: Size.fontSize.displayLarge
                 font.weight: Font.ExtraLight
             }
             Text {
@@ -245,7 +245,7 @@ Item {
                 text: root.dateStr
                 color: root.inkDim
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.bodyLarge
             }
             Text {
                 visible: root.openTodos.length > 0
@@ -264,7 +264,7 @@ Item {
                 }
                 color: root.inkDim
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.bodyLarge
             }
         }
 
@@ -292,7 +292,7 @@ Item {
             text: root.timeStr
             color: root.ink
             font.family: Size.fontMono
-            font.pixelSize: 136
+            font.pixelSize: Size.fontSize.displayHero
             font.weight: Font.ExtraLight
 
             MouseArea {
@@ -326,7 +326,7 @@ Item {
             text: root.holidayLine
             color: root.inkFaint
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.bodyMedium
 
             MouseArea {
                 anchors.fill: parent
@@ -377,7 +377,7 @@ Item {
                                 text: modelData.text || ""
                                 color: root.ink
                                 font.family: Size.fontSans
-                                font.pixelSize: 20
+                                font.pixelSize: Size.fontSize.titleLarge
                                 wrapMode: Text.NoWrap
                                 elide: Text.ElideRight
                             }
@@ -386,7 +386,7 @@ Item {
                                 text: (modelData.starred ? "★ 重要  " : "") + (modelData.tag || "")
                                 color: modelData.starred ? Color.inversePrimary : root.inkFaint
                                 font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.sm
+                                font.pixelSize: Size.fontSize.bodySmall
                             }
                         }
                     }
@@ -487,7 +487,7 @@ Item {
                     text: root.trackTitle
                     color: root.ink
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.lg
+                    font.pixelSize: Size.fontSize.titleMedium
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
@@ -498,7 +498,7 @@ Item {
                         : (Media.activeIdentity || "")
                     color: root.inkDim
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }
             }
@@ -609,7 +609,7 @@ Item {
                     text: root.volIcon
                     color: Volume.sinkMuted ? Color.error : root.inkDim
                     font.family: Size.fontIcon
-                    font.pixelSize: 20
+                    font.pixelSize: Size.iconSize.xl
                     MouseArea {
                         anchors.fill: parent
                         anchors.margins: -6
@@ -702,7 +702,7 @@ Item {
                             text: modelData.appName || "应用"
                             color: Color.inversePrimary
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
                         }
@@ -710,7 +710,7 @@ Item {
                             text: "close"
                             color: root.inkFaint
                             font.family: Size.fontIcon
-                            font.pixelSize: 16
+                            font.pixelSize: Size.iconSize.lg
                             MouseArea {
                                 anchors.fill: parent
                                 anchors.margins: -6
@@ -727,7 +727,7 @@ Item {
                         text: modelData.summary || ""
                         color: root.ink
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.labelMedium
                         font.weight: Font.Medium
                         elide: toastCard.open ? Text.ElideNone : Text.ElideRight
                         wrapMode: toastCard.open ? Text.Wrap : Text.NoWrap
@@ -741,7 +741,7 @@ Item {
                         text: modelData.body || ""
                         color: root.inkDim
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         wrapMode: Text.Wrap
                         maximumLineCount: 4
                     }
@@ -765,7 +765,7 @@ Item {
             text: "全部清除"
             color: root.inkFaint
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -4
@@ -812,7 +812,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "lock"
                     font.family: Size.fontIcon
-                    font.pixelSize: 20
+                    font.pixelSize: Size.iconSize.xl
                     color: root.failed ? Color.error : root.inkFaint
                 }
 

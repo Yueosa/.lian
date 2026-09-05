@@ -41,7 +41,7 @@ Rectangle {
         // —— 输出 ——
         Text {
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.iconSize.md
             Layout.alignment: Qt.AlignVCenter
             color: (Volume.sinkMuted || Volume.sinkVolume <= 0)
                 ? Color.error
@@ -61,7 +61,7 @@ Rectangle {
             id: sinkLabel
             text: root.sinkPct.toString()
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             font.bold: true
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
@@ -79,7 +79,7 @@ Rectangle {
             id: micIcon
             visible: Volume.hasSource
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.iconSize.md
             Layout.alignment: Qt.AlignVCenter
             color: (Volume.sourceMuted || Volume.sourceVolume <= 0)
                 ? Color.error
@@ -101,7 +101,7 @@ Rectangle {
             visible: Volume.hasSource
             text: root.sourcePct.toString()
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             font.bold: true
             color: Color.text
             Layout.alignment: Qt.AlignVCenter

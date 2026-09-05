@@ -174,7 +174,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Math.floor(clockBox.progress * 100) + "% of today"
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.textMuted
                     opacity: 0.7
                 }
@@ -188,7 +188,7 @@ Item {
             Text {
                 text: root.now ? root.now.getDate() : "-"
                 font.family: Size.fontSans
-                font.pixelSize: 44
+                font.pixelSize: Size.fontSize.displayMedium
                 font.weight: Font.Medium
                 color: Color.primary
             }
@@ -199,7 +199,7 @@ Item {
                         ? ((root.now.getMonth() + 1) + " 月  ·  " + root.now.getFullYear())
                         : ""
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     color: Color.text
                 }
                 Text {
@@ -207,7 +207,7 @@ Item {
                         ? (root.weekdays[root.now.getDay()] + "  ·  " + root.greet(root.now))
                         : ""
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     color: Color.textMuted
                 }
             }
@@ -220,7 +220,7 @@ Item {
             wrapMode: Text.WordWrap
             text: root.subline(root.now)
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.bodySmall
             color: Color.textMuted
             opacity: 0.85
         }
@@ -249,7 +249,7 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     color: Color.text
                     lineHeight: 1.4
                     elide: Text.ElideRight
@@ -261,7 +261,7 @@ Item {
                     text: "—— " + Hitokoto.from
                     horizontalAlignment: Text.AlignRight
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.textMuted
                     opacity: 0.85
                 }

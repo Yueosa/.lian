@@ -111,7 +111,7 @@ Item {
             Text {
                 text: "进程"
                 color: Color.text
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
             }
             Item { Layout.fillWidth: true }
@@ -138,7 +138,7 @@ Item {
                         id: fl
                         anchors.centerIn: parent
                         text: modelData.label
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.bodySmall
                         color: selected ? Color.primary : Color.textMuted
                     }
                     MouseArea {
@@ -160,14 +160,14 @@ Item {
                 Layout.fillWidth: true
                 text: "名称"
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
             }
             Text {
                 Layout.preferredWidth: 56
                 horizontalAlignment: Text.AlignRight
                 text: "CPU" + (root.sortCol === 0 ? (root.sortAsc ? " ↑" : " ↓") : "")
                 color: root.cpuColor
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.bold: root.sortCol === 0
                 MouseArea {
                     anchors.fill: parent
@@ -180,7 +180,7 @@ Item {
                 horizontalAlignment: Text.AlignRight
                 text: "MEM" + (root.sortCol === 1 ? (root.sortAsc ? " ↑" : " ↓") : "")
                 color: root.memColor
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.bold: root.sortCol === 1
                 MouseArea {
                     anchors.fill: parent
@@ -193,7 +193,7 @@ Item {
                 horizontalAlignment: Text.AlignRight
                 text: "PID" + (root.sortCol === 2 ? (root.sortAsc ? " ↑" : " ↓") : "")
                 color: root.pidColor
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 font.bold: root.sortCol === 2
                 MouseArea {
                     anchors.fill: parent
@@ -238,14 +238,14 @@ Item {
                         text: modelData.name || "?"
                         elide: Text.ElideRight
                         color: Color.text
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.bodyMedium
                     }
                     Text {
                         Layout.preferredWidth: 56
                         horizontalAlignment: Text.AlignRight
                         text: row.cpu.toFixed(1) + "%"
                         color: row.cpu > 20 ? Color.error : root.cpuColor
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.labelMedium
                         font.family: Size.fontMono
                         font.bold: true
                     }
@@ -254,7 +254,7 @@ Item {
                         horizontalAlignment: Text.AlignRight
                         text: Sysmon.formatMemKB(row.memKb)
                         color: row.memKb > 1048576 ? Color.error : root.memColor
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.labelMedium
                         font.family: Size.fontMono
                         font.bold: true
                     }
@@ -263,7 +263,7 @@ Item {
                         horizontalAlignment: Text.AlignRight
                         text: String(row.pid)
                         color: root.pidColor
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.bodySmall
                         font.family: Size.fontMono
                     }
                 }
@@ -289,7 +289,7 @@ Item {
                 visible: procList.count === 0
                 text: Sysmon.daemonOk ? "暂无进程数据" : "等待 sysmond…"
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.bodyMedium
             }
         }
     }
@@ -329,7 +329,7 @@ Item {
                     anchors.leftMargin: 12
                     text: "结束进程"
                     color: Color.text
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.labelLarge
                 }
                 MouseArea {
                     id: termMa
@@ -362,7 +362,7 @@ Item {
                     anchors.leftMargin: 12
                     text: "强制结束"
                     color: Color.error
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.labelLarge
                 }
                 MouseArea {
                     id: killMa

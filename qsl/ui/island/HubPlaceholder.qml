@@ -18,7 +18,7 @@ Item {
             text: root.title
             color: Color.backgroundText
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.title
+            font.pixelSize: Size.fontSize.headlineSmall
             font.bold: true
         }
         Text {
@@ -26,7 +26,7 @@ Item {
             text: root.hint
             color: Color.textMuted
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.bodyMedium
         }
     }
 }

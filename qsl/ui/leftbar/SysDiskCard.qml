@@ -29,7 +29,7 @@ Item {
             spacing: Size.spacing.sm
             Text {
                 text: "磁盘"
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 color: Color.text
                 Layout.preferredWidth: 44
             }
@@ -50,7 +50,7 @@ Item {
                     + Math.round(Sysmon.diskUsedGB) + "/"
                     + Math.round(Sysmon.diskTotalGB) + "G"
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 color: Color.textMuted
             }
         }
@@ -60,7 +60,7 @@ Item {
             spacing: Size.spacing.sm
             Text {
                 text: "Swap"
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 color: Color.text
                 Layout.preferredWidth: 44
             }
@@ -80,7 +80,7 @@ Item {
             Text {
                 text: Sysmon.swapUsedGB.toFixed(1) + "/" + Sysmon.swapTotalGB.toFixed(0) + "G"
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 color: Color.textMuted
             }
         }

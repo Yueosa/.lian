@@ -40,7 +40,7 @@ Rectangle {
 
         Text {
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.iconSize.lg
             Layout.alignment: Qt.AlignVCenter
             color: (Network.ethernetConnected || Network.wifiConnected)
                 ? Color.primary
@@ -52,7 +52,7 @@ Rectangle {
             id: label
             text: Network.chipLabel
             font.bold: true
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
             // 收起时占宽 0，展开用真实字宽（封顶），保证胶囊包住文字

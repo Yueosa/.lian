@@ -55,7 +55,7 @@ Item {
 
     FontMetrics {
         id: nameMetrics
-        font.pixelSize: Size.fontSize.xl
+        font.pixelSize: Size.fontSize.titleLarge
     }
 
     implicitHeight: root.sharedState
@@ -267,7 +267,7 @@ Item {
                                 || appImage.status !== Image.Ready
                             text: appRow.app.materialGlyph || "apps"
                             font.family: Size.fontIcon
-                            font.pixelSize: Size.fontSize.xl
+                            font.pixelSize: Size.iconSize.xl
                             color: appRow.current ? Color.primaryText : Color.text
                         }
                     }
@@ -282,7 +282,7 @@ Item {
                         textFormat: Text.StyledText
                         elide: Text.ElideRight
                         color: appRow.current ? Color.primaryText : Color.text
-                        font.pixelSize: Size.fontSize.xl
+                        font.pixelSize: Size.fontSize.titleLarge
                     }
                 }
             }

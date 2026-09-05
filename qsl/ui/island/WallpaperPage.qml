@@ -264,7 +264,7 @@ FocusScope {
             anchors.centerIn: parent
             text: button.icon
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.iconSize.lg
             color: button.active ? Color.primary : Color.backgroundText
         }
 
@@ -397,7 +397,7 @@ FocusScope {
                         + (root.focusedItem && root.focusedItem.is_current ? " · 已应用" : "")
                     color: Color.backgroundText
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.titleSmall
                     font.bold: true
                     elide: Text.ElideRight
                 }
@@ -408,7 +408,7 @@ FocusScope {
                         + " · 锁定 " + Lianwall.lockedCount
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
                 }
             }
@@ -563,7 +563,7 @@ FocusScope {
                                     anchors.centerIn: parent
                                     text: "当前"
                                     color: Color.primaryText
-                                    font.pixelSize: Size.fontSize.xsm
+                                    font.pixelSize: Size.fontSize.labelSmall
                                 }
                             }
 
@@ -592,7 +592,7 @@ FocusScope {
                 text: Lianwall.error.length > 0 ? Lianwall.error : "暂无壁纸"
                 color: Color.textMuted
                 font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.bodyLarge
             }
         }
     }

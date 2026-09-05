@@ -39,7 +39,7 @@ Item {
                 spacing: Size.spacing.sm
                 Text {
                     text: "计时"
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.labelMedium
                     font.bold: true
                     color: Color.text
                     Layout.alignment: Qt.AlignVCenter
@@ -50,23 +50,23 @@ Item {
             // ---- 秒表 ----
             RowLayout {
                 Layout.fillWidth: true; spacing: Size.spacing.sm
-                Text { text: ""; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.lg; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
-                Text { text: "秒表"; font.pixelSize: Size.fontSize.sm; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
+                Text { text: ""; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.titleMedium; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
+                Text { text: "秒表"; font.pixelSize: Size.fontSize.labelMedium; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
                 Item { Layout.fillWidth: true }
-                Text { text: Timers.formatSec(Timers.stopwatch.elapsed); font.family: Size.fontMono; font.pixelSize: Size.fontSize.lg; color: Timers.stopwatch.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
+                Text { text: Timers.formatSec(Timers.stopwatch.elapsed); font.family: Size.fontMono; font.pixelSize: Size.fontSize.titleMedium; color: Timers.stopwatch.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
             }
             RowLayout {
                 Layout.fillWidth: true; spacing: Size.spacing.xs
                 Rectangle {
                     Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
                     color: Timers.stopwatch.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.stopwatch.running ? "暂停" : "开始"; color: Timers.stopwatch.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.xsm; font.bold: true }
+                    Text { anchors.centerIn: parent; text: Timers.stopwatch.running ? "暂停" : "开始"; color: Timers.stopwatch.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.stopwatch.running ? Timers.pauseStopwatch() : Timers.startStopwatch() }
                 }
                 Rectangle {
                     visible: Timers.stopwatch.elapsed > 0 && !Timers.stopwatch.running
                     Layout.preferredWidth: 52; Layout.preferredHeight: 28; radius: Size.rounding.sm; color: Color.withAlpha(Color.text, 0.06)
-                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.xsm }
+                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.labelSmall }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.resetStopwatch() }
                 }
             }
@@ -76,10 +76,10 @@ Item {
             // ---- 倒计时 ----
             RowLayout {
                 Layout.fillWidth: true; spacing: Size.spacing.sm
-                Text { text: ""; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.lg; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
-                Text { text: "倒计时"; font.pixelSize: Size.fontSize.sm; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
+                Text { text: ""; font.family: Size.fontIcon; font.pixelSize: Size.fontSize.titleMedium; color: Color.primary; Layout.alignment: Qt.AlignVCenter }
+                Text { text: "倒计时"; font.pixelSize: Size.fontSize.labelMedium; font.bold: true; color: Color.text; Layout.alignment: Qt.AlignVCenter }
                 Item { Layout.fillWidth: true }
-                Text { text: Timers.formatSec(Timers.countdown.remaining); font.family: Size.fontMono; font.pixelSize: Size.fontSize.lg; color: Timers.countdown.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
+                Text { text: Timers.formatSec(Timers.countdown.remaining); font.family: Size.fontMono; font.pixelSize: Size.fontSize.titleMedium; color: Timers.countdown.running ? Color.primary : Color.text; Layout.alignment: Qt.AlignVCenter }
             }
             RowLayout {
                 Layout.fillWidth: true; spacing: Size.spacing.xs
@@ -91,7 +91,7 @@ Item {
                         Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
                         color: Color.withAlpha(Color.text, 0.06)
                         QslStateLayer { source: cdMa; tint: Color.primary; accent: true }
-                        Text { anchors.centerIn: parent; text: modelData.label; color: cdMa.containsMouse ? Color.primary : Color.textMuted; font.pixelSize: Size.fontSize.xsm; font.bold: cdMa.containsMouse }
+                        Text { anchors.centerIn: parent; text: modelData.label; color: cdMa.containsMouse ? Color.primary : Color.textMuted; font.pixelSize: Size.fontSize.labelSmall; font.bold: cdMa.containsMouse }
                         MouseArea { id: cdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Timers.startCountdown(modelData.secs) }
                     }
                 }
@@ -102,12 +102,12 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
                     color: Timers.countdown.running ? Color.withAlpha(Color.error, 0.15) : Color.withAlpha(Color.primary, 0.15)
-                    Text { anchors.centerIn: parent; text: Timers.countdown.running ? "暂停" : "继续"; color: Timers.countdown.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.xsm; font.bold: true }
+                    Text { anchors.centerIn: parent; text: Timers.countdown.running ? "暂停" : "继续"; color: Timers.countdown.running ? Color.error : Color.primary; font.pixelSize: Size.fontSize.labelSmall; font.bold: true }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.countdown.running ? Timers.pauseCountdown() : Timers.startCountdown(0) }
                 }
                 Rectangle {
                     Layout.preferredWidth: 52; Layout.preferredHeight: 28; radius: Size.rounding.sm; color: Color.withAlpha(Color.text, 0.06)
-                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.xsm }
+                    Text { anchors.centerIn: parent; text: "重置"; color: Color.textMuted; font.pixelSize: Size.fontSize.labelSmall }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Timers.resetCountdown() }
                 }
             }

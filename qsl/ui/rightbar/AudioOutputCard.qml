@@ -56,7 +56,7 @@ Item {
 
             QslIconButton {
                 buttonSize: 26
-                iconSize: Size.fontSize.md
+                iconSize: Size.iconSize.md
                 icon: "settings"
                 onClicked: {
                     Volume.openPavucontrol()
@@ -88,7 +88,7 @@ Item {
             Text {
                 text: Math.round((Volume.sinkMuted ? 0 : Volume.sinkVolume) * 100)
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 color: Volume.sinkMuted ? Color.textMuted : Color.primary
             }
         }
@@ -98,7 +98,7 @@ Item {
             visible: !Volume.hasSink
             text: "未找到输出设备"
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             color: Color.textMuted
         }
 
@@ -145,7 +145,7 @@ Item {
                     visible: devRow.isDefault
                     text: "check"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.primary
                 }
             }

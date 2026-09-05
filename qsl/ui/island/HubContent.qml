@@ -202,7 +202,7 @@ FocusScope {
                     Text {
                         text: modelData.icon
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.title
+                        font.pixelSize: Size.iconSize.xxl
                         color: active ? Color.backgroundText : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter
                         Behavior on color { CAnim {} }
@@ -210,7 +210,7 @@ FocusScope {
                     Text {
                         text: modelData.title
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.bodyMedium
                         font.bold: active
                         color: active ? Color.backgroundText : Color.textMuted
                         anchors.horizontalCenter: parent.horizontalCenter

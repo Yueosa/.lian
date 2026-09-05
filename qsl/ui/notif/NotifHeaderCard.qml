@@ -51,7 +51,7 @@ Item {
                 anchors.centerIn: parent
                 text: "\uf060"
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
                 color: Color.text
             }
             MouseArea {
@@ -66,7 +66,7 @@ Item {
         Text {
             text: root.sharedState.currentApp === "" ? "通知中心" : root.sharedState.currentAppName
             color: Color.text
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.fontSize.titleMedium
             font.bold: true
             elide: Text.ElideRight
             Layout.fillWidth: true
@@ -84,7 +84,7 @@ Item {
                 anchors.centerIn: parent
                 text: Notification.dndEnabled ? "\uf1f6" : "\uf0f3"
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
                 color: Notification.dndEnabled ? Color.secondary : Color.text
             }
             MouseArea {
@@ -109,7 +109,7 @@ Item {
                 anchors.centerIn: parent
                 text: "\uf1f8"
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.iconSize.md
                 color: Notification.hasNotifications ? Color.error : Color.textMuted
                 opacity: Notification.hasNotifications ? 1 : 0.4
             }

@@ -34,7 +34,7 @@ Item {
             Text {
                 text: "网络"
                 color: Color.text
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
             }
             Item { Layout.fillWidth: true }
@@ -43,7 +43,7 @@ Item {
                     + "↓" + Sysmon.formatBytes(Sysmon.netDownBps)
                     + " ↑" + Sysmon.formatBytes(Sysmon.netUpBps)
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 font.family: Size.fontMono
             }
         }

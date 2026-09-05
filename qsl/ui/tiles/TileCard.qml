@@ -105,7 +105,7 @@ Item {
         anchors.verticalCenter: tabRow.verticalCenter
         text: "Tab"
         font.family: Size.fontMono
-        font.pixelSize: Size.fontSize.xsm
+        font.pixelSize: Size.fontSize.labelSmall
         color: Color.textMuted
         opacity: 0.6
     }
@@ -197,7 +197,7 @@ Item {
                         text: (tile.modelData && tile.modelData.title)
                             ? tile.modelData.title : ""
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.bodySmall
                         color: Color.text
                         elide: Text.ElideRight
                     }
@@ -213,7 +213,7 @@ Item {
                             : ((tile.modelData && tile.modelData.note)
                                 ? tile.modelData.note : "")
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: tile.on ? Color.primary : Color.textMuted
                         elide: Text.ElideRight
                     }
@@ -246,7 +246,7 @@ Item {
             ? "tiles.json：" + Tiles.error
             : "tiles.json 里这个区是空的"
         font.family: Size.fontSans
-        font.pixelSize: Size.fontSize.sm
+        font.pixelSize: Size.fontSize.bodySmall
         color: Color.textMuted
     }
 
@@ -260,7 +260,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         text: Systemd.lastError
         font.family: Size.fontSans
-        font.pixelSize: Size.fontSize.xsm
+        font.pixelSize: Size.fontSize.labelSmall
         color: Color.error
         elide: Text.ElideRight
     }

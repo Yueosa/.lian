@@ -101,7 +101,7 @@ Item {
                 anchors.centerIn: parent
                 text: dial.center
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.xl
+                font.pixelSize: Size.fontSize.titleLarge
                 font.bold: true
                 color: Color.text
             }
@@ -112,7 +112,7 @@ Item {
             anchors.topMargin: 114
             anchors.horizontalCenter: parent.horizontalCenter
             text: dial.label
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             color: Color.textMuted
         }
     }

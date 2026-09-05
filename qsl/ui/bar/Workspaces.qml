@@ -47,7 +47,7 @@ Item {
                 text: HyprService.workspaceLabel(HyprService.focusedWorkspace)
                 color: Color.primary
                 font.family: Size.fontMono
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 font.bold: true
             }
         }

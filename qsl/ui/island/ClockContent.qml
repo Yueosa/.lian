@@ -55,7 +55,7 @@ Item {
             text: root.dateStr
             color: Color.primary
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.titleSmall
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -64,7 +64,7 @@ Item {
             text: "|"
             color: Color.outlineVariant
             font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.labelLarge
             anchors.verticalCenter: parent.verticalCenter
         }
 

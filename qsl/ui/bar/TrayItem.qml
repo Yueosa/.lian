@@ -103,6 +103,6 @@ MouseArea {
         text: TrayService.glyphFor(root.modelData)
         color: Color.text
         font.family: Size.fontIcon
-        font.pixelSize: Size.fontSize.xl
+        font.pixelSize: Size.iconSize.xl
     }
 }

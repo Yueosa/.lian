@@ -70,7 +70,7 @@ Item {
             Text {
                 text: Sysmon.psiAvailable ? "PSI" : "Load"
                 color: psiCard.expanded ? psiCard.severity : Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
             }
             // 空闲态靠它把「无阻塞」推到右边；展开后必须让位，
             // 否则它跟三条火花线抢同一份余量
@@ -81,7 +81,7 @@ Item {
                 visible: Sysmon.psiAvailable && !psiCard.expanded
                 text: "无阻塞"
                 color: Color.withAlpha(Color.textMuted, 0.75)
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
             }
 
             // 内核没开 PSI 就退回 loadavg
@@ -89,7 +89,7 @@ Item {
                 visible: !Sysmon.psiAvailable
                 text: Sysmon.load1.toFixed(2)
                 color: Color.text
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
                 font.family: Size.fontMono
             }
@@ -133,7 +133,7 @@ Item {
                         Text {
                             text: grp.modelData.label
                             color: Color.withAlpha(Color.textMuted, 0.8)
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                         Sparkline {
                             // 三条火花线是这行里唯一可伸缩的东西。原先它固定
@@ -160,7 +160,7 @@ Item {
                             text: grp.modelData.v.toFixed(1)
                             color: grp.modelData.v >= 10
                                 ? Color.error : grp.modelData.c
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
                             font.family: Size.fontMono
                         }
@@ -175,7 +175,7 @@ Item {
                             && grp.modelData.peak > grp.modelData.v + 0.5) ? 1 : 0
                         text: "峰" + grp.modelData.peak.toFixed(1)
                         color: Color.withAlpha(Color.textMuted, 0.75)
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         font.family: Size.fontMono
                         Behavior on opacity { Anim { type: Anim.EffectsSlow } }
                     }

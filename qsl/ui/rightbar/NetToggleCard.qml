@@ -84,7 +84,7 @@ Item {
 
             QslIconButton {
                 buttonSize: 32
-                iconSize: Size.fontSize.lg
+                iconSize: Size.iconSize.lg
                 icon: "settings"
                 onClicked: {
                     Network.openNmtui()
@@ -94,7 +94,7 @@ Item {
 
             QslIconButton {
                 buttonSize: 32
-                iconSize: Size.fontSize.lg
+                iconSize: Size.iconSize.lg
                 icon: "refresh"
                 busy: Network.wifiScanning
                 enabled: Network.wifiEnabled
@@ -146,20 +146,20 @@ Item {
                 Text {
                     text: "↓" + Sysmon.formatBytes(Sysmon.netDownBps)
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.primary
                 }
                 Text {
                     text: "↑" + Sysmon.formatBytes(Sysmon.netUpBps)
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.tertiary
                 }
             }
 
             QslIconButton {
                 buttonSize: 32
-                iconSize: Size.fontSize.lg
+                iconSize: Size.iconSize.lg
                 icon: "link_off"
                 visible: Network.wifiConnected && !Network.ethernetConnected
                 onClicked: Network.disconnectActiveWifi()
@@ -187,7 +187,7 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "打开网络门户"
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
                 color: Color.primary
             }
@@ -252,14 +252,14 @@ Item {
                 Text {
                     text: "error"
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.iconSize.md
                     color: Color.error
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Network.lastError
                     color: Color.error
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }
             }

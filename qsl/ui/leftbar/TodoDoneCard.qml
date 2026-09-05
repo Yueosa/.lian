@@ -58,7 +58,7 @@ Item {
             Layout.fillWidth: true
             Text {
                 text: "已完成 " + root.doneItems.length
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
                 color: Color.text
                 Layout.alignment: Qt.AlignVCenter
@@ -67,7 +67,7 @@ Item {
             Text {
                 text: "清空"
                 color: clearMa.containsMouse ? Color.error : Color.textMuted
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 Layout.alignment: Qt.AlignVCenter
                 MouseArea {
                     id: clearMa
@@ -124,7 +124,7 @@ Item {
                             anchors.centerIn: parent
                             text: "check"
                             font.family: Size.fontIcon
-                            font.pixelSize: 16
+                            font.pixelSize: Size.iconSize.lg
                             font.variableAxes: ({ "opsz": 20 })
                             color: Color.surface
                         }
@@ -142,7 +142,7 @@ Item {
                             Layout.fillWidth: true
                             text: modelData.text || ""
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.bodyMedium
                             font.strikeout: true
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -155,7 +155,7 @@ Item {
                                 return t.length > 0 ? t + " · " + p : p
                             }
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                     }
 
@@ -172,7 +172,7 @@ Item {
                             anchors.centerIn: parent
                             text: "delete"
                             font.family: Size.fontIcon
-                            font.pixelSize: 24
+                            font.pixelSize: Size.iconSize.xxl
                             color: Color.error
                         }
                         MouseArea {
@@ -190,7 +190,7 @@ Item {
                 visible: doneList.count === 0
                 text: "暂无已完成"
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.labelLarge
             }
         }
     }

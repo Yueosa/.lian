@@ -35,7 +35,7 @@ Item {
             Text {
                 text: "快捷键"
                 color: Color.text
-                font.pixelSize: Size.fontSize.lg
+                font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
             }
             Item { Layout.fillWidth: true }
@@ -43,7 +43,7 @@ Item {
                 visible: Hotkeys.error.length > 0
                 text: Hotkeys.error
                 color: Color.error
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.bodySmall
                 elide: Text.ElideRight
                 Layout.maximumWidth: 180
             }

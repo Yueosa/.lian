@@ -49,7 +49,7 @@ Item {
                 anchors.bottomMargin: 2
                 text: modelData.title || ""
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.sm
+                font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
             }
 
@@ -73,7 +73,7 @@ Item {
                                                         parent.width * 0.55)
                         text: modelData.keys || ""
                         color: Color.primary
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.titleSmall
                         font.family: Size.fontMono
                         font.bold: true
                         elide: Text.ElideRight
@@ -82,7 +82,7 @@ Item {
                         Layout.fillWidth: true
                         text: modelData.desc || ""
                         color: Color.text
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.bodyMedium
                         elide: Text.ElideRight
                     }
                 }
@@ -96,7 +96,7 @@ Item {
                 ? "此分组暂无条目"
                 : "等待 hotkeys.json…"
             color: Color.textMuted
-            font.pixelSize: Size.fontSize.md
+            font.pixelSize: Size.fontSize.bodyMedium
         }
     }
 }

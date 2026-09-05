@@ -13,8 +13,11 @@ pragma Singleton
 //   fontMono      string   等宽（代码/数字）
 //   fontIcon      string   图标字体
 //
-// 字体尺寸：
-//   fontSize.xsm ~ hero   8 级
+// 字体尺寸（M3 角色名，非尺寸名）：
+//   fontSize.labelSmall ~ displayHero    5 阶 16 级
+//
+// 图标尺寸（跟排版分开，别混用）：
+//   iconSize.xs ~ xxl     6 级
 //
 // 圆角：
 //   rounding.xs ~ xxl / full    7 级
@@ -53,18 +56,70 @@ Singleton {
     readonly property string fontIconRounded: Config.font.iconRounded
 
     // ============================================================
-    // 字体尺寸（8 级，覆盖 90% 使用场景）
+    // 排版阶（M3 type scale，第 9 轮定案）
+    //
+    // 原来是 xsm/sm/md/lg/xl/title/hero/jumbo 八级尺寸名。尺寸名只说「多大」，
+    // 不说「这是什么」——所以 12px 那一档 83 个调用点里，一半是正文一半是标签，
+    // 从名字上完全看不出来，改版时也就没法「把所有标签调小一点」。
+    //
+    // 换成 M3 的角色名：tier + 三档。同一 px 会对应多个角色（14px 既是
+    // bodyMedium 也是 titleSmall 也是 labelLarge），这不是重复，这正是重点——
+    // 它们渲染一样，但语义不同，将来要分开调时才有得改。
+    //
+    // px 值全部沿用换名前的实测值，所以这次改名视觉上零变化。与 M3 规范的
+    // 三处偏离，都是「保持现状」而不是「照抄规范」：
+    //   · titleLarge 20（规范 22）——xl 这一档全树 8 处，抬到 22 会顶破岛内布局
+    //   · displayMedium 44（规范 45）、displayLarge 56（规范 57）——原样保留
+    //
+    // displayHero 136 是锁屏那个巨型时钟专用，不属于 M3 阶，单列。换名前它叫
+    // jumbo 且值是 132，但锁屏写死的是 136——也就是说这个令牌从来没被人用过。
     // ============================================================
 
     readonly property QtObject fontSize: QtObject {
-        readonly property int xsm:   11    // 标签/辅助文字
-        readonly property int sm:    12    // 正文
-        readonly property int md:    14    // 小标题
-        readonly property int lg:    16    // 标题
-        readonly property int xl:    20    // 大标题
-        readonly property int title: 24    // 页面标题
-        readonly property int hero:  32    // 超大标题
-        readonly property int jumbo: 132   // 特殊装饰
+        // ---- label：芯片、徽标、表头、单位后缀 ----
+        readonly property int labelSmall:     11
+        readonly property int labelMedium:    12
+        readonly property int labelLarge:     14
+
+        // ---- body：正文、说明、列表主文案 ----
+        readonly property int bodySmall:      12
+        readonly property int bodyMedium:     14
+        readonly property int bodyLarge:      16
+
+        // ---- title：卡片标题、分区标题、强调数值 ----
+        readonly property int titleSmall:     14
+        readonly property int titleMedium:    16
+        readonly property int titleLarge:     20
+
+        // ---- headline：页面级标题 ----
+        readonly property int headlineSmall:  24
+        readonly property int headlineMedium: 28
+        readonly property int headlineLarge:  32
+
+        // ---- display：时钟、气温这类一眼扫过去的大数字 ----
+        readonly property int displaySmall:   36
+        readonly property int displayMedium:  44
+        readonly property int displayLarge:   56
+        readonly property int displayHero:    136
+    }
+
+    // ============================================================
+    // 图标尺寸
+    //
+    // 图标是字形，所以尺寸也走 font.pixelSize——但它不是排版。改名前有 54 处
+    // 拿 fontSize 给图标定尺寸，占了 fontSize 全部调用点的两成。混在一起的
+    // 后果是：想把正文调大一号，一并把所有图标也放大了。
+    //
+    // 分出来之后这两条线各走各的。px 沿用原值，本次拆分零视觉变化。
+    // ============================================================
+
+    readonly property QtObject iconSize: QtObject {
+        readonly property int xs:  11    // 行内角标
+        readonly property int sm:  12    // 芯片内图标
+        readonly property int md:  14    // 列表行、工具条
+        readonly property int lg:  16    // 主操作按钮
+        readonly property int xl:  20    // 空态插图、页头
+        readonly property int xxl: 24    // 大号状态图标
     }
 
     // ============================================================

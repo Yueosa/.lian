@@ -127,7 +127,7 @@ Item {
                             text: "\uf0f3"
                             visible: !iconImage.visible
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.lg
+                            font.pixelSize: Size.iconSize.lg
                             color: row.titleColor
                         }
                     }
@@ -143,7 +143,7 @@ Item {
                             color: row.titleColor
                             font.family: Size.fontSans
                             font.bold: true
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.titleSmall
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
@@ -152,7 +152,7 @@ Item {
                             textFormat: Text.PlainText
                             color: row.bodyColor
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                             maximumLineCount: 2

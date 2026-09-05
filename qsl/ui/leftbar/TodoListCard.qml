@@ -94,7 +94,7 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                     verticalAlignment: Text.AlignVCenter
                     color: Color.text
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.bodyMedium
                     font.family: Size.fontSans
                     clip: true
                     selectByMouse: true
@@ -137,7 +137,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: modelData
                                 color: selected ? Color.primary : Color.textMuted
-                                font.pixelSize: Size.fontSize.xsm
+                                font.pixelSize: Size.fontSize.labelSmall
                                 font.bold: selected
                             }
                             MouseArea {
@@ -201,7 +201,7 @@ Item {
                             visible: modelData.done
                             text: "check"
                             font.family: Size.fontIcon
-                            font.pixelSize: 16
+                            font.pixelSize: Size.iconSize.lg
                             font.variableAxes: ({ "opsz": 20 })
                             color: Color.surface
                         }
@@ -222,7 +222,7 @@ Item {
                             Layout.fillWidth: true
                             text: modelData.text || ""
                             color: modelData.done ? Color.textMuted : Color.text
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.bodyMedium
                             font.strikeout: modelData.done
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -236,7 +236,7 @@ Item {
                                 return t.length > 0 ? t + " · " + p : p
                             }
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                         }
                     }
 
@@ -254,7 +254,7 @@ Item {
                             anchors.centerIn: parent
                             text: "star"
                             font.family: Size.fontIcon
-                            font.pixelSize: 24
+                            font.pixelSize: Size.iconSize.xxl
                             font.variableAxes: ({ "FILL": modelData.starred ? 1 : 0 })
                             color: modelData.starred ? Color.primary : Color.textMuted
                         }
@@ -280,7 +280,7 @@ Item {
                             anchors.centerIn: parent
                             text: "delete"
                             font.family: Size.fontIcon
-                            font.pixelSize: 24
+                            font.pixelSize: Size.iconSize.xxl
                             color: Color.error
                         }
                         MouseArea {
@@ -305,7 +305,7 @@ Item {
                     return root.doneItems.length > 0 ? "都做完了" : "无待办事项"
                 }
                 color: Color.textMuted
-                font.pixelSize: Size.fontSize.md
+                font.pixelSize: Size.fontSize.bodyMedium
             }
         }
 

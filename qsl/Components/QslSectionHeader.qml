@@ -36,7 +36,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.title
         font.bold: true
-        font.pixelSize: Size.fontSize.sm
+        font.pixelSize: Size.fontSize.labelMedium
         color: root.titleColor
         Behavior on color { CAnim {} }
     }
@@ -50,7 +50,7 @@ Item {
         Text {
             visible: root.note !== ""
             text: root.note
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             color: Color.textMuted
         }
 
@@ -79,7 +79,7 @@ Item {
                     visible: root.actionIcon !== ""
                     text: root.actionIcon
                     font.family: Size.fontIcon
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.iconSize.sm
                     color: Color.textMuted
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -94,7 +94,7 @@ Item {
 
                 Text {
                     text: root.action
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     color: Color.textMuted
                 }
             }

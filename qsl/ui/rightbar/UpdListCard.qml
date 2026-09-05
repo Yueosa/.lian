@@ -101,21 +101,21 @@ Item {
                         visible: text !== ""
                         text: ver.fromVer
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: Color.textMuted
                     }
                     Text {
                         visible: ver.fromVer !== "" && ver.toVer !== ""
                         text: " → "
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: Color.outline
                     }
                     Text {
                         visible: text !== ""
                         text: ver.toVer
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         color: sec.accent
                     }
                 }
@@ -156,7 +156,7 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             text: Updates.ok ? "暂无可用更新" : "检查失败，点上面的检查重试"
             color: Color.textMuted
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.bodySmall
         }
     }
 }

@@ -28,7 +28,7 @@ Item {
     property url iconSource: ""
     // 图标字体：Material Symbols 名称走 fontIcon，Nerd Font 码点走 fontMono
     property string iconFamily: Size.fontIcon
-    property int iconSize: Size.fontSize.lg
+    property int iconSize: Size.iconSize.lg
     // 圆底填充态（已连接/已启用/当前默认设备）
     property bool iconActive: false
     // 圆底自己可点（音量行的圆底就是静音钮）
@@ -167,7 +167,7 @@ Item {
             visible: root.title !== ""
             text: root.title
             font.family: root.titleMono ? Size.fontMono : Size.fontSans
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.bodySmall
             color: root.titleAccent ? Color.primary : Color.text
             elide: Text.ElideRight
         }
@@ -176,7 +176,7 @@ Item {
             Layout.fillWidth: true
             visible: root.subtitle !== ""
             text: root.subtitle
-            font.pixelSize: Size.fontSize.xsm
+            font.pixelSize: Size.fontSize.labelSmall
             color: Color.textMuted
             elide: Text.ElideRight
         }

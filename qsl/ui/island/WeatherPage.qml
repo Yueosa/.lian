@@ -106,14 +106,14 @@ Item {
                     text: gauge.label
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                 }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: gauge.valueText
                     color: Color.text
                     font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.titleSmall
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -121,7 +121,7 @@ Item {
                     text: gauge.hint
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                 }
             }
 
@@ -234,7 +234,7 @@ Item {
                     text: tile.label
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.xsm
+                    font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
                 }
                 RowLayout {
@@ -245,7 +245,7 @@ Item {
                         text: tile.value
                         color: Color.text
                         font.family: Size.fontMono
-                        font.pixelSize: Size.fontSize.md
+                        font.pixelSize: Size.fontSize.titleSmall
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
                     }
@@ -255,7 +255,7 @@ Item {
                         text: tile.hint
                         color: tile.hintColor
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         elide: Text.ElideRight
                     }
                 }
@@ -349,7 +349,7 @@ Item {
                         Text {
                             text: root.locationName
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.labelMedium
                             font.bold: true
                             color: Color.textMuted
                             elide: Text.ElideRight
@@ -373,7 +373,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: "\uf021"
                                 font.family: Size.fontMono
-                                font.pixelSize: Size.fontSize.md
+                                font.pixelSize: Size.iconSize.md
                                 color: refreshMa.containsMouse ? Color.primary : Color.textMuted
 
                                 // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -456,7 +456,7 @@ Item {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.currentDesc
                                     font.family: Size.fontSans
-                                    font.pixelSize: Size.fontSize.md
+                                    font.pixelSize: Size.fontSize.titleSmall
                                     font.bold: true
                                     color: Color.text
                                     elide: Text.ElideRight
@@ -481,7 +481,7 @@ Item {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: root.todayLow
                                         font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.sm
+                                        font.pixelSize: Size.fontSize.bodySmall
                                         color: Color.textMuted
                                     }
 
@@ -533,7 +533,7 @@ Item {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: root.todayHigh
                                         font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.sm
+                                        font.pixelSize: Size.fontSize.bodySmall
                                         color: Color.text
                                     }
                                 }
@@ -658,7 +658,7 @@ Item {
                     text: "12 Hrs"
                     font.family: Size.fontSans
                     font.bold: true
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.labelMedium
                     color: root.isHourly ? Color.primaryText : Color.textMuted
                 }
                 MouseArea {
@@ -685,7 +685,7 @@ Item {
                     text: "7 Days"
                     font.family: Size.fontSans
                     font.bold: true
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.labelMedium
                     color: !root.isHourly ? Color.primaryText : Color.textMuted
                 }
                 MouseArea { anchors.fill: parent; onClicked: root.isHourly = false }
@@ -715,13 +715,13 @@ Item {
                     Text {
                         text: "\uf73d"
                         font.family: Size.fontMono
-                        font.pixelSize: 14
+                        font.pixelSize: Size.iconSize.md
                         color: Color.secondary
                     }
                     Text {
                         text: Weather.rainSoonText
                         font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
+                        font.pixelSize: Size.fontSize.bodySmall
                         color: Color.text
                     }
                     // 8 根小柱 = 未来 2 小时逐 15 分钟的降水概率
@@ -1028,7 +1028,7 @@ Item {
                                     text: modelData.day
                                     color: index === 0 ? Color.primary : Color.textMuted
                                     font.family: Size.fontSans
-                                    font.pixelSize: Size.fontSize.md
+                                    font.pixelSize: Size.fontSize.bodyMedium
                                     font.bold: index === 0
                                     elide: Text.ElideRight
                                     Layout.alignment: Qt.AlignVCenter
@@ -1046,7 +1046,7 @@ Item {
                                     text: modelData.minTemp
                                     color: Color.textMuted
                                     font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.md
+                                    font.pixelSize: Size.fontSize.bodyMedium
                                     horizontalAlignment: Text.AlignRight
                                     Layout.alignment: Qt.AlignVCenter
                                 }
@@ -1089,7 +1089,7 @@ Item {
                                     text: modelData.maxTemp
                                     color: Color.text
                                     font.family: Size.fontMono
-                                    font.pixelSize: Size.fontSize.md
+                                    font.pixelSize: Size.fontSize.titleSmall
                                     font.bold: true
                                     Layout.alignment: Qt.AlignVCenter
                                 }
@@ -1148,7 +1148,7 @@ Item {
                     text: "地名，或 25.02, 102.75"
                     color: Color.textMuted
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.labelMedium
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
@@ -1159,7 +1159,7 @@ Item {
                     anchors.margins: 8
                     color: Color.text
                     font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.sm
+                    font.pixelSize: Size.fontSize.bodySmall
                     clip: true
                     onTextChanged: geoDebounce.restart()
                     Keys.onReturnPressed: (event) => {
@@ -1204,7 +1204,7 @@ Item {
                         anchors.margins: 6
                         text: modelData.label || modelData.name || ""
                         color: Color.text
-                        font.pixelSize: Size.fontSize.xsm
+                        font.pixelSize: Size.fontSize.labelSmall
                         elide: Text.ElideRight
                     }
                     MouseArea {
@@ -1221,7 +1221,7 @@ Item {
             Text {
                 text: "恢复 IP 定位"
                 color: Color.primary
-                font.pixelSize: Size.fontSize.xsm
+                font.pixelSize: Size.fontSize.labelSmall
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor

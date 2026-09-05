@@ -41,7 +41,7 @@ Rectangle {
 
         Text {
             font.family: Size.fontIcon
-            font.pixelSize: Size.fontSize.lg
+            font.pixelSize: Size.iconSize.lg
             Layout.alignment: Qt.AlignVCenter
             color: Bluetooth.chipConnected
                 ? Color.primary
@@ -53,7 +53,7 @@ Rectangle {
             id: label
             text: Bluetooth.chipLabel
             font.bold: true
-            font.pixelSize: Size.fontSize.sm
+            font.pixelSize: Size.fontSize.labelMedium
             color: Color.text
             Layout.alignment: Qt.AlignVCenter
             opacity: root.expanded ? 1 : 0

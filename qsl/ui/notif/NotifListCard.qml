@@ -163,7 +163,7 @@ Item {
                             visible: appGroupImg.status !== Image.Ready
                             text: (modelData.name || "?").charAt(0).toUpperCase()
                             font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.lg
+                            font.pixelSize: Size.fontSize.titleMedium
                             font.bold: true
                             color: Color.primary
                         }
@@ -183,7 +183,7 @@ Item {
                             anchors.centerIn: parent
                             text: modelData.count + " 条"
                             color: Color.primary
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.fontSize.labelSmall
                             font.bold: true
                         }
                     }
@@ -200,7 +200,7 @@ Item {
                             width: parent.width
                             text: modelData.name
                             color: Color.text
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -209,7 +209,7 @@ Item {
                             width: parent.width
                             text: modelData.preview
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             wrapMode: Text.NoWrap
@@ -406,7 +406,7 @@ Item {
                             visible: appImg.status !== Image.Ready
                             text: "\uf0f3"
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.lg
+                            font.pixelSize: Size.iconSize.lg
                             color: Color.primary
                         }
                     }
@@ -427,7 +427,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "\uf078"
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.xsm
+                            font.pixelSize: Size.iconSize.xs
                             color: Color.textMuted
                             // 必须用 opacity 而非 visible：Row 的隐式宽度会跳过不可见子项，
                             // 一旦 visible 绑到 canExpand 就成环——
@@ -444,7 +444,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "\uf00d"
                             font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.iconSize.sm
                             color: Color.textMuted
                             opacity: root.sharedState.clearing ? 0.3 : 1
                             MouseArea {
@@ -475,14 +475,14 @@ Item {
                                 width: parent.width - timeLabel.width - parent.spacing
                                 text: row.entry.appName || "系统"
                                 color: Color.textMuted
-                                font.pixelSize: Size.fontSize.xsm
+                                font.pixelSize: Size.fontSize.labelSmall
                                 elide: Text.ElideRight
                             }
                             Text {
                                 id: timeLabel
                                 text: row.relativeTime(row.entry.receivedAt)
                                 color: Color.textMuted
-                                font.pixelSize: Size.fontSize.xsm
+                                font.pixelSize: Size.fontSize.labelSmall
                             }
                         }
                         Text {
@@ -490,7 +490,7 @@ Item {
                             width: parent.width
                             text: row.entry.summary || "(无标题)"
                             color: Color.text
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
                             elide: row.expanded ? Text.ElideNone : Text.ElideRight
                             wrapMode: row.expanded ? Text.Wrap : Text.NoWrap
@@ -501,7 +501,7 @@ Item {
                             width: parent.width
                             text: row.entry.body || ""
                             color: Color.textMuted
-                            font.pixelSize: Size.fontSize.sm
+                            font.pixelSize: Size.fontSize.bodySmall
                             // 展开态刻意不用 elide：elide 需要先知道 height 才能决定截断量，
                             // 而这里 height 又绑到 implicitHeight，两者会互相拉成环。
                             // 收起态 height 是常量，用 elide 安全。

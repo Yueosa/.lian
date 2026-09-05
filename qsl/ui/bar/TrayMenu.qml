@@ -168,7 +168,7 @@ PopupWindow {
                     anchors.centerIn: parent
                     font.bold: true
                     color: Color.primary
-                    font.pixelSize: Size.fontSize.md
+                    font.pixelSize: Size.fontSize.titleSmall
                     width: parent.width - 60
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
@@ -191,7 +191,7 @@ PopupWindow {
                         anchors.centerIn: parent
                         color: Color.text
                         font.family: Size.fontIcon
-                        font.pixelSize: Size.fontSize.lg
+                        font.pixelSize: Size.iconSize.lg
                     }
                     MouseArea {
                         id: backMa
@@ -237,14 +237,14 @@ PopupWindow {
                         Text {
                             text: "push_pin"
                             font.family: Size.fontIcon
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.iconSize.md
                             color: pinMa.containsMouse ? Color.primary : Color.secondary
                         }
                         Text {
                             text: root.itemPinned ? "从栏上收起" : "固定到栏上"
                             Layout.fillWidth: true
                             color: pinMa.containsMouse ? Color.primary : Color.text
-                            font.pixelSize: Size.fontSize.md
+                            font.pixelSize: Size.fontSize.bodyMedium
                         }
                     }
 
@@ -397,7 +397,7 @@ PopupWindow {
                                             visible: parent.glyph !== "" || iconRaw.status === Image.Error
                                             text: parent.glyph !== "" ? parent.glyph : "apps"
                                             font.family: Size.fontIcon
-                                            font.pixelSize: Size.fontSize.md
+                                            font.pixelSize: Size.iconSize.md
                                             color: itemMa.containsMouse ? Color.primary : Color.secondary
                                         }
                                     }
@@ -407,7 +407,7 @@ PopupWindow {
                                         text: "check"
                                         font.family: Size.fontIcon
                                         color: Color.primary
-                                        font.pixelSize: Size.fontSize.md
+                                        font.pixelSize: Size.iconSize.md
                                     }
 
                                     Text {
@@ -421,7 +421,7 @@ PopupWindow {
                                                 return Color.primary
                                             return Color.text
                                         }
-                                        font.pixelSize: Size.fontSize.md
+                                        font.pixelSize: Size.fontSize.bodyMedium
                                         font.weight: itemMa.containsMouse ? Font.DemiBold : Font.Normal
                                     }
 
@@ -429,7 +429,7 @@ PopupWindow {
                                         visible: menuItem.hasSubMenu
                                         text: "chevron_right"
                                         font.family: Size.fontIcon
-                                        font.pixelSize: Size.fontSize.lg
+                                        font.pixelSize: Size.iconSize.lg
                                         color: itemMa.containsMouse ? Color.primary : Color.tertiary
                                     }
                                 }
