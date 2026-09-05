@@ -47,8 +47,9 @@ Item {
         readonly property color severity:
             worstPeak >= 10 ? Color.error : Color.primary
 
-        // 空闲时收成窄条：三个 0.0 加三条平线不值一整行
-        height: (expanded || !Sysmon.psiAvailable) ? 54 : 34
+        // 空闲时收成窄条：三个 0.0 加三条平线不值一整行。
+        // 展开态 58 是给「当前值 + 峰值」两行数字留的高度
+        height: (expanded || !Sysmon.psiAvailable) ? 58 : 34
         Behavior on height {
             Anim { type: Anim.Spatial }
         }
@@ -71,7 +72,9 @@ Item {
                 color: psiCard.expanded ? psiCard.severity : Color.textMuted
                 font.pixelSize: Size.fontSize.sm
             }
-            Item { Layout.fillWidth: true }
+            // 空闲态靠它把「无阻塞」推到右边；展开后必须让位，
+            // 否则它跟三条火花线抢同一份余量
+            Item { Layout.fillWidth: !psiCard.expanded }
 
             // 空闲态只留一句话——异常时它消失、三栏顶上来，变化本身就是信号
             Text {
@@ -110,45 +113,71 @@ Item {
                     }
                 ] : []
 
-                RowLayout {
+                // 每项两行：上行「标签 曲线 当前值」，下行右对齐的峰值。
+                //
+                // 峰值原先是横着排在当前值右边的，每项要多占约 48px，三项
+                // 就是 144px——比整个「内存」组还宽。三项同时飙高、三个峰值
+                // 一起冒出来时这行无论如何塞不下，只能从右边切掉，实测最坏
+                // 情况整个「内存」组连线带数字全没了。竖着叠则一格不多占：
+                // 「峰100.0」和「88.8」差不多宽，列宽由两者取大。
+                ColumnLayout {
+                    id: grp
                     required property var modelData
-                    spacing: 4
+                    spacing: 0
+                    Layout.fillWidth: true
+
+                    RowLayout {
+                        spacing: 4
+                        Layout.fillWidth: true
+
+                        Text {
+                            text: grp.modelData.label
+                            color: Color.withAlpha(Color.textMuted, 0.8)
+                            font.pixelSize: Size.fontSize.xsm
+                        }
+                        Sparkline {
+                            // 三条火花线是这行里唯一可伸缩的东西。原先它固定
+                            // 30、数字是刚性的，撑爆了只能裁字。现在反过来：
+                            // 挤的时候先压曲线，数字一个都不许丢。
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 30
+                            Layout.minimumWidth: 16
+                            Layout.preferredHeight: 18
+                            Layout.alignment: Qt.AlignVCenter
+                            visible: grp.modelData.hist.length > 1
+                            values: grp.modelData.hist
+                            // 自适应量程：PSI 常年贴 0，固定 0–100 会画成死线
+                            maxValue: 0
+                            minSpan: 5
+                            lineColor: grp.modelData.peak >= 10
+                                ? Color.error : grp.modelData.c
+                            lineWidth: 1.2
+                            cornerRadius: Size.rounding.sm
+                            backgroundColor: Color.withAlpha(Color.background, 0.45)
+                        }
+                        Text {
+                            // 超过 10% 说明真的在卡，标红
+                            text: grp.modelData.v.toFixed(1)
+                            color: grp.modelData.v >= 10
+                                ? Color.error : grp.modelData.c
+                            font.pixelSize: Size.fontSize.md
+                            font.bold: true
+                            font.family: Size.fontMono
+                        }
+                    }
 
                     Text {
-                        text: modelData.label
-                        color: Color.withAlpha(Color.textMuted, 0.8)
-                        font.pixelSize: Size.fontSize.xsm
-                    }
-                    Sparkline {
-                        Layout.preferredWidth: 30
-                        Layout.preferredHeight: 18
-                        Layout.alignment: Qt.AlignVCenter
-                        visible: modelData.hist.length > 1
-                        values: modelData.hist
-                        // 自适应量程：PSI 常年贴 0，固定 0–100 会画成一条死线
-                        maxValue: 0
-                        minSpan: 5
-                        lineColor: modelData.peak >= 10 ? Color.error : modelData.c
-                        lineWidth: 1.2
-                        cornerRadius: Size.rounding.sm
-                        backgroundColor: Color.withAlpha(Color.background, 0.45)
-                    }
-                    Text {
-                        // 超过 10% 说明真的在卡，标红
-                        text: modelData.v.toFixed(1)
-                        color: modelData.v >= 10 ? Color.error : modelData.c
-                        font.pixelSize: Size.fontSize.md
-                        font.bold: true
-                        font.family: Size.fontMono
-                    }
-                    Text {
-                        // 当前已回落但近期卡过——这才是最该看见的信息
-                        visible: modelData.peak >= 1
-                            && modelData.peak > modelData.v + 0.5
-                        text: "峰" + modelData.peak.toFixed(1)
+                        // 当前已回落但近期卡过——这才是最该看见的信息。
+                        // 用 opacity 不用 visible：峰值是来去无常的，让它一直
+                        // 占着位子，上面那行才不会跟着一惊一乍地上下跳
+                        Layout.alignment: Qt.AlignRight
+                        opacity: (grp.modelData.peak >= 1
+                            && grp.modelData.peak > grp.modelData.v + 0.5) ? 1 : 0
+                        text: "峰" + grp.modelData.peak.toFixed(1)
                         color: Color.withAlpha(Color.textMuted, 0.75)
                         font.pixelSize: Size.fontSize.xsm
                         font.family: Size.fontMono
+                        Behavior on opacity { Anim { type: Anim.EffectsSlow } }
                     }
                 }
             }
