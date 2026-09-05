@@ -99,9 +99,25 @@ EXTERNAL_IN_UI_EXEMPT = {
 }
 
 
+# 一个 `/` 后面跟的是正则还是除号，只能看前一个有意义的字符。这几个之后
+# 不可能是除号（没有左操作数），所以是正则开头。够用了：真实代码里的正则
+# 都出现在 `= /.../`、`replace(/.../, x)`、`if (/.../.test(s))` 这三种位置。
+REGEX_PRECEDERS = "(,=:[!&|?{};+-*~%"
+
+
 def strip_noise(text: str) -> str:
-    """去掉注释和字符串字面量，免得里面的花括号和引号干扰深度计数。"""
+    """去掉注释、字符串和正则字面量，免得里面的花括号和引号干扰深度计数。
+
+    正则那一条是踩出来的：HyprService.shellQuote 里有
+
+        String(s).replace(/'/g, "'\\''")
+
+    不认正则的话，`/` 原样放行，紧跟的 `'` 被当成字符串开头，一路吃到
+    `"` 再开一段，于是这一行之后的整个文件都被当成字符串吞掉——文件里
+    后半段的 function 一个都提取不到，闸门就报「接口不存在」。
+    """
     out = []
+    prev = ""  # 上一个有意义的字符（跳过空白）
     i, n = 0, len(text)
     while i < n:
         c = text[i]
@@ -117,14 +133,34 @@ def strip_noise(text: str) -> str:
                 out.append("\n" * chunk.count("\n"))
                 i = n if j < 0 else j + 2
                 continue
+            if prev in REGEX_PRECEDERS or prev == "":
+                i += 1
+                in_class = False  # [...] 里的 / 不算结束
+                while i < n and (in_class or text[i] != "/"):
+                    if text[i] == "\\":
+                        i += 1
+                    elif text[i] == "[":
+                        in_class = True
+                    elif text[i] == "]":
+                        in_class = False
+                    i += 1
+                i += 1
+                while i < n and text[i].isalpha():  # 尾巴上的 g / i / m
+                    i += 1
+                out.append("0")
+                prev = "0"
+                continue
         if c in "\"'":
             quote, i = c, i + 1
             while i < n and text[i] != quote:
                 i += 2 if text[i] == "\\" else 1
             i += 1
             out.append('""')
+            prev = '"'
             continue
         out.append(c)
+        if not c.isspace():
+            prev = c
         i += 1
     return "".join(out)
 

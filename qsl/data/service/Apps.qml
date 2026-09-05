@@ -21,6 +21,7 @@ pragma Singleton
 //
 // 方法：
 //   search(query)        → 过滤排序后的应用数组（最多 50）
+//   parseExec(command)   → 剥掉 %U 一类字段码后的 argv
 //   recordLaunch(name)   记录一次启动并异步落盘
 // ============================================================
 
@@ -168,6 +169,33 @@ Singleton {
 
     function search(query) {
         return AppSearch.filterCatalog(catalog, query || "", 50)
+    }
+
+    // desktop entry 的 Exec 字段 → 能直接 exec 的 argv。
+    //
+    // 剥掉 freedesktop 的字段码：%f %F %u %U 是「把文件/URL 填这儿」，我们从
+    // 启动器拉起应用时没有文件要传，留着就变成字面参数（Nautilus 会真的去开一个
+    // 叫 "%U" 的路径）。%% 是转义过的百分号，还原成 %。
+    //
+    // 第 9 轮从 ui/launcher/Launcher.qml 收上来的：command 字段本来就是这个服务
+    // 给出去的，「怎么读懂它」却留在了 UI 里。
+    function parseExec(cmd) {
+        if (!cmd || cmd.length === undefined)
+            return []
+        const out = []
+        for (let i = 0; i < cmd.length; i++) {
+            const a = String(cmd[i] || "").trim()
+            if (!a.length)
+                continue
+            if (a === "%%") {
+                out.push("%")
+                continue
+            }
+            if (/^%[a-zA-Z]$/.test(a))
+                continue
+            out.push(a)
+        }
+        return out
     }
 
     function recordLaunch(name) {

@@ -312,4 +312,23 @@ Singleton {
             return
         luaEval("hl.exec_cmd([=[" + s + "]=])")
     }
+
+    // 单引号包起来、内部单引号换成 '\'' —— POSIX shell 里唯一不用查转义表的
+    // 写法，单引号中间什么都不解释。
+    function shellQuote(s) {
+        return "'" + String(s).replace(/'/g, "'\\''") + "'"
+    }
+
+    // argv 版的 execCmd。Hyprland 这一侧只认一行命令（hl.exec_cmd 收的是字符串），
+    // 所以 argv 得先引号化再拼——不拼引号的话，带空格的路径和参数里的引号
+    // 会在这一步散架。「argv 怎么变成命令行」是 Hyprland 侧的事，所以放这儿；
+    // 第 9 轮之前这段引号逻辑长在 ui/launcher/Launcher.qml 里。
+    function execArgv(argv) {
+        if (!argv || !argv.length)
+            return
+        const parts = []
+        for (let i = 0; i < argv.length; i++)
+            parts.push(root.shellQuote(argv[i]))
+        root.execCmd(parts.join(" "))
+    }
 }

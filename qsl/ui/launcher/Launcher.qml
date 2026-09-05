@@ -215,27 +215,25 @@ RailPage {
                 return
 
             const entry = app.appObj
-            const argv = appState.cleanCommand(entry.command)
+            const argv = Apps.parseExec(entry.command)
             const desktopId = String(entry.id || "").replace(/\.desktop$/, "")
             const viaHypr = HyprService.available
             let launched = false
 
-            // 用解析后的 command。不要 execute() 假成功，也不要把 Exec
-            // 原样丢给 bash（%U 会变成字面参数）。
+            // 用解析后的 command，不要 execute() 假成功。
             // 在 Hyprland 下要让它自己 exec，否则新窗口的工作区归属会乱；
-            // 拼 Lua 那一层的坑（dispatch 丢引号）收在 HyprService 里了。
+            // 引号和 Lua 那两层坑都收在 HyprService.execArgv 里了。
             if (argv.length > 0) {
                 if (viaHypr)
-                    HyprService.execCmd(appState.shellJoin(argv))
+                    HyprService.execArgv(argv)
                 else
                     Quickshell.execDetached(argv)
                 launched = true
                 console.info("[launcher]", viaHypr ? "hypr-exec" : "exec",
                     app.name, argv.join(" "))
             } else if (desktopId.length > 0) {
-                const line = "gtk-launch " + appState.shellQuote(desktopId)
                 if (viaHypr)
-                    HyprService.execCmd(line)
+                    HyprService.execArgv(["gtk-launch", desktopId])
                 else
                     Quickshell.execDetached(["gtk-launch", desktopId])
                 launched = true
@@ -255,35 +253,6 @@ RailPage {
             root.closeWindow()
         }
 
-        function cleanCommand(cmd) {
-            if (!cmd || cmd.length === undefined)
-                return []
-            const out = []
-            for (let i = 0; i < cmd.length; i++) {
-                const a = String(cmd[i] || "").trim()
-                if (!a.length)
-                    continue
-                if (a === "%%") {
-                    out.push("%")
-                    continue
-                }
-                if (/^%[a-zA-Z]$/.test(a))
-                    continue
-                out.push(a)
-            }
-            return out
-        }
-
-        function shellQuote(s) {
-            return "'" + String(s).replace(/'/g, "'\\''") + "'"
-        }
-
-        function shellJoin(argv) {
-            const parts = []
-            for (let i = 0; i < argv.length; i++)
-                parts.push(appState.shellQuote(argv[i]))
-            return parts.join(" ")
-        }
     }
 
     // ---- 容器装配（顺序即出场顺序：列表在上、先出；搜索框在下、后出）----
