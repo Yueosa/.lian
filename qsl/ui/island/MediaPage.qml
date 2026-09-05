@@ -319,7 +319,21 @@ Item {
                             const bulgeLen = waveRoot.bulgeLen
                             const phase = waveRoot.phase
 
-                            for (let x = radius; x <= w; x++) {
+                            // 采样步长。信号里最短的波长来自次波：
+                            // 2π / (freq_max × secFreqMul) = 2π / (0.19 × 1.5) ≈ 22px。
+                            // 逐像素等于一个波周期采 22 个点，画一条平滑曲线用不了
+                            // 那么多——步长 2 之后最密处还有 11 个点，右端 10px 的
+                            // 收势也还有 5 个，肉眼无差。
+                            //
+                            // 而这个循环是**每帧**跑的：一条 400px 的进度条，逐像素
+                            // 就是每秒 2.4 万次迭代、4.8 万次 sin、2.4 万段路径。
+                            // 步长 2 直接砍一半。
+                            //
+                            // 末点不必正好落在 w 上：endFade 让 yOff 在右端收到 0，
+                            // 循环外那句 lineTo(w, 轨道上沿) 接的就是同一个高度。
+                            const step = 2
+
+                            for (let x = radius; x <= w; x += step) {
                                 const leftDist = x - radius
                                 const rightDist = w - x
                                 let envelope = 1.0

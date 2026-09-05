@@ -449,7 +449,9 @@ FocusScope {
                     required property int index
                     required property var modelData
 
-                    readonly property real visualDelta: {
+                    // 与焦点的格距，**不含**滑动偏移。只在 focusIndex 变时重算，
+                    // 也就是每次导航一次。
+                    readonly property real baseDelta: {
                         const n = root.reel.length
                         if (n <= 0)
                             return 99
@@ -458,8 +460,23 @@ FocusScope {
                             d -= n
                         if (d < -n / 2)
                             d += n
-                        return d - root.slideShift
+                        return d
                     }
+
+                    // slideShift 在滑动期间**每帧**都变，谁依赖它谁就每帧重算。
+                    // 原来所有卡都依赖，于是一次导航要按整库大小逐帧重算位置、
+                    // 缩放、透明度、z 序——155 张壁纸就是每帧一千多次绑定求值，
+                    // 而其中只有台上那五六张看得见。
+                    //
+                    // 台下的卡直接吃 baseDelta：它们 onStage 为假、opacity 为 0，
+                    // 差那不到一格的滑动量没有任何视觉意义。阈值 6 留够余量——
+                    // onStage 是 3.2、预载是 5，跨阈值那一刻卡还是全透明的。
+                    //
+                    // 注意这里减的是求值次数，不是 delegate 数量：卡一张不少，
+                    // 图也一张不卸，所以不会出现「滑回去要重新加载」。
+                    readonly property real visualDelta: Math.abs(baseDelta) > 6
+                        ? baseDelta
+                        : baseDelta - root.slideShift
                     readonly property real dist: Math.abs(visualDelta)
                     readonly property bool onStage: dist < 3.2
                     readonly property bool isFocus: dist < 0.2
