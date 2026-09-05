@@ -9,7 +9,6 @@
 // 四颗框角凹角耳不在这里——它们要压在应用窗口之下，见 Ears.qml。
 
 import QtQuick
-import qs.Components
 import qs.data.state
 
 Item {

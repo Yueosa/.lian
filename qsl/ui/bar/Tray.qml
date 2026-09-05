@@ -11,7 +11,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
-import qs.Components
 import qs.data.state
 import qs.data.service
 

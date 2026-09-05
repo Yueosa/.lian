@@ -214,9 +214,5 @@ Singleton {
         // 92 时缩略图区是 188×60（3.1:1），窗口截图被压得认不出来；
         // 140 → 188×108（1.74:1），基本就是 16:9
         readonly property int switcherCardHeight: 140
-
-        // Overview / powerbar 头像的远程原图。展示请绑 Avatar.source
-        // （~/.cache/qsl/avatar.jpg，缓存优先；见 data/service/Avatar.qml）
-        readonly property string avatarUrl: "https://q1.qlogo.cn/g?b=qq&nk=1303028790&s=640"
     }
 }

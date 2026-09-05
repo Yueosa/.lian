@@ -6,7 +6,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.Components
 import qs.data.state
 
 WlSessionLockSurface {

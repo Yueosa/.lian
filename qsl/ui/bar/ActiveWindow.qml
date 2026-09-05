@@ -6,7 +6,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Components
 import qs.data.service
 import qs.data.state
 

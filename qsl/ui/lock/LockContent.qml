@@ -10,7 +10,6 @@
 // 通知 hydrate 一次，不设 uiActive；封面 sourceSize 小；无 FastBlur
 
 import QtQuick
-import qs.Components
 import qs.data.state
 import qs.data.service
 

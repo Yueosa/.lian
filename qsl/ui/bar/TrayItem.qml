@@ -3,7 +3,6 @@
 
 import QtQuick
 import Quickshell
-import qs.Components
 import qs.data.state
 import qs.data.service
 
