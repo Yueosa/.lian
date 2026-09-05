@@ -8,7 +8,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
-import qs.Components
 import qs.data.state
 import qs.data.service
 

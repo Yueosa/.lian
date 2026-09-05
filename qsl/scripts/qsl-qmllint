@@ -65,7 +65,14 @@ echo "── 各类别计数 ──"
 grep -oE '\[[a-z-]+\]$' "$OUT" | sort | uniq -c | sort -rn | sed 's/^/  /'
 echo
 
-# import / 语法 = 真的坏了，改坏一次重构就会亮。其余另算：
+# import / 语法 = 真的坏了，改坏一次重构就会亮。
+#
+# unused-imports 也在这一档，但理由不同：它不会让壳崩，只是会烂。第 10 轮把存量
+# 9 条清零了（逐条核对过，不是照单全收——qmllint 看不见 `Quickshell.iconPath()`
+# 这类只用单例、不用类型的引用，所以判死前拿导出符号在正文里搜一遍）。存量既然
+# 是 0，就设成闸门，省得重构留下的残渣再攒起来。
+#
+# 其余另算：
 #
 #   unresolved-type  是 qmllint 对 Quickshell 类型注册的盲区，不是代码问题。
 #                    Quickshell 是带 qmltypes 的，但 PanelWindow.margins 这种
@@ -73,7 +80,7 @@ echo
 #                    对应的界面（四个圆角耳朵、蓝牙卡）都在正常工作。
 #   missing-property / unqualified  存量近 1200 条，多半也是同一个盲区的连带，
 #                    真要治得先让 Quickshell 把类型补全，不是这个脚本的活。
-FATAL='\[(import|syntax)\]'
+FATAL='\[(import|syntax|unused-imports)\]'
 NFATAL="$(grep -cE "$FATAL" "$OUT" || true)"
 
 if [ "$MODE" = "summary" ]; then
@@ -83,15 +90,15 @@ elif [ "$MODE" = "all" ]; then
     sed 's/^/  /' "$OUT"
 else
     if [ "$NFATAL" -gt 0 ]; then
-        echo "── 要命的（import / 语法）──"
+        echo "── 要命的（import / 语法 / 未用导入）──"
         grep -E "$FATAL" "$OUT" | sed 's/^/  /'
     fi
 fi
 
 echo
 if [ "$NFATAL" -gt 0 ]; then
-    echo "有 $NFATAL 条 import / 语法告警——这类是真坏了。"
+    echo "有 $NFATAL 条 import / 语法 / 未用导入告警——这类是真坏了。"
     exit 1
 fi
-echo "import / 语法：0 条。其余类别是 qmllint 对 Quickshell 类型的盲区及其连带，"
+echo "import / 语法 / 未用导入：0 条。其余类别是 qmllint 对 Quickshell 类型的盲区及其连带，"
 echo "见脚本里 FATAL 那段的说明；用 -a 看全部。"

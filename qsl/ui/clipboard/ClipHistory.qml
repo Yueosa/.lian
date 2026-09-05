@@ -13,7 +13,6 @@
 // （Clipboard.rows 是增量模型），这里只把"一行摆几张"算给它，再管选择态。
 
 import QtQuick
-import Quickshell
 import qs.Components
 import qs.data.service
 import qs.data.state

@@ -4,7 +4,6 @@
 // 性能：Image async + sourceSize≈960 + cache:false；无 GraphicalEffects
 
 import QtQuick
-import Quickshell
 import Quickshell.Wayland
 import qs.data.state
 

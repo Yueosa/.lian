@@ -11,8 +11,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import qs.Components
 import qs.data.state
 import qs.data.service
 

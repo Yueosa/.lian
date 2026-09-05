@@ -11,7 +11,6 @@
 // 所以应用起停自带 add/remove 过渡，不用 rowsync
 
 import QtQuick
-import QtQuick.Layouts
 import qs.Components
 import qs.data.state
 import qs.data.service
