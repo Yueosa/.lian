@@ -119,67 +119,21 @@ RailPage {
         readonly property int clearAnimMax: 5
         readonly property int clearStaggerMs: 30
 
-        // 分组键用 app_name 而非 notifctl 的 mapped_app：后者只认
-        // telegram/discord/wechat/qq 四个，cursor / notify-send / blueman
-        // 等等全被归成 system，混在一起没法看（库里这类将近 3800 条）。
-        // desktop_entry 也不可靠——同一个 QQ 有带和不带两种记录。
-        function appKeyOf(e) {
-            return String(e.appName || "系统").toLowerCase()
-        }
+        // 「按应用怎么分组」是领域规则，第 9 轮挪进了 Notification 服务。
+        // 这里只剩「现在停在哪个应用页」这类交互状态，以及把服务那几个
+        // 按 key 取数的函数接到 currentApp 上。
+        readonly property var appGroups: Notification.appGroups
 
-        // 按应用聚合出列表页的数据。entries 至多 80 条，每次开面板算一遍即可。
-        readonly property var appGroups: {
-            const src = Notification.entries || []
-            const order = []
-            const map = ({})
-            for (let i = 0; i < src.length; i++) {
-                const e = src[i]
-                const k = notifState.appKeyOf(e)
-                let g = map[k]
-                if (!g) {
-                    g = {
-                        key: k,
-                        // 展示用原始大小写，取该应用最新一条的写法
-                        name: e.appName || "系统",
-                        count: 0,
-                        latestAt: 0,
-                        icon: "",
-                        preview: ""
-                    }
-                    map[k] = g
-                    order.push(g)
-                }
-                g.count += 1
-                if (!g.icon)
-                    g.icon = Notification.iconFor(e)
-                if (!g.preview)
-                    g.preview = e.summary || ""
-                if (Number(e.receivedAt) > g.latestAt)
-                    g.latestAt = Number(e.receivedAt)
-            }
-            // entries 已是最新在前，order 天然按「各应用最新消息」降序
-            return order
-        }
-
+        // entriesOfApp 是函数，QML 追踪不到它读了 entries；不 void 一下的话
+        // 这条绑定只跟着 currentApp 走，来了新通知不会重算
         readonly property var currentAppEntries: {
-            if (notifState.currentApp === "")
-                return []
-            const src = Notification.entries || []
-            const out = []
-            for (let i = 0; i < src.length; i++) {
-                if (notifState.appKeyOf(src[i]) === notifState.currentApp)
-                    out.push(src[i])
-            }
-            return out
+            void Notification.entries
+            return Notification.entriesOfApp(notifState.currentApp)
         }
 
         readonly property string currentAppName: {
-            const g = notifState.appGroups
-            for (let i = 0; i < g.length; i++) {
-                if (g[i].key === notifState.currentApp)
-                    return g[i].name
-            }
-            return ""
+            void Notification.entries
+            return Notification.appNameOf(notifState.currentApp)
         }
 
         function openApp(key) { currentApp = key }
@@ -187,11 +141,7 @@ RailPage {
 
         // 该应用当前的全部通知 id，用于「清空本应用」
         function idsOfCurrentApp() {
-            const src = notifState.currentAppEntries
-            const ids = []
-            for (let i = 0; i < src.length; i++)
-                ids.push(src[i].notifId)
-            return ids
+            return Notification.idsOfApp(notifState.currentApp)
         }
 
         function resetClear() {

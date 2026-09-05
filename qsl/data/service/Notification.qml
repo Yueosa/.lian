@@ -12,6 +12,11 @@ pragma Singleton
 //   trackedNotifications / hasNotifications / count / dndEnabled
 //   uiActive          面板打开时为 true；关闭时不维护 entries
 //   entries           活动通知数组（UI 用，最新在前）
+//   appGroups         按应用聚合的分组数组（key/name/count/latestAt/icon/preview）
+//   appKeyOf(entry)   分组键
+//   entriesOfApp(key) 该应用的全部通知
+//   appNameOf(key)    该应用的展示名
+//   idsOfApp(key)     该应用的通知 id 列表（用于「清空本应用」）
 //   loading           list 是否在跑
 //   hydrate()         从 JSON 缓存灌入
 //   refresh()         notifctl list 刷新
@@ -54,6 +59,85 @@ Singleton {
     property bool dndEnabled: false
     property var entries: []
     property bool loading: false
+
+    // ============================================================
+    // 按应用聚合
+    // ============================================================
+    // 第 9 轮从 ui/notif/NotifCenter.qml 的 notifState 收上来的。那边原来同时
+    // 管两类东西：「按应用怎么分组」（领域规则）和「现在停在哪个应用页、清空
+    // 波次播到哪儿」（交互状态）。后者留在原地，前者归这里——换个面板来问
+    // 同样的问题，不该再算一遍。
+    //
+    // 分组键用 app_name 而非 notifctl 的 mapped_app：后者只认
+    // telegram/discord/wechat/qq 四个，cursor / notify-send / blueman 等等
+    // 全被归成 system，混在一起没法看（库里这类将近 3800 条）。
+    // desktop_entry 也不可靠——同一个 QQ 有带和不带两种记录。
+    function appKeyOf(entry) {
+        return String((entry && entry.appName) || "系统").toLowerCase()
+    }
+
+    // entries 至多 80 条，每次变动重算一遍即可。
+    // entries 已是最新在前，所以 order 天然按「各应用最新消息」降序。
+    readonly property var appGroups: {
+        const src = entries || []
+        const order = []
+        const map = ({})
+        for (let i = 0; i < src.length; i++) {
+            const e = src[i]
+            const k = root.appKeyOf(e)
+            let g = map[k]
+            if (!g) {
+                g = {
+                    key: k,
+                    // 展示用原始大小写，取该应用最新一条的写法
+                    name: e.appName || "系统",
+                    count: 0,
+                    latestAt: 0,
+                    icon: "",
+                    preview: ""
+                }
+                map[k] = g
+                order.push(g)
+            }
+            g.count += 1
+            if (!g.icon)
+                g.icon = root.iconFor(e)
+            if (!g.preview)
+                g.preview = e.summary || ""
+            if (Number(e.receivedAt) > g.latestAt)
+                g.latestAt = Number(e.receivedAt)
+        }
+        return order
+    }
+
+    function entriesOfApp(key) {
+        if (!key)
+            return []
+        const src = entries || []
+        const out = []
+        for (let i = 0; i < src.length; i++) {
+            if (root.appKeyOf(src[i]) === key)
+                out.push(src[i])
+        }
+        return out
+    }
+
+    function appNameOf(key) {
+        const g = root.appGroups
+        for (let i = 0; i < g.length; i++) {
+            if (g[i].key === key)
+                return g[i].name
+        }
+        return ""
+    }
+
+    function idsOfApp(key) {
+        const src = root.entriesOfApp(key)
+        const ids = []
+        for (let i = 0; i < src.length; i++)
+            ids.push(src[i].notifId)
+        return ids
+    }
 
     // 一级岛 toast：与面板 entries 无关；payload 一次拷贝字符串
     signal toastRequested(var payload)
