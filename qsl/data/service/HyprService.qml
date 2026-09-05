@@ -133,14 +133,27 @@ Singleton {
 
     readonly property string fallbackIcon: "image://icon/application-x-executable"
 
+    // 图标解析统一走 Icons。第 9 轮把三处各写各的应用识别收进了那个单例，
+    // 这里是漏网的第四处：它自带一张 override 表、然后无脑拼 "image://icon/<class>"
+    // 交出去。后果有两条——
+    //   1. QQ 的 class 在图标主题里根本没有，而 asset/app-logo 下明明有 qq.svg，
+    //      切换器里它一直是通用方块（日志里那条 Could not load icon "QQ"）；
+    //   2. 拼了就交，等于把「查不到」推给 Image 去发现，而图标 provider 查不到时
+    //      不会置 Image.Error，只会糊一张品红格子（见 Icons.theme 的注释）。
     function windowIcon(win) {
         const id = windowAppId(win)
         if (!id.length)
             return fallbackIcon
+
         const override = _iconOverrides[id.toLowerCase()]
         if (override)
             return override
-        return "image://icon/" + id
+
+        const bundled = Icons.bundledId(id)
+        if (bundled)
+            return Icons.bundled(bundled)
+
+        return Icons.theme(id) || Icons.themeLower(id) || fallbackIcon
     }
 
     // 给 ScreencopyView 的 captureSource。是个句柄，UI 原样绑上去就行。

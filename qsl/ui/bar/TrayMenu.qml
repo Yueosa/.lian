@@ -390,6 +390,9 @@ PopupWindow {
                                             fillMode: Image.PreserveAspectFit
                                             visible: status === Image.Ready && parent.glyph === ""
                                             asynchronous: true
+                                            // 菜单项的 icon-data 是内嵌位图，不设就按原图
+                                            // 分辨率解码进显存，而这里只画 16×16
+                                            sourceSize: Qt.size(32, 32)
                                         }
 
                                         Text {
