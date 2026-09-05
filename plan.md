@@ -121,8 +121,7 @@ powerbar=电源（预告）。
    这条规则现在由闸门守着：`ui/` 下不许 import `Quickshell.Services.*` 或
    `Quickshell.Io`，两处例外写在 `qsl-archcheck` 的 `EXTERNAL_IN_UI_EXEMPT`
    里并各附了理由（PAM 与锁屏生命周期绑死、`IpcHandler` 的 target 全局唯一）。
-   仍未收编、已登记的：一言 HTTP（`TimeClockCard` 裸 `XMLHttpRequest`——不走
-   import 所以闸门抓不到）、Launcher 的 desktop-entry `Exec` 解析。
+   第 9 轮收完之后 `ui/` 下已无未登记的外部直连。
 
    **同一份知识散成多份就会漂移**，这是第 9 轮收托盘时最直接的证据：
    「这是不是那四个有自带 SVG 的社交应用」在三处各写了一份，其中两处连函数名

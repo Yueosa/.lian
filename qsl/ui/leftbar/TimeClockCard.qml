@@ -1,5 +1,5 @@
 // TimeClockCard — 时间圆盘 / 日期 / 问候 / 一言（TimePage 上半拆出的容器卡）
-// 显示按分钟节流（环/文案不跟秒钟抖）；一言仅本卡存活时 XHR，销毁时 abort
+// 显示按分钟节流（环/文案不跟秒钟抖）；一言取自 Hitokoto 服务，本卡销毁时收请求
 //
 // 容器卡：背景/圆角由宿主 RailContainer 提供，本卡只装内容
 // 性能：无会话列表；Shape 双环；无常驻秒级 UI 重绘
@@ -22,20 +22,6 @@ Item {
     property int _minuteKey: -1
 
     readonly property var weekdays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-
-    readonly property var fallbackPool: [
-        { text: "敲下回车，世界就开始改变。", from: "本地" },
-        { text: "今天也要做温柔的人。", from: "本地" },
-        { text: "Stay hungry, stay foolish.", from: "Steve Jobs" },
-        { text: "代码是写给人看的，顺便能跑。", from: "本地" },
-        { text: "山有顶峰，湖有彼岸，人间总值得。", from: "本地" },
-        { text: "不要温和地走进那个良夜。", from: "Dylan Thomas" },
-        { text: "热爱可抵岁月漫长。", from: "本地" }
-    ]
-
-    property string yiyanText: ""
-    property string yiyanFrom: ""
-    property var _xhr: null
 
     function pad(n) {
         return n < 10 ? "0" + n : "" + n
@@ -102,70 +88,9 @@ Item {
         root.now = d
     }
 
-    function abortYiyan() {
-        const x = root._xhr
-        root._xhr = null
-        if (!x)
-            return
-        try {
-            x.onreadystatechange = function() {}
-            x.ontimeout = function() {}
-            x.abort()
-        } catch (e) {}
-    }
-
-    function fetchYiyan() {
-        abortYiyan()
-        const self = root
-        const pool = root.fallbackPool
-        function fb() {
-            const p = pool[Math.floor(Math.random() * pool.length)]
-            self.yiyanText = p.text
-            self.yiyanFrom = p.from
-        }
-        const xhr = new XMLHttpRequest()
-        root._xhr = xhr
-        xhr.open("GET", "https://v1.hitokoto.cn/?encode=json")
-        xhr.timeout = 4000
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE)
-                return
-            if (root._xhr !== xhr)
-                return
-            root._xhr = null
-            if (xhr.status !== 200) {
-                fb()
-                return
-            }
-            try {
-                const j = JSON.parse(xhr.responseText)
-                self.yiyanText = j.hitokoto || ""
-                self.yiyanFrom = j.from_who && j.from_who.length > 0
-                    ? (j.from_who + (j.from ? "·" + j.from : ""))
-                    : (j.from || "一言")
-                if (!self.yiyanText)
-                    fb()
-            } catch (e) {
-                fb()
-            }
-        }
-        xhr.ontimeout = function() {
-            if (root._xhr !== xhr)
-                return
-            root._xhr = null
-            fb()
-        }
-        try {
-            xhr.send()
-        } catch (e) {
-            root._xhr = null
-            fb()
-        }
-    }
-
     function refresh() {
         syncClock()
-        fetchYiyan()
+        Hitokoto.refresh()
     }
 
     Connections {
@@ -174,7 +99,8 @@ Item {
     }
 
     Component.onCompleted: refresh()
-    Component.onDestruction: abortYiyan()
+    // 卡片没了就别让请求挂着——单例活得比卡片久，不主动收它不会自己停
+    Component.onDestruction: Hitokoto.abort()
 
     ColumnLayout {
         id: mainCol
@@ -318,7 +244,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    text: root.yiyanText.length > 0 ? ("「 " + root.yiyanText + " 」") : "……"
+                    text: Hitokoto.text.length > 0 ? ("「 " + Hitokoto.text + " 」") : "……"
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -331,8 +257,8 @@ Item {
                 }
                 Text {
                     Layout.fillWidth: true
-                    visible: root.yiyanFrom.length > 0
-                    text: "—— " + root.yiyanFrom
+                    visible: Hitokoto.from.length > 0
+                    text: "—— " + Hitokoto.from
                     horizontalAlignment: Text.AlignRight
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.xsm

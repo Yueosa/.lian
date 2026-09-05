@@ -5,6 +5,7 @@ singleton Bluetooth 1.0 Bluetooth.qml
 singleton Calendar 1.0 Calendar.qml
 singleton Cava 1.0 Cava.qml
 singleton Clipboard 1.0 Clipboard.qml
+singleton Hitokoto 1.0 Hitokoto.qml
 singleton Hotkeys 1.0 Hotkeys.qml
 singleton HyprService 1.0 HyprService.qml
 singleton Icons 1.0 Icons.qml
