@@ -8,5 +8,6 @@ QslRow 1.0 QslRow.qml
 QslSectionHeader 1.0 QslSectionHeader.qml
 QslSlider 1.0 QslSlider.qml
 QslStagger 1.0 QslStagger.qml
+QslStateLayer 1.0 QslStateLayer.qml
 QslSwitch 1.0 QslSwitch.qml
 Sparkline 1.0 Sparkline.qml

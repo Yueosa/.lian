@@ -16,6 +16,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 
 Item {
@@ -77,12 +78,12 @@ Item {
         y: -Size.spacing.xs
         height: root.rowH + Size.spacing.xs * 2
         radius: Size.rounding.md
-        color: !root.interactive || !root.enabled
-            ? "transparent"
-            : (ma.pressed
-                ? Color.withAlpha(Color.text, 0.12)
-                : (ma.containsMouse ? Color.withAlpha(Color.text, 0.06) : "transparent"))
-        Behavior on color { CAnim {} }
+        color: "transparent"
+
+        QslStateLayer {
+            source: ma
+            active: root.interactive && root.enabled
+        }
 
         MouseArea {
             id: ma
@@ -134,10 +135,12 @@ Item {
             anchors.fill: parent
             visible: root.iconInteractive
             radius: Size.rounding.full
-            color: iconMa.pressed
-                ? Color.withAlpha(Color.text, 0.16)
-                : (iconMa.containsMouse ? Color.withAlpha(Color.text, 0.09) : "transparent")
-            Behavior on color { CAnim {} }
+            color: "transparent"
+
+            QslStateLayer {
+                source: iconMa
+                active: root.iconInteractive && root.enabled
+            }
 
             MouseArea {
                 id: iconMa

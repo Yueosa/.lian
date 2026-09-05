@@ -3,6 +3,7 @@
 // 在 RowLayout 里由调用方设 Layout.fillWidth / preferredHeight
 
 import QtQuick
+import qs.Components
 import qs.data.state
 
 Rectangle {
@@ -21,10 +22,16 @@ Rectangle {
     height: chipHeight
     radius: Size.rounding.full
     opacity: enabled ? 1 : 0.4
-    color: selected
-        ? Color.withAlpha(Color.primary, 0.18)
-        : (ma.containsMouse ? Color.withAlpha(Color.text, 0.06) : "transparent")
-    Behavior on color { CAnim {} }
+    color: "transparent"
+
+    // 选中用强调色（这是"它被选中了"），悬停用中性色（这只是"鼠标在上面"）
+    QslStateLayer {
+        source: ma
+        active: root.enabled
+        selected: root.selected
+        tint: root.selected ? Color.primary : Color.text
+        accent: root.selected
+    }
 
     Row {
         id: row

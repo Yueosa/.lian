@@ -220,6 +220,27 @@ Singleton {
     property color text: root.surfaceText
     property color textMuted: root.surfaceVariantText
 
+    // ---- 状态层透明度（M3 state layer，第 9 轮定案）----
+    //
+    // 「鼠标在上面」「正按着」这类反馈，M3 的做法是在原色上盖一层同色半透明，
+    // 而不是换一个颜色。盘点前全树 33 处各写各的：中性色调用过 0.04 / 0.06 /
+    // 0.08，强调色调用过 0.12 / 0.15 / 0.18 / 0.22 / 0.25 / 0.28，按下态用过
+    // 0.14 / 0.16 / 0.24。同一件事九种写法，两个本该长得一样的地方不一样。
+    //
+    // 取值没照抄 M3 规范的 8%/10%：那是给浅色面设计的，本壳是暗色面 + 强调色
+    // 叠加，8% 的 primary 在 #1b2023 上基本看不见。这里取的是现有写法里最常
+    // 用的那档，所以落地后整体观感不变，变的是那些偏离的。
+    readonly property QtObject state: QtObject {
+        // 中性叠加：用在本来就有底色的行/卡上，只要"亮一点"
+        readonly property real hover: 0.08
+        readonly property real pressed: 0.16
+        // 强调叠加：用在透明底的按钮/芯片上，悬停要显出可点
+        readonly property real hoverAccent: 0.18
+        readonly property real pressedAccent: 0.24
+        // 选中态（比悬停重，且不随鼠标走）
+        readonly property real selected: 0.18
+    }
+
     // ============================================================
     // 取色与应用
     // ============================================================

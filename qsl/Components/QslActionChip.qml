@@ -6,6 +6,7 @@
 // 这个是操作钮（24px、有 accent、有主/次强调）
 
 import QtQuick
+import qs.Components
 import qs.data.state
 
 Rectangle {
@@ -25,16 +26,19 @@ Rectangle {
     implicitWidth: row.implicitWidth + Size.spacing.md
     radius: Size.rounding.full
     opacity: enabled ? 1 : 0.4
-    color: {
-        if (!enabled)
-            return root.filled ? Color.withAlpha(root.accent, 0.12) : "transparent"
-        if (ma.pressed)
-            return Color.withAlpha(root.accent, 0.34)
-        if (root.filled)
-            return Color.withAlpha(root.accent, ma.containsMouse ? 0.28 : 0.18)
-        return ma.containsMouse ? Color.withAlpha(root.accent, 0.16) : "transparent"
-    }
+    // 主操作静息就带底色，次操作静息透明——两者的悬停/按下反馈由状态层统一
+    // 叠在上面，所以这里只管"静息长什么样"
+    color: root.filled
+        ? Color.withAlpha(root.accent, root.enabled ? Color.state.selected : 0.12)
+        : "transparent"
     Behavior on color { CAnim {} }
+
+    QslStateLayer {
+        source: ma
+        active: root.enabled
+        tint: root.accent
+        accent: true
+    }
 
     Row {
         id: row

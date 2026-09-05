@@ -2,6 +2,7 @@
 // icon 用 Material Symbols 名称或码点；busy 时可转
 
 import QtQuick
+import qs.Components
 import qs.data.state
 
 Rectangle {
@@ -18,10 +19,12 @@ Rectangle {
     height: buttonSize
     radius: Size.rounding.full
     opacity: enabled ? 1 : 0.35
-    color: ma.pressed
-        ? Color.withAlpha(Color.text, 0.14)
-        : (ma.containsMouse ? Color.withAlpha(Color.text, 0.08) : "transparent")
-    Behavior on color { CAnim {} }
+    color: "transparent"
+
+    QslStateLayer {
+        source: ma
+        active: root.enabled
+    }
 
     Text {
         id: glyph

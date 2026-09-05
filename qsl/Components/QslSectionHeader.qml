@@ -8,6 +8,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 
 Item {
@@ -60,12 +61,14 @@ Item {
             implicitHeight: 24
             radius: Size.rounding.full
             opacity: root.actionEnabled ? 1 : 0.4
-            color: actionMa.pressed
-                ? Color.withAlpha(Color.primary, 0.24)
-                : (actionMa.containsMouse
-                    ? Color.withAlpha(Color.primary, 0.14)
-                    : "transparent")
-            Behavior on color { CAnim {} }
+            color: "transparent"
+
+            QslStateLayer {
+                source: actionMa
+                active: root.actionEnabled
+                tint: Color.primary
+                accent: true
+            }
 
             RowLayout {
                 id: actionRow
