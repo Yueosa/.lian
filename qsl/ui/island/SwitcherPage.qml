@@ -210,6 +210,9 @@ FocusScope {
                     width: vList.width
                     height: Size.island.switcherCardHeight
 
+                    // 复用时清掉上一个窗口留下的图标失败状态
+                    ListView.onReused: winIcon.iconFailed = false
+
                     readonly property bool focused: groupCol.groupFocused
                         && index === root.focusItem
                     readonly property var win: modelData
@@ -295,10 +298,17 @@ FocusScope {
                         }
 
                         Image {
+                            id: winIcon
                             anchors.centerIn: parent
                             width: 36
                             height: 36
-                            source: HyprService.windowIcon(card.win)
+                            // 走绑定而不是在 onStatusChanged 里写 source：后者是赋值，
+                            // 会把这条绑定打死，此后窗口换了图标也更新不了
+                            property bool iconFailed: false
+
+                            source: iconFailed
+                                ? HyprService.fallbackIcon
+                                : HyprService.windowIcon(card.win)
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             cache: true
@@ -306,9 +316,8 @@ FocusScope {
                             visible: (!thumbLoader.item || !thumbLoader.item.hasContent)
                                 && status !== Image.Error
                             onStatusChanged: {
-                                if (status === Image.Error
-                                        && source !== HyprService.fallbackIcon)
-                                    source = HyprService.fallbackIcon
+                                if (status === Image.Error)
+                                    iconFailed = true
                             }
                         }
                     }

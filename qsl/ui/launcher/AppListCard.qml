@@ -156,7 +156,11 @@ Item {
             //
             // 淡到 0 的 item 进池子后，被复用来画滚进视野的新行时不走 add 过渡
             // （那只对模型插入生效），透明度就卡在 0。复用时手动收回来
-            ListView.onReused: appRow.opacity = 1
+            // 复用要把回退档位归零，否则上一个应用踩过的坑会算在下一个头上
+            ListView.onReused: {
+                appRow.opacity = 1
+                appImage.failCount = 0
+            }
 
             Item {
                 id: rowFade
@@ -232,10 +236,19 @@ Item {
                             // 重新解码一遍 svg/png。旧 A 页那会儿列表不动，关着不亏
                             cache: true
                             visible: status === Image.Ready && !iconRoot.forceFontFallback
+                            // 回退阶梯的档位。让它**参与绑定**，而不是在
+                            // onStatusChanged 里直接写 source——那是赋值，会把下面
+                            // 这条绑定打死；配上 reuseItems，这个 delegate 换给下一个
+                            // 应用时就再也换不回来，图标从此张冠李戴
                             property int failCount: 0
 
                             source: {
                                 const m = appRow.app
+                                if (appImage.failCount >= 2)
+                                    return "image://icon/application-x-executable"
+                                if (appImage.failCount === 1)
+                                    return m.fallbackIcon
+                                        ? "image://icon/" + m.fallbackIcon : ""
                                 if (m.assetAppId)
                                     return "file://" + Apps.logoDir + "/" + m.assetAppId + ".svg"
                                 const ic = m.icon
@@ -249,13 +262,8 @@ Item {
                             }
 
                             onStatusChanged: {
-                                if (status !== Image.Error)
-                                    return
-                                failCount++
-                                if (failCount === 1 && appRow.app.fallbackIcon)
-                                    source = "image://icon/" + appRow.app.fallbackIcon
-                                else if (failCount === 2)
-                                    source = "image://icon/application-x-executable"
+                                if (status === Image.Error)
+                                    failCount++
                             }
                         }
 

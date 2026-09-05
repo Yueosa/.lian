@@ -75,7 +75,12 @@ Item {
             const e = list[i]
             if (!e)
                 continue
+            // id 必须带上。Notification.dismiss() 拿 id 分流：有行号的按行号
+            // 精确关，没有的当成「刚到还没入库的临时行」退回按协议 id 找最新一条。
+            // 而协议 id 是会被不同应用复用的——漏掉 id 就等于把第 9 轮修掉的
+            // 「关一条连带关一批」从锁屏这个侧门放回来
             out.push({
+                id: e.id,
                 notifId: e.notifId,
                 appName: e.appName || "",
                 summary: e.summary || "",
