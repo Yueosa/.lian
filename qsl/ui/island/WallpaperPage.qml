@@ -100,8 +100,13 @@ FocusScope {
             const next = incoming.slice()
             next.sort((a, b) => String(a.filename || "").localeCompare(
                 String(b.filename || ""), "en", { numeric: true }))
+            const wasPopulated = reel.length > 0
             reel = next
             snapFocusToCurrent()
+            // 整批换掉 = 切了图片/视频模式：delegate 全销毁重建，让入场
+            // 动画再走一遍把这段盖住（否则是一屏卡片凭空跳出来）
+            if (wasPopulated)
+                stagger.restart()
             return
         }
 
@@ -300,6 +305,18 @@ FocusScope {
     // 每一帧都丢掉——←→ 闪的就是这个
     readonly property int thumbSource: Math.round(shotBase * 1.4)
 
+    // 只给焦点附近这么多格真正加载图片。
+    //
+    // 第 8 轮为了止闪，把「每张壁纸一个 delegate、source 一辈子不改」和
+    // asynchronous: false 一起上了。闪是止住了，但 source 是无条件设的，
+    // 于是进页面要把**全部** 49 张同步解码完才还回主线程：实测烧 260ms CPU，
+    // 期间连 IPC 都应答不了（94ms）。切图片/视频模式时整个 reel 被换掉，
+    // delegate 全部重建，再来一遍。
+    //
+    // onStage 是 dist < 3.2，留 2 格余量。按住方向键 40ms 一发，
+    // 两格够异步解码追上（一张 720×720 的 jpg 几毫秒）。
+    readonly property int preloadDist: 5
+
     function offsetAt(k) {
         if (k <= 0)
             return 0
@@ -410,12 +427,12 @@ FocusScope {
             id: reelArea
             Layout.fillWidth: true
             Layout.fillHeight: true
-            opacity: stagger.shown(1) ? 1 : 0
+            // 整块只做位移，淡入交给每张卡自己（见 slot 的 entryOpacity）——
+            // 两层都淡的话卡片要穿过两次半透明，边缘会发灰
             transform: Translate {
                 y: stagger.shown(1) ? 0 : 14
                 Behavior on y { Anim { type: Anim.Enter } }
             }
-            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
             onWidthChanged: root.reelW = width
             onHeightChanged: root.reelH = height
@@ -452,13 +469,35 @@ FocusScope {
                         return thumb.length ? ("file://" + thumb) : ""
                     }
 
+                    // 进过窗口就不再卸载。everLoaded 只从 false 变 true，所以
+                    // source 一辈子只改一次 "" → url，而且那一刻这张卡还在
+                    // dist 5、完全看不见——第 8 轮那次闪是 source 在**可见时**
+                    // 被改（7 个槽按位置换绑），跟同步不同步无关。
+                    readonly property bool nearNow: dist <= root.preloadDist
+                    property bool everLoaded: false
+                    onNearNowChanged: if (nearNow) everLoaded = true
+                    Component.onCompleted: if (nearNow) everLoaded = true
+
+                    // 逐张入场：焦点先亮，两侧按格数依次跟上。
+                    //
+                    // 不能直接给 scale / opacity 加 Behavior——那两个是
+                    // visualDelta 的**逐帧函数**（滑动时每帧都在变），加了
+                    // Behavior 等于给每一帧的导航都套一层阻尼。所以入场单开
+                    // 两个乘数，各自带动画，与逐帧那套相乘。
+                    readonly property bool entered:
+                        stagger.shown(1 + Math.min(3, Math.round(dist)))
+                    property real entryOpacity: entered ? 1 : 0
+                    property real entryScale: entered ? 1 : 0.9
+                    Behavior on entryOpacity { Anim { type: Anim.EffectsSlow } }
+                    Behavior on entryScale { Anim { type: Anim.Enter } }
+
                     width: root.shotBase
                     height: root.shotBase * root.shotAspect
                     x: reelArea.width / 2 + root.slotOffset(visualDelta) - width / 2
                     y: (reelArea.height - height) / 2
                     z: 20 - dist * 10
-                    scale: poseScale * (isFocus ? root.punchScale : 1)
-                    opacity: onStage ? root.slotOpacityOf(visualDelta) : 0
+                    scale: poseScale * (isFocus ? root.punchScale : 1) * entryScale
+                    opacity: (onStage ? root.slotOpacityOf(visualDelta) : 0) * entryOpacity
                     visible: onStage
                     transformOrigin: Item.Center
 
@@ -477,9 +516,11 @@ FocusScope {
                             Image {
                                 id: thumbImg
                                 anchors.fill: parent
-                                source: slot.thumbUrl
+                                // 异步解码。同步的话 13 张也要一起堵住主线程；
+                                // 异步 + 上面的逐张入场，解码正好藏在入场那 150ms 里
+                                source: slot.everLoaded ? slot.thumbUrl : ""
                                 fillMode: Image.PreserveAspectCrop
-                                asynchronous: false
+                                asynchronous: true
                                 cache: true
                                 sourceSize.width: root.thumbSource
                                 sourceSize.height: root.thumbSource
@@ -545,6 +586,9 @@ FocusScope {
                 anchors.centerIn: parent
                 z: 20
                 visible: root.reel.length === 0 && !Lianwall.loading
+                // 空态自己淡入：上面那层整块的淡入已经撤了
+                opacity: stagger.shown(1) ? 1 : 0
+                Behavior on opacity { Anim { type: Anim.EffectsSlow } }
                 text: Lianwall.error.length > 0 ? Lianwall.error : "暂无壁纸"
                 color: Color.textMuted
                 font.family: Size.fontSans
