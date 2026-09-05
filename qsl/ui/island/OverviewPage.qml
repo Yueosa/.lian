@@ -1,11 +1,18 @@
-// OverviewPage — Hub Overview：身份卡 + 天气条 + 通知/待办/计时器聚合 + 右日历
+// OverviewPage — Hub Overview：身份 + 时钟并排，天气横条，待办只读可滚，右日历
 //
-// 性能：hostname/uptime 是 oneshot Process；聚合区全部读现成单例的
-// 派生属性（Notification.count / Todo.count / Timers.*），本页不新建
-// 任何 Timer、不做轮询。倒计时运行时每秒一次文本更新，是 Timers 自己
-// 的 tick 带来的，本页只是多挂一个绑定。切 Tab 随 Loader 整体销毁。
+// 高度预算（overviewHeight 452，减 margins 16 = 436 可用）：
+//   左栏  身份/时钟条 96 + 10 + 天气横条 66 + 10 + 待办卡 254
+//   待办卡内 margins 28 + 标题 19 + 4 进度 + 小状态 32 + 三段间距 24 = 107
+//         → 列表净高 147，按 30 一行看到 5 条，再多靠滚
+//   右栏  日历 436（内部预算见 OverviewCalendar 顶部）
+// 改这里的数之前先把两栏的和重算一遍——比内容矮就会有卡片被顶出岛外。
+//
+// 性能：hostname/uptime 是 oneshot Process；电量读 Battery 单例。
+// 聚合区全部读现成单例（Notification.count / Todo.count / Timers.*），
+// 本页不新建 Timer、不做轮询。切 Tab 随 Loader 整体销毁。
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
@@ -69,24 +76,6 @@ Item {
         Quickshell.execDetached(["bash", "-lc", cmd])
     }
 
-    // 小标签：Arch / Hyprland / Wayland
-    component Tag: Rectangle {
-        property string label: ""
-        implicitWidth: tagText.implicitWidth + 14
-        implicitHeight: 20
-        radius: height / 2
-        color: Color.withAlpha(Color.primary, 0.14)
-
-        Text {
-            id: tagText
-            anchors.centerIn: parent
-            text: parent.label
-            color: Color.primary
-            font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.xsm
-        }
-    }
-
     // 卡片底部的小状态块：图标 + 一句话
     component MiniStat: Rectangle {
         property string glyph: ""
@@ -120,19 +109,28 @@ Item {
         }
     }
 
-    // 未完成的前 3 项：星标优先，其次按优先级。只在 Todo.items 变时重算
+    // 未完成全部：星标优先，其次按优先级。只读可滚，不截断
     readonly property var pendingTodos: {
+        void Todo.revision
         const all = (Todo.items || []).filter(i => i && !i.done)
         all.sort((a, b) => {
             if (!!a.starred !== !!b.starred)
                 return a.starred ? -1 : 1
             return (a.priority || 0) - (b.priority || 0)
         })
-        return all.slice(0, 3)
+        return all
     }
 
-    readonly property int pendingOverflow:
-        Math.max(0, (Todo.count - Todo.doneCount) - root.pendingTodos.length)
+    readonly property string batteryText: {
+        if (!Battery.isPresent)
+            return ""
+        const pct = Math.round(Battery.percentage)
+        if (Battery.charging)
+            return pct + "% 充电"
+        if (Battery.fullyCharged)
+            return pct + "% 满电"
+        return pct + "%"
+    }
 
     readonly property string greetText: {
         const d = Time.rawDate
@@ -181,223 +179,341 @@ Item {
         }
     }
 
+    component StatPill: Rectangle {
+        property string text: ""
+        property bool accent: false
+        visible: text.length > 0
+        implicitWidth: pillText.implicitWidth + 16
+        implicitHeight: 20
+        radius: height / 2
+        color: accent ? Color.withAlpha(Color.primary, 0.16) : Color.surfaceContainerHighest
+
+        Text {
+            id: pillText
+            anchors.centerIn: parent
+            text: parent.text
+            color: parent.accent ? Color.primary : Color.textMuted
+            font.family: Size.fontSans
+            font.pixelSize: Size.fontSize.xsm
+        }
+    }
+
+    QslStagger { id: stagger }
+    function playEnter() { stagger.restart() }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 8
-        spacing: 20
+        spacing: 14
 
-        // ---- 左栏 ----
+        // ---- 左栏：身份+天气一条，待办吃剩下的 ----
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 14
+            spacing: 10
 
-            // 身份卡：主机名当主标题，栈标签 + uptime 副行，右上角重启
-            // 开销：单 Row + OpacityMask，无额外 Binding
-            Rectangle {
+            // 这一条是**定高**的，fillHeight 必须显式关掉。
+            //
+            // 嵌在 ColumnLayout 里的 RowLayout，Layout.fillHeight 默认是 true
+            // （布局类 item 的默认值和普通 item 相反），所以光写 preferredHeight
+            // 不管用：它会和下面 fillHeight 的待办卡平分剩余空间，把待办整张顶
+            // 到岛外面去——上一版就是这么烂掉的
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 124
-                radius: Size.rounding.lg
-                color: Color.surfaceContainerHigh
+                Layout.fillHeight: false
+                Layout.preferredHeight: 96
+                Layout.maximumHeight: 96
+                spacing: 10
 
-                Row {
-                    id: identityBody
-                    anchors.left: parent.left
-                    anchors.leftMargin: 18
-                    anchors.right: restartBtn.left
-                    anchors.rightMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 14
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 3
+                    radius: Size.rounding.lg
+                    color: Color.surfaceContainerHigh
+                    opacity: stagger.shown(0) ? 1 : 0
+                    transform: Translate {
+                        y: stagger.shown(0) ? 0 : 12
+                        Behavior on y { Anim { type: Anim.Enter } }
+                    }
+                    Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
-                    Item {
-                        width: 76
-                        height: 76
+                    Row {
+                        id: identityBody
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.right: parent.right
+                        // 给右上角那颗重启钮让出通道：钮是 corner 定位的，
+                        // 不参与 Row 的宽度计算，文字列得自己躲开，否则长
+                        // hostname 会 elide 到钮底下
+                        anchors.rightMargin: 44
                         anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            color: Color.surfaceContainerHighest
-                            visible: avatarImg.status !== Image.Ready
+                        Item {
+                            width: 56
+                            height: 56
+                            anchors.verticalCenter: parent.verticalCenter
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.avatarLetter
-                                color: Color.primary
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.hero
-                                font.bold: true
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: Color.surfaceContainerHighest
+                                visible: avatarImg.status !== Image.Ready
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.avatarLetter
+                                    color: Color.primary
+                                    font.family: Size.fontSans
+                                    font.pixelSize: Size.fontSize.title
+                                    font.bold: true
+                                }
+                            }
+
+                            Image {
+                                id: avatarImg
+                                anchors.fill: parent
+                                source: Avatar.source
+                                sourceSize: Qt.size(112, 112)
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                visible: false
+                            }
+
+                            Rectangle {
+                                id: avatarMask
+                                anchors.fill: parent
+                                radius: width / 2
+                                visible: false
+                            }
+
+                            OpacityMask {
+                                anchors.fill: parent
+                                source: avatarImg
+                                maskSource: avatarMask
+                                visible: avatarImg.status === Image.Ready
                             }
                         }
 
-                        Image {
-                            id: avatarImg
-                            anchors.fill: parent
-                            source: Avatar.source
-                            sourceSize: Qt.size(128, 128)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: true
-                            visible: false
-                        }
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            width: Math.max(0, identityBody.width - 66)
 
-                        Rectangle {
-                            id: avatarMask
-                            anchors.fill: parent
-                            radius: width / 2
-                            visible: false
-                        }
-
-                        OpacityMask {
-                            anchors.fill: parent
-                            source: avatarImg
-                            maskSource: avatarMask
-                            visible: avatarImg.status === Image.Ready
+                            Row {
+                                spacing: 6
+                                Text {
+                                    id: hostText
+                                    text: root.hostname
+                                    color: Color.backgroundText
+                                    font.family: Size.fontMono
+                                    font.pixelSize: Size.fontSize.lg
+                                    font.bold: true
+                                }
+                                Text {
+                                    anchors.baseline: hostText.baseline
+                                    text: root.greetText
+                                    color: Color.textMuted
+                                    font.family: Size.fontSans
+                                    font.pixelSize: Size.fontSize.xsm
+                                }
+                            }
+                            // 三个平台标签本来是三颗药丸，横着要 204px。顶条收窄
+                            // 之后放不下，就跟重启钮撞在一起（第 8 轮第一版的样子）。
+                            // 它们是**永不变化**的静态信息，不值得占一行药丸的宽度，
+                            // 压成一行小字 145px，信息一个没少
+                            Text {
+                                width: parent.width
+                                text: "Arch · Hyprland · Wayland"
+                                color: Color.withAlpha(Color.textMuted, 0.8)
+                                font.family: Size.fontSans
+                                font.pixelSize: Size.fontSize.xsm
+                                elide: Text.ElideRight
+                            }
+                            // 原系统页那两条（uptime / 电量）落在这儿。没电池的
+                            // 机器 batteryText 是空串，StatPill 自己 visible: false
+                            Row {
+                                spacing: 6
+                                StatPill {
+                                    text: root.uptimeText
+                                }
+                                StatPill {
+                                    text: root.batteryText
+                                    accent: true
+                                }
+                            }
                         }
                     }
 
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 7
+                    Rectangle {
+                        id: restartBtn
+                        anchors.right: parent.right
+                        anchors.rightMargin: 8
+                        anchors.top: parent.top
+                        anchors.topMargin: 8
+                        width: root.restartArmed ? restartLabel.implicitWidth + 22 : 28
+                        height: 28
+                        radius: height / 2
+                        color: root.restartArmed
+                            ? Color.withAlpha(Color.error, 0.9)
+                            : (restartHover.containsMouse ? Color.surfaceContainerHighest : "transparent")
+                        border.width: root.restartArmed ? 0 : 1
+                        border.color: Color.withAlpha(Color.outlineVariant, 0.6)
+
+                        Behavior on width {
+                            Anim { type: Anim.SpatialFast }
+                        }
 
                         Text {
-                            text: root.hostname
-                            color: Color.backgroundText
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.xl
-                            font.bold: true
-                        }
-                        Row {
-                            spacing: 5
-                            Tag { label: "Arch" }
-                            Tag { label: "Hyprland" }
-                            Tag { label: "Wayland" }
-                        }
-                        Text {
-                            text: root.greetText + " · " + root.uptimeText
-                            color: Color.textMuted
-                            font.family: Size.fontSans
+                            id: restartLabel
+                            anchors.fill: parent
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: root.restartArmed ? "确认重启" : "\uf021"
+                            color: root.restartArmed ? Color.primaryText : Color.textMuted
+                            font.family: root.restartArmed ? Size.fontSans : Size.fontMono
                             font.pixelSize: Size.fontSize.sm
+                        }
+
+                        MouseArea {
+                            id: restartHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (root.restartArmed) {
+                                    disarm.stop()
+                                    root.restartQs()
+                                } else {
+                                    root.restartArmed = true
+                                    disarm.restart()
+                                }
+                            }
                         }
                     }
                 }
 
+                // 时钟。日历那张只到"日"，看时间原先得抬头去看栏——本页缺的
+                // 就是这一块。秒不显示：秒针等于每秒一次重排，这页不值得
                 Rectangle {
-                    id: restartBtn
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: root.restartArmed ? restartLabel.implicitWidth + 24 : 34
-                    height: 34
-                    radius: height / 2
-                    color: root.restartArmed
-                        ? Color.withAlpha(Color.error, 0.9)
-                        : (restartHover.containsMouse ? Color.surfaceContainerHighest : "transparent")
-                    border.width: root.restartArmed ? 0 : 1
-                    border.color: Color.withAlpha(Color.outlineVariant, 0.6)
-
-                    Behavior on width {
-                        Anim { type: Anim.SpatialFast }
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 2
+                    radius: Size.rounding.lg
+                    color: Color.surfaceContainerHigh
+                    opacity: stagger.shown(1) ? 1 : 0
+                    transform: Translate {
+                        y: stagger.shown(1) ? 0 : 12
+                        Behavior on y { Anim { type: Anim.Enter } }
                     }
+                    Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
-                    Text {
-                        id: restartLabel
-                        anchors.fill: parent
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        text: root.restartArmed ? "确认重启" : "\uf021"
-                        color: root.restartArmed ? Color.primaryText : Color.textMuted
-                        font.family: root.restartArmed ? Size.fontSans : Size.fontMono
-                        font.pixelSize: Size.fontSize.sm
-                    }
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 2
 
-                    MouseArea {
-                        id: restartHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.restartArmed) {
-                                disarm.stop()
-                                root.restartQs()
-                            } else {
-                                root.restartArmed = true
-                                disarm.restart()
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: Time.hours + ":" + Time.minutes
+                            color: Color.backgroundText
+                            font.family: Size.fontMono
+                            font.pixelSize: 36
+                            font.weight: Font.Black
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: {
+                                const t = Time.rawDate
+                                if (!t)
+                                    return ""
+                                const wd = ["日", "一", "二", "三", "四", "五", "六"][t.getDay()]
+                                return Qt.formatDateTime(t, "M月d日") + " 周" + wd
                             }
+                            color: Color.textMuted
+                            font.family: Size.fontSans
+                            font.pixelSize: Size.fontSize.xsm
                         }
                     }
                 }
             }
 
-            // 天气横条 → Weather Tab
+            // 天气横条。原来是顶条里的一张竖卡，宽度只有 192，"奚六街道,官渡区,
+            // 昆明市,云南省,中国"这种地名根本塞不进去，只能 elide 成一截乱码。
+            // 地名在天气页有完整的，这里不重复；空出来的位置给体感温度——
+            // 那是"要不要加件外套"的直接答案，比地名有用
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 78
+                Layout.fillHeight: false
+                Layout.preferredHeight: 66
+                Layout.maximumHeight: 66
                 radius: Size.rounding.lg
                 color: Color.surfaceContainerHigh
+                opacity: stagger.shown(2) ? 1 : 0
+                transform: Translate {
+                    y: stagger.shown(2) ? 0 : 12
+                    Behavior on y { Anim { type: Anim.Enter } }
+                }
+                Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
                 WeatherIcon {
                     id: wIcon
                     sourceUrl: Weather.iconSource
-                    pixelSize: 46
+                    pixelSize: 42
                     contentScale: 1.28
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
-                    id: wTemp
+                    id: tempText
                     anchors.left: wIcon.right
-                    anchors.leftMargin: 12
+                    anchors.leftMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     text: Weather.ready ? Weather.tempText : "--"
                     color: Color.backgroundText
                     font.family: Size.fontMono
-                    font.pixelSize: 30
+                    font.pixelSize: 28
                     font.weight: Font.Black
                 }
 
-                // 天气与地名共用剩余宽度，地名单行截断——横条里换行会把
-                // 整条撑高，两行地名也没人真的去读第二行
-                Column {
-                    anchors.left: wTemp.right
-                    anchors.leftMargin: 12
-                    anchors.right: wChevron.left
+                Text {
+                    anchors.left: tempText.right
+                    anchors.leftMargin: 10
+                    anchors.right: statRow.left
                     anchors.rightMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-
-                    Text {
-                        width: parent.width
-                        visible: Weather.ready && Weather.weatherText.length > 0
-                        text: Weather.weatherText
-                        color: Color.text
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.md
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width
-                        text: Weather.ready
-                            ? (Weather.locationName || "未知地点")
-                            : "天气加载中…"
-                        color: Color.textMuted
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
-                        elide: Text.ElideRight
-                    }
+                    text: Weather.ready ? (Weather.weatherText || "") : "天气加载中…"
+                    color: Color.textMuted
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.sm
+                    elide: Text.ElideRight
                 }
 
-                Text {
-                    id: wChevron
+                // 腾出地名那块位置之后条子空了半截。补的三个都是"出门前要
+                // 知道"的量：体感决定穿什么、湿度决定闷不闷、紫外线决定要不要
+                // 防晒。风速/气压那种留给天气页
+                Row {
+                    id: statRow
                     anchors.right: parent.right
-                    anchors.rightMargin: 16
+                    anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "\uf054"
-                    color: Color.textMuted
-                    font.family: Size.fontMono
-                    font.pixelSize: Size.fontSize.lg
+                    spacing: 6
+
+                    StatPill {
+                        text: Weather.ready ? ("体感 " + Weather.feelsText) : ""
+                        accent: true
+                    }
+                    StatPill {
+                        text: Weather.ready ? ("湿度 " + Weather.humidityText) : ""
+                    }
+                    StatPill {
+                        text: Weather.ready
+                            ? ("紫外线 " + Weather.uvText + " " + Weather.uvLevel)
+                            : ""
+                    }
                 }
 
                 MouseArea {
@@ -409,39 +525,34 @@ Item {
                 Component.onCompleted: Weather.ensureDaemon()
             }
 
-            // 待办卡：Todo.items 常驻内存，列真实条目是免费的。
-            // 通知只给计数——entries 仅在通知面板打开时维护，为了在这儿
-            // 显示标题而把它钉住不放，等于把之前省下的内存又还回去
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Size.rounding.lg
                 color: Color.surfaceContainerHigh
+                opacity: stagger.shown(3) ? 1 : 0
+                transform: Translate {
+                    y: stagger.shown(3) ? 0 : 12
+                    Behavior on y { Anim { type: Anim.Enter } }
+                }
+                Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
-                Column {
-                    id: todoBody
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 18
-                    spacing: 10
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 8
 
-                    Item {
-                        width: parent.width
-                        height: 20
-
+                    RowLayout {
+                        Layout.fillWidth: true
                         Text {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
                             text: "待办"
                             color: Color.backgroundText
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.md
                             font.bold: true
                         }
+                        Item { Layout.fillWidth: true }
                         Text {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
                             text: Todo.count > 0
                                 ? Todo.doneCount + " / " + Todo.count
                                 : "空"
@@ -452,8 +563,8 @@ Item {
                     }
 
                     Rectangle {
-                        width: parent.width
-                        height: 4
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 4
                         radius: 2
                         color: Color.surfaceContainerHighest
                         visible: Todo.count > 0
@@ -470,12 +581,25 @@ Item {
                         }
                     }
 
-                    Repeater {
+                    // 只读可滚：本页不做增删改（那是 Z 面板的活），但要能看全
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        spacing: 2
+                        reuseItems: true
+                        boundsBehavior: Flickable.StopAtBounds
                         model: root.pendingTodos
+
+                        ScrollBar.vertical: ScrollBar {
+                            policy: ScrollBar.AsNeeded
+                            width: 4
+                        }
+
                         delegate: Item {
                             required property var modelData
-                            width: todoBody.width
-                            height: 30
+                            width: ListView.view.width
+                            height: 28
 
                             Rectangle {
                                 id: pri
@@ -504,11 +628,13 @@ Item {
                             Rectangle {
                                 id: tagChip
                                 anchors.right: parent.right
+                                anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: tagLabel.implicitWidth + 12
                                 height: 18
                                 radius: height / 2
                                 color: Color.withAlpha(Color.secondary, 0.16)
+                                visible: !!(modelData.tag)
                                 Text {
                                     id: tagLabel
                                     anchors.centerIn: parent
@@ -519,64 +645,55 @@ Item {
                                 }
                             }
                         }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: root.pendingTodos.length === 0
+                            text: Todo.count > 0 ? "全部完成" : "没有待办"
+                            color: Todo.count > 0 ? Color.primary : Color.textMuted
+                            font.family: Size.fontSans
+                            font.pixelSize: Size.fontSize.sm
+                        }
                     }
 
-                    Text {
-                        width: parent.width
-                        visible: root.pendingOverflow > 0
-                        text: "还有 " + root.pendingOverflow + " 项未完成"
-                        color: Color.textMuted
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.xsm
-                    }
+                    Row {
+                        Layout.fillWidth: true
+                        spacing: 8
 
-                    Text {
-                        width: parent.width
-                        visible: Todo.count > 0 && root.pendingTodos.length === 0
-                        text: "全部完成"
-                        color: Color.primary
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.sm
-                    }
-                }
-
-                // 通知与计时器压到卡片底部，不跟待办抢视觉重心
-                Row {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: 18
-                    spacing: 8
-
-                    MiniStat {
-                        glyph: "\uf0f3"
-                        accent: !Notification.dndEnabled && Notification.count > 0
-                        text: Notification.dndEnabled
-                            ? "免打扰"
-                            // entries 上限 80，到顶就不是精确值了
-                            : (Notification.count >= 80 ? "80+ 条"
-                               : (Notification.count > 0 ? Notification.count + " 条" : "无通知"))
-                    }
-                    MiniStat {
-                        glyph: "\uf017"
-                        accent: Timers.countdown.running || Timers.stopwatch.running
-                        text: {
-                            if (Timers.countdown.running)
-                                return "倒 " + Timers.formatSec(Timers.countdown.remaining)
-                            if (Timers.stopwatch.running)
-                                return "正 " + Timers.formatSec(Timers.stopwatch.elapsed)
-                            return "无计时"
+                        MiniStat {
+                            glyph: "\uf0f3"
+                            accent: !Notification.dndEnabled && Notification.count > 0
+                            text: Notification.dndEnabled
+                                ? "免打扰"
+                                : (Notification.count >= 80 ? "80+ 条"
+                                   : (Notification.count > 0 ? Notification.count + " 条" : "无通知"))
+                        }
+                        MiniStat {
+                            glyph: "\uf017"
+                            accent: Timers.countdown.running || Timers.stopwatch.running
+                            text: {
+                                if (Timers.countdown.running)
+                                    return "倒 " + Timers.formatSec(Timers.countdown.remaining)
+                                if (Timers.stopwatch.running)
+                                    return "正 " + Timers.formatSec(Timers.stopwatch.elapsed)
+                                return "无计时"
+                            }
                         }
                     }
                 }
             }
         }
 
-        // 定宽：日历是参考物不是主角，让它按内容取宽度，剩下的给左栏
         OverviewCalendar {
-            Layout.preferredWidth: 400
+            Layout.preferredWidth: 360
             Layout.fillWidth: false
             Layout.fillHeight: true
+            opacity: stagger.shown(4) ? 1 : 0
+            transform: Translate {
+                y: stagger.shown(4) ? 0 : 12
+                Behavior on y { Anim { type: Anim.Enter } }
+            }
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
         }
     }
 }

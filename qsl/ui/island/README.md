@@ -45,9 +45,10 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 
 | 块 | 内容 | 备注 |
 |---|---|---|
-| 用户 | QQ 头像 + hostname + Arch/uptime | 加大头像与字号 |
-| 时钟 | 问候 + HH:mm（两行） | 日期交给右栏日历 |
-| 天气 | 图标 + 温度 + 短文案 | `Weather` peek；点击进 Weather |
+| 用户 | QQ 头像 + hostname + 问候 + 平台标签 + uptime/电量 | 与时钟并排；标签是一行小字不是药丸；电量无电池则隐；重启钮在卡右上角 |
+| 时钟 | HH:mm + 日期星期 | 不显示秒（秒针 = 每秒一次重排） |
+| 天气 | 图标 + 温度 + 现象 + 体感/湿度/紫外线 | 通宽横条；**不显示地名**（放不下且天气页有全的）；点击进 Weather |
+| 待办 | 未完成全部，只读可滚 | 不截断、不交互 |
 | 主视觉 | 大日历三缓冲翻页 | prev/curr/next 预加载再滚 |
 
 **状态：已实现**（`OverviewPage` + `OverviewCalendar`）
@@ -67,7 +68,12 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 
 - IPC：`mediatoggle` / `prev` / `next` → `Media.active`（已通）
 - 服务：`Media`（选播放器 + isMusicPlayer）、`Cava`（cava-relay + refCount）、`Lyrics`（lyrics-fetch）
-- Hub：`MediaPage` — 封面 / 进度 / 传输 / 切播放器 / 12 柱小频谱 / 歌词列表
+- Hub：`MediaPage` — 左封面 232 见方 + 操控；右歌词通高，cava 通宽一条压在歌词底下；
+  播放器选择器在整页右上角（低频操作不占正文位）
+- 进度条：波形由 cava 驱动——整体均值 → 振幅/频率/副波混乱度，低频 5 根 → 播放头那一鼓；
+  相位用 `FrameAnimation` 按帧积分（速度要跟能量变，改正在跑的 `NumberAnimation`
+  的 duration 会让波形当帧裂一道口）
+- 歌词：折行按焦点字号（26px）排死，焦点只动 scale/颜色/透明度，不改 `pixelSize`
 - **不做**：圆形 cava 环、FastBlur 底、L1 展开卡
 - L1：`LyricsContent` — 播放中自动抢占；悬停 → 时钟；跑马灯 + 6 柱频谱
 
@@ -78,7 +84,7 @@ Hub 内 Tab / Shift+Tab 循环；Esc 关 Hub。
 | 页 | 策略 |
 |---|---|
 | Media | **已做**（瘦身 Hub） |
-| Wallpaper | 照搬 + 轻优化；`lianwall` 封装 |
+| Wallpaper | **已做**（卷轴一屏 5 张 + 两侧渐隐位；焦点卡压邻居；本页自管顺序；模式/上下张/信息；不开 gui） |
 | Weather | **已做**（weatherd） |
 | Switcher | **已做**（视口静帧 / 焦点 live；ListView 定位；Island 延迟 dispatch 跳转） |
 
@@ -129,7 +135,7 @@ Hub 开着时是 `Exclusive` 键盘焦点，Hypr 收不到 Alt+Tab。必须靠�
 2. **Overview** — 已做
 3. **Weather** — 已做
 4. **Media** — 已做（瘦身 Hub + L1 歌词条）
-5. Wallpaper
+5. **Wallpaper** — 已做
 6. Switcher — 已做
 7. 通知条接入一级优先级 — 已做
 

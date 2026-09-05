@@ -15,10 +15,22 @@ FocusScope {
 
     // 与 Island 单例双向同步（避免壳层再套一层 Connections）
     property int currentIndex: Island.hubTabIndex
+    // 真正喂给 Loader 的下标。currentIndex 可以先变（岛尺寸立刻跟上），
+    // shownIndex 等旧页淡完再换，这样天气页的 Canvas 先隐掉再卸
+    property int shownIndex: Island.hubTabIndex
+    property int fadePhase: 0
 
     onCurrentIndexChanged: {
         if (Island.hubTabIndex !== currentIndex)
             Island.hubTabIndex = currentIndex
+        if (currentIndex === shownIndex)
+            return
+        if (fadePhase === 1)
+            return
+        if (pageLoader.item)
+            startPageOut()
+        else
+            shownIndex = currentIndex
     }
 
     Connections {
@@ -87,18 +99,71 @@ FocusScope {
     readonly property int hubChromeSide: 12
 
     implicitWidth: contentW
-    implicitHeight: hubChromeTop + Size.island.hubTabBarHeight
-        + Size.island.hubContentGap + contentH + hubChromeBottom
+    implicitHeight: Size.island.hubChromeH + contentH
 
-    // Loader centerIn 时要把隐式尺寸落到真实宽高，否则子页 anchors.fill 会按 0 算
+    // Loader 定位时要把隐式尺寸落到真实宽高，否则子页 anchors.fill 会按 0 算
     width: implicitWidth
     height: implicitHeight
 
-    Behavior on implicitWidth {
-        Anim {}
+    // 这里**不要**加 Behavior on implicitWidth/implicitHeight。
+    //
+    // 加了会变成两层动画串联：body 用 SpatialFast(400ms) 追一个自己也在
+    // 用 Spatial(500ms) 移动的目标，落定要 700ms 以上，而且两条都带过冲，
+    // 观感是橡皮筋。更贵的是——尺寸每帧都在动，页内容就每帧全量重排一次
+    // （天气页那条 Canvas 曲线每帧重画），天气页切出去卡就是卡在这儿。
+    //
+    // 现在让隐式尺寸一步到位：页只重排一次，body.clip 负责把多出来的部分
+    // 裁掉，动的只有裁剪框。子页配合 IslandShell 里 hubLoader 的顶部对齐，
+    // tab 条原地不动，只有岛底边在收放。
+
+    function startPageOut() {
+        fadePhase = 1
+        pageFade.stop()
+        pageFade.easing.bezierCurve = Size.anim.curveAccel
+        pageFade.duration = Size.anim.durFx
+        pageFade.from = pageLoader.opacity
+        pageFade.to = 0
+        pageFade.start()
     }
-    Behavior on implicitHeight {
-        Anim {}
+
+    function startPageIn() {
+        fadePhase = 2
+        pageFade.stop()
+        pageFade.easing.bezierCurve = Size.anim.curveDecel
+        pageFade.duration = Size.anim.durFxSlow
+        pageFade.from = 0
+        pageFade.to = 1
+        pageFade.start()
+    }
+
+    NumberAnimation {
+        id: pageFade
+        target: pageLoader
+        property: "opacity"
+        duration: Size.anim.durFx
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Size.anim.curveAccel
+        onStopped: {
+            if (root.fadePhase === 1) {
+                root.shownIndex = root.currentIndex
+                pageLoader.opacity = 0
+                // 异步孵化：新页走 onLoaded。不要在这里 enter——
+                // sourceComponent 还没换完的话 item 仍是旧页
+            } else if (root.fadePhase === 2) {
+                root.fadePhase = 0
+            }
+        }
+    }
+
+    function enterShownPage() {
+        if (pageLoader.item && typeof pageLoader.item.playEnter === "function")
+            pageLoader.item.playEnter()
+        startPageIn()
+        if (pageLoader.item && typeof pageLoader.item.forceActiveFocus === "function")
+            Qt.callLater(() => {
+                if (pageLoader.item)
+                    pageLoader.item.forceActiveFocus()
+            })
     }
 
     readonly property var tabMeta: [
@@ -188,10 +253,14 @@ FocusScope {
         anchors.rightMargin: root.hubChromeSide
         anchors.bottomMargin: root.hubChromeBottom
         active: true
+        // 异步孵化：同步建 OverviewPage 要一次性铺 3 个月面板 ×42 格 ×4 个
+        // item，实测就是切 Tab 那一下的掉帧。异步是分帧建，没有单次长阻塞。
+        // 岛的目标尺寸只看 Size 令牌、不看 item，所以先空着不影响 morph
+        asynchronous: true
         // 让子页能抢到键盘（Enter/方向键）；否则焦点停在 Hub FocusScope
         focus: true
         sourceComponent: {
-            switch (root.currentIndex) {
+            switch (root.shownIndex) {
             case 0: return overviewComp
             case 1: return mediaComp
             case 2: return wallpaperComp
@@ -200,11 +269,17 @@ FocusScope {
             }
         }
         onLoaded: {
-            if (item && typeof item.forceActiveFocus === "function")
-                Qt.callLater(() => {
-                    if (pageLoader.item)
-                        pageLoader.item.forceActiveFocus()
-                })
+            if (root.fadePhase === 1)
+                root.enterShownPage()
+            else if (root.fadePhase === 0) {
+                if (item && typeof item.playEnter === "function")
+                    item.playEnter()
+                if (item && typeof item.forceActiveFocus === "function")
+                    Qt.callLater(() => {
+                        if (pageLoader.item)
+                            pageLoader.item.forceActiveFocus()
+                    })
+            }
         }
     }
 

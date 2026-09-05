@@ -1,11 +1,14 @@
-// WallpaperPage — Hub 壁纸页
-// prev/next/mode + 网格单击设壁纸；齿轮开 lianwall-gui 并关岛
-// 缩略图：LianWall 缓存优先；静态图无缓存时小 sourceSize 原图；视频无缓存占位
-// 开销：仅 detail 时拉列表；GridView cacheBuffer≈1 行；Image 异步且 cache:false
+// WallpaperPage — 卷轴浏览，本页自管顺序
+// ← → 只移焦点；Enter / 再点焦点才 set。上一张下一张按本页列表 set，
+// 不走 lianwall next/prev（那会刷新 space 把顺序打乱）。
+// 第一次按文件名排好，之后只按 path 增删改元数据。
+//
+// 高度预算（wallpaperHeight 324，减 margins 20 = 304 可用）：
+//   顶栏 42 + 间距 8 + 卷轴区 254，焦点卡 ~300×198 上下各留 28
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 import qs.Components
 import qs.data.state
 import qs.data.service
@@ -14,7 +17,13 @@ FocusScope {
     id: root
 
     property int focusIndex: 0
-    readonly property int gridColumns: Math.max(2, Math.floor(grid.width / 178))
+    property var reel: []
+
+    readonly property var focusedItem: {
+        if (focusIndex < 0 || focusIndex >= reel.length)
+            return null
+        return reel[focusIndex]
+    }
 
     Component.onCompleted: {
         Lianwall.setDetailActive(true)
@@ -23,74 +32,238 @@ FocusScope {
     Component.onDestruction: Lianwall.setDetailActive(false)
 
     function clampFocus() {
-        if (grid.count <= 0) {
+        if (reel.length <= 0) {
             focusIndex = 0
             return
         }
-        focusIndex = Math.max(0, Math.min(grid.count - 1, focusIndex))
-        grid.currentIndex = focusIndex
-        grid.positionViewAtIndex(focusIndex, GridView.Contain)
+        focusIndex = Math.max(0, Math.min(reel.length - 1, focusIndex))
     }
 
-    function moveFocus(delta) {
-        if (grid.count <= 0)
+    function appliedIndex() {
+        for (let i = 0; i < reel.length; i++) {
+            if (reel[i] && reel[i].is_current)
+                return i
+        }
+        return focusIndex
+    }
+
+    function applyDelta(delta) {
+        if (reel.length <= 0)
             return
-        focusIndex = Math.max(0, Math.min(grid.count - 1, focusIndex + delta))
+        const i = (appliedIndex() + delta + reel.length) % reel.length
+        const it = reel[i]
+        if (it && it.path)
+            Lianwall.setWallpaper(it.path)
+        let steps = i - focusIndex
+        const n = reel.length
+        if (steps > n / 2)
+            steps -= n
+        if (steps < -n / 2)
+            steps += n
+        if (steps !== 0)
+            moveFocus(steps)
+        punchScale = 1
+        punchAnim.restart()
+    }
+
+    function snapFocusToCurrent() {
+        const i = appliedIndex()
+        if (i >= 0)
+            focusIndex = i
         clampFocus()
     }
 
-    function activateFocused() {
-        const it = Lianwall.items[focusIndex]
-        if (it && it.path)
-            Lianwall.setWallpaper(it.path)
+    function syncReel() {
+        const incoming = Lianwall.items || []
+        if (incoming.length === 0) {
+            if (!Lianwall.loading)
+                reel = []
+            return
+        }
+
+        const byPath = {}
+        for (let i = 0; i < incoming.length; i++) {
+            const it = incoming[i]
+            if (it && it.path)
+                byPath[it.path] = it
+        }
+
+        let overlap = false
+        for (let i = 0; i < reel.length; i++) {
+            if (reel[i] && byPath[reel[i].path]) {
+                overlap = true
+                break
+            }
+        }
+
+        if (reel.length === 0 || !overlap) {
+            const next = incoming.slice()
+            next.sort((a, b) => String(a.filename || "").localeCompare(
+                String(b.filename || ""), "en", { numeric: true }))
+            reel = next
+            snapFocusToCurrent()
+            return
+        }
+
+        const next = []
+        const seen = {}
+        for (let i = 0; i < reel.length; i++) {
+            const old = reel[i]
+            const fresh = old ? byPath[old.path] : null
+            if (fresh) {
+                next.push(fresh)
+                seen[fresh.path] = true
+            }
+        }
+        for (let i = 0; i < incoming.length; i++) {
+            const it = incoming[i]
+            if (it && it.path && !seen[it.path])
+                next.push(it)
+        }
+        reel = next
+        clampFocus()
     }
 
     Connections {
         target: Lianwall
-        function onItemsChanged() { Qt.callLater(root.clampFocus) }
+        function onItemsChanged() { Qt.callLater(root.syncReel) }
     }
 
-    Keys.onLeftPressed: (e) => { moveFocus(-1); e.accepted = true }
-    Keys.onRightPressed: (e) => { moveFocus(1); e.accepted = true }
-    Keys.onUpPressed: (e) => { moveFocus(-gridColumns); e.accepted = true }
-    Keys.onDownPressed: (e) => { moveFocus(gridColumns); e.accepted = true }
+    // 焦点绕圈走。不夹在 [0, n-1]：夹住的话走到列表两端，卷轴一侧就空掉
+    // 半屏（第 8 轮第一版实测——按文件名排序后当前壁纸恰好是最后一张，
+    // 右边几个槽全是空的）。applyDelta 本来就是取模的，这里跟它对齐
+    //
+    // 槽位本身不动（delta 是槽的身份），所以不能靠 Behavior on x 做过渡——
+    // 换焦点只是槽里换图，位置没变。真正在动的是 slideShift：整排按
+    // visualDelta = delta - slideShift 插值，走完再改 focusIndex、瞬间回 0。
+    //
+    // 连按不能排队。上一版每步 400ms 排成队，按 5 下要等 2 秒。
+    // 新键来了就地 settle（按已经滑过的距离四舍五入落格），再从 0
+    // 开下一步。连按 = 连切，单下才走完整个 decel。
+    property real slideShift: 0
+    property bool sliding: false
+    property bool slideAbort: false
+    property real punchScale: 1
+
+    function wrapIndex(i) {
+        const n = reel.length
+        if (n <= 0)
+            return 0
+        return ((i % n) + n) % n
+    }
+
+    function settleSlide(incoming) {
+        if (!sliding)
+            return
+        slideAbort = true
+        slideAnim.stop()
+        let step = Math.round(slideShift)
+        // 按住连发时 40ms 一键，slideShift 还在 0.2，四舍五入是 0，
+        // 焦点永远不走。同方向就至少落一格
+        const sameDir = incoming !== 0 && ((incoming > 0) === (slideShift > 0)
+            || (incoming > 0) === (slideAnim.to > 0))
+        if (sameDir && step === 0)
+            step = incoming > 0 ? 1 : -1
+        if (step !== 0)
+            focusIndex = wrapIndex(focusIndex + step)
+        slideShift = 0
+        sliding = false
+        slideAbort = false
+    }
+
+    function moveFocus(delta) {
+        const n = reel.length
+        if (n <= 0 || delta === 0)
+            return
+        settleSlide(delta)
+        const steps = Math.max(-3, Math.min(3, delta))
+        sliding = true
+        slideAnim.from = 0
+        slideAnim.to = steps
+        slideAnim.start()
+    }
+
+    function commitSlide() {
+        if (slideAbort)
+            return
+        const step = Math.round(slideAnim.to)
+        if (step !== 0)
+            focusIndex = wrapIndex(focusIndex + step)
+        slideShift = 0
+        sliding = false
+    }
+
+    NumberAnimation {
+        id: slideAnim
+        target: root
+        property: "slideShift"
+        duration: Size.anim.durFx
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Size.anim.curveDecel
+        onStopped: root.commitSlide()
+    }
+
+    SequentialAnimation {
+        id: punchAnim
+        NumberAnimation {
+            target: root
+            property: "punchScale"
+            to: 1.08
+            duration: Size.anim.durFx
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Size.anim.curveSpatial
+        }
+        NumberAnimation {
+            target: root
+            property: "punchScale"
+            to: 1
+            duration: Size.anim.durFast
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Size.anim.curveSpatial
+        }
+    }
+
+    function activateFocused() {
+        const it = focusedItem
+        if (it && it.path)
+            Lianwall.setWallpaper(it.path)
+        punchScale = 1
+        punchAnim.restart()
+    }
+
+    Keys.onLeftPressed: (e) => {
+        root.moveFocus(-1)
+        e.accepted = true
+    }
+    Keys.onRightPressed: (e) => {
+        root.moveFocus(1)
+        e.accepted = true
+    }
     Keys.onReturnPressed: (e) => { activateFocused(); e.accepted = true }
     Keys.onEnterPressed: (e) => { activateFocused(); e.accepted = true }
 
-    component RailButton: Rectangle {
+    component IconBtn: Rectangle {
         id: button
         property string icon: ""
         property bool active: false
-        property color accentColor: Color.primary
         signal clicked()
 
-        Layout.preferredWidth: 48
-        Layout.preferredHeight: 48
-        radius: Size.rounding.xl
+        implicitWidth: 36
+        implicitHeight: 36
+        radius: Size.rounding.md
         color: active
-            ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.18)
-            : Color.surfaceContainerHighest
-        border.width: active ? 1 : 0
-        border.color: active
-            ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.42)
-            : "transparent"
-        scale: area.pressed ? 0.92 : (area.containsMouse ? 1.04 : 1.0)
-
-        Behavior on color { CAnim {} }
-        Behavior on scale {
-            Anim { type: Anim.Effects }
-        }
+            ? Color.withAlpha(Color.primary, 0.16)
+            : Color.surfaceContainerHigh
 
         Text {
             anchors.centerIn: parent
             text: button.icon
             font.family: Size.fontMono
-            font.pixelSize: Size.fontSize.xl
-            color: button.active ? button.accentColor : Color.backgroundText
+            font.pixelSize: Size.fontSize.lg
+            color: button.active ? Color.primary : Color.backgroundText
         }
 
         MouseArea {
-            id: area
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -98,283 +271,284 @@ FocusScope {
         }
     }
 
-    Rectangle {
+    // ---- 卷轴几何 ----
+    //
+    // 一屏 5 张实卡（dist 0/1/2），再往外 dist 3 那格淡到 0 当出入场位。
+    // 焦点卡压在邻居上面，左右两张各往它底下塞一截，所以同样的宽度能放
+    // 更大的卡：平铺 5 张在 860 宽里焦点卡只有 251，叠起来能到 300。
+    //
+    // 尺寸不写死，从可用区反算——改岛宽不用回来改这里。
+    // 总跨度 = 2 × (d2 中心 + d2 半宽) = 2.858 × base，推导见 slotOffset
+    readonly property var shotScale: [1.0, 0.683, 0.466]
+    readonly property var shotOpacities: [1.0, 0.9, 0.7]
+    readonly property real shotAspect: 0.66     // 高 / 宽，3:2 照片比
+    readonly property real overlap1: 0.12       // d1 往焦点底下塞进去的比例
+    readonly property real overlap2: 0.10
+
+    property real reelW: 0
+    property real reelH: 0
+
+    readonly property real shotBase: {
+        if (reelW <= 0 || reelH <= 0)
+            return 120
+        const byW = reelW / 2.858
+        const byH = (reelH - 16) / shotAspect
+        return Math.max(120, Math.min(byW, byH))
+    }
+    // 解码尺寸只跟岛宽走，不跟滑动走。绑 slot.width 的话 400ms 里
+    // sourceSize 每帧都变，等于 7 张图连着重解码，cache:false 再把
+    // 每一帧都丢掉——←→ 闪的就是这个
+    readonly property int thumbSource: Math.round(shotBase * 1.4)
+
+    function offsetAt(k) {
+        if (k <= 0)
+            return 0
+        const b = shotBase
+        let off = b * 0.5 + b * shotScale[1] * 0.5 - b * overlap1
+        if (k >= 2)
+            off += b * shotScale[1] * 0.5 + b * shotScale[2] * 0.5 - b * overlap2
+        if (k >= 3)
+            off += b * shotScale[2] * 0.85
+        return off
+    }
+
+    function slotOffset(d) {
+        const sign = d < 0 ? -1 : 1
+        const ad = Math.abs(d)
+        const i0 = Math.floor(ad)
+        const t = ad - i0
+        return sign * (offsetAt(i0) * (1 - t) + offsetAt(i0 + 1) * t)
+    }
+
+    function slotScaleOf(d) {
+        const ad = Math.abs(d)
+        if (ad <= 1)
+            return shotScale[0] + (shotScale[1] - shotScale[0]) * ad
+        if (ad <= 2)
+            return shotScale[1] + (shotScale[2] - shotScale[1]) * (ad - 1)
+        if (ad <= 3)
+            return shotScale[2] * (1 - (ad - 2) * 0.4)
+        return shotScale[2] * 0.6
+    }
+
+    function slotOpacityOf(d) {
+        const ad = Math.abs(d)
+        if (ad <= 1)
+            return shotOpacities[0] + (shotOpacities[1] - shotOpacities[0]) * ad
+        if (ad <= 2)
+            return shotOpacities[1] + (shotOpacities[2] - shotOpacities[1]) * (ad - 1)
+        // 第 4 张（dist 3）是出场/退场那格：淡到 0 再让 onStage 收掉
+        if (ad <= 3)
+            return Math.max(0, shotOpacities[2] * (1 - (ad - 2)))
+        return 0
+    }
+
+    QslStagger { id: stagger }
+    function playEnter() { stagger.restart() }
+
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
-        radius: Size.rounding.xl
-        color: Color.surface
+        spacing: 8
 
         RowLayout {
-            anchors.fill: parent
-            anchors.margins: 16
-            spacing: Size.spacing.lg
+            Layout.fillWidth: true
+            Layout.fillHeight: false
+            Layout.preferredHeight: 42
+            Layout.maximumHeight: 42
+            spacing: 10
+            opacity: stagger.shown(0) ? 1 : 0
+            transform: Translate {
+                y: stagger.shown(0) ? 0 : 10
+                Behavior on y { Anim { type: Anim.Enter } }
+            }
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
-            ColumnLayout {
-                Layout.preferredWidth: 48
-                Layout.fillHeight: true
-                spacing: Size.spacing.md
-
-                RailButton {
-                    icon: "\uf048"
-                    onClicked: Lianwall.previous()
-                }
-                RailButton {
-                    icon: "\uf051"
-                    onClicked: Lianwall.next()
-                }
-                RailButton {
-                    icon: Lianwall.modeIcon
-                    active: true
-                    accentColor: Lianwall.isVideoMode ? Color.tertiary : Color.primary
-                    onClicked: Lianwall.switchMode()
-                }
-
-                Item { Layout.fillHeight: true }
-
-                RailButton {
-                    icon: "\uf013"
-                    accentColor: Color.secondary
-                    onClicked: {
-                        Lianwall.openGui()
-                        Island.closeHub()
-                    }
-                }
+            IconBtn {
+                icon: Lianwall.modeIcon
+                active: true
+                onClicked: Lianwall.switchMode()
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: Size.spacing.md
+                spacing: 1
 
-                RowLayout {
+                Text {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 42
-                    spacing: Size.spacing.md
+                    text: (root.focusedItem ? (root.focusedItem.filename || "") : "—")
+                        + (root.focusedItem && root.focusedItem.is_current ? " · 已应用" : "")
+                    color: Color.backgroundText
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.md
+                    font.bold: true
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: Lianwall.modeLabel + "模式 · " + (Lianwall.engine || "--")
+                        + " · 本页 " + root.reel.length
+                        + " · 锁定 " + Lianwall.lockedCount
+                    color: Color.textMuted
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.xsm
+                    elide: Text.ElideRight
+                }
+            }
+
+            IconBtn {
+                icon: "\uf048"
+                onClicked: root.applyDelta(-1)
+            }
+            IconBtn {
+                icon: "\uf051"
+                onClicked: root.applyDelta(1)
+            }
+        }
+
+        Item {
+            id: reelArea
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            opacity: stagger.shown(1) ? 1 : 0
+            transform: Translate {
+                y: stagger.shown(1) ? 0 : 14
+                Behavior on y { Anim { type: Anim.Enter } }
+            }
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
+
+            onWidthChanged: root.reelW = width
+            onHeightChanged: root.reelH = height
+
+            // 一张壁纸一个 delegate，source 一辈子不改。
+            // 以前 7 个槽按位置换绑，滑完 focusIndex++，中心那张图换到
+            // 另一个 Image 上——改 source 必闪，跟加载不加载无关。
+            // lianwall 的 jpg 已经在 ~/.cache 里，同步读出来即可。
+            Repeater {
+                model: root.reel
+
+                Item {
+                    id: slot
+                    required property int index
+                    required property var modelData
+
+                    readonly property real visualDelta: {
+                        const n = root.reel.length
+                        if (n <= 0)
+                            return 99
+                        let d = index - root.focusIndex
+                        if (d > n / 2)
+                            d -= n
+                        if (d < -n / 2)
+                            d += n
+                        return d - root.slideShift
+                    }
+                    readonly property real dist: Math.abs(visualDelta)
+                    readonly property bool onStage: dist < 3.2
+                    readonly property bool isFocus: dist < 0.2
+                    readonly property real poseScale: root.slotScaleOf(visualDelta)
+                    readonly property string thumbUrl: {
+                        const thumb = String(modelData.thumb || "")
+                        return thumb.length ? ("file://" + thumb) : ""
+                    }
+
+                    width: root.shotBase
+                    height: root.shotBase * root.shotAspect
+                    x: reelArea.width / 2 + root.slotOffset(visualDelta) - width / 2
+                    y: (reelArea.height - height) / 2
+                    z: 20 - dist * 10
+                    scale: poseScale * (isFocus ? root.punchScale : 1)
+                    opacity: onStage ? root.slotOpacityOf(visualDelta) : 0
+                    visible: onStage
+                    transformOrigin: Item.Center
 
                     Rectangle {
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 36
+                        anchors.fill: parent
                         radius: Size.rounding.lg
-                        color: Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.16)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Lianwall.modeIcon
-                            font.family: Size.fontMono
-                            font.pixelSize: Size.fontSize.lg
-                            color: Color.primary
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 1
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: Lianwall.modeLabel + "模式 · " + (Lianwall.engine || "--")
-                            color: Color.backgroundText
-                            font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.lg
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "可用 " + Lianwall.availableCount
-                                + " · 总计 " + Lianwall.totalCount
-                                + " · 锁定 " + Lianwall.lockedCount
-                            color: Color.textMuted
-                            font.family: Size.fontSans
-                            font.pixelSize: Size.fontSize.xsm
-                            elide: Text.ElideRight
-                        }
-                    }
-                }
-
-                GridView {
-                    id: grid
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    model: Lianwall.items
-                    currentIndex: root.focusIndex
-                    cellWidth: Math.floor(width / Math.max(1, root.gridColumns))
-                    cellHeight: 148
-                    boundsBehavior: Flickable.StopAtBounds
-                    cacheBuffer: cellHeight * 1
-
-                    ScrollBar.vertical: ScrollBar {
-                        policy: grid.contentHeight > grid.height
-                            ? ScrollBar.AsNeeded
-                            : ScrollBar.AlwaysOff
-                        width: 6
-                    }
-
-                    delegate: Item {
-                        id: card
-                        required property var modelData
-                        required property int index
-
-                        width: grid.cellWidth
-                        height: grid.cellHeight
-
-                        readonly property string wallpaperPath: String(modelData.path || "")
-                        readonly property string wallpaperFilename: String(modelData.filename || "")
-                        readonly property string thumbPath: String(modelData.thumb || "")
-                        readonly property bool thumbOrig: !!modelData.thumb_orig
-                        readonly property bool wallpaperLocked: !!modelData.locked
-                        readonly property bool wallpaperIsCurrent: !!modelData.is_current
-                        readonly property bool wallpaperIsVideo: !!modelData.is_video
-                        readonly property bool hasThumbnail: thumbPath.length > 0
-                        readonly property string thumbnailSource: hasThumbnail
-                            ? ("file://" + thumbPath)
-                            : ""
-                        readonly property bool focused: root.focusIndex === index
+                        color: Color.background
 
                         Rectangle {
+                            id: face
                             anchors.fill: parent
-                            anchors.margins: 5
+                            anchors.margins: 3
                             radius: Size.rounding.md
-                            color: card.focused
-                                ? Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.16)
-                                : Color.surfaceContainerHigh
-                            border.width: card.focused || card.wallpaperIsCurrent ? 2 : 1
-                            border.color: card.wallpaperIsCurrent
-                                ? Color.primary
-                                : (card.focused
-                                    ? Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.72)
-                                    : Color.outlineVariant)
+                            color: Color.surfaceContainerHigh
 
-                            Rectangle {
-                                id: thumbBox
-                                anchors.top: parent.top
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.margins: 6
-                                height: 102
-                                radius: Size.rounding.sm
-                                color: Color.surfaceContainerHighest
-                                clip: true
+                            Image {
+                                id: thumbImg
+                                anchors.fill: parent
+                                source: slot.thumbUrl
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: false
+                                cache: true
+                                sourceSize.width: root.thumbSource
+                                sourceSize.height: root.thumbSource
 
-                                Image {
-                                    id: thumbImg
-                                    anchors.fill: parent
-                                    // 离开页 visible=false 时清空 source，避免离屏解码
-                                    source: (root.visible && card.hasThumbnail)
-                                        ? card.thumbnailSource
-                                        : ""
-                                    // 原图回退更严；缓存缩略图可稍大
-                                    sourceSize.width: card.thumbOrig ? 200 : 256
-                                    sourceSize.height: card.thumbOrig ? 126 : 160
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    cache: false
-                                    visible: card.hasThumbnail && status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: card.wallpaperIsVideo ? "\uf03d" : "\uf03e"
-                                    font.family: Size.fontMono
-                                    font.pixelSize: 28
-                                    color: Color.textMuted
-                                    visible: !thumbImg.visible
-                                }
-
-                                Row {
-                                    anchors.top: parent.top
-                                    anchors.left: parent.left
-                                    anchors.margins: 6
-                                    spacing: 4
-
-                                    Rectangle {
-                                        width: 22
-                                        height: 22
-                                        radius: Size.rounding.full
-                                        color: Qt.rgba(Color.primary.r, Color.primary.g, Color.primary.b, 0.9)
-                                        visible: card.wallpaperIsCurrent
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "\uf04b"
-                                            font.family: Size.fontMono
-                                            font.pixelSize: Size.fontSize.xsm
-                                            color: Color.primaryText
+                                layer.enabled: slot.onStage && status === Image.Ready
+                                layer.smooth: true
+                                layer.effect: OpacityMask {
+                                    maskSource: Item {
+                                        width: root.shotBase
+                                        height: root.shotBase * root.shotAspect
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: face.radius
+                                            color: "#000000"
                                         }
-                                    }
-                                    Rectangle {
-                                        width: 22
-                                        height: 22
-                                        radius: Size.rounding.full
-                                        color: Qt.rgba(0, 0, 0, 0.55)
-                                        visible: card.wallpaperLocked
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "\uf023"
-                                            font.family: Size.fontMono
-                                            font.pixelSize: Size.fontSize.xsm
-                                            color: Color.backgroundText
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    anchors.right: parent.right
-                                    anchors.bottom: parent.bottom
-                                    anchors.margins: 6
-                                    width: 22
-                                    height: 22
-                                    radius: Size.rounding.full
-                                    color: Qt.rgba(0, 0, 0, 0.5)
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: card.wallpaperIsVideo ? "\uf03d" : "\uf03e"
-                                        font.family: Size.fontMono
-                                        font.pixelSize: Size.fontSize.xsm
-                                        color: Color.backgroundText
                                     }
                                 }
                             }
 
                             Text {
+                                anchors.centerIn: parent
+                                visible: slot.thumbUrl.length === 0
+                                text: modelData.is_video ? "\uf03d" : "\uf03e"
+                                font.family: Size.fontMono
+                                font.pixelSize: 22
+                                color: Color.textMuted
+                            }
+
+                            Rectangle {
                                 anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                anchors.margins: 8
-                                height: 24
-                                text: card.wallpaperFilename
-                                color: card.wallpaperIsCurrent
-                                    ? Color.primary
-                                    : Color.backgroundText
-                                font.family: Size.fontSans
-                                font.pixelSize: Size.fontSize.xsm
-                                font.bold: card.wallpaperIsCurrent
-                                elide: Text.ElideRight
-                                verticalAlignment: Text.AlignVCenter
+                                anchors.top: parent.top
+                                anchors.margins: 6
+                                width: curLabel.implicitWidth + 12
+                                height: 18
+                                radius: 9
+                                color: Color.primary
+                                visible: !!modelData.is_current
+                                Text {
+                                    id: curLabel
+                                    anchors.centerIn: parent
+                                    text: "当前"
+                                    color: Color.primaryText
+                                    font.pixelSize: Size.fontSize.xsm
+                                }
                             }
 
                             MouseArea {
                                 anchors.fill: parent
-                                hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    root.focusIndex = card.index
-                                    root.clampFocus()
-                                    Lianwall.setWallpaper(card.wallpaperPath)
+                                    if (slot.isFocus)
+                                        root.activateFocused()
+                                    else
+                                        root.moveFocus(Math.round(slot.visualDelta))
                                 }
                             }
                         }
                     }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: Lianwall.error.length > 0 ? Lianwall.error : "暂无壁纸"
-                        visible: grid.count === 0 && !Lianwall.loading
-                        color: Color.textMuted
-                        font.family: Size.fontSans
-                        font.pixelSize: Size.fontSize.lg
-                    }
                 }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                z: 20
+                visible: root.reel.length === 0 && !Lianwall.loading
+                text: Lianwall.error.length > 0 ? Lianwall.error : "暂无壁纸"
+                color: Color.textMuted
+                font.family: Size.fontSans
+                font.pixelSize: Size.fontSize.lg
             }
         }
     }

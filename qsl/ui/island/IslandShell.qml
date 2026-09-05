@@ -172,15 +172,14 @@ Item {
                     }
                 }
                 readonly property int hubFallbackH: {
-                    // 与 HubContent.implicitHeight 对齐：chromeTop(10)+tab+gap+page+chromeBottom(12)
-                    const chrome = 10 + 12
-                    const bar = Size.island.hubTabBarHeight + Size.island.hubContentGap
+                    // 与 HubContent.implicitHeight 同一条式子（chrome 收在令牌里）
+                    const chrome = Size.island.hubChromeH
                     switch (Island.hubTabIndex) {
-                    case 1: return chrome + bar + Size.island.mediaHeight
-                    case 2: return chrome + bar + Size.island.wallpaperHeight
-                    case 3: return chrome + bar + Size.island.weatherHeight
-                    case 4: return chrome + bar + Size.island.switcherHeight
-                    default: return chrome + bar + Size.island.overviewHeight
+                    case 1: return chrome + Size.island.mediaHeight
+                    case 2: return chrome + Size.island.wallpaperHeight
+                    case 3: return chrome + Size.island.weatherHeight
+                    case 4: return chrome + Size.island.switcherHeight
+                    default: return chrome + Size.island.overviewHeight
                     }
                 }
 
@@ -210,15 +209,18 @@ Item {
                 width: targetW
                 height: targetH
                 property real radius: targetR
+                // 开/关岛要弹（SpatialFast）；切 Tab 只收底边，用 Enter 到位即停。
+                // 类型必须在目标值改之前换好，见下面两条 Connections
+                property int morphType: Anim.SpatialFast
 
                 Behavior on width {
-                    Anim { type: Anim.SpatialFast }
+                    Anim { type: body.morphType }
                 }
                 Behavior on height {
-                    Anim { type: Anim.SpatialFast }
+                    Anim { type: body.morphType }
                 }
                 Behavior on radius {
-                    Anim { type: Anim.SpatialFast }
+                    Anim { type: body.morphType }
                 }
 
                 Rectangle {
@@ -314,7 +316,14 @@ Item {
 
                 Loader {
                     id: hubLoader
-                    anchors.centerIn: parent
+                    // 顶部对齐，不是 centerIn。
+                    //
+                    // 岛是吊在屏幕顶上的，body 的上边固定、只有下边在动。居中的话
+                    // 内容中心 = body.height/2，换页时 tab 条会跟着高度差一起上下
+                    // 漂（天气→切换器要漂 130px）。顶部对齐则 tab 条原地不动，
+                    // 换页只是从底下多露/少露一截，配合 HubContent 的尺寸直落
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
                     // 异步孵化：同步建整个 HubContent 实测堵主线程 34~60ms，就是
                     // 展开那一下的硬顿。异步是分片建（每帧切一小块），所以没有
                     // 单次长阻塞。morph 不用等它——targetW/H 会先用 hubFallback
@@ -338,6 +347,7 @@ Item {
     Connections {
         target: Island
         function onShowHubChanged() {
+            body.morphType = Anim.SpatialFast
             if (Island.showHub) {
                 hubUnmountTimer.stop()
                 root.hubMounted = true
@@ -355,6 +365,10 @@ Item {
                 // 保持 Hub 节点做淡出，morph 后再拆
                 hubUnmountTimer.restart()
             }
+        }
+        function onHubTabIndexChanged() {
+            if (Island.showHub && root.hubShaped)
+                body.morphType = Anim.Enter
         }
     }
 

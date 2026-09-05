@@ -1,5 +1,12 @@
 // OverviewCalendar — 三格轮转翻页（只刷新滚出屏外的那格）
 // 回当月：相邻直接滚；跨月连续轮转，避免整窗 rebuild 卡顿
+//
+// 高度预算（Overview 左右两栏等高，这里拿到 436）：
+//   固定件 margins 24 + 标题 38 + 周首 24 + 分隔线 2 + 今日条 30 = 118
+//   五段间距 spacing.sm×5 = 40，合计 154 → 格子区净高 282
+//   6 行 + 5×4 行距 → 每格 43.7px。数字 16px 定在 -7、农历 9px 定在 +9，
+//   低于 36 就开始叠字：第 8 轮第一版给到 27px，屏上是「10」压着「初十」。
+// 所以这里的 margins/spacing 是**按格子高倒推**出来的，不是随手填的手感值。
 
 import QtQuick
 import QtQuick.Layouts
@@ -387,8 +394,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: Size.spacing.md
+        anchors.margins: Size.spacing.md
+        spacing: Size.spacing.sm
 
         RowLayout {
             Layout.fillWidth: true
@@ -397,7 +404,7 @@ Rectangle {
             // 月份不再套药丸底：标题本来就是标题，给它加个色块只是噪声
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 38
 
                 Row {
                     id: titleRow
@@ -445,7 +452,7 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 28
+            Layout.preferredHeight: 24
             spacing: 0
 
             Repeater {
@@ -461,7 +468,7 @@ Rectangle {
                 Item {
                     required property var modelData
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 28
+                    Layout.preferredHeight: 24
                     Text {
                         anchors.centerIn: parent
                         text: modelData.t
@@ -508,7 +515,7 @@ Rectangle {
         // 数据加载完算一次就静止，没有 Timer
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 34
+            Layout.preferredHeight: 30
 
             Text {
                 id: todayLine

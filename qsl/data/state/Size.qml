@@ -170,24 +170,50 @@ Singleton {
         readonly property int notifW: Math.round(380 * root.islandScale)
         // 高度见 Island.notifH（count*70+20）
 
-        readonly property int hubTabBarHeight: 80
+        // 图标 24 + 4 + 标签 14 ≈ 55，加指示条一共 64。原来 80 是白留的，
+        // 而它是唯一一个五页都要交的税：省下的 16 每页都拿得到
+        readonly property int hubTabBarHeight: 64
         readonly property int hubContentGap: 10
         readonly property int hubTabSpacing: 15
         readonly property int hubTabIndicatorWidth: 40
         readonly property int hubTabIndicatorHeight: 3
+        // = hubChromeTop(10) + tabBar + gap + hubChromeBottom(12)。
+        // HubContent 和 IslandShell.hubFallbackH 两处都得算这笔，所以收成一个数
+        readonly property int hubChromeH: 10 + hubTabBarHeight + hubContentGap + 12
 
-        readonly property int overviewWidth: 860
-        readonly property int overviewHeight: 520
+        // 第 8 轮：不定统一宽度，但比例要是一家人。
+        //
+        // 高度不是拍的，是倒着算出来的——先量各页内容的最小可用高，再往上留一点。
+        // 上一版凭手感填的数（overview 400 / media 360）比内容还矮，结果待办卡
+        // 被顶出岛外、日历格子压到 27px，数字和农历叠在一起。算式记在各页顶部。
+        //
+        // 加上 hubChromeH 后的整岛宽高比：
+        //   overview 880×548 = 1.61   media 820×544 = 1.51
+        //   wallpaper 880×420 = 2.10  switcher 880×476 = 1.85
+        //   weather 760×636 = 1.20（最高的一页，布局不动）
+        // 别再往 3:1 以上走：卷轴第一版做到 1000×336（4.2:1）就是两条信箱。
+        // 想让页面扁，办法是减内容（卷轴从 7 张减到 5 张）而不是压高度；
+        // 想让页面高，办法是把件放大（switcher 卡 92→140）而不是多塞几行。
+        readonly property int overviewWidth: 880
+        readonly property int overviewHeight: 452
 
-        readonly property int mediaWidth: 760
-        readonly property int mediaHeight: 480
-        readonly property int wallpaperWidth: 860
-        readonly property int wallpaperHeight: 540
+        // 封面 232 + 左边距 24 + 间距 24 + 右边距 16 → 歌词栏 524
+        readonly property int mediaWidth: 820
+        readonly property int mediaHeight: 448
+        // 卷轴一屏 5 张：margins 20 + 头 42 + 间距 8 = 70，剩 254 装 180 高的焦点卡
+        readonly property int wallpaperWidth: 880
+        readonly property int wallpaperHeight: 324
         readonly property int weatherWidth: 760
-        // 旧 540 塞不下 info(220)+分段+预报卡；Hub Loader 还有 margins
-        readonly property int weatherHeight: 580
-        readonly property int switcherWidth: 900
-        readonly property int switcherHeight: 540
+        // 天气页不改布局，允许它做五页里最高的那个（曲线区吃剩下的高）
+        readonly property int weatherHeight: 540
+        readonly property int switcherWidth: 880
+        // 上下留白 8 + 组头 16 + 间距 8 = 32，竖列净高 348；
+        // 按 (140+8) 一张算 = 2.4 张——卡变高但一屏还是 2.5 个窗口左右。
+        // 400 时两个窗口的工作区底下要空 88px，收到 380 只空 36
+        readonly property int switcherHeight: 380
+        // 92 时缩略图区是 188×60（3.1:1），窗口截图被压得认不出来；
+        // 140 → 188×108（1.74:1），基本就是 16:9
+        readonly property int switcherCardHeight: 140
 
         // Overview / powerbar 头像的远程原图。展示请绑 Avatar.source
         // （~/.cache/qsl/avatar.jpg，缓存优先；见 data/service/Avatar.qml）

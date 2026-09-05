@@ -307,6 +307,9 @@ Item {
         function onReadyChanged() { root.repaintHourly() }
     }
 
+    QslStagger { id: stagger }
+    function playEnter() { stagger.restart() }
+
     ColumnLayout {
         id: mainCol
         anchors.fill: parent
@@ -319,6 +322,12 @@ Item {
             Layout.preferredHeight: 176
             Layout.maximumHeight: 176
             spacing: Size.spacing.md
+            opacity: stagger.shown(0) ? 1 : 0
+            transform: Translate {
+                y: stagger.shown(0) ? 0 : 12
+                Behavior on y { Anim { type: Anim.Enter } }
+            }
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
             Rectangle {
                 Layout.fillWidth: true
@@ -628,6 +637,8 @@ Item {
             Layout.preferredHeight: 34
             Layout.maximumHeight: 34
             spacing: Size.spacing.sm
+            opacity: stagger.shown(1) ? 1 : 0
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
 
         Row {
             spacing: 4
@@ -748,6 +759,12 @@ Item {
             radius: root.isHourly ? Size.rounding.lg : 0
             color: root.isHourly ? Color.surfaceContainerHigh : "transparent"
             clip: true
+            opacity: stagger.shown(2) ? 1 : 0
+            transform: Translate {
+                y: stagger.shown(2) ? 0 : 16
+                Behavior on y { Anim { type: Anim.Enter } }
+            }
+            Behavior on opacity { Anim { type: Anim.EffectsSlow } }
             Behavior on color { CAnim {} }
 
             Item {

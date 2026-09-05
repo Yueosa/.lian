@@ -65,6 +65,8 @@ Singleton {
         refreshDelay.restart()
     }
 
+    // Hub 壁纸页不要走这两条：CLI next/prev 会刷新 space，顺序被打乱。
+    // 页内自管 reel，相邻项用 setWallpaper(path)。
     function next() { _runAction(["lianwall", "next"]) }
     function previous() { _runAction(["lianwall", "prev"]) }
     function switchMode() { _runAction(["lianwall", "switch"]) }

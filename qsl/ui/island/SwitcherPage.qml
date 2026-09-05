@@ -13,6 +13,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import qs.Components
 import qs.data.state
 
 FocusScope {
@@ -200,11 +201,20 @@ FocusScope {
         font.pixelSize: Size.fontSize.xl
     }
 
+    QslStagger { id: stagger }
+    function playEnter() { stagger.restart() }
+
     ListView {
         id: hList
         anchors.fill: parent
         anchors.margins: 4
         visible: groups.length > 0
+        opacity: stagger.shown(0) ? 1 : 0
+        transform: Translate {
+            y: stagger.shown(0) ? 0 : 12
+            Behavior on y { Anim { type: Anim.Enter } }
+        }
+        Behavior on opacity { Anim { type: Anim.EffectsSlow } }
         orientation: ListView.Horizontal
         clip: true
         model: root.groups
@@ -284,7 +294,7 @@ FocusScope {
                     required property var modelData
 
                     width: vList.width
-                    height: 124
+                    height: Size.island.switcherCardHeight
 
                     readonly property bool focused: groupCol.groupFocused
                         && index === root.focusItem

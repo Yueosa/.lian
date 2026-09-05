@@ -361,14 +361,71 @@ rail 脉冲试过一次（RailPulse 单例信号 → rail 窗口播动画）无�
 纯数值那几条（wallpaper 页高度、switcher 项高、media 压高）与合并无关，
 任何时候都能顺手做，不必整轮都等着。
 
-- [ ] hub 统一宽度（五页同宽，值待定，约 880）
-- [ ] 高度随 tab 变：morph 曲线从 spatial 改 decel（打开/关闭仍弹）
-- [ ] tab 内容过渡：顺序淡入淡出（旧页 150ms 淡出销毁 → 新页 200ms 淡入），
-      遮住重排期；Loader 策略保持单页存活
-- [ ] wallpaper 页 540 → 约 400（3 行压 2 行，纯改 Size.qml 数值）
-- [ ] switcher 页项高 124 → 约 100，总高收到 440-460
-- [ ] media/overview 压高度（能压多少看内容）；weather 压不动允许接近 4:3
-- [ ] 可选增强：新页淡入时小组件错峰入场（低成本，逐页做）
+- [x] 不定统一宽度（2026-09-05 否决：只把比例往宽银幕收）。
+      **但 2026-09-05 二次修正**：往宽银幕收要有下限。第一版卷轴做到
+      1000×336（4.2:1）、switcher 3.3:1，两条都是信箱。定的规矩是——
+      想让页面扁就减内容（卷轴 7 张 → 5 张），不是压高度；想让页面高就
+      放大件（switcher 卡 92 → 140），不是多塞几行。宽度 overview /
+      wallpaper / switcher 统一 880，media 820、weather 760 各自留着
+- [x] tab 条移到岛顶，高度 80 → 64（唯一五页都交的税，省下的每页都拿得到）
+- [x] 各页高度改成"倒着算"：先量内容最小可用高再往上留。第一版凭手感填的
+      overview 400 / media 360 比内容还矮，屏上是待办卡被顶出岛外、日历格
+      压到 27px（数字压农历）、媒体控件贴着岛底边。算式落在各页文件头
+- [x] 岛尺寸只留一层动画：删掉 `HubContent` 自己的
+      `Behavior on implicitWidth/implicitHeight`。原来是 body(SpatialFast 400ms)
+      追一个自己也在动(Spatial 500ms)的目标，落定 700ms+ 且两条都过冲，
+      观感是橡皮筋；更贵的是尺寸每帧变 → 页内容每帧全量重排（天气页那条
+      Canvas 每帧重画），这就是"天气切出去太卡"的真身。现在隐式尺寸一步到位，
+      只有 body.clip 在动，页只重排一次
+- [x] `hubLoader` 从 centerIn 改顶部对齐：岛吊在屏顶、只有下边在动，居中会让
+      tab 条随高度差上下漂（天气→切换器漂 130px）
+- [x] 子页 Loader 改 `asynchronous`：同步建 OverviewPage 要一次铺 3 个月面板
+      ×42 格 ×4 item，就是切 tab 那下的掉帧
+- [x] 高度随 tab 变：开/关岛 SpatialFast（弹）；切 Tab 在改目标前把
+      `body.morphType` 换成 Enter（decel、不过冲）。两套曲线共用一条
+      Behavior，只换 type
+- [x] tab 内容过渡：`shownIndex` 落后于 `currentIndex`。旧页 Exit 淡出
+      （200ms accel）再换 Loader，新页 EffectsSlow 淡入 + `playEnter()`
+      错峰。单 Loader，不叠两页（天气 Canvas 叠一份会回到卡的老路）
+- [x] Overview 880×452：身份+时钟并排 → 天气横条 → 待办只读可滚，右日历通高。
+      uptime/电量落到身份行；三个平台标签从药丸压成一行小字（永不变化的静态
+      信息不值得占 204px）；地名不显示（放不下且天气页有），空出来的位置给
+      体感 / 湿度 / 紫外线
+- [x] Media 820×448：封面 232 见方、左边距 24；cava 从封面右下角挪到歌词
+      底下通宽一条（30 根柱，宽度跟歌词对齐）；播放器选择器提到整页右上角
+      （低频操作不占正文位，展开才往下掉一列），歌词整块下压 34 给它让路
+- [x] 进度条波形接 cava：整体均值 → 振幅 / 频率 / 副波混乱度，低频 5 根 →
+      播放头那一鼓。相位改 `FrameAnimation` 手动按帧积分（速度要跟能量变，
+      而改正在跑的 `NumberAnimation` 的 duration 会让波形当帧裂一道口）；
+      两路都过 `SmoothedAnimation` 平滑，30fps 原始值直接喂进去是毛刺不是节奏
+- [x] Wallpaper 880×324：卷轴一屏 5 张、焦点卡压邻居（叠压后同宽度能放
+      300 的卡，平铺只能 251）；圆角走 OpacityMask（`clip` 只裁矩形包围盒，
+      图会把圆角盖回方的）；焦点绕圈走，不夹在 [0, n-1]（夹住的话当前壁纸
+      恰好排在末尾时右半屏全空）；本页自管顺序；去 lianwall-gui。
+      焦点卡不加强调色环——大一圈 + 压在邻居上面已经说清楚了
+- [x] Weather 不改布局，高度 580 → 540（曲线区仍有余量，顺手收一点让
+      "天气 ↔ 其他页"的高度差从 330 降到 216）
+- [x] Switcher 880×380，项高 124 → 140（92 时缩略图区 3.1:1，窗口截图认不出来；
+      140 → 1.74:1 接近 16:9），一屏仍是约 2.4 张
+- [x] lianwall「正在切换」事件驱动的切换动画（2026-09-05 撤销）：查过没有这个
+      事件。装的 5.5.1 事件枚举只有 WallpaperChanged / StatusChanged /
+      SpaceUpdated / ConfigChanged / VramChanged / TimePointReached /
+      ScanProgress / Error，`status --json` 里也没有 transitioning 字段；
+      订阅着跑 `lianwall next` 只收到一条 WallpaperChanged（Trigger: ManualNext）
+- [x] 错峰入场：`QslStagger` 36ms 一拍，卡片 `shown(n)` 后走
+      Anim.Enter（位移）+ EffectsSlow（透明度）。五页都接了 `playEnter()`
+- [x] 歌词焦点不再改 `pixelSize`：折行按 26px 排死，焦点只动 scale /
+      颜色 / 透明度，避免动画中途重新换行闪一下
+- [x] Wallpaper ←→ 用 `slideShift` 插值整排（槽位身份不变，不能靠
+      Behavior on x）；Enter 焦点卡 punchScale 1→1.08→1（spatial）
+- [x] 卷轴闪烁（订正两次归因）：先怪过异步加载、又怪过 OpacityMask 每帧重算，
+      都不是。真身是两条——`sourceSize` 绑在动画中的卡宽上（每帧一个新尺寸
+      = 每帧重解一张 4K 图），以及 Repeater 的 model 取的是"焦点周围七格"
+      的切片（焦点一动整批 delegate 换 `source`，等于每步重建七张图）。改成
+      model 给整条 reel（delegate 与壁纸一一对应、`source` 终身不变）+
+      `sourceSize` 定死 `thumbSource`，图只解一次，之后纯变换
+- [x] 快按 ←→ 不跟手：动画排队攒着播。`settleSlide` 改成来新输入就地结算——
+      停掉在飞的那段、`focusIndex` 落到当前视觉位、再从残余位移起新的一段
 
 ## 第 9 轮：架构审计（2026-09-04 新增，原第 7 轮）
 
