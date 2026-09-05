@@ -53,6 +53,9 @@ DECL = re.compile(
 # 只查第一级等于闸门对着最大的一股流量敞开。
 GROUP = re.compile(r"^\s*(?:readonly\s+)?property\s+QtObject\s+(\w+)\s*:\s*QtObject\s*\{")
 
+LOADER_HEAD = re.compile(r"\bLoader\s*\{")
+ACTIVE_DECL = re.compile(r"^\s*active\s*:", re.M)
+
 # Connections { target: X; function onFooChanged() {...} }
 CONN_HEAD = re.compile(r"\bConnections\s*\{")
 TARGET = re.compile(r"\btarget\s*:\s*(?:root\.)?(\w+)\b")
@@ -201,9 +204,9 @@ def public_api(path: Path) -> set[str]:
     return members
 
 
-def connections_blocks(src: str):
-    """产出 (target, body, 起始行号)。花括号配对着数，别拿正则啃嵌套。"""
-    for head in CONN_HEAD.finditer(src):
+def element_blocks(src: str, head_re: re.Pattern):
+    """产出 (body, 起始行号)。花括号配对着数，别拿正则啃嵌套。"""
+    for head in head_re.finditer(src):
         i = head.end() - 1  # 指向那个 {
         depth = 0
         for j in range(i, len(src)):
@@ -212,11 +215,25 @@ def connections_blocks(src: str):
             elif src[j] == "}":
                 depth -= 1
                 if depth == 0:
-                    body = src[i + 1 : j]
-                    t = TARGET.search(body)
-                    if t:
-                        yield t.group(1), body, src[:i].count("\n") + 1
+                    yield src[i + 1 : j], src[:i].count("\n") + 1
                     break
+
+
+def own_lines(body: str) -> str:
+    """只留本层（depth 0）的行，跳过嵌套子元素里的同名属性。"""
+    out, depth = [], 0
+    for line in body.splitlines():
+        if depth == 0:
+            out.append(line)
+        depth += line.count("{") - line.count("}")
+    return "\n".join(out)
+
+
+def connections_blocks(src: str):
+    for body, lineno in element_blocks(src, CONN_HEAD):
+        t = TARGET.search(body)
+        if t:
+            yield t.group(1), body, lineno
 
 
 def _named(m: re.Match) -> str:
@@ -306,6 +323,27 @@ def main() -> int:
                         f"{rel}:{lineno}  Config.{member}  —— 令牌只能走 Size.* / Color.*"
                     )
 
+    # Loader 必须显式声明 active
+    # ------------------------------------------------------------------
+    # 默认 active: true 的意思是「建出来就再也不卸」，而 Loader 存在的理由
+    # 多半正是想控制这个。不写就等于把生命周期交给默认值，且看代码的人
+    # 无从判断这是深思熟虑还是忘了。第 9 轮盘点时 14 处全都写了，这条规则
+    # 是拿来守住这个状态的。
+    #
+    # 真要常驻就写 `active: true` —— 一个字面量而已，但它把「我知道它不卸」
+    # 和「我没想过」区分开了。
+    for path in qml:
+        rel = _rel(path)
+        if rel.startswith(("backend/", "scripts/")):
+            continue
+        src = strip_noise(path.read_text(encoding="utf-8"))
+        for body, lineno in element_blocks(src, LOADER_HEAD):
+            if not ACTIVE_DECL.search(own_lines(body)):
+                findings["生命周期"].append(
+                    f"{rel}:{lineno}  Loader 没写 active —— 默认 true 是"
+                    f"「建了就不卸」，常驻也请写明 active: true"
+                )
+
     # Connections 里的 on<属性>Changed / on<信号名>
     # ------------------------------------------------------------------
     # 上面那轮扫的是 `Service.member` 这种写法，扫不到
@@ -343,11 +381,16 @@ def main() -> int:
                 )
 
     if not findings:
-        print("架构闸门全绿：分层方向、私有成员、令牌入口、接口存在性四项无违规。")
+        print(
+            "架构闸门全绿：分层方向、私有成员、令牌入口、接口存在性、"
+            "生命周期五项无违规。"
+        )
         return 0
 
     total = 0
-    for section in ("分层方向", "接口不存在", "私有成员", "令牌入口"):
+    for section in (
+        "分层方向", "接口不存在", "私有成员", "令牌入口", "生命周期"
+    ):
         items = sorted(set(findings.get(section, [])))
         if not items:
             continue
