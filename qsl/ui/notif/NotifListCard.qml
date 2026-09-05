@@ -11,7 +11,6 @@
 // 性能：清空最多 5 路并行动画且不清行高；单条才收 height；ListView reuseItems
 
 import QtQuick
-import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -323,7 +322,7 @@ Item {
                     return Math.floor(sec / 86400) + " 天前"
                 }
 
-                readonly property string iconSrc: root.sharedState.iconSourceFor(row.entry)
+                readonly property string iconSrc: Notification.iconFor(row.entry)
 
                 ListView.onPooled: resetVisual()
                 ListView.onReused: resetVisual()

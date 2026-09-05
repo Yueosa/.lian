@@ -18,6 +18,7 @@ pragma Singleton
 //   dismiss(id)       关单条（协议 id）
 //   dismissAll()      清空
 //   toggleDnd()
+//   iconFor(entry)    图标 URL，空串表示没有可用图标（UI 兜底成首字母）
 //   release()         关面板清展示数组（server 保持轻量常驻）
 //   signal toastRequested(var payload)  // 一级岛 toast；DnD 时不发
 //     payload: { notifId, title, body, appName, desktopEntry, imagePath }
@@ -27,6 +28,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+// 图标解析走 Icons，见那边的注释
+import qs.data.service
 
 Singleton {
     id: root
@@ -142,6 +145,41 @@ Singleton {
         if (img.indexOf("image://qsimage") === 0)
             return n.appIcon || n.icon || ""
         return img || n.appIcon || n.icon || ""
+    }
+
+    // 上面那个是入库时挑存哪条路径，这个是显示时把它变成能用的 URL。
+    //
+    // 三级回退，只用第一级不够，库里三种失败原因都存在：
+    //   QQ                  传 image://qsimage/424/1 这种进程内句柄，重启即失效
+    //   Discord / Telegram  image_path 干脆是空的
+    //   cursor              传的是图标名 co.anysphere.cursor，本来就能用
+    function iconFor(entry) {
+        if (!entry)
+            return ""
+        const p = String(entry.imagePath || "")
+
+        // /tmp 下的图标活不过重启（Chrome 的 scoped_dir、lya 的 tray 图标都在
+        // 这）：优先主题图标；都没有再转 file://，文件没了由 Image.Error 兜底
+        if (p.indexOf("/tmp/") >= 0) {
+            const abs = p.startsWith("image://icon/") ? p.slice(13) : p
+            return Icons.themeLower(entry.desktopEntry)
+                || Icons.themeLower(entry.appName)
+                || Icons.fromPath(abs)
+        }
+
+        if (p && p.indexOf("image://qsimage") !== 0) {
+            const direct = Icons.fromPath(p)
+            if (direct)
+                return direct
+            // 不转小写：这一级 p 是通知自己给的图标名，大小写按它说的算
+            const byName = Icons.theme(p)
+            if (byName)
+                return byName
+        }
+
+        // 后两级统一转小写：图标主题里的文件名是 qq.png，而 desktopEntry 存的是 "QQ"
+        return Icons.themeLower(entry.desktopEntry)
+            || Icons.themeLower(entry.appName)
     }
 
     function prependLive(n) {

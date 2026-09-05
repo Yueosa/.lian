@@ -9,8 +9,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Services.SystemTray
 import qs.data.state
 import qs.data.service
 
@@ -36,8 +34,8 @@ Item {
             expanded = false
     }
 
-    // 空托盘时整个 chip 消失。不要拿 SystemTray.items.count 做判空——
-    // 它没有 count 属性，判空失败会把 chip 宽度压成 0，
+    // 空托盘时整个 chip 消失。不要拿 TrayService.items.count 做判空——
+    // 它是 SNI 的对象模型，没有 count 属性，判空失败会把 chip 宽度压成 0，
     // 内容左溢盖住旁边的 chip（曾经整排盖住 BT/音频/设置）
     implicitHeight: 36
     implicitWidth: content.implicitWidth > 0 ? content.implicitWidth + 16 : 0
@@ -100,7 +98,7 @@ Item {
                 spacing: Size.spacing.sm
 
                 Repeater {
-                    model: SystemTray.items
+                    model: TrayService.items
 
                     delegate: Item {
                         id: ovSlot
@@ -149,7 +147,7 @@ Item {
 
         // pin 常驻图标
         Repeater {
-            model: SystemTray.items
+            model: TrayService.items
 
             delegate: Item {
                 id: barSlot

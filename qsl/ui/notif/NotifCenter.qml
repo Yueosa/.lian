@@ -9,7 +9,6 @@
 //   收回动画播完才 release + 回应用列表（对齐旧 contentActive 语义，不闪空列表）
 
 import QtQuick
-import Quickshell
 import qs.Components
 import qs.data.state
 import qs.data.service
@@ -43,7 +42,7 @@ RailPage {
         openPage(page)   // open=true 同步触发 onOpenChanged → uiActive=true
         // 缓存先上屏（本地文件，快）；notifctl list 的真数据等派生动画播完再灌。
         // entries 是 var 数组，重新赋值 = ListView 整表重置（delegate 全销毁重建
-        // + 每行三级图标回退里的 Quickshell.iconPath 同步查询重跑一遍）。
+        // + 每行 Notification.iconFor 里的主题图标同步查询重跑一遍）。
         // 开面板时 hydrate/refresh 背靠背来两次，两次整表重置正好压在
         // 容器生长动画上——这是 N 开面板卡顿的主因
         Notification.hydrate()
@@ -152,7 +151,7 @@ RailPage {
                 }
                 g.count += 1
                 if (!g.icon)
-                    g.icon = notifState.iconSourceFor(e)
+                    g.icon = Notification.iconFor(e)
                 if (!g.preview)
                     g.preview = e.summary || ""
                 if (Number(e.receivedAt) > g.latestAt)
@@ -181,51 +180,6 @@ RailPage {
                     return g[i].name
             }
             return ""
-        }
-
-        // 图标三级回退：通知自带 → desktop entry → 应用名。
-        // 只用第一级不够，库里三种失败原因都存在：
-        //   QQ      传 image://qsimage/424/1 这种进程内句柄，重启即失效
-        //   Discord / Telegram  image_path 干脆是空的
-        //   cursor  传的是图标名 co.anysphere.cursor，本来就能用
-        // 后两级统一转小写：图标主题里的文件名是 qq.png，而 desktop_entry 存的是 "QQ"。
-        // 必须先验证图标存不存在：图标 provider 查不到时不会把 Image.status 置为
-        // Error，而是交回一张品红/黑格子的占位图，status 照样是 Ready——
-        // 于是 fallback 永远不触发，界面上直接糊一块格子。
-        // iconPath(name, true) 查不到返回空串，据此提前挡掉。
-        function themeIcon(name) {
-            if (!name)
-                return ""
-            return Quickshell.iconPath(name, true) ? "image://icon/" + name : ""
-        }
-
-        function iconSourceFor(entry) {
-            const p = String(entry.imagePath || "")
-            // /tmp 下的图标活不过重启（Chrome 的 scoped_dir、lya 的 tray 图标都在这）：
-            // 优先主题图标；都没有再转 file://（文件没了由 Image.Error 兜底成首字母）
-            if (p.indexOf("/tmp/") >= 0) {
-                const abs = p.startsWith("image://icon/") ? p.slice(13) : p
-                const dt = notifState.themeIcon(String(entry.desktopEntry || "").toLowerCase())
-                if (dt)
-                    return dt
-                const at = notifState.themeIcon(String(entry.appName || "").toLowerCase())
-                if (at)
-                    return at
-                return abs.startsWith("/") ? "file://" + abs : ""
-            }
-            if (p && p.indexOf("image://qsimage") !== 0) {
-                if (p.startsWith("file://") || p.startsWith("image://"))
-                    return p
-                if (p.startsWith("/"))
-                    return "file://" + p
-                const byName = notifState.themeIcon(p)
-                if (byName)
-                    return byName
-            }
-            const d = notifState.themeIcon(String(entry.desktopEntry || "").toLowerCase())
-            if (d)
-                return d
-            return notifState.themeIcon(String(entry.appName || "").toLowerCase())
         }
 
         function openApp(key) { currentApp = key }

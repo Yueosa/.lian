@@ -27,6 +27,8 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+// 自带 SVG 的应用识别走 Icons，见那边的注释
+import qs.data.service
 import "AppSearch.js" as AppSearch
 import "../service/rowsync.js" as RowSync
 
@@ -157,7 +159,10 @@ Singleton {
     }
 
     function rebuildCatalog() {
-        catalog = ready ? AppSearch.buildCatalog(DesktopEntries, usageMap) : []
+        // Icons.bundledId 得当参数递进去：AppSearch.js 是 .pragma library，够不着单例
+        catalog = ready
+            ? AppSearch.buildCatalog(DesktopEntries, usageMap, Icons.bundledId)
+            : []
         syncRows()
     }
 

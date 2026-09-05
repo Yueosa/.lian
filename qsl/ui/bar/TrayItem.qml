@@ -1,8 +1,7 @@
 // TrayItem — 托盘图标；左键 activate，右键自定义菜单
-// 图标：bundled 社交 SVG → 绝对/file/image → image://icon → Material 回退
+// 图标怎么挑在 TrayService.iconFor / glyphFor，这里只负责画和转发点击
 
 import QtQuick
-import Quickshell
 import qs.data.state
 import qs.data.service
 
@@ -15,10 +14,8 @@ MouseArea {
     // 供 overflow 窗口感知菜单开合：全屏 mask 期间 popup 收不到指针事件
     signal menuToggled(bool open)
 
-    readonly property string trayIconLower: (root.modelData && root.modelData.icon || "").toLowerCase()
-    readonly property string trayIdLower: (root.modelData && root.modelData.id || "").toLowerCase()
-    readonly property string trayTitleLower: (root.modelData && root.modelData.tooltipTitle || "").toLowerCase()
     readonly property string trayKey: root.modelData ? TrayService.itemKey(root.modelData) : ""
+    readonly property string iconSource: TrayService.iconFor(root.modelData)
 
     implicitWidth: 20
     implicitHeight: 20
@@ -26,38 +23,6 @@ MouseArea {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-    function detectBundledAppId() {
-        const haystack = [
-            root.modelData.icon || "",
-            root.modelData.id || "",
-            root.modelData.tooltipTitle || "",
-            root.modelData.title || ""
-        ].join(" ").toLowerCase()
-
-        if (haystack.indexOf("telegram") >= 0)
-            return "telegram"
-        if (haystack.indexOf("wechat") >= 0 || haystack.indexOf("weixin") >= 0)
-            return "wechat"
-        if (haystack.indexOf("discord") >= 0)
-            return "discord"
-        // Electron QQ：id 常为 chrome_status_icon_*，靠 title/tooltip
-        if (haystack.indexOf("linuxqq") >= 0
-                || haystack.indexOf("腾讯") >= 0
-                || (haystack.indexOf("qq") >= 0 && haystack.indexOf("chrome_status_icon") < 0)
-                || (haystack.indexOf("chrome_status_icon") >= 0
-                    && (String(root.modelData.tooltipTitle || root.modelData.title || "").toLowerCase().indexOf("qq") >= 0)))
-            return "qq"
-        return ""
-    }
-
-    function bundledIconPath(appId) {
-        if (!appId)
-            return ""
-        // qsl 无独立 assets；复用生产 quickshell 下的社交 SVG
-        return "file://" + Quickshell.env("HOME")
-            + "/.lian/quickshell/assets/apps/" + appId + ".svg"
-    }
 
     function closeMenu() {
         if (trayMenu.visible)
@@ -125,44 +90,17 @@ MouseArea {
         opacity: root.containsMouse ? 1.0 : 0.88
         Behavior on opacity { Anim { type: Anim.EffectsFast } }
 
-        source: {
-            const appId = root.detectBundledAppId()
-            if (appId)
-                return root.bundledIconPath(appId)
-            const raw = root.modelData.icon
-            if (!raw)
-                return ""
-            if (raw.startsWith("/") || raw.startsWith("file://") || raw.startsWith("image://"))
-                return raw
-            return "image://icon/" + raw
-        }
-
-        onStatusChanged: {
-            // bundled 缺失时回退系统图标
-            if (status === Image.Error) {
-                const raw = root.modelData.icon || ""
-                if (raw && source.indexOf("/assets/apps/") >= 0) {
-                    if (raw.startsWith("/") || raw.startsWith("file://") || raw.startsWith("image://"))
-                        source = raw
-                    else
-                        source = "image://icon/" + raw
-                }
-            }
-        }
+        // 原先这里还挂着一个 onStatusChanged 回退：bundled 图标加载失败就换回
+        // 系统图标。删了——那条回退是给「bundled 路径指向一个不存在的目录」
+        // 兜底的，路径修好之后每次都能加载到，回退再没触发过。
+        source: root.iconSource
     }
 
     Text {
         anchors.centerIn: parent
-        visible: iconImg.status === Image.Error || !root.modelData.icon
-        text: {
-            if (root.trayIconLower.indexOf("fcitx") >= 0
-                    || root.trayIdLower.indexOf("fcitx") >= 0
-                    || root.trayTitleLower.indexOf("fcitx") >= 0)
-                return "keyboard"
-            if (root.trayIconLower.indexOf("network-wired") >= 0)
-                return "lan"
-            return "apps"
-        }
+        // iconFor 交白卷（三级都没命中）或者图片确实加载失败，才显示字形
+        visible: !root.iconSource || iconImg.status === Image.Error
+        text: TrayService.glyphFor(root.modelData)
         color: Color.text
         font.family: Size.fontIcon
         font.pixelSize: Size.fontSize.xl

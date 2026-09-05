@@ -79,6 +79,25 @@ FORBIDDEN = [
 # 所以只有它可以横向 import qs.ui.*。
 UI_AGGREGATOR = "ui/frame/"
 
+# UI 不许自己伸手去够外部世界。每个外部系统只由一个服务单例代理，
+# 这条规则就是那句话的机械形式。
+#
+# 第 9 轮之前 ui/bar 三个文件直连 SystemTray、ui/island 直连 Mpris、
+# ui/bar 直连 Hyprland——同一份「怎么跟 SNI/MPRIS 说话」的知识在 UI 里散了
+# 好几份，还各自漂移（托盘和启动器各写了一份 detectBundledAppId，一份认
+# 「腾讯」一份认「tim」，答案不一样）。收完之后加这条闸门，是为了防止下一次
+# 有人图省事再直接 import 一个回来。
+EXTERNAL_IN_UI = ("Quickshell.Services.", "Quickshell.Io")
+
+# 两处例外，都不是「还没来得及收」，是收了反而更糟：
+EXTERNAL_IN_UI_EXEMPT = {
+    # PamContext 的 start/abort 跟锁屏会话的生命周期绑死，搬进服务就得把
+    # 生命周期也一起搬，而这条路径上出错的代价是把自己锁在外面。
+    "ui/lock/LockContext.qml",
+    # IpcHandler 的 target 是全局唯一的，只能在聚合器里挂一次（理由见该文件开头）。
+    "ui/frame/FramePanels.qml",
+}
+
 
 def strip_noise(text: str) -> str:
     """去掉注释和字符串字面量，免得里面的花括号和引号干扰深度计数。"""
@@ -195,6 +214,15 @@ def main() -> int:
                 findings["分层方向"].append(
                     f"{rel}:{lineno}  import {mod}  —— 面板之间横向依赖，"
                     f"只有 {UI_AGGREGATOR} 可以聚合"
+                )
+            if (
+                rel.startswith("ui/")
+                and rel not in EXTERNAL_IN_UI_EXEMPT
+                and mod.startswith(EXTERNAL_IN_UI)
+            ):
+                findings["分层方向"].append(
+                    f"{rel}:{lineno}  import {mod}  —— UI 直连外部系统，"
+                    f"该由 data/service 下的单例代理"
                 )
 
     for path in consumers:

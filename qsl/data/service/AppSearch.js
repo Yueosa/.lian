@@ -73,8 +73,15 @@ function fuzzySearch(inputText, appName) {
     return false
 }
 
-function detectBundledAppId(app, rawIcon) {
-    const text = [
+// 「这是不是那四个有自带 SVG 的社交应用」由 Icons.bundledId 判，这里只负责把
+// desktop entry 的各个标识字段拼成它要的干草堆。
+//
+// 这个文件是 .pragma library，够不着 QML 单例，所以判定函数由 Apps.qml 传进来
+// （见 buildCatalog 的第三个参数）。原先这儿自己写了一份 detectBundledAppId，
+// 跟 TrayItem 那份同名不同解，而且用裸 indexOf("tim") 认 TIM——于是 Timeshift、
+// OpenJDK Java Run(tim)e 在启动器里全贴了 QQ 的企鹅。
+function appHaystack(app, rawIcon) {
+    return [
         (app.name || ""),
         (app.id || ""),
         (app.desktopId || ""),
@@ -82,16 +89,6 @@ function detectBundledAppId(app, rawIcon) {
         (app.execString || ""),
         (rawIcon || "")
     ].join(" ").toLowerCase()
-
-    if (text.indexOf("telegram") >= 0)
-        return "telegram"
-    if (text.indexOf("wechat") >= 0 || text.indexOf("weixin") >= 0)
-        return "wechat"
-    if (text.indexOf("discord") >= 0)
-        return "discord"
-    if (text.indexOf("linuxqq") >= 0 || text.indexOf("tim") >= 0)
-        return "qq"
-    return ""
 }
 
 function usageCount(usageMap, name) {
@@ -104,7 +101,8 @@ function usageCount(usageMap, name) {
 }
 
 // DesktopEntries → 规范化目录。只在 desktop entries / usage 变化时执行。
-function buildCatalog(DesktopEntries, usageMap) {
+// bundledId：Icons.bundledId，理由见 appHaystack 上面
+function buildCatalog(DesktopEntries, usageMap, bundledId) {
     const apps = DesktopEntries.applications.values
     const result = []
 
@@ -122,7 +120,7 @@ function buildCatalog(DesktopEntries, usageMap) {
             fallbackIcon: normalized.fallbackIcon,
             forceGlyph: normalized.forceGlyph,
             materialGlyph: normalized.glyph,
-            assetAppId: detectBundledAppId(app, rawIcon),
+            assetAppId: bundledId ? bundledId(appHaystack(app, rawIcon)) : "",
             usageCount: usageCount(usageMap, app.name),
             appObj: app
         })

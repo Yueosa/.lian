@@ -1,8 +1,19 @@
 pragma Singleton
 
 // ============================================================
-// 托盘折叠 — TrayService
+// 托盘服务 — TrayService
 // ============================================================
+// SNI（StatusNotifierItem）这一侧只有这里知道。UI 拿 items 当 model，
+// 拿 iconFor / glyphFor 拿显示内容，不再自己 import SystemTray。
+//
+// 对外接口：
+//   items            托盘条目列表（Repeater 直接吃）
+//   isPinned(item)   / inOverflow(item)   常驻还是折叠
+//   iconFor(item)    图标 URL，空串表示没有可用图标（由 glyphFor 兜底）
+//   glyphFor(item)   Material 字形名，图标不可用时显示
+//   setPinned / togglePin 及 *Key / *Item 变体
+//   pinSignature / revision   pin 布局变了会变，UI 据此重算
+//
 // QQ 与 Cursor 的 SNI Id 都是 chrome_status_icon_1，itemKey 必须带 icon/menu
 // 写盘用 Process；suppressLoad 防止 onLoaded 回滚
 // ============================================================
@@ -11,12 +22,18 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.SystemTray
+// 图标解析走 Icons，见那边的注释
+import qs.data.service
 
 Singleton {
     id: root
 
     readonly property string cacheDir: Quickshell.env("HOME") + "/.cache/qsl"
     readonly property string filePath: cacheDir + "/tray.json"
+
+    // UI 的 model。别在这儿做过滤——isPinned / inOverflow 是按条目问的，
+    // 过滤成两个数组会让 Repeater 在 pin 变动时整体重建（图标重新解码）。
+    readonly property var items: SystemTray.items
 
     // QQ / Cursor 同为 chrome_status_icon_1：一并常驻（暂不拆分）
     readonly property var defaultPatterns: [
@@ -63,6 +80,41 @@ Singleton {
         ].join(" ").toLowerCase()
     }
 
+    // ============================================================
+    // 显示：图标与字形
+    // ============================================================
+    // 三级：自带 SVG → 条目自己给的 URL/路径 → 主题图标。都拿不到交回空串，
+    // UI 那边转去显示 glyphFor 的字形。
+    //
+    // 顺序不能换。自带 SVG 排最前是因为这几个应用给的图标本来就不能看
+    // （Electron QQ 给的是进程内句柄，重启就失效）；主题图标排最后是因为
+    // 它最不准——SNI 的 icon 字段常常是个在本机主题里根本不存在的名字。
+    function iconFor(item) {
+        if (!item)
+            return ""
+        const bundled = Icons.bundled(Icons.bundledId(root.itemHaystack(item)))
+        if (bundled)
+            return bundled
+        const raw = String(item.icon || "")
+        if (!raw.length)
+            return ""
+        const asPath = Icons.fromPath(raw)
+        if (asPath)
+            return asPath
+        return Icons.theme(raw) || Icons.themeLower(raw)
+    }
+
+    // iconFor 交白卷时显示什么。输入法要看得出是输入法，网络要看得出是网络，
+    // 其余一律 apps——不认识的托盘项长一个样比乱猜一个图标强。
+    function glyphFor(item) {
+        const hay = root.itemHaystack(item)
+        if (hay.indexOf("fcitx") >= 0)
+            return "keyboard"
+        if (hay.indexOf("network-wired") >= 0)
+            return "lan"
+        return "apps"
+    }
+
     function matchesCollapse(item) {
         const hay = root.itemHaystack(item)
         if (!hay.length)
@@ -84,14 +136,14 @@ Singleton {
             if (hay.indexOf(root.defaultPatterns[i]) >= 0)
                 return true
         }
+        // 名字里带 QQ / 腾讯 但 Id 不在 defaultPatterns 里的（换过包名、装了别的
+        // 分支版本）也一并常驻。
+        //
+        // 这后面原本还有一段「Id 含 chrome_status_icon 时再查 qq/tim/opt」——
+        // 是死代码：chrome_status_icon 本身就在 defaultPatterns 里，上面那个
+        // 循环已经先返回 true 了，永远走不到。删掉。
         const title = String((item && (item.tooltipTitle || item.title)) || "").toLowerCase()
-        if (title.indexOf("qq") >= 0 || title.indexOf("腾讯") >= 0)
-            return true
-        if (String(item.id || "").toLowerCase().indexOf("chrome_status_icon") >= 0) {
-            if (hay.indexOf("qq") >= 0 || hay.indexOf("tim") >= 0 || hay.indexOf("/opt/qq") >= 0)
-                return true
-        }
-        return false
+        return title.indexOf("qq") >= 0 || title.indexOf("腾讯") >= 0
     }
 
     function isListed(item) {
