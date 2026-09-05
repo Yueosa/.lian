@@ -11,6 +11,7 @@
 // 性能：清空最多 5 路并行动画且不清行高；单条才收 height；ListView reuseItems
 
 import QtQuick
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -129,9 +130,9 @@ Item {
                     height: appRow.height - 4
                     y: 2
                     radius: Size.rounding.lg
-                    color: appMa.containsMouse
-                        ? Color.withAlpha(Color.surfaceContainerHighest, 0.7)
-                        : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+                    color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+
+                    QslStateLayer { source: appMa }
 
                     Rectangle {
                         id: appIconBox
@@ -365,9 +366,11 @@ Item {
                     width: parent.width
                     height: row.height
                     radius: Size.rounding.lg
-                    color: rowMa.containsMouse || row.expanded
-                        ? Color.withAlpha(Color.surfaceContainerHighest, 0.7)
-                        : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+                    color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+
+                    // 展开的那条一直亮着，且比悬停重一档——原来两者同色，
+                    // 鼠标划过去时分不清哪条是展开的
+                    QslStateLayer { source: rowMa; selected: row.expanded }
 
                     // anchors 布局：避免 RowLayout/ColumnLayout 把子项纵向撑开贴底
                     readonly property int pad: Size.spacing.md

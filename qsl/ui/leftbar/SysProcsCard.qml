@@ -126,9 +126,14 @@ Item {
                     height: 30
                     width: fl.implicitWidth + 18
                     radius: Size.rounding.full
-                    color: selected
-                        ? Color.withAlpha(Color.primary, 0.18)
-                        : (fMa.containsMouse ? Color.withAlpha(Color.text, 0.06) : "transparent")
+                    color: "transparent"
+
+                    QslStateLayer {
+                        source: fMa
+                        selected: parent.selected
+                        tint: parent.selected ? Color.primary : Color.text
+                        accent: parent.selected
+                    }
                     Text {
                         id: fl
                         anchors.centerIn: parent
@@ -214,9 +219,9 @@ Item {
                 width: ListView.view ? ListView.view.width : 0
                 height: 44
                 radius: Size.rounding.md
-                color: rowMa.containsMouse
-                    ? Color.withAlpha(Color.primary, 0.12)
-                    : Color.surface
+                color: Color.surface
+
+                QslStateLayer { source: rowMa; tint: Color.primary; accent: true }
 
                 readonly property int pid: Number(modelData.pid) || 0
                 readonly property int uid: (modelData.uid !== undefined) ? Number(modelData.uid) : 1000
@@ -314,7 +319,10 @@ Item {
                 width: parent.width
                 height: 36
                 radius: Size.rounding.sm
-                color: termMa.containsMouse ? Color.withAlpha(Color.text, 0.08) : "transparent"
+                color: "transparent"
+
+                QslStateLayer { source: termMa }
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
@@ -339,9 +347,15 @@ Item {
                 height: 36
                 radius: Size.rounding.sm
                 opacity: root.menuUid >= 1000 ? 1 : 0.4
-                color: killMa.containsMouse && root.menuUid >= 1000
-                    ? Color.withAlpha(Color.error, 0.15)
-                    : "transparent"
+                color: "transparent"
+
+                // 破坏性操作，叠加色换成 error；非用户进程不给反馈
+                QslStateLayer {
+                    source: killMa
+                    active: root.menuUid >= 1000
+                    tint: Color.error
+                    accent: true
+                }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left

@@ -220,10 +220,10 @@ Item {
                     implicitWidth: forgetLbl.implicitWidth + Size.spacing.md
                     implicitHeight: 24
                     radius: Size.rounding.full
-                    color: forgetMa.containsMouse
-                        ? Color.withAlpha(Color.error, 0.18)
-                        : "transparent"
-                    Behavior on color { CAnim {} }
+                    color: "transparent"
+
+                    // 破坏性操作，叠加色换成 error
+                    QslStateLayer { source: forgetMa; tint: Color.error; accent: true }
 
                     Text {
                         id: forgetLbl

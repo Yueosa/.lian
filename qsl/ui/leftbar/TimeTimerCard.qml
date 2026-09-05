@@ -5,6 +5,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.service
 import qs.data.state
 
@@ -88,7 +89,8 @@ Item {
                     Rectangle {
                         required property var modelData
                         Layout.fillWidth: true; Layout.preferredHeight: 28; radius: Size.rounding.sm
-                        color: cdMa.containsMouse ? Color.withAlpha(Color.primary, 0.15) : Color.withAlpha(Color.text, 0.06)
+                        color: Color.withAlpha(Color.text, 0.06)
+                        QslStateLayer { source: cdMa; tint: Color.primary; accent: true }
                         Text { anchors.centerIn: parent; text: modelData.label; color: cdMa.containsMouse ? Color.primary : Color.textMuted; font.pixelSize: Size.fontSize.xsm; font.bold: cdMa.containsMouse }
                         MouseArea { id: cdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Timers.startCountdown(modelData.secs) }
                     }

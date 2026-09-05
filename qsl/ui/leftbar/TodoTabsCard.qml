@@ -131,8 +131,9 @@ Item {
                         width: 32
                         height: 32
                         radius: Size.rounding.sm
-                        color: newTagMa.containsMouse
-                            ? Color.surfaceContainerHighest : Color.surfaceContainerHigh
+                        color: Color.surfaceContainerHigh
+
+                        QslStateLayer { source: newTagMa }
 
                         Text {
                             anchors.centerIn: parent

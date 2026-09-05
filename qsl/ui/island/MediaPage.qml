@@ -620,12 +620,18 @@ Item {
             anchors.top: parent.top
             height: parent.height
             radius: Size.rounding.full
-            color: playerChipMa.containsMouse || root.playerExpanded
-                ? Color.withAlpha(Color.primary, 0.18)
-                : Color.surfaceContainerHigh
+            color: Color.surfaceContainerHigh
 
             Behavior on color {
                 CAnim {}
+            }
+
+            // 展开时保持强调态：「这一列是开着的」不随鼠标走
+            QslStateLayer {
+                source: playerChipMa
+                tint: Color.primary
+                accent: true
+                selected: root.playerExpanded
             }
 
             RowLayout {
@@ -684,8 +690,13 @@ Item {
                     // 底色必须是不透明的：这一列浮在歌词上面，半透明会透字
                     color: modelData === Media.active
                         ? Color.primary
-                        : (rowMa.containsMouse ? Color.surfaceContainerHighest
-                                               : Color.surfaceContainerHigh)
+                        : Color.surfaceContainerHigh
+
+                    // 当前项已经是实心 primary，再叠一层只会把上面的字糊掉
+                    QslStateLayer {
+                        source: rowMa
+                        active: modelData !== Media.active
+                    }
 
                     Text {
                         anchors.fill: parent
@@ -730,10 +741,17 @@ Item {
             if (primary)
                 return Color.primary
             if (active)
-                return Color.withAlpha(Color.primary, 0.25)
-            return ma.containsMouse ? Color.surfaceContainerHighest : Color.surfaceContainerHigh
+                return Color.withAlpha(Color.primary, Color.state.selected)
+            return Color.surfaceContainerHigh
         }
         opacity: enabled ? 1 : 0.35
+
+        // 主键底色是实心 primary，叠加得用 on-primary 才看得见
+        QslStateLayer {
+            source: ma
+            active: btn.enabled
+            tint: btn.primary ? Color.primaryText : Color.text
+        }
 
         Text {
             anchors.centerIn: parent

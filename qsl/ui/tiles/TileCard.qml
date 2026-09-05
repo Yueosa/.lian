@@ -155,16 +155,20 @@ Item {
                 height: root.s ? root.s.tileH : 88
                 radius: Size.rounding.md
 
+                // 「开着」是持久状态，用底色表达；悬停另外叠一层
                 color: tile.on
-                    ? Color.withAlpha(Color.primary, 0.18)
-                    : (ma.containsMouse
-                        ? Color.withAlpha(Color.text, 0.08)
-                        : Color.withAlpha(Color.text, 0.04))
+                    ? Color.withAlpha(Color.primary, Color.state.selected)
+                    : Color.withAlpha(Color.text, 0.04)
 
                 border.width: tile.selected ? 2 : 0
                 border.color: Color.withAlpha(Color.primary, 0.7)
 
                 Behavior on color { CAnim {} }
+
+                QslStateLayer {
+                    source: ma
+                    tint: tile.on ? Color.primary : Color.text
+                }
 
                 Column {
                     anchors.centerIn: parent

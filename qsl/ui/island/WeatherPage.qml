@@ -1191,7 +1191,13 @@ Item {
                     width: searchCol.width
                     height: 28
                     radius: Size.rounding.sm
-                    color: geoMa.containsMouse ? Color.withAlpha(Color.primary, 0.15) : Color.surface
+                    color: Color.surface
+
+                    QslStateLayer {
+                        source: geoMa
+                        tint: Color.primary
+                        accent: true
+                    }
 
                     Text {
                         anchors.fill: parent

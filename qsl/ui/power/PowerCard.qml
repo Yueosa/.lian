@@ -85,14 +85,20 @@ Item {
                     anchors.fill: parent
                     radius: width / 2
                     visible: !cell.isAvatar
-                    color: cell.isArmed
-                        ? Color.error
-                        : (cell.selected || ma.containsMouse
-                            ? Color.withAlpha(Color.primary, 0.18)
-                            : "transparent")
+                    color: cell.isArmed ? Color.error : "transparent"
                     border.width: cell.selected ? 2 : 0
                     border.color: Color.primary
                     Behavior on color { CAnim {} }
+
+                    // 待确认态已是实心红，不再叠。键盘选中和鼠标悬停都要出反馈：
+                    // 这一排既能用方向键走，也能直接点
+                    QslStateLayer {
+                        source: ma
+                        active: !cell.isArmed
+                        tint: Color.primary
+                        accent: true
+                        selected: cell.selected
+                    }
                 }
 
                 Text {

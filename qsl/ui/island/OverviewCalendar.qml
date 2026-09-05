@@ -10,6 +10,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -119,9 +120,16 @@ Rectangle {
         Layout.preferredWidth: 36
         Layout.preferredHeight: 36
         radius: width / 2
-        color: navMa.containsMouse ? Color.withAlpha(Color.primary, 0.18) : Color.surfaceContainerHighest
+        color: Color.surfaceContainerHighest
         opacity: root.animating ? 0.5 : 1
         Behavior on color { CAnim {} }
+
+        QslStateLayer {
+            source: navMa
+            active: !root.animating
+            tint: Color.primary
+            accent: true
+        }
 
         // 填满整个圆再居中，而不是让 Text 的紧包围盒去居中——
         // 字形本身的左右边距不对称，包围盒居中看着就是偏的

@@ -174,10 +174,15 @@ Item {
                 && Network.wifiConnected
                 && !Network.ethernetConnected
             radius: Size.rounding.full
-            color: portalMa.containsMouse
-                ? Color.withAlpha(Color.primary, 0.28)
-                : Color.withAlpha(Color.primary, 0.18)
+            // 静息就带底色——这条只在需要登录时长出来，本身就是在喊人点它
+            color: Color.withAlpha(Color.primary, Color.state.selected)
             Behavior on color { CAnim {} }
+
+            QslStateLayer {
+                source: portalMa
+                tint: Color.primary
+                accent: true
+            }
 
             Text {
                 anchors.centerIn: parent

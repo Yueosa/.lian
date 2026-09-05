@@ -169,9 +169,9 @@ Item {
                 width: ListView.view ? ListView.view.width : 0
                 height: 52
                 radius: Size.rounding.md
-                color: delegateMa.containsMouse
-                    ? Color.withAlpha(Color.text, 0.04)
-                    : Color.surface
+                color: Color.surface
+
+                QslStateLayer { source: delegateMa }
 
                 MouseArea {
                     id: delegateMa

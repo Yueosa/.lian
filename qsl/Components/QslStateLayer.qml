@@ -15,10 +15,12 @@
 //
 // 圆角默认跟着宿主走。宿主不是 Rectangle（没有 radius）时自己给。
 //
-// 不适用的情形——这三类别硬套，它们不是状态层：
-//   · 悬停时前景变语义色（删除键变红）——那是在说「这个动作是危险的」
+// 不适用的情形——这几类别硬套，它们不是状态层：
+//   · 悬停时**前景**变色（图标/文字转 primary、删除键转 error）——状态层管的是
+//     底，这类改的是字。全树剩的 7 处手写 hover 全是这一类，是对的，别去动。
 //   · 悬停才显形的隐藏操作（opacity 0 → 1）——那是在说「这里还有东西」
-//   · 选中态：用 selected 属性，它不随鼠标走
+//   · 锁屏（ui/lock）——它浮在模糊壁纸上，用的是写死的白色而非主题色，
+//     这里的透明度档是照暗色面调的，套过去偏亮
 
 import QtQuick
 import qs.data.state
@@ -58,8 +60,12 @@ Rectangle {
     // 宿主是 Rectangle 就跟它的圆角，否则调用方自己给
     radius: parent && parent.radius !== undefined ? parent.radius : 0
     color: Color.withAlpha(root.tint, root._alpha)
-    // 纯装饰层，不能吃掉宿主的点击
-    z: 1
+
+    // z 保持默认 0，**靠声明顺序压在内容下面**——所以它必须写在文字/图标
+    // 那些兄弟节点前面。
+    //
+    // 别想着用 z: -1 躲开这个约束：QML 的渲染顺序是「z<0 的子项 → 本体 →
+    // z>=0 的子项」，负 z 会跑到宿主自己的填充色底下，直接看不见。
 
     Behavior on color {
         CAnim { type: CAnim.Theme }

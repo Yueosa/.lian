@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import qs.Components
 import qs.data.state
 import qs.data.service
 
@@ -181,9 +182,9 @@ PopupWindow {
                     width: 28
                     height: 28
                     radius: Size.rounding.sm
-                    color: backMa.containsMouse
-                        ? Color.withAlpha(Color.primary, 0.15)
-                        : "transparent"
+                    color: "transparent"
+
+                    QslStateLayer { source: backMa; tint: Color.primary; accent: true }
 
                     Text {
                         text: "arrow_back"
@@ -222,10 +223,10 @@ PopupWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     radius: Size.rounding.sm
-                    color: pinMa.containsMouse
-                        ? Color.withAlpha(Color.primary, 0.15)
-                        : "transparent"
+                    color: "transparent"
                     visible: root.trayKey.length > 0
+
+                    QslStateLayer { source: pinMa; tint: Color.primary; accent: true }
 
                     RowLayout {
                         anchors.fill: parent
@@ -351,10 +352,14 @@ PopupWindow {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: isSeparator ? 9 : 36
                                 radius: Size.rounding.sm
-                                color: (itemMa.containsMouse && !isSeparator)
-                                    ? Color.withAlpha(Color.primary, 0.15)
-                                    : "transparent"
-                                Behavior on color { CAnim {} }
+                                color: "transparent"
+
+                                QslStateLayer {
+                                    source: itemMa
+                                    active: !menuItem.isSeparator
+                                    tint: Color.primary
+                                    accent: true
+                                }
 
                                 Rectangle {
                                     visible: menuItem.isSeparator

@@ -300,12 +300,18 @@ Item {
                         radius: height / 2
                         color: root.restartArmed
                             ? Color.withAlpha(Color.error, 0.9)
-                            : (restartHover.containsMouse ? Color.surfaceContainerHighest : "transparent")
+                            : "transparent"
                         border.width: root.restartArmed ? 0 : 1
                         border.color: Color.withAlpha(Color.outlineVariant, 0.6)
 
                         Behavior on width {
                             Anim { type: Anim.SpatialFast }
+                        }
+
+                        // 待确认态底色已经是实心红，不再叠
+                        QslStateLayer {
+                            source: restartHover
+                            active: !root.restartArmed
                         }
 
                         Text {

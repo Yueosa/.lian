@@ -39,9 +39,9 @@ Item {
             Layout.preferredHeight: 32
             visible: Layout.preferredWidth > 0
             radius: Size.rounding.full
-            color: backMa.containsMouse
-                ? Color.withAlpha(Color.primary, 0.18)
-                : "transparent"
+            color: "transparent"
+
+            QslStateLayer { source: backMa; tint: Color.primary; accent: true }
 
             Behavior on Layout.preferredWidth {
                 Anim { type: Anim.SpatialFast }
@@ -76,9 +76,9 @@ Item {
         Rectangle {
             width: 32; height: 32
             radius: Size.rounding.full
-            color: dndMa.containsMouse
-                ? Color.withAlpha(Color.primary, 0.18)
-                : "transparent"
+            color: "transparent"
+
+            QslStateLayer { source: dndMa; tint: Color.primary; accent: true }
 
             Text {
                 anchors.centerIn: parent
@@ -100,9 +100,10 @@ Item {
         Rectangle {
             width: 32; height: 32
             radius: Size.rounding.full
-            color: clearMa.containsMouse
-                ? Color.withAlpha(Color.error, 0.18)
-                : "transparent"
+            color: "transparent"
+
+            // 破坏性操作，叠加色换成 error
+            QslStateLayer { source: clearMa; tint: Color.error; accent: true }
 
             Text {
                 anchors.centerIn: parent
