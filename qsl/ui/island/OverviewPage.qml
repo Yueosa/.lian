@@ -7,16 +7,16 @@
 //   右栏  日历 436（内部预算见 OverviewCalendar 顶部）
 // 改这里的数之前先把两栏的和重算一遍——比内容矮就会有卡片被顶出岛外。
 //
-// 性能：hostname/uptime 是 oneshot Process；电量读 Battery 单例。
-// 聚合区全部读现成单例（Notification.count / Todo.count / Timers.*），
-// 本页不新建 Timer、不做轮询。切 Tab 随 Loader 整体销毁。
+// 性能：本页不起进程、不建 Timer、不做轮询，全部读现成单例
+// （Sysmon.hostname / uptimeText、Battery、Notification.count、Todo.count、
+// Timers.*）。切 Tab 随 Loader 整体销毁。
+// hostname/uptime 原先是本页自起的 oneshot Process，第 9 轮搬进 Sysmon。
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
-import Quickshell.Io
 import qs.Components
 import qs.data.state
 import qs.data.service
@@ -24,8 +24,11 @@ import qs.data.service
 Item {
     id: root
 
-    property string hostname: "localhost"
-    property string uptimeText: "—"
+    readonly property string hostname: Sysmon.hostname || "localhost"
+    // Sysmon.uptimeText 不带前缀（系统页那边是单独一格标签），这儿要拼进身份行
+    readonly property string uptimeText: Sysmon.uptimeSecs > 0
+        ? "up " + Sysmon.uptimeText
+        : "—"
 
     readonly property string userName: Quickshell.env("USER") || "user"
     readonly property string avatarLetter: userName.length > 0
@@ -144,40 +147,7 @@ Item {
         return "夜安"
     }
 
-    function formatUptime(secs) {
-        const s = Math.max(0, Math.floor(Number(secs) || 0))
-        const d = Math.floor(s / 86400)
-        const h = Math.floor((s % 86400) / 3600)
-        const m = Math.floor((s % 3600) / 60)
-        if (d > 0)
-            return "up " + d + "d " + h + "h"
-        if (h > 0)
-            return "up " + h + "h " + m + "m"
-        return "up " + m + "m"
-    }
-
-    function applySysinfo(text) {
-        const lines = String(text || "").trim().split("\n")
-        if (lines.length >= 1 && lines[0].trim().length)
-            hostname = lines[0].trim()
-        if (lines.length >= 2)
-            uptimeText = formatUptime(lines[1].trim())
-    }
-
-    Component.onCompleted: sysProc.running = true
-
-    Process {
-        id: sysProc
-        command: [
-            "sh", "-c",
-            "printf '%s\\n' \"$(cat /etc/hostname 2>/dev/null)\" "
-            + "\"$(cut -d. -f1 /proc/uptime 2>/dev/null)\""
-        ]
-        stdout: StdioCollector {
-            id: sysOut
-            onStreamFinished: root.applySysinfo(sysOut.text)
-        }
-    }
+    Component.onCompleted: Sysmon.refreshBasics()
 
     component StatPill: Rectangle {
         property string text: ""

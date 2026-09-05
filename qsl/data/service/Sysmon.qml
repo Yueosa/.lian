@@ -82,6 +82,42 @@ Singleton {
 
     readonly property string uptimeText: formatUptime(uptimeSecs)
 
+    // ---- 基础信息：主机名与开机时长 ----
+    // 这两个不走 sysmond。Overview 只想在身份行末尾显示一句「up 3d 5h」，为此把
+    // 守护进程拉起来不划算——它一起来就持续采 CPU/GPU/网络，GPU 那档每次还 fork
+    // 一个 nvidia-smi。而这两个值一个几乎不变、一个单调递增，读一次就够。
+    //
+    // 第 9 轮从 ui/island/OverviewPage.qml 搬来的：那里自己起了个 Process 读
+    // /etc/hostname 和 /proc/uptime，还抄了一份逐字相同的 formatUptime。
+    property string hostname: ""
+
+    function refreshBasics() {
+        basicsProc.running = true
+    }
+
+    Process {
+        id: basicsProc
+        command: [
+            "sh", "-c",
+            "printf '%s\\n' \"$(cat /etc/hostname 2>/dev/null)\" "
+            + "\"$(cut -d. -f1 /proc/uptime 2>/dev/null)\""
+        ]
+        stdout: StdioCollector {
+            id: basicsOut
+            onStreamFinished: {
+                const lines = String(basicsOut.text || "").trim().split("\n")
+                if (lines.length >= 1 && lines[0].trim().length)
+                    root.hostname = lines[0].trim()
+                // daemon 在跑的话它给的更新，别用一次性读的值盖掉
+                if (lines.length >= 2 && !root.snapWatching) {
+                    const secs = Number(lines[1].trim())
+                    if (secs > 0)
+                        root.uptimeSecs = secs
+                }
+            }
+        }
+    }
+
     // 原始列表；筛选/排序留给 UI，避免服务层绑死视图状态
     property var processes: []
 
