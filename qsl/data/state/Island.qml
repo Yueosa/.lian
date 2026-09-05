@@ -13,7 +13,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import qs.data.service
 
 Singleton {
@@ -109,26 +108,13 @@ Singleton {
     // 合并框窗改用 OnDemand + HyprlandFocusGrab 之后就不需要了——grab 从不抢
     // 应用焦点，自然没有归还这回事。第 7 轮 A / Z / X 三个独立窗全部搬进框窗，
     // 最后一个用户（WebSearch）也废掉了，于是整段（含 focusRestoreDelay）删掉。
-    // 下面的 hyprEval / hyprFocusWindow 留着：Switcher 跳窗在用
-
-    // Hyprland Lua：Hyprland.dispatch("focuswindow …") 会变成
-    // hl.dispatch(focuswindow …) 无引号而炸；走 hyprctl eval + hl.dsp
-    function hyprEval(luaExpr) {
-        Quickshell.execDetached(["hyprctl", "eval", luaExpr])
-    }
-
-    function hyprFocusWindow(addr) {
-        const a = _normAddr(addr)
-        if (!a.length)
-            return
-        hyprEval("hl.dispatch(hl.dsp.focus({window='" + a + "'}))")
-    }
-
-    function hyprFocusWorkspace(wsId) {
-        if (wsId === null || wsId === undefined || isNaN(Number(wsId)))
-            return
-        hyprEval("hl.dispatch(hl.dsp.focus({workspace=" + Number(wsId) + "}))")
-    }
+    // 原来这儿还有 hyprEval / hyprFocusWindow / hyprFocusWorkspace 三个函数。
+    // 第 9 轮搬进 data/service/HyprService.qml：那是在起进程驱动窗口管理器，
+    // 状态层不该干这个。搬走之前启动器为了拉起应用得来调 Island.hyprEval()——
+    // 启动器和岛没有半点关系，它够到这儿只是因为没有别的地方能拿到这个能力。
+    //
+    // 岛这边留下的是「选中一个窗之后岛要做什么」：收岛、压一拍、再派发。
+    // 「怎么跟 Hyprland 说话」在服务里。
 
     // —— Switcher 跳窗 ——
     // 焦点目标写在单例：壳层 Enter 可用；Timer 也必须在单例（closeHub 会拆掉页面）。
@@ -141,13 +127,6 @@ Singleton {
     property var _pendingToplevel: null
     property bool _activating: false
 
-    function _normAddr(addr) {
-        let a = String(addr || "")
-        if (a.length > 0 && !a.startsWith("0x"))
-            a = "0x" + a
-        return a
-    }
-
     function _normWsId(wsId) {
         if (wsId === undefined || wsId === null || isNaN(Number(wsId)))
             return null
@@ -156,7 +135,7 @@ Singleton {
 
     function setSwitcherTarget(wsId, addr, toplevel) {
         switcherWsId = _normWsId(wsId)
-        switcherAddr = _normAddr(addr)
+        switcherAddr = String(addr || "")
         switcherToplevel = toplevel || null
     }
 
@@ -172,7 +151,7 @@ Singleton {
 
     function activateWindow(wsId, addr, toplevel) {
         const id = _normWsId(wsId)
-        const a = _normAddr(addr)
+        const a = String(addr || "")
         const top = toplevel || null
 
         if (id === null && a.length === 0 && !top)
@@ -194,19 +173,11 @@ Singleton {
         interval: 100
         repeat: false
         onTriggered: {
-            const t = root._pendingToplevel
-            if (t) {
-                try {
-                    if (t.wayland)
-                        t.wayland.activate()
-                    else if (t.activate)
-                        t.activate()
-                } catch (e) {}
-            }
+            HyprService.activateToplevel(root._pendingToplevel)
             if (root._pendingWsId !== null)
-                root.hyprFocusWorkspace(root._pendingWsId)
+                HyprService.focusWorkspace(root._pendingWsId)
             if (root._pendingAddr.length > 0)
-                root.hyprFocusWindow(root._pendingAddr)
+                HyprService.focusWindow(root._pendingAddr)
 
             root._pendingWsId = null
             root._pendingAddr = ""

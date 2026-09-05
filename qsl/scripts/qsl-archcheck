@@ -62,7 +62,17 @@ FORBIDDEN = [
     ("data/", "qs.Components", "数据层依赖通用件层，Components 是给 UI 用的"),
     ("Components/", "qs.data.service", "通用件知道了业务，换个项目就搬不走"),
     ("Components/", "qs.ui.", "通用件依赖具体面板，等于不通用"),
-    ("data/state/", "qs.data.service", "状态层依赖服务层，两层的启动顺序会互相咬"),
+    # 两个数据层的先后：service 在下，state 在上。
+    #
+    # 服务只认识外部世界（NM、BlueZ、Pipewire、Hyprland……），不认识本壳有几个
+    # 面板、主题是深是浅——它是四层里最独立的一层，所以放最底下。状态层反过来
+    # 是「这个壳此刻的样子」，天然要读服务：岛要知道有没有播放器在放
+    # （Island→Media.active），要跳窗就得会跟 Hyprland 说话（Island→HyprService）。
+    #
+    # 定这个方向的直接原因是第 9 轮建 HyprService：派发窗口焦点那几个函数原先
+    # 寄居在 Island 里，搬进服务之后 Island 必然依赖它。既然这条边是设计出来的，
+    # 就不该让闸门红着——红的应该是反过来那条。
+    ("data/service/", "qs.data.state", "服务层依赖状态层，方向反了；服务不该知道壳长什么样"),
 ]
 
 # ui/frame 是框窗聚合器，它的本职就是把各个面板装进同一个 surface，

@@ -22,6 +22,7 @@
 import QtQuick
 import Quickshell
 import qs.Components
+import qs.data.service
 import qs.data.state
 import qs.data.launcher
 
@@ -217,17 +218,16 @@ RailPage {
             const entry = app.appObj
             const argv = appState.cleanCommand(entry.command)
             const desktopId = String(entry.id || "").replace(/\.desktop$/, "")
-            const viaHypr = String(Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "").length > 0
+            const viaHypr = HyprService.available
             let launched = false
 
             // 用解析后的 command。不要 execute() 假成功，也不要把 Exec
             // 原样丢给 bash（%U 会变成字面参数）。
-            // hyprctl dispatch exec 在 Lua 配置里会变成 hl.dispatch(exec …)
-            // 直接炸（Island.hyprEval 那段同病）；立即执行走 hl.exec_cmd。
+            // 在 Hyprland 下要让它自己 exec，否则新窗口的工作区归属会乱；
+            // 拼 Lua 那一层的坑（dispatch 丢引号）收在 HyprService 里了。
             if (argv.length > 0) {
                 if (viaHypr)
-                    Island.hyprEval("hl.exec_cmd([=["
-                        + appState.shellJoin(argv) + "]=])")
+                    HyprService.execCmd(appState.shellJoin(argv))
                 else
                     Quickshell.execDetached(argv)
                 launched = true
@@ -236,7 +236,7 @@ RailPage {
             } else if (desktopId.length > 0) {
                 const line = "gtk-launch " + appState.shellQuote(desktopId)
                 if (viaHypr)
-                    Island.hyprEval("hl.exec_cmd([=[" + line + "]=])")
+                    HyprService.execCmd(line)
                 else
                     Quickshell.execDetached(["gtk-launch", desktopId])
                 launched = true

@@ -11,9 +11,9 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs.Components
+import qs.data.service
 import qs.data.state
 
 FocusScope {
@@ -22,32 +22,7 @@ FocusScope {
     property int focusGroup: 0
     property int focusItem: 0
 
-    // 只含有窗口的工作区；组内按 address 稳定排序
-    readonly property var groups: {
-        const out = []
-        const wss = Hyprland.workspaces.values
-        if (!wss)
-            return out
-        const sorted = wss.slice().sort((a, b) => {
-            const ai = a && a.id !== undefined ? a.id : 0
-            const bi = b && b.id !== undefined ? b.id : 0
-            return ai - bi
-        })
-        for (let i = 0; i < sorted.length; ++i) {
-            const ws = sorted[i]
-            if (!ws || !ws.toplevels)
-                continue
-            const wins = ws.toplevels.values.slice().sort((a, b) => {
-                const aa = (a && a.address) || ""
-                const bb = (b && b.address) || ""
-                return aa < bb ? -1 : (aa > bb ? 1 : 0)
-            })
-            if (wins.length === 0)
-                continue
-            out.push({ ws: ws, wins: wins })
-        }
-        return out
-    }
+    readonly property var groups: HyprService.windowGroups
 
     function clampFocus() {
         if (groups.length === 0) {
@@ -61,39 +36,9 @@ FocusScope {
     }
 
     function locateActive() {
-        const active = Hyprland.activeToplevel
-        const focusedWs = Hyprland.focusedWorkspace
-        const activeAddr = active ? (active.address || "") : ""
-        const wsId = focusedWs ? focusedWs.id : -1
-        let g = -1
-        let it = 0
-
-        if (activeAddr) {
-            for (let i = 0; i < groups.length; ++i) {
-                const wins = groups[i].wins
-                for (let j = 0; j < wins.length; ++j) {
-                    if (wins[j] && wins[j].address === activeAddr) {
-                        g = i
-                        it = j
-                        break
-                    }
-                }
-                if (g >= 0)
-                    break
-            }
-        }
-        if (g < 0) {
-            for (let i = 0; i < groups.length; ++i) {
-                if (groups[i].ws && groups[i].ws.id === wsId) {
-                    g = i
-                    break
-                }
-            }
-            if (g < 0)
-                g = 0
-        }
-        focusGroup = g
-        focusItem = it
+        const at = HyprService.locateActive()
+        focusGroup = at.group
+        focusItem = at.item
         clampFocus()
         Qt.callLater(ensureFocusVisible)
     }
@@ -121,42 +66,13 @@ FocusScope {
             Island.clearSwitcherTarget()
             return
         }
-        let addr = win.address || ""
-        if (!addr && win.lastIpcObject && win.lastIpcObject.address)
-            addr = String(win.lastIpcObject.address)
-        Island.setSwitcherTarget(grp.ws ? grp.ws.id : null, addr, win)
+        Island.setSwitcherTarget(HyprService.workspaceId(grp.ws),
+            HyprService.windowAddress(win), win)
     }
 
     function activateFocused() {
         syncSwitcherTarget()
         Island.activateSwitcherFocus()
-    }
-
-    function iconFor(win) {
-        if (!win)
-            return "image://icon/application-x-executable"
-        const wl = win.wayland
-        let id = ""
-        if (wl && wl.appId)
-            id = String(wl.appId)
-        const ipc = win.lastIpcObject
-        if (!id && ipc && ipc.class)
-            id = String(ipc.class)
-        const lower = id.toLowerCase()
-        // 常见 class ≠ 主题图标名
-        if (lower === "splayer")
-            return "file:///usr/share/icons/hicolor/512x512/apps/SPlayer.png"
-        if (lower === "cursor")
-            return "image://icon/co.anysphere.cursor"
-        if (id.length > 0)
-            return "image://icon/" + id
-        return "image://icon/application-x-executable"
-    }
-
-    function titleFor(win) {
-        if (!win)
-            return ""
-        return win.title || win.address || ""
     }
 
     function moveGroup(delta) {
@@ -258,9 +174,7 @@ FocusScope {
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: "工作区 " + (groupCol.modelData.ws && groupCol.modelData.ws.id !== undefined
-                    ? groupCol.modelData.ws.id
-                    : "?")
+                text: "工作区 " + HyprService.workspaceLabel(groupCol.modelData.ws)
                 color: groupCol.groupFocused
                     ? Color.backgroundText
                     : Color.textMuted
@@ -299,7 +213,7 @@ FocusScope {
                     readonly property bool focused: groupCol.groupFocused
                         && index === root.focusItem
                     readonly property var win: modelData
-                    readonly property var wayland: win ? win.wayland : null
+                    readonly property var wayland: HyprService.windowCaptureSource(win)
                     // 仅视口附近建 Screencopy，滑出即拆 dmabuf（图标兜底仍在）
                     readonly property bool nearView: {
                         const cy = vList.contentY
@@ -384,7 +298,7 @@ FocusScope {
                             anchors.centerIn: parent
                             width: 36
                             height: 36
-                            source: root.iconFor(card.win)
+                            source: HyprService.windowIcon(card.win)
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             cache: true
@@ -393,8 +307,8 @@ FocusScope {
                                 && status !== Image.Error
                             onStatusChanged: {
                                 if (status === Image.Error
-                                        && source !== "image://icon/application-x-executable")
-                                    source = "image://icon/application-x-executable"
+                                        && source !== HyprService.fallbackIcon)
+                                    source = HyprService.fallbackIcon
                             }
                         }
                     }
@@ -406,7 +320,7 @@ FocusScope {
                         anchors.margins: 6
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
-                        text: root.titleFor(card.win)
+                        text: HyprService.windowTitle(card.win)
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.xsm
                         color: card.focused

@@ -4,43 +4,24 @@
 //
 // 性能：最多 1 个活动项 ~30fps 轻量 stroke arc；无齿轮、无辉光层
 
-import Quickshell
-import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
 import qs.Components
+import qs.data.service
 import qs.data.state
 
 Item {
     id: root
 
     property string screenName: ""
-    readonly property bool hasMultipleOutputs: Hyprland.monitors.count > 1
-    readonly property var focusedWorkspace: Hyprland.focusedWorkspace
 
     implicitHeight: 36
     implicitWidth: layout.width + 24
 
-    function focusedWorkspaceLabel() {
-        const ws = root.focusedWorkspace
-        if (!ws)
-            return "-"
-        if (ws.name !== undefined && ws.name !== null) {
-            const digits = String(ws.name).match(/\d+/)
-            if (digits && digits.length > 0)
-                return digits[0]
-        }
-        if (ws.id !== undefined && ws.id !== null)
-            return String(ws.id)
-        if (ws.lastIpcObject && ws.lastIpcObject.id !== undefined && ws.lastIpcObject.id !== null)
-            return String(ws.lastIpcObject.id)
-        return "-"
-    }
-
     function acceptsOutput(outputName) {
         if (root.screenName === "")
             return true
-        if (!root.hasMultipleOutputs && outputName === "")
+        if (!HyprService.multiMonitor && outputName === "")
             return true
         return outputName === root.screenName
     }
@@ -64,7 +45,7 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: root.focusedWorkspaceLabel()
+                text: HyprService.workspaceLabel(HyprService.focusedWorkspace)
                 color: Color.primary
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.xsm
@@ -73,16 +54,16 @@ Item {
         }
 
         Repeater {
-            model: Hyprland.workspaces
+            model: HyprService.workspaces
 
             delegate: Item {
                 id: delegateRoot
 
                 readonly property var workspaceRef: modelData
                 property bool belongsToScreen: root.acceptsOutput(
-                    workspaceRef.monitor ? workspaceRef.monitor.name : "")
-                property bool active: workspaceRef.focused
-                property bool hasWindows: workspaceRef.toplevels.count > 0
+                    HyprService.workspaceMonitorName(workspaceRef))
+                property bool active: HyprService.workspaceFocused(workspaceRef)
+                property bool hasWindows: HyprService.workspaceWindowCount(workspaceRef) > 0
                 property bool isHovered: mouseArea.containsMouse
 
                 visible: belongsToScreen
@@ -249,7 +230,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: workspaceRef.activate()
+                    onClicked: HyprService.activateWorkspace(delegateRoot.workspaceRef)
                 }
             }
         }

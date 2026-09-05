@@ -58,9 +58,19 @@ powerbar=电源（预告）。
 
 ## 架构约定（2026-09-04 成文）
 
-分层：`data/service` = 外部世界（NM / BlueZ / Pipewire / 进程 / 文件）；
+分层：`data/service` = 外部世界（NM / BlueZ / Pipewire / Hyprland / 进程 / 文件）；
 `data/state` = 主题、尺寸、会话状态；`Components` = 无业务的通用件；
 `ui/*` = 面板与卡片。
+
+**依赖方向自下而上：`service` → `state` → `Components` → `ui`**（第 9 轮定案）。
+服务只认识外部世界，不认识本壳有几个面板、主题是深是浅，所以它最独立、放最
+底下；状态层是「这个壳此刻的样子」，天然要读服务（岛要知道有没有播放器在放、
+要跳窗就得会跟 Hyprland 说话）。反过来 `service` import `state` 就是方向错了。
+`ui/*` 之间不得横向 import，只有 `ui/frame/` 作为框窗聚合器例外。
+
+这四条方向 + 下面第 2、7 条，加上「UI 写的每个 `Svc.member` 服务层必须真有」，
+由 `qsl/scripts/qsl-archcheck` 机械把关。最后一条是重点：QML 读不存在的属性
+不报错，就是 `undefined` 一路静默流进绑定，`qmllint` 查不出来。
 
 1. **UI 不解引用服务对象。** 服务层可以把 Quickshell 的活对象当不透明句柄交给
    UI（信号强度、音量要能实时更新，拍成快照就死了），但 UI 只许把它原样传回
@@ -98,6 +108,19 @@ powerbar=电源（预告）。
    的字用 `XText`。想要"带色调的底"就用 container 家族（底 `primaryContainer`
    \+ 字 `primaryContainerText`），对比度由 M3 标准保证；`withAlpha` 手搓叠色
    是下策，只在 M3 没给对应角色时用。
+9. **每个外部系统恰好一个服务单例**（第 9 轮定案）。判据很直白：需要 import
+   `Quickshell.<某系统>`、或者要起进程/读文件/发 HTTP 才能拿到的东西，就该有
+   一个服务收着，且只有它一家 import 那个模块。
+   反例（已修）：Hyprland 之前是唯一没有服务层的外部世界，于是被 5 个文件跨
+   3 层直接消费——切换器、工作区指示器、活动窗口药丸各自遍历一遍活对象，而
+   派发焦点的 `hyprEval` 一族寄居在 `data/state/Island.qml` 里。最能说明问题
+   的是启动器：它要拉起一个应用得去调 `Island.hyprEval()`，而启动器和岛没有
+   半点关系——它够到那儿只是因为没有别的地方能拿到这个能力。现已收进
+   `data/service/HyprService.qml`（不叫 `Hyprland`：那是 `Quickshell.Hyprland`
+   导出的单例名，同时 import 两边会撞；后缀沿用 `TrayService`）。
+   仍未收编、已登记的：电源动作（`PowerBar` 直接跑 `systemctl poweroff`）、
+   一言 HTTP（`TimeClockCard` 裸 `XMLHttpRequest`）、图标主题查询
+   （`NotifCenter.iconSourceFor`）。
 
 ### 容器占位规则（"可能为空"的卡片什么时候该出来）
 
