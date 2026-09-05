@@ -4,13 +4,10 @@ EarCanvas 1.0 EarCanvas.qml
 RailContainer 1.0 RailContainer.qml
 RailPage 1.0 RailPage.qml
 QslActionChip 1.0 QslActionChip.qml
-QslCard 1.0 QslCard.qml
 QslChip 1.0 QslChip.qml
-QslHubTab 1.0 QslHubTab.qml
 QslIconButton 1.0 QslIconButton.qml
 QslRow 1.0 QslRow.qml
 QslSectionHeader 1.0 QslSectionHeader.qml
-QslShadow 1.0 QslShadow.qml
 QslSlider 1.0 QslSlider.qml
 QslStagger 1.0 QslStagger.qml
 QslSwitch 1.0 QslSwitch.qml
