@@ -113,18 +113,12 @@ Item {
             reuseItems: true
             model: Volume.sinkRows
 
-            // 设备插拔时行滑进/滑出，被顶开的行滑下去。
+            // **不要 add / remove**：那两条动的是透明度，被打断就冻在中途不回来
+            // ——屏幕上是一行半透明的东西叠在别的行上，滚两下才消失。delegate 根
+            // QslRow 上还挂着 Behavior on opacity，和过渡抢同一个属性，更容易断。
+            // 完整证据见 ui/clipboard/ClipCard.qml 同一处。
+            // 位置类的 displaced/move 留着：打断了下一次布局会自己纠正
             // 首次填充不播，见 root.rowAnim
-            add: Transition {
-                enabled: root.rowAnim
-                Anim { property: "opacity"; from: 0; to: 1; type: Anim.Effects }
-                Anim { property: "x"; from: 28; to: 0; type: Anim.Enter }
-            }
-            remove: Transition {
-                enabled: root.rowAnim
-                Anim { property: "opacity"; from: 1; to: 0; type: Anim.Exit }
-                Anim { property: "x"; to: 28; type: Anim.Exit }
-            }
             displaced: Transition {
                 enabled: root.rowAnim
                 Anim { properties: "x,y"; type: Anim.SpatialFast }

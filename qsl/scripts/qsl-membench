@@ -414,8 +414,8 @@ one_round() {
     log "######################## ROUND $r / $ROUNDS ########################"
     sample "r${r}_round_start"
 
-    panel_cycle "$r" app        qsl-app        free-window-app open -- free-window-app close
-    panel_cycle "$r" clipboard  qsl-clipboard  free-window-clipboard open -- free-window-clipboard close
+    panel_cycle "$r" app        qsl-frame      launcher open -- launcher close
+    panel_cycle "$r" clipboard  qsl-frame      clipboard open -- clipboard close
     panel_cycle "$r" sidebar    qsl-leftbar    sidebar open time -- sidebar close
     panel_cycle "$r" rightbar   qsl-rightbar   rightbar open network -- rightbar close
     panel_cycle "$r" notif      qsl-notif      notif open -- notif close

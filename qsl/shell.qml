@@ -16,23 +16,14 @@ import QtQuick
 import qs.data.state
 import qs.data.service
 import qs.ui.frame
-import qs.ui.freewindow.app
-import qs.ui.freewindow.clipboard
 import qs.ui.freewindow.websearch
 import qs.ui.lock
 
 ShellRoot {
-    // 合并框窗：顶栏两段 + 三边 rail + 灵动岛 + 四撑位窗 + 四凹角耳（见 ui/frame/）
+    // 合并框窗：顶栏两段 + 三边 rail + 灵动岛 + C/V/N/A/Z 五面板 + 四撑位窗
+    // + 四凹角耳（见 ui/frame/）。A 和 Z 第 7 轮迁进去了，IPC 也跟着搬到
+    // FramePanels（那边的 IpcHandler 挂在只创建一次的 Loader 里）
     Frame {}
-
-    // App / Clipboard 常驻：IPC 现场 create 或 map layer 会卡一帧再播动画
-    AppWindow {
-        id: appWindow
-    }
-
-    ClipboardWindow {
-        id: clipboardWindow
-    }
 
     // ---- 冷路径懒加载：WebSearch（低频）----
     Component { id: webSearchComp; WebSearch {} }
@@ -80,20 +71,6 @@ ShellRoot {
 
     Lock {
         id: lockScreen
-    }
-
-    IpcHandler {
-        target: "free-window-app"
-        function toggle() { appWindow.toggle() }
-        function open() { appWindow.openWindow() }
-        function close() { appWindow.closeWindow() }
-    }
-
-    IpcHandler {
-        target: "free-window-clipboard"
-        function toggle() { clipboardWindow.toggle() }
-        function open() { clipboardWindow.openWindow() }
-        function close() { clipboardWindow.closeWindow() }
     }
 
     IpcHandler {

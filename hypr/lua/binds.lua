@@ -83,8 +83,8 @@ hl.bind(mainMod .. " + B", sh(browser))
 -- 快捷面板
 -- ============================================================
 
-hl.bind(mainMod .. " + A", qs("free-window-app", "toggle"))
-hl.bind(mainMod .. " + Z", qs("free-window-clipboard", "toggle"))
+hl.bind(mainMod .. " + A", qs("launcher", "toggle"))
+hl.bind(mainMod .. " + Z", qs("clipboard", "toggle"))
 hl.bind(mainMod .. " + X", qs("websearch", "toggle"))  -- Web 搜索
 
 

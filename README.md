@@ -478,10 +478,10 @@ Bar / 启动器 / 剪贴板 / 灵动岛 / 通知中心 / 侧边栏 / 锁屏全�
 
 | 快捷键 | 动作 |
 |---|---|
-| `SUPER + A` | 应用启动器：`qs ipc call free-window-app toggle` |
+| `SUPER + A` | 应用启动器：`qs ipc call launcher toggle` |
 | `ALT  + TAB` | 灵动岛 Hub：`qs ipc call island hub` |
 | `SUPER + TAB` | 灵动岛 Switcher：`qs ipc call island switcher` |
-| `SUPER + Z` | 剪贴板：`qs ipc call free-window-clipboard toggle` |
+| `SUPER + Z` | 剪贴板：`qs ipc call clipboard toggle` |
 | `SUPER + X` | Web 搜索：`qs ipc call websearch toggle` |
 | `SUPER + C` | 左侧边栏：`qs ipc call sidebar toggle` |
 | `SUPER + V` | 右侧边栏：`qs ipc call rightbar toggle` |

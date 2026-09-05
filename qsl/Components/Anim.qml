@@ -23,6 +23,7 @@ NumberAnimation {
         EffectsFast,    // 悬停/按压反馈：150ms，无过冲
         EffectsSlow,    // 慢速效果：300ms，无过冲
         Enter,          // 入场：500ms decel，到位即稳不要过冲
+        EnterFast,      // 同上但 400ms：高频重定目标的尺寸/位移（搜索时的列表）
         Exit            // 离场：200ms accel，加速离开不拖沓
     }
 
@@ -30,6 +31,7 @@ NumberAnimation {
 
     duration: {
         switch (root.type) {
+        case Anim.EnterFast:
         case Anim.SpatialFast:              return Size.anim.durFast;
         case Anim.SpatialSlow:              return Size.anim.durSlow;
         case Anim.EffectsFast:              return Size.anim.durFxFast;
@@ -48,7 +50,8 @@ NumberAnimation {
         case Anim.EffectsFast:              return Size.anim.curveEffects;
         case Anim.Effects:
         case Anim.EffectsSlow:              return Size.anim.curveEffectsSlow;
-        case Anim.Enter:                    return Size.anim.curveDecel;
+        case Anim.Enter:
+        case Anim.EnterFast:                return Size.anim.curveDecel;
         case Anim.Exit:                     return Size.anim.curveAccel;
         case Anim.SpatialFast:
         case Anim.SpatialSlow:

@@ -11,7 +11,8 @@ pragma Singleton
 //
 // 组划分（见 plan.md 术语表与锚点分工）：
 //   "right"   V=右附栏、N=通知，将来 X=磁贴（若落在 bottomrail 右侧）
-//   "left"    C=左附栏、Z=剪贴板（Z 位置定死左边）
+//   "left"    C=左附栏、Z=剪贴板（Z 在 bottomrail **左段**，那块地方压着 C 那
+//             一列的下半截，所以跟 C 一组；它和 A 各占底 rail 的一段，不互斥）
 //   "center"  island=灵动岛、A=应用启动器
 //
 // 为什么不从几何自动推：锚点分工是设计决定，不是算出来的（X 落哪一侧还没定）。
@@ -37,9 +38,9 @@ pragma Singleton
 // RailPage 的 derivGate。）
 // ============================================================
 // 对外接口：
-//   claim(id, group, edge, valign)
+//   claim(id, group, edge, valign, anchor)
 //                      我要开了：压栈，登记，再把同组原来那个挤掉。
-//                      贴边三组还会登记成水波源（见 railSources）
+//                      贴边的面板还会占一格水波源槽位（见 railSlots）
 //   release(id)        我关了（只清自己那条，晚到的 release 不误伤）
 //   activeIn(group)    该组当前开着的面板 id（无则空串）
 //   keyboardOwner      当前该响应 Esc/Tab 的面板 id（栈顶，无则空串）
@@ -63,51 +64,72 @@ Singleton {
     readonly property bool keyboardHeld: stack.length > 0
 
     // ============================================================
-    // 水波源登记表
+    // 水波源槽位
     // ============================================================
-    // { 组名: { edge, valign } }，只登记贴边三组（left/right/bottom），**不含
-    // center**——岛是独立体系，不参与任何 rail 动画。这不是洁癖，是实测：水波
-    // 开着要多吃约 8 个百分点 CPU，而 n=basic 下渲染同步在主线程，这笔开销正好
-    // 压在岛的 morph/果冻回弹上，岛就又开始抖了。
+    // 固定 6 格的池子，每格 null 或 `{ id, edge, valign, anchor }`。只登记贴边的
+    // 面板（left/right/bottom 三条 rail），**不含岛**——岛是独立体系，不参与任何
+    // rail 动画。这不是洁癖，是实测：水波开着要多吃约 8 个百分点 CPU，而
+    // n=basic 下渲染同步在主线程，这笔开销正好压在岛的 morph/果冻回弹上，
+    // 岛就又开始抖了。
     //
-    // 按**组**存而不是按面板 id 存，是因为一个组同时只可能有一个面板（这个文件
-    // 上半部分就是干这件事的），而一个组正好对应一条 rail。于是水波那边可以摆
-    // 三个固定的发射器（左/右/底），各自看自己这一格是不是空——**不需要**跟着
-    // 面板增删重建，在飞的波不会因为另一条 rail 开了面板而重启。
+    // 为什么按**边**登记不行（第一版就是那样）：一条边容得下不止一个面板。A 在
+    // 底 rail 中段、Z 在底 rail 左段，两个不重叠、可以同时开着。按边存的话后开
+    // 的会顶掉先开的那一格（先开的 release 又因为 id 不符不敢清），症状是
+    // 「关掉后开的那个，还开着的那个就不放波了」。
+    // 为什么也不能让水波那边直接 `Repeater` 吃 `Object.keys(表)`：面板一关条目
+    // 就没了，发射器**跟着被销毁**，临别那一发（见 RailRipple.onSrcKeyChanged）
+    // 就没人放；而且 Repeater 吃 JS 数组是整体重建，别的发射器攒着的 lastOrigin
+    // 和定时器相位会一起被重置。
+    // 固定池子把两头都躲开：格子永不增删，只是内容在 null 和条目之间切换，
+    // 水波那边摆 6 个固定发射器各看自己那一格。
+    // 6 格够：贴边的面板一共 C/V/N/A/Z/X/powerbar，同时开着的不会超过这个数。
+    //
+    // 按互斥组登记也不行，虽然两者大多数时候重合（C 是 left 组、贴 left 边）：
+    // A 是 **center 组（跟岛互斥）+ bottom 边**，按组登记它就永远进不了底 rail
+    // ——「开 A 不放波」就是这么来的。
     //
     // 放在这里而不是让面板直接找水波：面板是框窗的租户，互相不该知道对方存在，
     // 而这张表本来就是「框窗的状态」。
     //
-    // valign 一起存：水波要从面板**自己那一端**生，不是那条 rail 的中点。
-    // N 贴底、V 贴顶，同一条右 rail 上的两个面板，出生点差着一整条边
-    property var railSources: ({})
+    // 条目里的三个字段都是给出生点用的：
+    //   edge    哪条 rail
+    //   valign  贴那条边的哪一头（N 贴底、V 贴顶，同一条右 rail 上出生点差一整条边）
+    //   anchor  沿边的锚点像素（底边给屏幕 x）。-1 = 没给，那条边按老规矩取
+    //           中点/定比内缩。底 rail 上 A 居中、Z 靠左，非得由面板自己报
+    readonly property int railSlotCount: 6
+    property var railSlots: [null, null, null, null, null, null]
 
     readonly property bool railHeld: {
-        const s = railSources
-        return !!(s["left"] || s["right"] || s["bottom"])
+        const s = railSlots
+        for (let i = 0; i < s.length; i++) {
+            if (s[i])
+                return true
+        }
+        return false
     }
 
     signal evicted(string id)
 
-    function claim(id, group, edge, valign) {
+    function claim(id, group, edge, valign, anchor) {
         const me = String(id || "")
         if (!me)
             return
         // 压栈在分组仲裁之前，而且不看有没有组：不参与互斥的面板（岛、迁移中
         // 的窗口）照样要排进键盘归属的队里，否则它们的 Esc 抢不到
         _push(me)
+
+        // 贴边的面板同时是水波的波源，占一格槽位。排在分组仲裁之前：波源和互斥组
+        // 是两件事（A = center 组 + bottom 边），不参与互斥的贴边面板照样该放波
+        const e = String(edge || "")
+        if (e === "left" || e === "right" || e === "bottom") {
+            _takeRailSlot(me, e, String(valign || "top"),
+                (anchor === undefined || anchor === null) ? -1 : Number(anchor))
+        }
+
         const g = String(group || "")
         // 没给组的面板不参与互斥（迁移中的窗口、独立小窗）
         if (!g)
             return
-        // 贴边三组的面板同时是水波的波源。整体替换而不是原地改键——var 属性
-        // 原地改不发通知。同组换面板（右组 V→N）时 edge/valign 跟着换，水波
-        // 那边的 origin 绑定一变就自己重新放一发，不需要额外的信号
-        if (g === "left" || g === "right" || g === "bottom") {
-            const src = Object.assign({}, railSources)
-            src[g] = { "edge": String(edge || ""), "valign": String(valign || "top") }
-            railSources = src
-        }
         const prev = actives[g] || ""
         if (prev === me)
             return
@@ -118,6 +140,36 @@ Singleton {
         actives = next
         if (prev !== "")
             evicted(prev)
+    }
+
+    // 找自己那格；没有就占第一个空格。
+    // 先找自己：同一个面板重复 claim（IPC 指定页再开一次、换页）不该占第二格，
+    // 而且就地更新意味着 anchor 变了（页宽不同）水波那边会重新放一发
+    function _takeRailSlot(id, edge, valign, anchor) {
+        const next = railSlots.slice()
+        let at = -1
+        for (let i = 0; i < next.length; i++) {
+            if (next[i] && next[i].id === id) {
+                at = i
+                break
+            }
+        }
+        if (at < 0) {
+            for (let i = 0; i < next.length; i++) {
+                if (!next[i]) {
+                    at = i
+                    break
+                }
+            }
+        }
+        // 满了就这一个不放波。宁可少一道波，也不去挤掉别人那格——挤掉的那格
+        // 会被误读成「面板关了」，凭空多出一发临别波
+        if (at < 0)
+            return
+        next[at] = {
+            "id": id, "edge": edge, "valign": valign, "anchor": anchor
+        }
+        railSlots = next
     }
 
     // 重复开同一个面板（IPC 指定页再开一次）要把它挪到栈顶：它是最近交互的那个
@@ -133,23 +185,26 @@ Singleton {
             return
         stack = stack.filter(x => x !== me)
         const next = Object.assign({}, actives)
-        const src = Object.assign({}, railSources)
+        const slots = railSlots.slice()
         let changed = false
-        let srcChanged = false
+        let slotChanged = false
         for (const g in next) {
             if (next[g] === me) {
                 delete next[g]
                 changed = true
-                if (src[g] !== undefined) {
-                    delete src[g]
-                    srcChanged = true
-                }
+            }
+        }
+        // 只清自己那格（格子里带着 id）：晚到的 release 不会误伤别人的槽位
+        for (let i = 0; i < slots.length; i++) {
+            if (slots[i] && slots[i].id === me) {
+                slots[i] = null
+                slotChanged = true
             }
         }
         if (changed)
             actives = next
-        if (srcChanged)
-            railSources = src
+        if (slotChanged)
+            railSlots = slots
     }
 
     function activeIn(group) {

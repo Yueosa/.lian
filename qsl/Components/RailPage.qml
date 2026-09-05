@@ -34,6 +34,14 @@ Item {
     property bool open: false
     property int containerWidth: 480
     property int staggerStep: 60
+    // 退场的错峰步长，默认跟进场一致。
+    // 底边堆叠那类页面（A）把 staggerStep 当「下一拍」用，步长是几百毫秒；
+    // 退场不需要复述三拍，照那个步长走会在中间空等一大截（实测 A：搜索框
+    // 200ms 收完，列表要等到 560ms 才动）。所以退场单独给一个紧凑的
+    property int exitStaggerStep: staggerStep
+    // 容器"内容长高/变矮"用的曲线（见 RailContainer.elasticType）。
+    // 默认带过冲；高度会被高频重定目标的页（A 边打字边换高度）要换掉
+    property int elasticType: Anim.SpatialFast
 
     // 每页宽度（pages[page].width 覆盖全局 containerWidth）：
     // 页面饭量不同，时间窄、系统宽
@@ -41,6 +49,11 @@ Item {
         ? pages[page].width : containerWidth
     // 垂直停靠："top"（默认，从 56 起向下排）/ "bottom"（贴底 16，N 用）
     property string valign: "top"
+    // 贴底锚定：容器列锚在屏幕下沿、向上摞。两条路进来——右边栏里贴底的
+    // （N），和长在底 rail 上的（A / Z）。它们的高度变化由**顶边**吸收，
+    // 底下那格因此永远不动，是这一族面板的定位口径
+    readonly property bool bottomAnchored: root.valign === "bottom"
+        || root.edge === "bottom"
 
     // 页首固定件（pages[page].header）：钉在页面顶部 y=56。
     // 不是容器、不参与派生、不随内容高度变化——tab 条就该是死的
@@ -107,7 +120,7 @@ Item {
     // 页数不同→容器数不同→等待时长必须跟着算，这就是「不同 tab 容器数量
     // 不一样、动画播太快就出问题」的根因
     readonly property int exitAllMs: Size.anim.durFx + 60
-        + staggerStep * Math.max(0, headerComp ? containerCount : containerCount - 1)
+        + exitStaggerStep * Math.max(0, headerComp ? containerCount : containerCount - 1)
 
     // 同理的入场侧：最后一个容器派生完毕的时刻（Anim.Spatial = durNormal）。
     // 给「派生动画期间别做重活」用。要含起跑闸那一段——派生是等闸开才起的，
@@ -151,15 +164,44 @@ Item {
 
     // ---- 窗内几何：贴边条带 ----
     // 合并前靠窗口 anchors 贴边（且 exclusionMode: Ignore，所以从 y=0 起算，
-    // 压在顶栏之上）。现在直接写坐标，语义一样，但改宽不再引起 buffer 重建
-    // TODO: bottom 边的布局（Row 横排 + 水平居中，迁移 A/Z/X 时补）
+    // 压在顶栏之上）。现在直接写坐标，语义一样，但改宽不再引起 buffer 重建。
+    //
+    // left/right = 全高竖条；bottom = 全宽横条，高度由页面给（stripHeight）。
+    // 为什么不让它跟内容高度走：这条条带就是 inputMask，而 mask 每帧变就是每帧
+    // 一次合成器往返——C/V/N 三条都是「开=整条、关=0」两态。底边的内容高度是
+    // 弹性的（A 的列表随候选数收缩），所以取一个固定上界，别跟着抖。
+    // 条带之外的点击不用它管：框窗的 HyprlandFocusGrab 一 cleared 就全关
+    property int stripHeight: 0
+
     implicitWidth: root.edge === "bottom"
         ? (parent ? parent.width : 0)
         : 8 + root.pageWidth + 16
     width: implicitWidth
-    height: parent ? parent.height : 0
+    height: root.edge === "bottom" && root.stripHeight > 0
+        ? root.stripHeight
+        : (parent ? parent.height : 0)
     x: root.edge === "right" && parent ? parent.width - width : 0
-    y: 0
+    y: root.edge === "bottom" && parent ? parent.height - height : 0
+
+    // ---- 底边的水平位置 ----
+    // 底 rail 容得下不止一个面板，各占一段：A 在中段、Z/X 在左段（它们和 A
+    // 不重叠，所以不互斥；Z 压着 C 那一列的下半截，跟 C 一组）。
+    // 左段和左边那条 rail 同一个 x=8 口径，卡片左沿与 C 的卡片对齐
+    property string halign: "center"   // "center" | "left"
+    readonly property int colX: root.edge === "bottom"
+        ? (root.halign === "left"
+            ? 8 : Math.round((root.width - root.pageWidth) / 2))
+        : (root.edge === "right" ? 16 : 8)
+
+    // 报给水波的沿边锚点（底边给屏幕 x，其余边不给、由水波按定比内缩取）。
+    // 取卡片中线：波从面板正下方生出来，两个波前各往一头跑
+    readonly property real edgeAnchor: root.edge === "bottom"
+        ? root.colX + root.pageWidth / 2 : -1
+
+    // 底边堆叠：下面那格的槽位比它的内容早开多久 = 「脱离」那一拍的长度。
+    // 三拍读起来是：上面的容器长出来 → 被下面那格顶起来（这一拍） → 下面的
+    // 内容从 rail 里长进让出来的缝
+    property int slotLeadMs: Size.anim.durFast
 
     // ---- 报给 FrameWindow 的三项窗口级诉求 ----
     // 曾经这里写着「申请 Exclusive 要停 ~190ms，所以两头都要把它挪出动画窗口」，
@@ -184,10 +226,11 @@ Item {
             page = String(p)
         // 不再 Island.captureFocus()：框窗用 HyprlandFocusGrab，不抢应用焦点
         // 登记互斥 + 压焦点栈：同组（= 同一块屏幕区域）只留一个，见 Panels。
-        // edge/valign 一起交上去：贴边三组会被登记成框边水波的波源，水波按登记表
-        // 自己决定什么时候放波（原先是发一条 opened 信号让框窗去 trigger，
-        // 那条信号已经删掉——绑定能表达的事不需要信号）
-        Panels.claim(root.shellNamespace, root.panelGroup, root.edge, root.valign)
+        // edge/valign/edgeAnchor 一起交上去：贴边的面板会占一格框边水波的波源
+        // 槽位，水波按槽位自己决定什么时候放波（原先是发一条 opened 信号让框窗
+        // 去 trigger，那条信号已经删掉——绑定能表达的事不需要信号）
+        Panels.claim(root.shellNamespace, root.panelGroup, root.edge, root.valign,
+                     root.edgeAnchor)
         open = true
         // 每次开窗都主动夺焦：内容里的输入框（密码框/标签框）一旦
         // forceActiveFocus 过，光靠 focus: root.open 绑定夺不回来
@@ -335,27 +378,69 @@ Item {
             visible: root.headerComp !== null
             // 进场领头（staggerMs 默认 0），退场压尾——整页读起来就是原路收回。
             // 表头收回不会推动容器列：列的 y 取的是表头**冻结后的** implicitHeight
-            exitStaggerMs: root.containerCount * root.staggerStep
+            exitStaggerMs: root.containerCount * root.exitStaggerStep
         }
 
         // 容器列：贴 rail 竖排；left 边 x=8，right 边 x=16（rail 在右）
         // 无页首件的页从 56 起向下排；valign="bottom" 的页贴底（bottomrail 上方 16）
+        // 底边的页：水平位置看 halign（居中 / 左段）、贴底，容器沿**行程轴**
+        // 向上摞（见 RailContainer.slotGrows）
         Column {
             id: containerCol
-            x: root.edge === "right" ? 16 : 8
-            y: root.valign === "bottom"
+            x: root.colX
+            y: root.bottomAnchored
                 ? 0
                 : (root.headerComp
                     ? 56 + headerContainer.implicitHeight + Size.spacing.md
                     : 56)
-            anchors.bottom: root.valign === "bottom" ? parent.bottom : undefined
-            anchors.bottomMargin: 16
-            spacing: Size.spacing.md
+            anchors.bottom: root.bottomAnchored ? parent.bottom : undefined
+            // 底边的页贴**在** rail 上（8 = rail 厚度，同 left 边的 x: 8），
+            // 卡片底边和 rail 顶边严丝合缝，耳朵才有接缝可填。
+            // 16 是 valign="bottom" 的口径：N 贴的是右 rail，16 是给底 rail 让的空
+            anchors.bottomMargin: root.edge === "bottom" ? 8 : 16
+            // 底边不用 spacing：缝由容器的 slotGapAbove 带着一起长。
+            // spacing 是阶跃的——槽位从 0 长到 1px 那一帧，整条缝会插进来，
+            // 上面的容器凭空跳一截（这类瞬移正是 exitStaggerMs 那段的教训）
+            spacing: root.edge === "bottom" ? 0 : Size.spacing.md
+
+            // 退场期间列高冻住。
+            //
+            // 贴底锚定的列，高度一缩顶边就往下走 —— 开着的时候这正是要的效果
+            // （见下面 move 那段：A 搜索时列表变矮，搜索框纹丝不动）。但退场时
+            // 它是灾难：容器退完就卸载，那一格的高度在一帧内归零，列高跟着塌
+            // 一大截，顶边猛地下移，还在退场路上的上面那格被一起拖下去。
+            // N 的症状就是这个——列表先退完（退场自下而上），标题卡退到一半
+            // 突然瞬移到屏幕底部。
+            // 关窗那一刻把高度记下来，整段退场按它算，谁也不拖谁
+            property real exitH: 0
+            height: root.bottomAnchored && !root.open
+                ? containerCol.exitH : containerCol.implicitHeight
+
+            Connections {
+                target: root
+                // 不直接在 root 上写 onOpenChanged：那个信号处理器留给子类，
+                // 基类再声明一份会被子类的声明顶掉（N 就抄漏过一次记账）
+                function onOpenChanged() {
+                    if (!root.open)
+                        containerCol.exitH = containerCol.implicitHeight
+                }
+            }
 
             // 上面的容器长高/变矮时，下面的容器要滑下去而不是瞬移。
             // 只挂 move：add/remove 由容器自己的派生/收回动画负责，
-            // 再挂一套会和 progress 打架
-            move: Transition {
+            // 再挂一套会和 progress 打架。
+            //
+            // **贴底锚定的列（A / valign=bottom）必须不挂**：列的顶边已经在吸收
+            // 高度变化了（高度缩 Δ，顶边就下移 Δ），列内 y 再动一次就是动了两次，
+            // 而且两次的时钟不一样——列高跟着卡片的高度动画走，列内 y 走这条
+            // move 过渡，慢一截。实测 A 搜索时列表 6 行缩到 1 行：搜索框的屏幕 y
+            // 从 1012 冲到 1145（屏幕只有 1080，整条掉出屏幕），再花 ~500ms 爬回来
+            // ——用户读成「搜索框重新加载了」。
+            // 不挂之后 srchScrY = (1072 - listH - 60) + listH ≡ 1012，纹丝不动，
+            // 而列表本身的高度动画还在（卡片自己的 Behavior），该动的照样动
+            move: root.bottomAnchored ? null : columnMove
+            Transition {
+                id: columnMove
                 Anim { properties: "y"; type: Anim.SpatialFast }
             }
 
@@ -383,14 +468,34 @@ Item {
                     shown: containerItem.occupied
                     visible: containerItem.wantOpen || containerItem.progress > 0.001
                     naturalWidth: root.pageWidth
+                    elasticType: root.elasticType
+                    // 底边贴左段的页：卡片左沿压在左 rail 内沿上，接缝要改到
+                    // 左上角（见 RailContainer.weldLeft）
+                    weldLeft: root.edge === "bottom" && root.halign === "left"
                     gate: root.derivGate
                     present: root.open && root.pendingPage === ""
                         && root.replayingIndexes.indexOf(index) === -1
                     staggerMs: (root.headerComp ? index + 1 : index) * root.staggerStep
+
+                    // ---- 底边堆叠 ----
+                    // 最底那格贴着 rail；它上面每一格的槽位都由**下面那格**顶开。
+                    slotGrows: root.edge === "bottom" && index > 0
+                    slotGapAbove: (root.edge === "bottom" && index > 0)
+                        ? Size.spacing.md : 0
+                    slotStaggerMs: Math.max(0, containerItem.staggerMs - root.slotLeadMs)
+                    // 抬离 rail 多远（列底就是 rail 那一侧）。故意用自己的几何算，
+                    // 不去翻 containerRepeater.itemAt(index+1) 拿兄弟的 slotProgress：
+                    // Repeater 里那种引用既不响应也不保证已创建。24px 是过渡尺度——
+                    // 抬起这么多就算完全脱离，耳朵淡完、贴 rail 那两个角圆完
+                    readonly property real liftPx: containerCol.height
+                        - (containerItem.y + containerItem.height)
+                    detached: root.edge === "bottom"
+                        ? Math.min(1, Math.max(0, containerItem.liftPx / 24))
+                        : 0
                     // 退场自下而上（见 RailContainer.exitStaggerMs）。表头排在最后，
                     // 所以这里不含表头那一格：最底下的容器 0 延迟、最上面的
                     // (count-1) 格。exitAllMs 里那个 max 算的正是这个上界
-                    exitStaggerMs: (root.containerCount - 1 - index) * root.staggerStep
+                    exitStaggerMs: (root.containerCount - 1 - index) * root.exitStaggerStep
 
                     // 页内内容可向页面请求关闭（对齐旧 requestClose 惯例）；
                     // bodyItem 用 RailContainer 自带的 alias——在本文件重复声明并

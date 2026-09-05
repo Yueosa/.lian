@@ -93,6 +93,8 @@ Singleton {
     // 以前直接把 scannerEnabled 当扫描态，结果是页面开着它就恒为 true——
     // "扫描中…"和转圈图标常驻，永远看不出这一轮扫完了没有
     property bool _scanning: false
+    // 这一轮扫描已经补过一次了（空手而归时补一次，不无限补）
+    property bool _scanRetried: false
     readonly property bool wifiScanning: _scanning
     readonly property bool hasWifiDevice: !!_wifiDevice
     readonly property string lastError: _lastError
@@ -366,10 +368,22 @@ Singleton {
         const saved = []
         const nearby = []
         const items = wifiNetworks
+        // 同名只留一条（信号最强的那个）。
+        //
+        // 一个 SSID 在 NM 那儿常常对应好几个接入点（mesh / 双频），全列出来就是
+        // 一串一模一样的名字，选哪个都一样、还占满整屏。wifiNetworks 已按信号
+        // 降序排过，所以先到的就是最强的那个
+        const seen = ({})
         for (let i = 0; i < items.length; i++) {
             const n = items[i]
             if (!n || n.connected)
                 continue
+            const ssid = String(n.name || "")
+            if (ssid.length > 0) {
+                if (seen[ssid])
+                    continue
+                seen[ssid] = true
+            }
             if (n.known)
                 saved.push(n)
             else
@@ -399,9 +413,29 @@ Singleton {
     readonly property var savedRows: _savedModel
     readonly property var nearbyRows: _nearbyModel
 
+    // 键取 **SSID**，不取对象身份。
+    //
+    // 默认的身份比对在这儿是错的：NM 每次重扫都可能给同一个 SSID 换一个新的
+    // WifiNetwork 对象，身份一变 RowSync 就当成「删旧 + 增新」——整张列表每次
+    // 扫描都被拆了重搭。轻则白干（delegate 全部重建、图标重算），重则那些
+    // add/remove 过渡被下一次扫描打断，删掉的那格永远留在屏幕上，看着就是
+    // 「扫描之后多出一条一模一样的 SSID 叠在原来那条上」。
+    // 换成 SSID 之后，同一个网络无论对象换几次都是同一行，只走 setProperty
+    function wifiRowKey(n) {
+        if (!n)
+            return ""
+        const ssid = String(n.name || "")
+        if (ssid.length > 0)
+            return ssid
+        // 隐藏网络的 SSID 是空的（nmcli 里显示成 "--"）。空串不能当键：附近有两个
+        // 隐藏网络就会共用一个键、在模型里互相顶掉。退回对象自身（也就是老的身份
+        // 比对：这一支还会每次重扫都重建那一行，但至少不会张冠李戴）
+        return String(n)
+    }
+
     onWifiRowSourceChanged: {
-        RowSync.sync(_savedModel, wifiRowSource.saved, "network")
-        RowSync.sync(_nearbyModel, wifiRowSource.nearby, "network")
+        RowSync.sync(_savedModel, wifiRowSource.saved, "network", wifiRowKey)
+        RowSync.sync(_nearbyModel, wifiRowSource.nearby, "network", wifiRowKey)
     }
 
     function displayName(network) {
@@ -468,9 +502,31 @@ Singleton {
             _setError("WiFi 已关闭")
             return
         }
-        // 先关再开，强制触发一次扫描刷新（NM 没给"扫一次"的方法，只有这一招）
+        // 已经在扫了就别再来一遍：结果马上就到。
+        //
+        // 这里踩过：原来每次调用都无条件先关再开，而"关"会把正在飞的那次扫描掐掉
+        // 重来。进页面自动扫 + 随手点一下扫描（或 detailActive 抖一下）就是掐掉重
+        // 数 3–5 秒，看着像"这次扫描坏了，拿不到东西 / 很晚才拿到"
+        if (_scanning)
+            return
         _scanning = true
+        _scanRetried = false
         scanWindow.restart()
+        _kickScanner()
+    }
+
+    // NM 没给"扫一次"的方法，只有 scannerEnabled 这一招：
+    //   关着 → 直接开，NM 立刻扫一轮（进页面走的是这条，上次关页已经关掉了）
+    //   开着 → 先关再开才算一次新的请求，那一下"关"是必要的
+    function _kickScanner() {
+        if (!_wifiDevice || !wifiEnabled)
+            return
+        if (!_wifiDevice.scannerEnabled) {
+            _wifiDevice.scannerEnabled = true
+            _netRev++
+            _scheduleSsidFix()
+            return
+        }
         _wifiDevice.scannerEnabled = false
         Qt.callLater(() => {
             if (root._wifiDevice && root.wifiEnabled)
@@ -491,7 +547,20 @@ Singleton {
     Timer {
         id: scanWindow
         interval: 5000
-        onTriggered: root._scanning = false
+        onTriggered: {
+            // 空手而归就再补一次（页面还开着的话）。
+            //
+            // 进页面那一下自动扫时不时会颗粒无收——NM 刚被叫醒、或者网卡正忙。
+            // 没有兜底的话页面就停在"附近没有网络"，得自己去点扫描
+            if (root.detailActive && root.wifiEnabled && !root._scanRetried
+                    && root.wifiNetworks.length === 0) {
+                root._scanRetried = true
+                scanWindow.restart()
+                root._kickScanner()
+                return
+            }
+            root._scanning = false
+        }
     }
 
     function _clearConnectOp() {

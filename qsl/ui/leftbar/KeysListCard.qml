@@ -66,7 +66,7 @@ Item {
                     anchors.rightMargin: Size.spacing.md
                     spacing: Size.spacing.md
 
-                    // 键位列按内容伸缩：IPC 组里 "free-window-clipboard toggle"
+                    // 键位列按内容伸缩：IPC 组里 "rightbar open network"
                     // 这种长串，固定 200 会被 elide 成没法复制的半截
                     Text {
                         Layout.preferredWidth: Math.min(Math.max(150, implicitWidth),

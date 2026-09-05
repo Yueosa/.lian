@@ -136,10 +136,6 @@ Singleton {
         // 最后这一步是跟波形一起定的：单发不再是"一个要盯着看的鼓包"，而是背景
         // 里的一层缓慢涨落，那就该慢。一趟绕框约 5500px，7s 约 780px/s
         readonly property int durRipple: Math.round(7000 * Config.anim.scale)
-        // 常驻起伏走完一个波长的时间。这是整套动画里最慢的一档，故意的：
-        // 它要读成"水面在起伏"，任何一点急躁都会读成"框在抽"。
-        // 6000ms / 220px 波长 ≈ 37px/s
-        readonly property int durWaveDrift: Math.round(6000 * Config.anim.scale)
     }
 
     // ============================================================
@@ -152,6 +148,9 @@ Singleton {
         readonly property int cWidth: Config.panels.cWidth
         readonly property int vWidth: Config.panels.vWidth
         readonly property int nWidth: Config.panels.nWidth
+        readonly property int aWidth: Config.panels.aWidth
+        readonly property int zWidth: Config.panels.zWidth
+        readonly property int zListHeight: Config.panels.zListHeight
     }
 
     // ============================================================

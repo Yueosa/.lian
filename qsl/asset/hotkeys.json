@@ -316,8 +316,8 @@
           "id": "ipc-window",
           "title": "浮动窗 — toggle / open / close",
           "items": [
-            { "keys": "free-window-app", "desc": "应用启动器" },
-            { "keys": "free-window-clipboard", "desc": "剪贴板" },
+            { "keys": "launcher", "desc": "应用启动器（A，bottomrail 中段）" },
+            { "keys": "clipboard", "desc": "剪贴板" },
             { "keys": "websearch", "desc": "搜索条" }
           ]
         },

@@ -35,7 +35,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: contentActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    // 子窗口可覆盖，例如 "qsl-app"
+    // 子窗口可覆盖，例如 "qsl-clipboard"
     property string shellNamespace: "qsl-freewindow"
 
     // ============================================================

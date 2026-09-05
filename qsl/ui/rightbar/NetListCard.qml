@@ -98,18 +98,16 @@ Item {
             model: root.rowModel
             boundsBehavior: Flickable.StopAtBounds
 
-            // 新行滑出来（从 rail 那侧进），被顶开的行滑下去。
+            // **不要 add / remove**：那两条动的是透明度，被打断就冻在中途不回来。
+            // 扫描列表正是最容易打断的地方——一轮扫描回来是一串增删，紧跟着还有
+            // 每 5 秒一次的重排，上一条淡入淡出压根播不完。症状就是"扫完多出一条
+            // 一模一样的 SSID 叠在原来那条上"：那是半透明卡住的行，不是新网络。
+            // 这里还多一层冲突：delegate 根 QslRow 上挂着 Behavior on opacity，
+            // 而 Behavior 是写入拦截器，会把过渡每一帧的写入也截下来重排。
+            // 完整证据见 ui/clipboard/ClipCard.qml 同一处
+            //
+            // 被顶开的行照旧滑动：displaced/move 动的是位置，打断了下次布局会纠正。
             // 首次填充不播，见 root.rowAnim
-            add: Transition {
-                enabled: root.rowAnim
-                Anim { property: "opacity"; from: 0; to: 1; type: Anim.Effects }
-                Anim { property: "x"; from: 28; to: 0; type: Anim.Enter }
-            }
-            remove: Transition {
-                enabled: root.rowAnim
-                Anim { property: "opacity"; from: 1; to: 0; type: Anim.Exit }
-                Anim { property: "x"; to: 28; type: Anim.Exit }
-            }
             displaced: Transition {
                 enabled: root.rowAnim
                 Anim { properties: "x,y"; type: Anim.SpatialFast }

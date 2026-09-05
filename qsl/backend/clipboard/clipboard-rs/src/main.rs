@@ -1,11 +1,12 @@
 // clipboardctl — cliphist 的一次性适配器
 //
-// 只在被调用时跑一次，不常驻：list / paste / clear。
+// 只在被调用时跑一次，不常驻：list / paste / remove / clear。
 // 历史仍由 cliphist 维护；list 额外写出轻量 JSON 缓存供 UI 秒开。
 //
 // 用法：
 //   clipboardctl list [--limit N]      → stdout JSON + 写 ~/.cache/qsl/clipboard-list.json
 //   clipboardctl paste <id> [mime]     → 把历史项重新写入 selection
+//   clipboardctl remove <id>           → 删一条（含缩略图）+ stdout 回吐删后的 JSON
 //   clipboardctl clear                 → cliphist wipe + 清空缩略图/JSON 缓存
 
 use std::collections::HashSet;
@@ -117,7 +118,10 @@ fn prune_thumbs(live_ids: &HashSet<String>) {
     }
 }
 
-fn cmd_list(limit: usize) {
+// 取一份列表：顺带清掉已经不在历史里的缩略图，并写出 JSON 缓存。
+// list 和 remove 都要这份数据（remove 删完就地回吐一份新的，UI 不用再跑一次
+// list），所以拆出来
+fn collect_items(limit: usize) -> serde_json::Value {
     let lines = cliphist_list();
 
     let mut live_ids: HashSet<String> = HashSet::new();
@@ -163,7 +167,11 @@ fn cmd_list(limit: usize) {
 
     let arr = serde_json::Value::Array(items);
     write_list_cache(&arr);
-    println!("{}", arr);
+    arr
+}
+
+fn cmd_list(limit: usize) {
+    println!("{}", collect_items(limit));
 }
 
 fn cmd_paste(id: &str, mime: &str) -> i32 {
@@ -196,6 +204,59 @@ fn cmd_paste(id: &str, mime: &str) -> i32 {
         Ok(s) if s.success() => 0,
         _ => 1,
     }
+}
+
+// 删一条。
+//
+// `cliphist delete` 从 stdin 读**一整行 list 输出**（`<id>\t<preview>`）而不是收
+// 一个 id 参数，所以得先把那一行原样找出来——preview 里的空白也要一字不差，
+// 不能自己拼。
+//
+// 删完就地回吐一份新列表（同时重写缓存）：UI 那边一次进程调用就能拿到删后的
+// 状态，不用「删完再跑一次 list」两趟
+fn cmd_remove(id: &str) -> i32 {
+    let line = cliphist_list()
+        .into_iter()
+        .find(|l| l.split_once('\t').map(|(i, _)| i == id).unwrap_or(false));
+    let line = match line {
+        Some(l) => l,
+        None => {
+            eprintln!("clipboardctl: id {} not in history", id);
+            return 1;
+        }
+    };
+
+    let mut child = match Command::new("cliphist")
+        .arg("delete")
+        .stdin(Stdio::piped())
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("clipboardctl: spawn cliphist delete failed: {}", e);
+            return 1;
+        }
+    };
+    if let Some(stdin) = child.stdin.as_mut() {
+        if writeln!(stdin, "{}", line).is_err() {
+            eprintln!("clipboardctl: write to cliphist delete failed");
+            return 1;
+        }
+    }
+    match child.wait() {
+        Ok(s) if s.success() => {}
+        _ => {
+            eprintln!("clipboardctl: cliphist delete failed");
+            return 1;
+        }
+    }
+
+    // 缩略图跟着走。不删也不会错（下一次 list 的 prune_thumbs 会收），
+    // 但那要等到下一次，中间这份缓存里的路径就指着一张已经删掉的条目的图
+    let _ = fs::remove_file(thumbs_dir().join(format!("{}.png", id)));
+
+    println!("{}", collect_items(DEFAULT_LIMIT));
+    0
 }
 
 fn cmd_clear() -> i32 {
@@ -239,6 +300,15 @@ fn main() {
                 1
             } else {
                 cmd_paste(id, mime)
+            }
+        }
+        "remove" => {
+            let id = args.get(2).map(|s| s.as_str()).unwrap_or("");
+            if id.is_empty() {
+                eprintln!("usage: clipboardctl remove <id>");
+                1
+            } else {
+                cmd_remove(id)
             }
         }
         "clear" => cmd_clear(),

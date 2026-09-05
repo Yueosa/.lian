@@ -162,16 +162,17 @@ Item {
     readonly property real sEnd: s4 + lenRightSeg
 
     // ============================================================
-    // 周期行波的发射：一条 rail 一个发射器
+    // 周期行波的发射：一格波源槽位一个发射器
     // ============================================================
-    // 三条贴边 rail 各摆一个发射器（左/右/底），各自看 Panels.railSources 里
-    // 自己那一格。左组的 C 和右组的 V 本来就不互斥、能同时开着，所以波源本来
-    // 就该是多个——原先只有一个 origin，第二个面板开了只能把第一个的波顶掉。
+    // 发射器和 `Panels.railSlots` 的格子一一对应，各自看自己那格空不空。
+    // 波源本来就该是多个：左边的 C 和右边的 V 不互斥、能同时开着；底 rail 上
+    // A（中段）和 Z（左段）也不互斥。原先只有一个 origin，第二个面板开了只能
+    // 把第一个的波顶掉；后来改成"一条边一格"，还是装不下同一条边上的两个。
     //
-    // 为什么是**固定三个**、而不是跟着 railSources 的条目数增删：一个组同时
-    // 只可能有一个面板（那正是 Panels 上半部分在做的事），而一个组正好对应
-    // 一条 rail。固定三个的好处是发射器**永不重建**——跟着数组增删的话，开
-    // 第二个面板会把第一个的发射器连带重建，它在飞的那一发波当场消失。
+    // 为什么固定格数、而不是跟着开着的面板数增删：格子永不增删，发射器就
+    // **永不重建**——跟着数组增删的话，开第二个面板会把第一个的发射器连带重建，
+    // 它攒着的 lastOrigin（临别那一发要用）和定时器相位当场清零；更糟的是面板
+    // 关掉时发射器直接销毁，临别那一发没人放。理由的另一半在 Panels.railSlots
     //
     // 波相遇时波峰**相加**，做法见 wave.boostA（不是并集——并集是"谁高谁盖住"，
     // 两道波穿过彼此时一点反应都没有，假）。
@@ -194,10 +195,15 @@ Item {
     // 出生点在面板**自己那一端**，不是 rail 的中点。
     // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
     // 往上数——所以同样是 valign "bottom"，左边取远端、右边取近端
-    function originFor(edge, valign) {
-        if (edge === "bottom")
-            // 底 rail 上的面板（将来的 A）是居中的，中点就是它自己那一端
+    function originFor(edge, valign, anchor) {
+        if (edge === "bottom") {
+            // 底 rail 上不止一个面板，各占一段（A 中段、Z 左段），所以出生点得
+            // 由面板自己报屏幕 x（见 Panels.railSlots 的 anchor）。夹进本段里：
+            // 报进来的是卡片中线，卡片贴左时那条线可能落在左 rail 的厚度里
+            if (anchor >= 0)
+                return s2 + Math.max(0, Math.min(lenBottom, anchor - railThickness))
             return s2 + lenBottom / 2
+        }
 
         const inset = lenVRail * originInset
         if (edge === "right")
@@ -205,20 +211,25 @@ Item {
         return valign === "bottom" ? s2 - inset : s1 + inset
     }
 
-    // 三个发射器。非可视，只存"这条 rail 的波跑到哪了"
+    // 一格槽位一个发射器。非可视，只存"我这一格放到哪了"。
+    //
+    // 数目固定（= Panels.railSlotCount），跟着**槽位**而不是跟着面板：面板一关，
+    // 它那格变 null，发射器还在，才有人去放临别那一发。而且格子永不增删，
+    // 别的发射器攒着的 lastOrigin / 定时器相位不会被牵连重建
     Repeater {
         id: emitters
-        model: ["left", "right", "bottom"]
+        model: Panels.railSlotCount
 
         Item {
             id: emitter
 
-            required property string modelData
-            // 本组当前开着的面板贴在哪条边、哪一头；没开则为 undefined
-            readonly property var src: Panels.railSources[emitter.modelData]
+            required property int index
+            // 我这一格：{ id, edge, valign, anchor }，空着则为 null
+            readonly property var src: Panels.railSlots[emitter.index]
             readonly property bool armed: root.keyOwner && !!emitter.src
             readonly property real origin: emitter.armed
-                ? root.originFor(emitter.src.edge, emitter.src.valign) : 0
+                ? root.originFor(emitter.src.edge, emitter.src.valign,
+                                 emitter.src.anchor) : 0
 
             // 放波的触发条件只认**波源本身**，不认几何。
             //
@@ -228,10 +239,13 @@ Item {
             // 个真隐患：origin 依赖顶栏两段的宽度，而段宽跟着内容变，于是**多
             // 一个托盘图标就会把在飞的波重启**。
             //
-            // 改成认一个字符串签名：开/关面板、同组换面板（右组 V→N，valign 从
-            // top 变 bottom）都会让它变；几何漂移不会
+            // 改成认一个字符串签名：开/关面板、这格换了主人（同组换面板 V→N，
+            // 或槽位被别的面板接手）都会让它变；几何漂移不会。
+            // id 要进签名：底 rail 上 A 和 Z 的 edge/valign 一模一样，光凭那两个
+            // 字段换了主人也看不出来
             readonly property string srcKey: emitter.armed
-                ? (emitter.src.edge + "/" + emitter.src.valign) : ""
+                ? (emitter.src.id + "/" + emitter.src.edge + "/"
+                    + emitter.src.valign) : ""
 
             // 最后一次的出生点。关面板时 src 已经没了、origin 归零，得自己记着
             property real lastOrigin: 0
@@ -283,6 +297,7 @@ Item {
     // 最靠近路径两端 = 端点收势已经把它压到接近零，回收时基本看不见
     readonly property int poolSize: 12
     property int _seq: 0
+
 
     // 有没有波在飞。裁剪框和 Shape 的可见性要看它——面板全关之后常驻起伏会淡出，
     // 但那时可能还有波在路上，不能跟着一起藏掉。
@@ -338,6 +353,32 @@ Item {
             property real len: root.pulseLength
             property real amp: 1
             readonly property real half: wave.len / 2
+
+            // ---- 出生收势 ----
+            // spread=0 那一刻两个波前重合在波源上。振幅这时若已是满的，波峰就是
+            // **凭空出现**的——用户报的正是这个：蔓延路上是平滑曲线，波源处却突然
+            // 冒出一个峰。让振幅随波前离开波源的路程从 0 长起来，跑满半个波长
+            // （鼓包这时正好完全离开波源）到顶，读起来是水面先在波源处鼓起、
+            // 再劈成两道跑开。
+            //
+            // 用独立的 NumberAnimation 而不是 spread 的绑定：绑定要每帧算 JS，
+            // 而 spread 是**匀速**的（anim.easing = Linear），时间正比于路程，
+            // 所以一条按时间跑的斜坡和按路程算的完全等价，白拿一个零开销
+            property real birth: 0
+            // 画和叠加都用这个：掷出来的振幅乘上出生收势
+            readonly property real ampNow: wave.amp * wave.birth
+
+            NumberAnimation {
+                id: birthAnim
+                target: wave
+                property: "birth"
+                from: 0
+                to: 1
+                // 时长在出闸时按「半个波长要跑多久」改写（见 launch）
+                duration: 200
+                // 两头都零斜率：起手不磕、长满那一刻也不留折角
+                easing.type: Easing.InOutSine
+            }
 
             // 两个波前的里程：一个往里程增大的方向跑、一个往减小的方向跑
             readonly property real distA: wave.origin + wave.spread
@@ -403,6 +444,13 @@ Item {
                 // 两头哪边路远按哪边算，保证两个波前都能跑到豁口
                 anim.to = Math.max(o, root.sEnd - o) + wave.len
                 anim.restart()
+
+                // 出生收势的时长 = 跑半个波长要的时间（spread 匀速，按比例换算）
+                birthAnim.stop()
+                wave.birth = 0
+                birthAnim.duration = Math.max(1,
+                    Math.round(anim.duration * wave.half / anim.to))
+                birthAnim.restart()
             }
 
             NumberAnimation {
@@ -441,7 +489,8 @@ Item {
             const w = waves.itemAt(i)
             if (!w || !w.alive)
                 continue
-            sum += w.amp * (humpAt(d - w.distA, w.half) + humpAt(d - w.distB, w.half))
+            // 用 ampNow：刚出闸的波还没长起来，对别人的抬举也该按它此刻的高度算
+            sum += w.ampNow * (humpAt(d - w.distA, w.half) + humpAt(d - w.distB, w.half))
         }
         return Math.min(root.boostCap, sum / myAmp)
     }
@@ -638,9 +687,10 @@ Item {
                     readonly property real lenScale: root.lenScaleFor(bump.edgeDist, bump.len)
                     readonly property bool anchorAtLen:
                         root.nearHighOf(bump.dist) === seg.reversed
-                    // 厚度轴的总倍率：端点收势 × 这一发的振幅 × 波峰叠加
+                    // 厚度轴的总倍率：端点收势 × 这一发此刻的振幅（含出生收势）
+                    // × 波峰叠加
                     readonly property real thick:
-                        bump.taper * (bump.wave ? bump.wave.amp : 1) * bump.boost
+                        bump.taper * (bump.wave ? bump.wave.ampNow : 1) * bump.boost
 
                     transform: Scale {
                         origin.x: seg.vertical

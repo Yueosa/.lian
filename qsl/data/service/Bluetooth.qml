@@ -265,9 +265,17 @@ Singleton {
     readonly property var pairedRows: _pairedModel
     readonly property var nearbyRows: _nearbyModel
 
+    // 键取 MAC，不取对象身份：底层重扫时给同一台设备换个新对象是常事，按身份比
+    // 就成了「删旧 + 增新」，整列白重建（wifi 那边踩过，见 Network.wifiRowKey）
+    function deviceRowKey(d) {
+        if (!d)
+            return ""
+        return String(d.address || d.name || d.deviceName || "")
+    }
+
     onDeviceRowSourceChanged: {
-        RowSync.sync(_pairedModel, deviceRowSource.paired, "device")
-        RowSync.sync(_nearbyModel, deviceRowSource.nearby, "device")
+        RowSync.sync(_pairedModel, deviceRowSource.paired, "device", deviceRowKey)
+        RowSync.sync(_nearbyModel, deviceRowSource.nearby, "device", deviceRowKey)
     }
 
     function setDetailActive(active) {

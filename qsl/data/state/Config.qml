@@ -143,6 +143,16 @@ Singleton {
         readonly property int vWidth: root._clampInt("panels.v.width", 368, 280, 900)
         // N = rightrail 下
         readonly property int nWidth: root._clampInt("panels.n.width", 368, 280, 900)
+        // A = bottomrail 中段。520 试过太宽：应用名短，右半边全是空的（现在图标
+        // 加名字整体居中，行本身也不占满），440 刚好装得下最长的那几个应用名
+        readonly property int aWidth: root._clampInt("panels.a.width", 440, 320, 1000)
+        // Z = bottomrail 左段。宽度决定图片一行摆几张（格子 156 + 缝 8）：
+        // 560 是 3 张。文本条目占满整行，所以窄了只影响图片
+        readonly property int zWidth: root._clampInt("panels.z.width", 560, 360, 1200)
+        // Z 的列表高度上界。行高不齐（文本 46、图片 112），所以按像素封顶而不是
+        // 按行数：360 大约是 7 条文本或 3 行图片
+        readonly property int zListHeight:
+            root._clampInt("panels.z.listHeight", 360, 160, 800)
     }
 
     // ============================================================
