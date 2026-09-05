@@ -58,7 +58,7 @@ Item {
                 visible: modelData.kind === "item"
                 anchors.fill: parent
                 radius: Size.rounding.md
-                color: Color.surface
+                color: Color.surfaceContainerLow
 
                 RowLayout {
                     anchors.fill: parent

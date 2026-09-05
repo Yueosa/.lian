@@ -219,7 +219,7 @@ Item {
                 width: ListView.view ? ListView.view.width : 0
                 height: 44
                 radius: Size.rounding.md
-                color: Color.surface
+                color: Color.surfaceContainerLow
 
                 QslStateLayer { source: rowMa; tint: Color.primary; accent: true }
 

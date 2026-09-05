@@ -1137,7 +1137,7 @@ Item {
                 width: parent.width
                 height: 32
                 radius: Size.rounding.sm
-                color: Color.surface
+                color: Color.surfaceContainerLow
 
                 // 一个区能横跨十几公里、落在不同预报网格里，
                 // 与其在同名候选里猜，不如直接把坐标喂进去（daemon 会反查地名）
@@ -1191,7 +1191,7 @@ Item {
                     width: searchCol.width
                     height: 28
                     radius: Size.rounding.sm
-                    color: Color.surface
+                    color: Color.surfaceContainerLow
 
                     QslStateLayer {
                         source: geoMa

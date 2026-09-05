@@ -170,6 +170,24 @@ Singleton {
     Behavior on errorContainerText { enabled: root._animateColors; CAnim { type: CAnim.Theme } }
 
     // ---- 背景与表面 surface ----
+    //
+    // 层级阶（第 9 轮定案）。M3 的暗色方案里 background 和 surface 本来就同值
+    // （本壳都是 #0f1416），层级不靠这两个表达，靠 container 那五档。
+    //
+    // 盘点时全树只用了三档：background/surface(#0f1416)、High(#252b2d)、
+    // Highest(#303638)，Lowest / Low / Container 三档一次没用过。后果是待办
+    // 列表那种「面板里的内容行」painted 成 #0f1416——跟面板、跟面板后面的桌面
+    // 是同一个黑，行与行之间全靠间距和悬停态才看得出来，卡片读起来是平的。
+    //
+    //   background            #0f1416  面板与 bar 本体（跟 bar 焊在一起的那层）
+    //   surface               #0f1416  同上；只在半透明遮罩里用（scrim）
+    //   surfaceContainerLow   #171c1f  面板里的内容行 / 内容块
+    //   surfaceContainer      #1b2023  （留给内容块里再嵌一层的情形）
+    //   surfaceContainerHigh  #252b2d  输入框、芯片、行内控件
+    //   surfaceContainerHighest #303638  最上层：悬停底、弹出层
+    //
+    // 挑档的依据是「头上压了几层会画底色的祖先」，不是花括号嵌了几层——
+    // Layout / Item / Repeater 不画东西，不构成视觉层级。
     property color background: root._colorOf("background")
     Behavior on background { enabled: root._animateColors; CAnim { type: CAnim.Theme } }
     property color backgroundText: root._colorOf("on_background")

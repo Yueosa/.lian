@@ -169,7 +169,7 @@ Item {
                 width: ListView.view ? ListView.view.width : 0
                 height: 52
                 radius: Size.rounding.md
-                color: Color.surface
+                color: Color.surfaceContainerLow
 
                 QslStateLayer { source: delegateMa }
 
@@ -203,7 +203,7 @@ Item {
                             font.family: Size.fontIcon
                             font.pixelSize: Size.iconSize.lg
                             font.variableAxes: ({ "opsz": 20 })
-                            color: Color.surface
+                            color: Color.surfaceContainerLow
                         }
 
                         MouseArea {

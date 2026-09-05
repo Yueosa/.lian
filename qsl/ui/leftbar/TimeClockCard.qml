@@ -230,7 +230,7 @@ Item {
             // 固定高度：一言是 XHR 异步加载，高度随内容变会让整卡突然长高
             Layout.preferredHeight: 88
             radius: Size.rounding.lg
-            color: Color.surface
+            color: Color.surfaceContainerLow
             border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
             border.width: Style.border.width
             // 实色卡面，对齐 Hub 层次（内容内层 surface，非容器背景）
