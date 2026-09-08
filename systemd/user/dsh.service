@@ -1,0 +1,14 @@
+[Unit]
+Description=dsh (DeepSeek Harness) web UI
+PartOf=hyprland-session.target
+After=hyprland-session.target
+
+[Service]
+Type=simple
+ExecStart=/home/Sakurine/.npm-global/bin/dsh --profile web --no-open
+ExecStartPost=/home/Sakurine/.local/bin/dsh-open
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=hyprland-session.target
