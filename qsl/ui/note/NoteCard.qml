@@ -360,5 +360,17 @@ Item {
                 }
             }
         }
+
+        // ---- 快捷键提示：一行小字（方案见 qsl.md M3）----
+        Text {
+            Layout.fillWidth: true
+            Layout.topMargin: Size.spacing.xs
+            text: "Tab 标题/正文 · Ctrl+N 新建 · Ctrl+Tab 切笔记(Shift 反向)"
+            color: Color.textMuted
+            font.family: Size.fontSans
+            font.pixelSize: Size.fontSize.labelSmall
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+        }
     }
 }

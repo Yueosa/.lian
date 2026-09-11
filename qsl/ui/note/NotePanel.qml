@@ -31,8 +31,9 @@ Item {
 
     readonly property string panelId: "qsl-note"
 
-    // 用户 Esc/点框外关掉后保持隐藏，Super+J 才唤出
-    property bool userHidden: false
+    // 默认收起（用户定）：启动不展开，Super+J 才唤出；Esc/点框外关掉后
+    // 同样保持隐藏直到下次 Super+J
+    property bool userHidden: true
     // 让位：left 组（C / Z）有人开着，我就不占地方
     readonly property bool yieldToPanel: Panels.activeIn("left") !== ""
     readonly property bool hidden: userHidden || yieldToPanel
