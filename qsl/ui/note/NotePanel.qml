@@ -182,18 +182,13 @@ Item {
         Keys.onPressed: (event) => {
             const shift = event.modifiers & Qt.ShiftModifier
             const ctrl = event.modifiers & Qt.ControlModifier
-            // Tab 一族只在打字态处理（方案见 qsl.md M3）：
-            //   Tab / Shift+Tab          标题 ↔ 正文
-            //   Ctrl+Tab / Ctrl+Shift+Tab 下/上一篇
-            //   Ctrl+N                   新建（焦点落正文）
+            // Tab 的标题↔正文切换不在这里——挂在编辑框本体的 Keys.onTabPressed
+            // 上（QQC2 TextArea 会把 Tab 吞成字符，外层作用域拦不到，实测）。
+            // 这里只管 Ctrl 一族与 Esc（Ctrl+Tab 从 TextArea 正常冒泡，实测）
             if (panelState.typing && noteContainer.bodyItem) {
                 const card = noteContainer.bodyItem
-                if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
-                    if (ctrl) {
-                        card.cycleNote(shift || event.key === Qt.Key_Backtab ? -1 : 1)
-                    } else {
-                        card.toggleFieldFocus()
-                    }
+                if (ctrl && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)) {
+                    card.cycleNote(shift || event.key === Qt.Key_Backtab ? -1 : 1)
                     event.accepted = true
                     return
                 }

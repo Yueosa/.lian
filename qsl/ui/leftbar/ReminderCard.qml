@@ -30,10 +30,9 @@ Item {
     // 工具页用：非「提醒」组时自报空（占位协议），值由 Leftbar 装配处覆盖
     property bool hasContent: true
 
-    // 表单态（本卡私有，不进服务）
-    property string formTitle: ""
-    property string formTime: ""
-    property string formDate: ""
+    // 表单态（本卡私有，不进服务）。标题/时间/日期直接读输入框的 text，
+    // 不存副本——第一版存了 formTitle/formTime 但从没从输入框回读，
+    // tryAdd 读到的永远是空串，提醒一条都建不出来（已修）
     property string formMode: "once"
     property string formError: ""
 
@@ -63,14 +62,14 @@ Item {
     Component.onCompleted: root.syncClock()
 
     function tryAdd() {
-        const r = Reminder.add(formTitle, formMode, formTime, formDate)
+        const r = Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
         if (!r.ok) {
             formError = r.error
             return
         }
-        formTitle = ""
-        formTime = ""
-        formDate = ""
+        titleInput.text = ""
+        timeInput.text = ""
+        dateInput.text = ""
         formError = ""
         titleInput.forceActiveFocus()
     }
@@ -172,7 +171,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         visible: !timeInput.text
-                        text: "18:30"
+                        text: "HH:MM"
                         color: Color.textMuted
                         font: timeInput.font
                     }
@@ -197,7 +196,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         visible: !dateInput.text
-                        text: "2026-09-20"
+                        text: "YYYY-MM-DD"
                         color: Color.textMuted
                         font: dateInput.font
                     }

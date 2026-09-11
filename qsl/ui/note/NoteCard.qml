@@ -302,6 +302,12 @@ Item {
                 selectByMouse: true
                 verticalAlignment: Text.AlignVCenter
 
+                // Tab 挂在输入框**自己**身上（wifi 密码框同款思路：按键处理
+                // 不交给外层作用域）——QQC2 TextArea 会把 Tab 当普通字符吞掉，
+                // 但 QML Keys 挂在编辑框本体上时先于 C++ 处理（实测）
+                Keys.onTabPressed: (e) => { bodyEdit.forceActiveFocus(); e.accepted = true }
+                Keys.onBacktabPressed: (e) => { bodyEdit.forceActiveFocus(); e.accepted = true }
+
                 onTextChanged: {
                     if (root._switching)
                         return
@@ -350,6 +356,10 @@ Item {
                 font.pixelSize: Size.fontSize.bodyMedium
                 background: null
                 padding: 0
+
+                // 同上：Tab 本体拦截，不然会被当 tab 字符插进正文
+                Keys.onTabPressed: (e) => { titleInput.forceActiveFocus(); e.accepted = true }
+                Keys.onBacktabPressed: (e) => { titleInput.forceActiveFocus(); e.accepted = true }
 
                 onTextChanged: {
                     if (root._switching)
