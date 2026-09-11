@@ -245,7 +245,8 @@ Item {
                 }
 
                 // 提交按钮（固定 32×32，热区严格等于自身——TodoRow 的误触教训）。
-                // 编辑态图标换 check：同一格位置，语义从「新建」变「保存修改」
+                // 编辑态图标换 check：同一格位置，语义从「新建」变「保存修改」。
+                // 悬停染色同时是命中测试：悬停无反馈 = 点击通道被盖住
                 Item {
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32
@@ -259,8 +260,15 @@ Item {
                         color: Color.primary
                     }
 
+                    QslStateLayer {
+                        source: submitMa
+                        tint: Color.primary
+                    }
+
                     MouseArea {
+                        id: submitMa
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.tryAdd()
                     }
