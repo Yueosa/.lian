@@ -16,6 +16,10 @@ Item {
     anchors.fill: parent
     implicitHeight: contentCol.implicitHeight + 32   // 上下各 16 留白
 
+    // 工具页用：非「时间」组时自报空、容器收回让位（占位协议）。
+    // 默认 true；Leftbar 装配处按 toolState.groupId 覆盖（M2 后本卡删除）
+    property bool hasContent: true
+
     // 默认展开（用户要求）；收起状态仍可通过「收起 ▲」进入
     ColumnLayout {
         id: contentCol

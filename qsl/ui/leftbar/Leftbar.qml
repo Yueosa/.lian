@@ -28,7 +28,9 @@ RailPage {
 
     // 宽度按页定（时间窄、系统宽）；keys/todo 置顶布局：tab 条钉顶，内容从下长
     pages: ({
-        time: { title: "时间", icon: "\uf017", width: Size.panel.cWidth, containers: [timeClockCard, timeTimerCard] },
+        time: { title: "工具", icon: "\uf017", width: Size.panel.cWidth,
+                shownRiseMs: 0, header: toolTabsCard,
+                containers: [timeClockCard, timeTimerCard, calcCard, reminderCard] },
         sys:  { title: "系统", icon: "\uf2db", width: Size.panel.cWidth, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
         keys: { title: "键位", icon: "\uf11c", width: Size.panel.cWidth, header: keysTabsCard, containers: [keysListCard] },
         todo: { title: "待办", icon: "\uf0ae", width: Size.panel.cWidth, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
@@ -134,9 +136,21 @@ RailPage {
         property bool starredOnly: false
     }
 
+    // tool：工具页分区（芯片条卡点选）。下方容器按 groupId 自报 hasContent，
+    // 芯片切换 = 只改这个字符串，换卡动画由占位协议自带（下降沿立刻、上升沿
+    // 走页配置的 shownRiseMs: 0），不用 replayContainer
+    QtObject {
+        id: toolState
+
+        property string groupId: "time"
+    }
+
     // ---- 容器装配（顺序即派生顺序）----
-    Component { id: timeClockCard; TimeClockCard {} }
-    Component { id: timeTimerCard; TimeTimerCard {} }
+    Component { id: toolTabsCard; ToolTabsCard { sharedState: toolState } }
+    Component { id: timeClockCard; TimeClockCard { hasContent: toolState.groupId === "time" } }
+    Component { id: timeTimerCard; TimeTimerCard { hasContent: toolState.groupId === "time" } }
+    Component { id: calcCard; CalcCard { hasContent: toolState.groupId === "calc" } }
+    Component { id: reminderCard; ReminderCard { hasContent: toolState.groupId === "remind" } }
     Component { id: sysDialCard; SysDialCard {} }
     Component { id: sysPsiCard; SysPsiCard {} }
     Component { id: sysDiskCard; SysDiskCard {} }

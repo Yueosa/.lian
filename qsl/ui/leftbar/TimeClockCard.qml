@@ -17,6 +17,10 @@ Item {
     anchors.fill: parent
     implicitHeight: mainCol.implicitHeight + 32   // 上下各 16 留白
 
+    // 工具页用：非「时间」组时自报空、容器收回让位（占位协议）。
+    // 默认 true；Leftbar 装配处按 toolState.groupId 覆盖
+    property bool hasContent: true
+
     // 环与问候只跟「分钟」走，避免 Time 每秒通知带动 PathAngleArc 重算
     property var now: Time.rawDate
     property int _minuteKey: -1

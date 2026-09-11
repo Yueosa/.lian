@@ -43,10 +43,18 @@ Item {
     // 默认带过冲；高度会被高频重定目标的页（A 边打字边换高度）要换掉
     property int elasticType: Anim.SpatialFast
 
+    // 占位上升沿防抖窗口（RailContainer.shownRiseMs）的页级覆盖，默认 280。
+    // 工具页靠它切芯片：旧卡下降沿立刻收、新卡马上派生——芯片切换是人为
+    // 动作，不是数据抖一帧，不该为防抖付 280ms 迟滞。pages[page] 里配 0
+
     // 每页宽度（pages[page].width 覆盖全局 containerWidth）：
     // 页面饭量不同，时间窄、系统宽
     readonly property int pageWidth: (pages[page] && pages[page].width)
         ? pages[page].width : containerWidth
+    // 见上方「占位上升沿防抖窗口」的注释
+    readonly property int shownRiseMs:
+        (pages[page] && pages[page].shownRiseMs !== undefined)
+            ? pages[page].shownRiseMs : 280
     // 垂直停靠："top"（默认，从 56 起向下排）/ "bottom"（贴底 16，N 用）
     // / "center"（竖轨正中，powerbar 用）
     property string valign: "top"
@@ -486,6 +494,7 @@ Item {
                     visible: containerItem.wantOpen || containerItem.progress > 0.001
                     naturalWidth: root.pageWidth
                     elasticType: root.elasticType
+                    shownRiseMs: root.shownRiseMs
                     // 底边贴左段的页：卡片左沿压在左 rail 内沿上，接缝要改到
                     // 左上角（见 RailContainer.weldLeft）
                     weldLeft: root.edge === "bottom" && root.halign === "left"
