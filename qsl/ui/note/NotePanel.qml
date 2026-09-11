@@ -180,20 +180,14 @@ Item {
 
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
-            const shift = event.modifiers & Qt.ShiftModifier
             const ctrl = event.modifiers & Qt.ControlModifier
-            // Tab 的标题↔正文切换不在这里——挂在编辑框本体的 Keys.onTabPressed
-            // 上（QQC2 TextArea 会把 Tab 吞成字符，外层作用域拦不到，实测）。
-            // 这里只管 Ctrl 一族与 Esc（Ctrl+Tab 从 TextArea 正常冒泡，实测）
+            // Tab 一族（标题↔正文、Ctrl+Tab 切笔记）都处理在编辑框本体的
+            // Keys.onTabPressed 上——QQC2 TextArea 会把 Tab 吞成字符，且挂了
+            // 本体处理器后 Tab 一族不再冒泡（offscreen 实测），这里拦不到。
+            // 这里只管 Ctrl+N 与 Esc
             if (panelState.typing && noteContainer.bodyItem) {
-                const card = noteContainer.bodyItem
-                if (ctrl && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)) {
-                    card.cycleNote(shift || event.key === Qt.Key_Backtab ? -1 : 1)
-                    event.accepted = true
-                    return
-                }
                 if (ctrl && event.key === Qt.Key_N) {
-                    card.addNote()
+                    noteContainer.bodyItem.addNote()
                     event.accepted = true
                     return
                 }

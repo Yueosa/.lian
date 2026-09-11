@@ -72,16 +72,10 @@ Item {
         bodyEdit.focus = false
     }
 
-    // Tab：标题 ↔ 正文（两格循环，正反等价）
-    function toggleFieldFocus() {
-        if (titleInput.activeFocus)
-            bodyEdit.forceActiveFocus()
-        else
-            titleInput.forceActiveFocus()
-    }
-
     // Ctrl+Tab：笔记间循环。id 列表只随增删变（Note.noteIds），
-    // 转一圈回到自己的情况（只有一篇）由 selectNote 的等值检查吞掉
+    // 转一圈回到自己的情况（只有一篇）由 selectNote 的等值检查吞掉。
+    // 调用点在两个编辑框本体的 Keys.onTabPressed（Tab 一族不冒泡，
+    // 见上）
     function cycleNote(step) {
         const ids = Note.noteIds
         if (ids.length === 0)
@@ -302,11 +296,29 @@ Item {
                 selectByMouse: true
                 verticalAlignment: Text.AlignVCenter
 
-                // Tab 挂在输入框**自己**身上（wifi 密码框同款思路：按键处理
-                // 不交给外层作用域）——QQC2 TextArea 会把 Tab 当普通字符吞掉，
-                // 但 QML Keys 挂在编辑框本体上时先于 C++ 处理（实测）
-                Keys.onTabPressed: (e) => { bodyEdit.forceActiveFocus(); e.accepted = true }
-                Keys.onBacktabPressed: (e) => { bodyEdit.forceActiveFocus(); e.accepted = true }
+                // Tab 挂在输入框**自己**身上（wifi 密码框同款思路）：QQC2
+                // TextArea 会把 Tab 当普通字符吞掉，外层作用域拦不到，但挂在本
+                // 体上的 Keys 先于 C++ 处理（offscreen 实测）。而且一旦挂了本体
+                // 处理器，Tab 一族就不再冒泡——所以 Ctrl+Tab 也在这里就地处理
+                // （accept 掉），不放给外层
+                Keys.onTabPressed: (e) => {
+                    if (e.modifiers & Qt.ControlModifier) {
+                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                        e.accepted = true
+                        return
+                    }
+                    bodyEdit.forceActiveFocus()
+                    e.accepted = true
+                }
+                Keys.onBacktabPressed: (e) => {
+                    if (e.modifiers & Qt.ControlModifier) {
+                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                        e.accepted = true
+                        return
+                    }
+                    bodyEdit.forceActiveFocus()
+                    e.accepted = true
+                }
 
                 onTextChanged: {
                     if (root._switching)
@@ -357,9 +369,25 @@ Item {
                 background: null
                 padding: 0
 
-                // 同上：Tab 本体拦截，不然会被当 tab 字符插进正文
-                Keys.onTabPressed: (e) => { titleInput.forceActiveFocus(); e.accepted = true }
-                Keys.onBacktabPressed: (e) => { titleInput.forceActiveFocus(); e.accepted = true }
+                // 同上：Tab 本体拦截，Ctrl+Tab 就地切笔记
+                Keys.onTabPressed: (e) => {
+                    if (e.modifiers & Qt.ControlModifier) {
+                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                        e.accepted = true
+                        return
+                    }
+                    titleInput.forceActiveFocus()
+                    e.accepted = true
+                }
+                Keys.onBacktabPressed: (e) => {
+                    if (e.modifiers & Qt.ControlModifier) {
+                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                        e.accepted = true
+                        return
+                    }
+                    titleInput.forceActiveFocus()
+                    e.accepted = true
+                }
 
                 onTextChanged: {
                     if (root._switching)

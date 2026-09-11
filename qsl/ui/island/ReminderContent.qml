@@ -51,7 +51,7 @@ Item {
 
             Text {
                 width: parent.width
-                text: root.item ? "点掉关闭" : ""
+                text: root.item ? "点击关闭" : ""
                 color: Color.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
