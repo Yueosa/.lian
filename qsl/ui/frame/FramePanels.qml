@@ -81,8 +81,7 @@ Item {
     //
     // 热重载有个盲区：quickshell 的文件监视只认启动那一遍解析到的目录，而这几个
     // 面板全在框窗的 Loader { active: isKeyOwner } 里懒加载 —— ui/launcher、
-    // ui/clipboard、ui/tiles、ui/power、ui/notif、data/launcher、data/clipboard、data/tiles
-    // 里的改动它一概收不到
+    // ui/clipboard、ui/tiles、ui/power、ui/notif 里的改动它一概收不到
     // （.js 文件不管在哪都不监视）。改完那些文件保存了却"什么都没变"，多半是这个，
     // 不是改错了。qs ipc call shell reload 手动叫一次即可
     IpcHandler {

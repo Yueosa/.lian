@@ -11,7 +11,7 @@
 // 两区在**卡内部**切而不是走 RailPage 的翻页：翻页每次都是整卡退场 + 重新
 // 派生（~600ms），三个磁贴的小卡上那一下太重。见 RailPage.tabPressed。
 //
-// 清单在 asset/tiles.json（改完存盘即生效），动作在 data/tiles/Tiles.qml，
+// 清单在 asset/tiles.json（改完存盘即生效），动作在 data/service/Tiles.qml，
 // 服务状态与启停在 data/service/Systemd.qml。
 
 import QtQuick

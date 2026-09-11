@@ -130,19 +130,41 @@ Singleton {
     }
 
     // ---- 持久化 ----
+    // 写盘走 Process（python3 write_text），照 Todo 的口径：FileView.setText
+    // 不可靠（Todo 那边有注释），且整段字符串写进 FileView 会同步阻塞。
+    // _suppressLoad 防写盘回读把内存态打回旧内容；_storeReady 等 mkdir 完才
+    // 放行首笔写入，_dirty 接住启动期就发生的写（恢复 running 会触发 _save）
     readonly property string _dataDir: Quickshell.env("HOME") + "/.local/share/qsl"
+    property bool _storeReady: false
+    property bool _dirty: false
+    property bool _suppressLoad: false
 
     function _save() {
-        const data = {
+        if (!_storeReady) {
+            _dirty = true
+            return
+        }
+        const payload = JSON.stringify({
             sw: { running: stopwatch.running, elapsed: stopwatch.elapsed },
             cd: { running: countdown.running, total: countdown.total, remaining: countdown.remaining }
-        }
-        _file.setText(JSON.stringify(data))
+        })
+        _suppressLoad = true
+        writeFile.command = [
+            "bash", "-c",
+            "python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).write_text(sys.argv[2]+chr(10))' \"$1\" \"$2\"",
+            "_",
+            root._dataDir + "/timer.json",
+            payload
+        ]
+        writeFile.running = true
+        _dirty = false
     }
 
-    function _load() {
-        const raw = _file.text()
-        if (!raw) return
+    function _loadFromText(raw) {
+        if (_suppressLoad)
+            return
+        if (!raw)
+            return
         try {
             const d = JSON.parse(raw)
             if (d.sw) {
@@ -159,11 +181,37 @@ Singleton {
         }
     }
 
+    Process {
+        id: writeFile
+        onExited: (code) => {
+            if (code !== 0)
+                console.warn("[Timers] write failed, code=", code)
+            Qt.callLater(() => {
+                root._suppressLoad = false
+            })
+        }
+    }
+
+    Process {
+        id: _mkdirProc
+        command: ["mkdir", "-p", root._dataDir]
+        running: true
+        onExited: {
+            root._storeReady = true
+            if (root._dirty)
+                root._save()
+            else
+                _file.reload()
+        }
+    }
+
     FileView {
         id: _file
         path: root._dataDir + "/timer.json"
         preload: true
+        // 不 watch：避免外部写盘回读把内存态打回旧内容
+        watchChanges: false
         atomicWrites: true
-        onLoaded: root._load()
+        onLoaded: root._loadFromText(text())
     }
 }

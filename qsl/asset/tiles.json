@@ -1,6 +1,6 @@
 {
     "_doc": [
-        "X 磁贴面板（Super+X）。改完存盘即生效——data/tiles/Tiles.qml 那边是",
+        "X 磁贴面板（Super+X）。改完存盘即生效——data/service/Tiles.qml 那边是",
         "FileView watchChanges，不用重启 qs。",
         "",
         "browser: 页面磁贴用哪个浏览器。cmd 是命令。url 磁贴一律 --new-window",
@@ -76,7 +76,6 @@
             "icon": "terminal",
             "url": "http://127.0.0.1:3080"
         }
-
     ],
 
     "svc": [
@@ -103,7 +102,7 @@
         },
         {
             "id": "dsh",
-            "title": "DeepSeek Herness",
+            "title": "DeepSeek Harness",
             "note": "127.0.0.1:3080",
             "icon": "terminal",
             "units": ["dsh.service"]
