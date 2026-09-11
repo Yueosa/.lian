@@ -35,6 +35,10 @@ Item {
     // tryAdd 读到的永远是空串，提醒一条都建不出来（已修）
     property string formMode: "once"
     property string formError: ""
+    // 正在编辑的提醒 id：空 = 新建模式。点列表行进入编辑，表单回填该行，
+    // 提交走 Reminder.update
+    property string editingId: ""
+    readonly property bool editing: editingId !== ""
 
     readonly property bool dateMode: formMode === "date"
     readonly property int innerW: Math.round(root.width - 32)
@@ -70,16 +74,37 @@ Item {
         e.accepted = true
     }
 
-    function tryAdd() {
-        const r = Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
-        if (!r.ok) {
-            formError = r.error
-            return
-        }
+    function resetForm() {
         titleInput.text = ""
         timeInput.text = ""
         dateInput.text = ""
         formError = ""
+        editingId = ""
+    }
+
+    function tryAdd() {
+        const r = root.editing
+            ? Reminder.update(editingId, titleInput.text, formMode,
+                              timeInput.text, dateInput.text)
+            : Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
+        if (!r.ok) {
+            formError = r.error
+            return
+        }
+        root.resetForm()
+        titleInput.forceActiveFocus()
+    }
+
+    // 点列表行：回填表单进入编辑（再提交即修改）
+    function startEdit(it) {
+        if (!it)
+            return
+        titleInput.text = it.title || ""
+        timeInput.text = it.at || ""
+        dateInput.text = it.date || ""
+        formMode = it.mode === "daily" || it.mode === "date" ? it.mode : "once"
+        formError = ""
+        editingId = it.id
         titleInput.forceActiveFocus()
     }
 
@@ -211,7 +236,8 @@ Item {
                     }
                 }
 
-                // 添加按钮（固定 32×32，热区严格等于自身——TodoRow 的误触教训）
+                // 提交按钮（固定 32×32，热区严格等于自身——TodoRow 的误触教训）。
+                // 编辑态图标换 check：同一格位置，语义从「新建」变「保存修改」
                 Item {
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32
@@ -219,7 +245,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "add"
+                        text: root.editing ? "check" : "add"
                         font.family: Size.fontIcon
                         font.pixelSize: Size.iconSize.lg
                         color: Color.primary
@@ -298,9 +324,27 @@ Item {
                     width: root.innerW
                     height: 44
                     radius: Size.rounding.md
-                    color: Color.surfaceContainerLow
+                    // 编辑中的行亮一档：表单正在改的就是它
+                    color: rowRoot.editing
+                        ? Color.surfaceContainerHigh : Color.surfaceContainerLow
+                    border.width: rowRoot.editing ? 1 : 0
+                    border.color: Color.withAlpha(Color.primary, 0.5)
+
+                    readonly property bool editing:
+                        root.editingId === modelData.id
 
                     QslStateLayer { source: rowMa }
+
+                    // 行背景 MouseArea 必须声明在内容**之前**：声明在后面就盖在
+                    // 删除按钮之上，把点击全吃掉（第一版就是，删除按钮因此
+                    // 完全失灵）。它同时承接「点行进入编辑」
+                    MouseArea {
+                        id: rowMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.startEdit(modelData)
+                    }
 
                     RowLayout {
                         anchors.fill: parent
@@ -308,9 +352,11 @@ Item {
                         anchors.rightMargin: Size.spacing.xs
                         spacing: Size.spacing.sm
 
-                        // 计划时间（mono，固定宽对齐）
+                        // 计划时间（mono，固定宽对齐）。110 容得下最长的
+                        // 「MM-DD HH:MM」（11 字符），92 会把指定日期档省略成
+                        // MM-DD HH:…（已修）
                         Text {
-                            Layout.preferredWidth: 92
+                            Layout.preferredWidth: 110
                             text: root.timeLabel(modelData)
                             color: Color.primary
                             font.family: Size.fontMono
@@ -353,15 +399,15 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: if (modelData) Reminder.remove(modelData.id)
+                                onClicked: {
+                                    if (!modelData)
+                                        return
+                                    if (root.editingId === modelData.id)
+                                        root.resetForm()
+                                    Reminder.remove(modelData.id)
+                                }
                             }
                         }
-                    }
-
-                    MouseArea {
-                        id: rowMa
-                        anchors.fill: parent
-                        hoverEnabled: true
                     }
                 }
             }

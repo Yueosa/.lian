@@ -125,6 +125,41 @@ Singleton {
         _ensureTick()
     }
 
+    // 修改已建提醒：校验与 add 同套，nextAt 重新算（once 过了今天照滚明天）
+    function update(id, title, mode, at, date) {
+        const cur = _find(id)
+        if (!cur)
+            return { ok: false, error: "这条提醒已经不在了" }
+        const t = String(title || "").trim()
+        const atMs = _parseAt(at)
+        if (!t || atMs < 0)
+            return { ok: false, error: "标题和时间（HH:MM）都要填" }
+        const m = String(mode || "once")
+        let dateMs = -1
+        if (m === "date") {
+            dateMs = _parseDate(date)
+            if (dateMs < 0)
+                return { ok: false, error: "日期要写 YYYY-MM-DD" }
+        }
+        const now = Date.now()
+        const nextAt = _nextFire(atMs, m, dateMs, now)
+        if (m === "date" && nextAt <= now)
+            return { ok: false, error: "这个时间已经过了" }
+        items = items.map(i => i.id === id ? Object.assign({}, i, {
+            title: t,
+            mode: m,
+            at: String(at),
+            date: m === "date" ? String(date) : "",
+            atMs: atMs,
+            dateMs: dateMs,
+            nextAt: nextAt
+        }) : i)
+        _bump()
+        _save()
+        _ensureTick()
+        return { ok: true, error: "" }
+    }
+
     // 最近一次到点的时间戳（Overview 的提醒 MiniStat 用）。-1 = 没有
     readonly property int nextAt: {
         void revision
