@@ -13,6 +13,7 @@ singleton Lianwall 1.0 Lianwall.qml
 singleton Lyrics 1.0 Lyrics.qml
 singleton Media 1.0 Media.qml
 singleton Network 1.0 Network.qml
+singleton Note 1.0 Note.qml
 singleton Notification 1.0 Notification.qml
 singleton Reminder 1.0 Reminder.qml
 singleton Session 1.0 Session.qml

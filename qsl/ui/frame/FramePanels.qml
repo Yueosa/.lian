@@ -19,6 +19,7 @@ import qs.data.service
 import qs.ui.clipboard
 import qs.ui.launcher
 import qs.ui.leftbar
+import qs.ui.note
 import qs.ui.notif
 import qs.ui.power
 import qs.ui.rightbar
@@ -37,6 +38,7 @@ Item {
         || rightbar.wantsKeyboard || notifCenter.wantsKeyboard
         || launcher.wantsKeyboard || clipboard.wantsKeyboard
         || tiles.wantsKeyboard || power.wantsKeyboard
+        || note.wantsKeyboard
 
     // 框窗算 mask 用：开态是整条，关态 0×0
     readonly property Item leftbarHitBox: leftbar.hitBox
@@ -46,6 +48,12 @@ Item {
     readonly property Item clipboardHitBox: clipboard.hitBox
     readonly property Item tilesHitBox: tiles.hitBox
     readonly property Item powerHitBox: power.hitBox
+    readonly property Item noteHitBox: note.hitBox
+
+    // 常驻笔记声明在最前：C 开窗时盖在笔记之上（让位动画之外的双保险）
+    NotePanel {
+        id: note
+    }
 
     Leftbar {
         id: leftbar

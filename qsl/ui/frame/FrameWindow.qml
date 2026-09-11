@@ -120,6 +120,7 @@ PanelWindow {
         Region { item: panelsLoader.item ? panelsLoader.item.clipboardHitBox : null }
         Region { item: panelsLoader.item ? panelsLoader.item.tilesHitBox : null }
         Region { item: panelsLoader.item ? panelsLoader.item.powerHitBox : null }
+        Region { item: panelsLoader.item ? panelsLoader.item.noteHitBox : null }
     }
 
     Bar {

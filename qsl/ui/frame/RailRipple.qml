@@ -195,6 +195,8 @@ Item {
     // 出生点在面板**自己那一端**，不是 rail 的中点。
     // 竖 rail 上里程的方向不一样：左 rail 从顶（s1）往下数，右 rail 从底（s3）
     // 往上数——所以同样是 valign "bottom"，左边取远端、右边取近端
+    // anchor = 面板卡片中线的屏幕坐标（x 给底边、y 给竖边）。钉在特定高度上
+    // 的面板（常驻笔记）自己报 y；C/V/N 这类贴整条边的沿用 valign 内缩点
     function originFor(edge, valign, anchor) {
         if (edge === "bottom") {
             // 底 rail 上不止一个面板，各占一段（A 中段、Z 左段），所以出生点得
@@ -203,6 +205,14 @@ Item {
             if (anchor >= 0)
                 return s2 + Math.max(0, Math.min(lenBottom, anchor - railThickness))
             return s2 + lenBottom / 2
+        }
+
+        if (anchor >= 0) {
+            // 竖边：anchor 是从屏幕顶起算的 y；路径里程从 rail 顶起算（左）或
+            // 从底起算（右），两条边换算相反
+            const fromTop = Math.max(0, Math.min(lenVRail,
+                anchor - barHeight - railThickness))
+            return edge === "right" ? s3 + (lenVRail - fromTop) : s1 + fromTop
         }
 
         const inset = lenVRail * originInset
