@@ -46,6 +46,14 @@ Singleton {
 
     function _bump() { revision++ }
 
+    function _find(id) {
+        for (let i = 0; i < items.length; i++) {
+            if (items[i] && items[i].id === id)
+                return items[i]
+        }
+        return null
+    }
+
     // ---- 时间解析（服务层只认这两种格式，UI 卡按同一套校验）----
     function _parseAt(s) {   // "HH:MM" → 当日毫秒偏移，失败 -1
         const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || ""))
