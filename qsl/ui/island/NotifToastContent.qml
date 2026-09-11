@@ -167,12 +167,13 @@ Item {
                     height: 2
                     radius: 1
                     color: row.accent
-                    width: row.width - 20
-
-                    // 时长直接借 Timer 的令牌：进度条走完那一刻就是 toast 该走的
-                    // 那一刻，两边各写各的迟早对不齐
+                    // 满宽取稳定值 notifW 扣两层固定缩进（notifLoader 左右 margin
+                    // 各 10 + 进度条自身再缩 20）。不能用 row.width：首条 toast
+                    // 到达时岛正从收起态 morph 到 notifW，row.width 还是中间值，
+                    // from 快照偏小，进度条就「只有 90% 宽」。
+                    width: Size.island.notifW - 40
                     NumberAnimation on width {
-                        from: row.width - 20
+                        from: Size.island.notifW - 40
                         to: 0
                         duration: Island.notifToastMs
                         running: true
