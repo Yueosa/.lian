@@ -30,7 +30,7 @@ RailPage {
     pages: ({
         time: { title: "工具", icon: "\uf017", width: Size.panel.cWidth,
                 shownRiseMs: 0, header: toolTabsCard,
-                containers: [timeClockCard, timeTimerCard, calcCard, reminderCard] },
+                containers: [timeClockCard, calcCard, reminderCard] },
         sys:  { title: "系统", icon: "\uf2db", width: Size.panel.cWidth, containers: [sysDialCard, sysPsiCard, sysDiskCard, sysNetCard, sysProcsCard] },
         keys: { title: "键位", icon: "\uf11c", width: Size.panel.cWidth, header: keysTabsCard, containers: [keysListCard] },
         todo: { title: "待办", icon: "\uf0ae", width: Size.panel.cWidth, header: todoTabsCard, containers: [todoListCard, todoDoneCard] }
@@ -160,9 +160,8 @@ RailPage {
     // ---- 容器装配（顺序即派生顺序）----
     Component { id: toolTabsCard; ToolTabsCard { sharedState: toolState } }
     Component { id: timeClockCard; TimeClockCard { hasContent: toolState.groupId === "time" } }
-    Component { id: timeTimerCard; TimeTimerCard { hasContent: toolState.groupId === "time" } }
     Component { id: calcCard; CalcCard { sharedState: toolState; hasContent: toolState.groupId === "calc" } }
-    Component { id: reminderCard; ReminderCard { hasContent: toolState.groupId === "remind" } }
+    Component { id: reminderCard; ReminderCard { sharedState: toolState; hasContent: toolState.groupId === "remind" } }
     Component { id: sysDialCard; SysDialCard {} }
     Component { id: sysPsiCard; SysPsiCard {} }
     Component { id: sysDiskCard; SysDiskCard {} }

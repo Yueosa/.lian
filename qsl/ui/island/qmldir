@@ -8,6 +8,7 @@ MediaPage 1.0 MediaPage.qml
 MediaPlayerPicker 1.0 MediaPlayerPicker.qml
 MediaWave 1.0 MediaWave.qml
 NotifToastContent 1.0 NotifToastContent.qml
+ReminderContent 1.0 ReminderContent.qml
 OverviewCalendar 1.0 OverviewCalendar.qml
 OverviewPage 1.0 OverviewPage.qml
 SwitcherPage 1.0 SwitcherPage.qml

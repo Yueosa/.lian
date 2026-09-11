@@ -187,6 +187,7 @@ Item {
                 // 内容还没建完就改目标值，动画会从中途开始
                 readonly property int targetW: root.hubShaped
                     ? (hubLoader.item ? hubLoader.item.implicitWidth : hubFallbackW)
+                    : Island.isReminderMode ? Size.island.reminderW
                     : Island.isLyricsMode
                         ? (lyricsLoader.item
                             ? Math.round(lyricsLoader.item.implicitWidth)
@@ -196,11 +197,12 @@ Item {
 
                 readonly property int targetH: root.hubShaped
                     ? (hubLoader.item ? hubLoader.item.implicitHeight : hubFallbackH)
+                    : Island.isReminderMode ? Size.island.reminderH
                     : Island.isLyricsMode ? Size.island.lyricsH
                     : Island.isNotifMode ? Island.notifH
                     : (Size.island.collapsedH + hoverGrowH)
 
-                readonly property int targetR: (root.hubShaped || Island.isLyricsMode || Island.isNotifMode)
+                readonly property int targetR: (root.hubShaped || Island.isReminderMode || Island.isLyricsMode || Island.isNotifMode)
                     ? Math.round(24 * Size.islandScale)
                     : (Island.isCollapsedMode && hovered
                         ? Math.round(18 * Size.islandScale)
@@ -296,6 +298,31 @@ Item {
                             idx = Island.notifCount - 1
                         Island.clearNotifIndex(idx)
                     }
+                }
+
+                // 常驻提醒（qsl.md M2）：到点压过歌词/toast，手点才关。
+                // active 不跟 showHub 绑死——Hub 开着时提醒排队（isReminderMode
+                // 为假），关 Hub 后要马上能显示，Loader 留着是最便宜的路
+                Loader {
+                    id: reminderLoader
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 10
+                    height: Math.max(0, Size.island.reminderH - 20)
+                    z: 302
+                    active: Island.reminderCount > 0
+                    visible: Island.isReminderMode
+                    sourceComponent: ReminderContent {}
+                }
+
+                // 整卡可点 = 关闭当前这条（FIFO：点掉显示下一条）
+                MouseArea {
+                    anchors.fill: reminderLoader
+                    enabled: Island.isReminderMode
+                    z: 303
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Island.dismissReminder()
                 }
 
                 // 歌词条：按 implicitWidth 定宽（勿 fill，否则 toast 会压扁导致切回后歪/溢出）

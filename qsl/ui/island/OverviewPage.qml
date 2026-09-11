@@ -9,7 +9,7 @@
 //
 // 性能：本页不起进程、不建 Timer、不做轮询，全部读现成单例
 // （Sysmon.hostname / uptimeText、Battery、Notification.count、Todo.count、
-// Timers.*）。切 Tab 随 Loader 整体销毁。
+// Reminder.count）。切 Tab 随 Loader 整体销毁。
 // hostname/uptime 原先是本页自起的 oneshot Process，第 9 轮搬进 Sysmon。
 
 import QtQuick
@@ -618,14 +618,12 @@ Item {
                         }
                         MiniStat {
                             glyph: "\uf017"
-                            accent: Timers.countdown.running || Timers.stopwatch.running
-                            text: {
-                                if (Timers.countdown.running)
-                                    return "倒 " + Timers.formatSec(Timers.countdown.remaining)
-                                if (Timers.stopwatch.running)
-                                    return "正 " + Timers.formatSec(Timers.stopwatch.elapsed)
-                                return "无计时"
-                            }
+                            accent: Reminder.count > 0
+                            text: Reminder.count > 0
+                                ? (Reminder.count > 1
+                                    ? Reminder.hhmmOf(Reminder.nextAt) + " 等 " + Reminder.count + " 条"
+                                    : Reminder.hhmmOf(Reminder.nextAt) + " 提醒")
+                                : "无提醒"
                         }
                     }
                 }

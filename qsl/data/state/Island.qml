@@ -6,8 +6,9 @@ pragma Singleton
 // 避免每个 PanelWindow 各挂 IpcHandler 导致 Alt/Super+Tab 竞态。
 // UI（ui/island/IslandShell.qml）只读这里的属性做 morph。
 // ============================================================
-// 模式优先级（高→低）：Hub > 手动歌词 > 通知 toast > 自动歌词 > 时钟
+// 模式优先级（高→低）：Hub > 提醒 > 手动歌词 > 通知 toast > 自动歌词 > 时钟
 // 通知 toast：最多堆叠 3 条（对齐旧 DI popupModel）
+// 提醒（qsl.md M2）：常驻，手动点掉；Hub 开着时排队，Hub 关了才占岛
 // 无 L2 媒体卡、无音量 OSD。
 // ============================================================
 
@@ -59,17 +60,51 @@ Singleton {
     // 旧 DI：notifH = count*70 + 20（高度本身不再乘 islandScale）
     readonly property int notifH: notifCount > 0 ? (notifCount * 70 + 20) : 0
 
+    // ---- 常驻提醒队列（qsl.md M2）----
+    // 和上面的 toast 是两条线：toast 5s 自动滚、DnD 可压；提醒到点必须手动点掉
+    // （一级岛提醒形态），不走 Notification、不受 DnD 影响。FIFO：一次显示头一条，
+    // 点掉露出下一条（内容带「还有 N 条」角标），全点掉岛回落到原形态
+    ListModel {
+        id: reminderModel
+    }
+
+    readonly property alias reminders: reminderModel
+    readonly property int reminderCount: reminderModel.count
+
+    Connections {
+        target: Reminder
+        function onReminderFired(payload) {
+            root.pushReminder(payload)
+        }
+    }
+
+    function pushReminder(payload) {
+        const p = payload || {}
+        reminderModel.append({
+            title: String(p.title || "提醒"),
+            at: String(p.at || ""),
+            mode: String(p.mode || "once")
+        })
+    }
+
+    function dismissReminder() {
+        if (reminderModel.count > 0)
+            reminderModel.remove(0)
+    }
+
     // Hub 收起宽限期：先回时钟一级岛，再允许通知/歌词抢占（避免 morph 中歌词被拉宽）
     property bool hubCollapseHold: false
     readonly property int hubCollapseHoldMs: 1000
 
     readonly property bool isHubMode: showHub
+    // 提醒压歌词和 toast（常驻、手点才关），但让着 Hub
+    readonly property bool isReminderMode: reminderCount > 0 && !showHub && !hubCollapseHold
     // 手动歌词压 toast；自动歌词让路给 toast（对齐旧 DI）
-    readonly property bool isNotifMode: notifCount > 0 && !showLyrics && !showHub && !hubCollapseHold
+    readonly property bool isNotifMode: notifCount > 0 && !showLyrics && !showHub && !isReminderMode && !hubCollapseHold
     readonly property bool isLyricsMode:
         (showLyrics || (autoLyrics && !lyricsHoverRestore))
-        && !showHub && !isNotifMode && !hubCollapseHold
-    readonly property bool isCollapsedMode: !showHub && !isLyricsMode && !isNotifMode
+        && !showHub && !isNotifMode && !isReminderMode && !hubCollapseHold
+    readonly property bool isCollapsedMode: !showHub && !isLyricsMode && !isNotifMode && !isReminderMode
 
     onHubTabIndexChanged: hubLastOpenIndex = hubTabIndex
 

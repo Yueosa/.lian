@@ -225,6 +225,11 @@ Singleton {
         readonly property int notifW: Math.round(380 * root.islandScale)
         // 高度见 Island.notifH（count*70+20）
 
+        // 常驻提醒（qsl.md M2）：一级岛提醒形态。比 toast 宽——提醒要常驻到
+        // 手动点掉，得容下 alarm 图标 + 标题 + 计划时间 + 「还有 N 条」角标
+        readonly property int reminderW: 440
+        readonly property int reminderH: 72
+
         // 图标 24 + 4 + 标签 14 ≈ 55，加指示条一共 64。原来 80 是白留的，
         // 而它是唯一一个五页都要交的税：省下的 16 每页都拿得到
         readonly property int hubTabBarHeight: 64
