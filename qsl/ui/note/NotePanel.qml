@@ -143,7 +143,11 @@ Item {
         }
     }
 
-    // ---- 键盘：Esc 退出打字态（Keys.BeforeItem 在编辑框之前拦到）----
+    // ---- 键盘：Esc 退出打字态 ----
+    // 焦点作用域必须**包住**笔记容器：内容放在作用域外面（兄弟节点）时，
+    // 编辑框一拿 activeFocus 焦点就带出了本子树，Keys.onPressed 从此不再
+    // 触发——RailPage.keyScope 注释里记着 V 面板焦点饥饿的同一课，本文件
+    // 第一版就栽在这上面（Esc 无路可退 = 「笔记关不掉」）。
     // 悬停聚焦（qsl.md 定）：鼠标进卡就 forceActiveFocus，焦点视觉先行；
     // 打字仍要点击输入框或 Super+J——hover 不抢应用键盘（OnDemand 只认点击）
     property bool hovered: hoverMa.containsMouse
@@ -160,6 +164,27 @@ Item {
                 event.accepted = true
             }
         }
+
+        // ---- 常驻容器：RailContainer 白送贴 rail 几何/耳朵/派生动画 ----
+        // present = 让位条件的反相；让位即滑回 rail（同一条派生语言），
+        // 回来重新派生、内容重建
+        RailContainer {
+            id: noteContainer
+            x: 8
+            y: 56
+            edge: "left"
+            gate: true
+            naturalWidth: Size.panel.cWidth
+            present: !root.yieldToPanel
+            staggerMs: 0
+            exitStaggerMs: 0
+            // 打字逐行换高度 = 高频重定目标：过冲档会「长过头再缩回来」
+            // （A 搜索列表的教训），换不过冲的减速档，同 A / Z
+            elasticType: Anim.EnterFast
+            sourceComponent: NoteCard {
+                sharedState: panelState
+            }
+        }
     }
 
     MouseArea {
@@ -174,27 +199,6 @@ Item {
         onContainsMouseChanged: {
             if (containsMouse)
                 Qt.callLater(() => noteScope.forceActiveFocus())
-        }
-    }
-
-    // ---- 常驻容器：RailContainer 白送贴 rail 几何/耳朵/派生动画 ----
-    // present = 让位条件的反相；让位即滑回 rail（同一条派生语言），
-    // 回来重新派生、内容重建
-    RailContainer {
-        id: noteContainer
-        x: 8
-        y: 56
-        edge: "left"
-        gate: true
-        naturalWidth: Size.panel.cWidth
-        present: !root.yieldToPanel
-        staggerMs: 0
-        exitStaggerMs: 0
-        // 打字逐行换高度 = 高频重定目标：过冲档会「长过头再缩回来」
-        // （A 搜索列表的教训），换不过冲的减速档，同 A / Z
-        elasticType: Anim.EnterFast
-        sourceComponent: NoteCard {
-            sharedState: panelState
         }
     }
 
