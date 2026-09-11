@@ -143,13 +143,25 @@ RailPage {
         id: toolState
 
         property string groupId: "time"
+        // 面板每次开窗 +1：卡片据此把焦点抢回输入框（同 TilePanel 的 reset）。
+        // 开窗不换 groupId（上次停在计算器、再开还是计算器），所以光靠
+        // onGroupIdChanged 抓不到这个时机
+        property int focusTick: 0
+    }
+
+    property Connections _toolFocus: Connections {
+        target: root
+        function onOpenChanged() {
+            if (root.open)
+                toolState.focusTick += 1
+        }
     }
 
     // ---- 容器装配（顺序即派生顺序）----
     Component { id: toolTabsCard; ToolTabsCard { sharedState: toolState } }
     Component { id: timeClockCard; TimeClockCard { hasContent: toolState.groupId === "time" } }
     Component { id: timeTimerCard; TimeTimerCard { hasContent: toolState.groupId === "time" } }
-    Component { id: calcCard; CalcCard { hasContent: toolState.groupId === "calc" } }
+    Component { id: calcCard; CalcCard { sharedState: toolState; hasContent: toolState.groupId === "calc" } }
     Component { id: reminderCard; ReminderCard { hasContent: toolState.groupId === "remind" } }
     Component { id: sysDialCard; SysDialCard {} }
     Component { id: sysPsiCard; SysPsiCard {} }
