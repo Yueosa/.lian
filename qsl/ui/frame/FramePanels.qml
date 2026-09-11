@@ -142,6 +142,14 @@ Item {
     }
 
     IpcHandler {
+        target: "note"
+        function toggle() { note.toggleFocus(); return note.wantsKeyboard ? "FOCUSED" : "BLURRED" }
+        function focus() { note.grabFocus(); return "FOCUSED" }
+        function blur() { note.exitTyping(); return "BLURRED" }
+        function add() { note.addNote(); return "OK" }
+    }
+
+    IpcHandler {
         target: "power"
         function toggle() { power.toggle() }
         function open() { power.openPage("power") }

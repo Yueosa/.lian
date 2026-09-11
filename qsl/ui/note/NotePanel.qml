@@ -83,16 +83,33 @@ Item {
             noteContainer.bodyItem.releaseEditorFocus()
     }
 
-    // Super+J（M4 IPC note focus）走这里：打字中 = 归还；否则抢占。
+    // Super+J（M4 IPC note toggle）走这里：打字中 = 归还；否则抢占。
     // C/Z 开着时先逐客（它们让位后笔记才可见、可聚焦）——「抢占」语义。
     // 笔记容器可能还在派生中（bodyItem 未建），挂个 callLater 重试闸
     property bool _pendingFocus: false
+    property bool _pendingAdd: false
 
     function toggleFocus() {
         if (panelState.typing) {
             exitTyping()
             return
         }
+        _requestFocus()
+    }
+
+    // IPC focus：总是抢占（不 toggle）
+    function grabFocus() {
+        _requestFocus()
+    }
+
+    // IPC add：新建一篇并聚焦标题
+    function addNote() {
+        _requestFocus()
+        _pendingAdd = true
+        _grabWhenReady()
+    }
+
+    function _requestFocus() {
         if (yieldToPanel) {
             const other = Panels.activeIn("left")
             if (other !== "")
@@ -103,16 +120,24 @@ Item {
     }
 
     function _grabWhenReady() {
-        if (!_pendingFocus)
+        if (!_pendingFocus && !_pendingAdd)
             return
         if (yieldToPanel) {
-            // 逐客没生效（目标已自己关了之类），放弃这次聚焦，别空转
+            // 逐客没生效（目标已自己关了之类），放弃这次请求，别空转
             _pendingFocus = false
+            _pendingAdd = false
             return
         }
         if (noteContainer.bodyItem) {
-            _pendingFocus = false
-            noteContainer.bodyItem.grabEditorFocus()
+            const card = noteContainer.bodyItem
+            if (_pendingAdd) {
+                _pendingAdd = false
+                _pendingFocus = false
+                card.addNote()
+            } else if (_pendingFocus) {
+                _pendingFocus = false
+                card.grabEditorFocus()
+            }
         } else {
             Qt.callLater(_grabWhenReady)
         }

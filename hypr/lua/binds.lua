@@ -85,6 +85,7 @@ hl.bind(mainMod .. " + B", sh(browser))
 hl.bind(mainMod .. " + A", qs("launcher", "toggle"))
 hl.bind(mainMod .. " + Z", qs("clipboard", "toggle"))
 hl.bind(mainMod .. " + X", qs("tiles", "toggle"))  -- 磁贴（执行区 / 服务区）
+hl.bind(mainMod .. " + J", qs("note", "toggle"))  -- 笔记（常驻）焦点抢占/归还
 
 
 -- ============================================================
