@@ -76,6 +76,7 @@
 2. 新建 `ui/note/`（面板壳 + 编辑卡），在 `ui/frame/FramePanels.qml` 里装配（声明在 Leftbar 之前 = C 开窗盖在笔记上）。
 3. 让位：**只读 `Panels.activeIn("left")`**——C/Z 开着就滑回 rail（复用 RailContainer 的 present），不 claim 组（claim 的语义是「被挤掉就关窗」，对常驻面板是错的，且常驻 claim 会把键盘栈永远顶住）。
 4. 涟漪：打字态 claim(edge "left", anchor=卡片中线) 占波源槽位，退出 release。
+5. 空态不可达（用户定）：服务加载时一篇不剩就立一篇空白，删光立刻补一篇；焦点默认落**正文**（标题是元信息）；标题行有背景，观感同正文输入区。
 
 **注意**：笔记常驻 = 它不像其他面板 `open` 才显示，`wantsOverlay`/`wantsKeyboard` 的语义要和「常驻 + 仅打字态抢键盘」对齐，不能照抄 Leftbar 的 `open` 绑定。
 

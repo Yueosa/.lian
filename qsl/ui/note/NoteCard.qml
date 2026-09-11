@@ -59,11 +59,11 @@ Item {
     }
 
     function grabEditorFocus() {
+        // 焦点落在正文（用户定）：标题是元信息，写内容才是主路径。
+        // 服务加载完之前 activeNote 还是 null，这一拍无焦点可落，no-op
         Qt.callLater(() => {
             if (root.activeNote)
                 bodyEdit.forceActiveFocus()
-            else if (titleInput.visible)
-                titleInput.forceActiveFocus()
         })
     }
 
@@ -132,7 +132,8 @@ Item {
         const id = Note.add()
         root.sharedState.activeNoteId = id
         root._loadTexts()
-        titleInput.forceActiveFocus()
+        // 新笔记也落在正文（用户定）：标题空着，光标直接进内容
+        bodyEdit.forceActiveFocus()
     }
 
     function removeActive() {
@@ -141,14 +142,14 @@ Item {
         const cur = root.activeNote.id
         Note.flush()
         Note.remove(cur)
-        // 删除后落在下一条（没有则空态）
-        const ids = Note.noteIds
-        root.sharedState.activeNoteId = ids.length > 0 ? ids[0] : ""
+        // 删到一篇不剩 = 立刻立一篇新的：默认就该是新建的笔记（用户定），
+        // 空态不可达。剩下的情况落在第一条
+        let ids = Note.noteIds
+        if (ids.length === 0)
+            ids = [Note.add()]
+        root.sharedState.activeNoteId = ids[0]
         root._loadTexts()
-        if (root.activeNote)
-            bodyEdit.forceActiveFocus()
-        else
-            root.releaseEditorFocus()
+        bodyEdit.forceActiveFocus()
     }
 
     ColumnLayout {
@@ -258,82 +259,45 @@ Item {
             }
         }
 
-        // ---- 空态 ----
-        Column {
-            Layout.fillWidth: true
-            visible: root.activeNote === null
-            spacing: Size.spacing.sm
-
-            Text {
-                width: parent.width
-                height: 56
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                text: "还没有笔记"
-                color: Color.textMuted
-                font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.bodySmall
-            }
-
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 120
-                height: 36
-                radius: Size.rounding.full
-                color: Color.primaryContainer
-
-                QslStateLayer {
-                    source: newMa
-                    tint: Color.primaryContainerText
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "新建一篇"
-                    color: Color.primaryContainerText
-                    font.family: Size.fontSans
-                    font.pixelSize: Size.fontSize.bodySmall
-                }
-
-                MouseArea {
-                    id: newMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.addNote()
-                }
-            }
-        }
-
-        // ---- 标题 ----
-        TextInput {
-            id: titleInput
+        // ---- 标题（有背景，观感同正文输入区）----
+        Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             visible: root.activeNote !== null
-            color: Color.text
-            font.family: Size.fontSans
-            font.pixelSize: Size.fontSize.titleMedium
-            font.bold: true
-            clip: true
-            selectByMouse: true
-            verticalAlignment: Text.AlignVCenter
+            radius: Size.rounding.sm
+            color: Color.surfaceContainerHigh
+            border.width: titleInput.activeFocus ? Style.border.width : 0
+            border.color: Color.withAlpha(Color.primary, 0.5)
 
-            onTextChanged: {
-                if (root._switching)
-                    return
-                const n = root.activeNote
-                if (n && titleInput.text !== n.title)
-                    Note.setTitle(n.id, titleInput.text)
-            }
-
-            Text {
+            TextInput {
+                id: titleInput
                 anchors.fill: parent
+                anchors.leftMargin: Size.spacing.md
+                anchors.rightMargin: Size.spacing.md
+                color: Color.text
+                font.family: Size.fontSans
+                font.pixelSize: Size.fontSize.titleMedium
+                font.bold: true
+                clip: true
+                selectByMouse: true
                 verticalAlignment: Text.AlignVCenter
-                visible: !titleInput.text && titleInput.activeFocus
-                text: "标题"
-                color: Color.textMuted
-                font: titleInput.font
+
+                onTextChanged: {
+                    if (root._switching)
+                        return
+                    const n = root.activeNote
+                    if (n && titleInput.text !== n.title)
+                        Note.setTitle(n.id, titleInput.text)
+                }
+
+                Text {
+                    anchors.fill: parent
+                    verticalAlignment: Text.AlignVCenter
+                    visible: !titleInput.text && titleInput.activeFocus
+                    text: "标题"
+                    color: Color.textMuted
+                    font: titleInput.font
+                }
             }
         }
 

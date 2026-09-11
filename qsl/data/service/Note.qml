@@ -147,6 +147,11 @@ Singleton {
                     updated: it.updated || 0
                 })
             }
+            if (restored.length === 0) {
+                // 默认就该有一篇新建的笔记（用户定）：一篇不剩时（首次启动
+                // 或删光后重启）立一篇空白的，空态不可达
+                restored.push({ id: _newId(), title: "", body: "", updated: Date.now() })
+            }
             notes = restored
             noteIds = restored.map(n => n.id)
             _bump()
