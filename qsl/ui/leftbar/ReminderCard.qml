@@ -61,6 +61,15 @@ Item {
 
     Component.onCompleted: root.syncClock()
 
+    // 回车提交表单。输入法（fcitx5）用回车提交候选，合成（preedit）还没
+    // 结束时回车不该把表单交出去——否则中文打到一半提醒就被「键入」了
+    function enterPressed(input, e) {
+        if (input.inputMethodComposing)
+            return
+        root.tryAdd()
+        e.accepted = true
+    }
+
     function tryAdd() {
         const r = Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
         if (!r.ok) {
@@ -140,8 +149,8 @@ Item {
                     clip: true
                     selectByMouse: true
                     verticalAlignment: Text.AlignVCenter
-                    Keys.onReturnPressed: (e) => { root.tryAdd(); e.accepted = true }
-                    Keys.onEnterPressed: (e) => { root.tryAdd(); e.accepted = true }
+                    Keys.onReturnPressed: (e) => root.enterPressed(titleInput, e)
+                    Keys.onEnterPressed: (e) => root.enterPressed(titleInput, e)
 
                     Text {
                         anchors.fill: parent
@@ -163,8 +172,8 @@ Item {
                     clip: true
                     selectByMouse: true
                     verticalAlignment: Text.AlignVCenter
-                    Keys.onReturnPressed: (e) => { root.tryAdd(); e.accepted = true }
-                    Keys.onEnterPressed: (e) => { root.tryAdd(); e.accepted = true }
+                    Keys.onReturnPressed: (e) => root.enterPressed(timeInput, e)
+                    Keys.onEnterPressed: (e) => root.enterPressed(timeInput, e)
 
                     Text {
                         anchors.fill: parent
@@ -188,8 +197,8 @@ Item {
                     clip: true
                     selectByMouse: true
                     verticalAlignment: Text.AlignVCenter
-                    Keys.onReturnPressed: (e) => { root.tryAdd(); e.accepted = true }
-                    Keys.onEnterPressed: (e) => { root.tryAdd(); e.accepted = true }
+                    Keys.onReturnPressed: (e) => root.enterPressed(dateInput, e)
+                    Keys.onEnterPressed: (e) => root.enterPressed(dateInput, e)
 
                     Text {
                         anchors.fill: parent

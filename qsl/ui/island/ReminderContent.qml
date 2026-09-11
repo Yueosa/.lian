@@ -46,6 +46,9 @@ Item {
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodyMedium
                 font.bold: true
+                // 长标题换行，两行封顶；再长才省略（用户定）
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
                 elide: Text.ElideRight
             }
 
