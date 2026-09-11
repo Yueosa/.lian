@@ -190,6 +190,9 @@ Item {
         present: !root.yieldToPanel
         staggerMs: 0
         exitStaggerMs: 0
+        // 打字逐行换高度 = 高频重定目标：过冲档会「长过头再缩回来」
+        // （A 搜索列表的教训），换不过冲的减速档，同 A / Z
+        elasticType: Anim.EnterFast
         sourceComponent: NoteCard {
             sharedState: panelState
         }
