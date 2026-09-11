@@ -71,6 +71,7 @@
 | 焦点作用域**必须包住内容**。RailPage.keyScope 注释记过 V 面板的同一课，NotePanel 第一版照踩（Esc 处理器与容器是兄弟节点）——点进编辑框后 Esc 无路可退 | M0–M4 / 笔记关不掉 |
 | 输入法用回车提交候选：输入框的回车处理器要在 `inputMethodComposing` 期间**不提交**，否则中文打到一半表单就被「键入」 | M0–M4 / 提醒中文输入 |
 | **按键冒泡行为别推理，offscreen 实测**：`QT_QPA_PLATFORM=offscreen qmltestrunner` + QTest.keyClick 三案（KeyNavigation / Shortcut / Keys 本体）一轮一个结论，推理全猜错 | M0–M4 / Tab 三案 |
+| **给服务单例加新函数，`qs ipc call shell reload` 不够**：QML 引擎缓存单例实例，reload 不清缓存，UI 拿到的是旧单例——症状是 handler 里 ReferenceError（`Reminder.update is not a function` 一类），必须**整壳重启**。改 UI（ui/ 下）reload 即可，改单例公开面要重启 | M0–M4 / ✓ 点不动 |
 
 ---
 

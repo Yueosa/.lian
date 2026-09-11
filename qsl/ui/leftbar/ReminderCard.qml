@@ -301,16 +301,18 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
+        }
 
-            Text {
-                visible: root.formError.length > 0
-                text: root.formError
-                color: Color.error
-                font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.labelSmall
-                elide: Text.ElideRight
-                Layout.maximumWidth: 150
-            }
+        // ---- 校验/异常提示：独占一行、整宽换行（原来塞在芯片行右边
+        // 150px 被省略，ReferenceError 只能看到前几个字，已修）----
+        Text {
+            Layout.fillWidth: true
+            visible: root.formError.length > 0
+            text: root.formError
+            color: Color.error
+            font.family: Size.fontSans
+            font.pixelSize: Size.fontSize.labelSmall
+            wrapMode: Text.WordWrap
         }
 
         // ---- 列表 ----
