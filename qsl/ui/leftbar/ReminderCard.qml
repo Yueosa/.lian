@@ -83,10 +83,18 @@ Item {
     }
 
     function tryAdd() {
-        const r = root.editing
-            ? Reminder.update(editingId, titleInput.text, formMode,
-                              timeInput.text, dateInput.text)
-            : Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
+        // 服务调用包 try/catch：QML 里 handler 抛异常是**静默**的（点击
+        // 毫无反应、无日志可看），必须转成 formError 才看得见
+        let r
+        try {
+            r = root.editing
+                ? Reminder.update(editingId, titleInput.text, formMode,
+                                  timeInput.text, dateInput.text)
+                : Reminder.add(titleInput.text, formMode, timeInput.text, dateInput.text)
+        } catch (e) {
+            formError = "提交出错：" + e
+            return
+        }
         if (!r.ok) {
             formError = r.error
             return
