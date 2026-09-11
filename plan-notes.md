@@ -66,6 +66,11 @@
 | 视觉层级不是花括号深度——`Layout` / `Item` / `Repeater` 贡献括号不贡献层级。要数"头上压了几层**设了 color 的** Rectangle" | 第 9 轮 / 层级阶 |
 | **盘点的价值在于能推翻计划**。层级那项预设是"改一堆调用点"，盘完发现调用点全对、错的是调色板里两个令牌同值 | 第 9 轮 / 层级阶 |
 | 加静态检查规则**必须自测它会亮**（注入一处违规看能否报出）。哑规则比没有规则更坏，它让人以为查过了——PATH 上那个 Qt5 `qmllint` 空壳就是前车之鉴 | 第 9 轮 / 闸门 |
+| **QQC2 TextArea 把 Tab 当普通字符吞掉**（插 "\t"）。`Keys.onTabPressed` 挂**编辑框本体**上先于 C++ 处理、accept 后不插字符；但挂上之后 Tab 家族（含 Ctrl+Tab）**不再冒泡**到外层作用域——带修饰键的分支也必须就地处理 | M0–M4 / Tab 切标题正文 |
+| **表单状态属性要和输入框回读**。ReminderCard 第一版声明 formTitle/formTime 却从不回读，tryAdd 恒读空串——症状是无论填什么都不停报「标题和时间都要填」，提醒一条都建不出来 | M0–M4 / 提醒建不出来 |
+| 焦点作用域**必须包住内容**。RailPage.keyScope 注释记过 V 面板的同一课，NotePanel 第一版照踩（Esc 处理器与容器是兄弟节点）——点进编辑框后 Esc 无路可退 | M0–M4 / 笔记关不掉 |
+| 输入法用回车提交候选：输入框的回车处理器要在 `inputMethodComposing` 期间**不提交**，否则中文打到一半表单就被「键入」 | M0–M4 / 提醒中文输入 |
+| **按键冒泡行为别推理，offscreen 实测**：`QT_QPA_PLATFORM=offscreen qmltestrunner` + QTest.keyClick 三案（KeyNavigation / Shortcut / Keys 本体）一轮一个结论，推理全猜错 | M0–M4 / Tab 三案 |
 
 ---
 
@@ -1432,6 +1437,48 @@ dirty 这一段。真正指认凶手的是大块分配表——`768MiB × 2` 和
 
 ---
 
+## 工具页 + 提醒 + 笔记（qsl.md M0–M4，2026-09-11）
+
+### Tab 切标题/正文：三案实测才定案
+
+按键冒泡在 QML 输入控件上的行为，推理错了两轮、实验一轮就对：
+
+- 第一案（外层 FocusScope + `Keys.priority: BeforeItem` 拦 Tab）：正文是 QQC2
+  TextArea，C++ 层把 Tab 当普通字符吞掉（实测 text 里插进 "\t"），外层作用域
+  根本收不到——用户报的「Tab 被输入框捕获了」
+- 第二案（`KeyNavigation.tab` / `Shortcut{sequence:"Tab"}` / `tabChangesFocus`）：
+  全灭。QQC2 TextArea 不认 KeyNavigation；Shortcut 对裸 Tab 不触发（同测 F6 和
+  Ctrl+Tab 都触发，唯 Tab 不触发——QShortcutMap 特判）；tabChangesFocus 在
+  QQC2 TextArea 和原生 TextEdit 的 QML 面上都不暴露
+- 定案：`Keys.onTabPressed` 挂**编辑框本体**（wifi 密码框 `onAccepted` 的同款
+  思路：按键处理不交给外层作用域），先于 C++ 处理、accept 后不插 tab 字符。
+  但实测挂上之后 Tab 家族**不再冒泡**——Ctrl+Tab 也必须就地处理（带 Ctrl 分支
+  调 cycleNote），「放给外层切笔记」的写法是死的
+- 验证手法：`QT_QPA_PLATFORM=offscreen qmltestrunner` + QTest.keyClick 逐案
+  实测，最终结构 toggle=2 / cycle=2 / Ctrl+N 冒泡=1 全对
+
+### 笔记 Esc 关不掉：FocusScope 与容器写成兄弟节点
+
+RailPage.keyScope 注释里记着 V 面板焦点饥饿的同一课——「内容放在 FocusScope
+外面（兄弟节点）时，编辑框一拿 activeFocus 焦点就带出了本子树，Keys 从此
+不触发」。NotePanel 第一版照踩：Esc 处理器挂在 noteScope 上、容器写在外面，
+点进编辑框后 Esc 无路可退。修复 = 容器移进 FocusScope。
+
+### 提醒永远建不出来：表单属性从不回读
+
+ReminderCard 第一版声明 `formTitle/formTime/formDate` 三个属性，但输入框从未
+回写它们，`tryAdd` 读到的恒为空串——症状是无论填什么都不停报「标题和时间
+（HH:MM）都要填」。修法是直接读输入框 text、删掉死属性；占位文案也照用户
+要求改成字面格式 `HH:MM` / `YYYY-MM-DD`。
+
+### 中文输入回车即提交：inputMethodComposing 闸
+
+fcitx5 用回车提交候选。表单的回车处理器不设防，候选上屏的回车会顺手把表单
+交出去（用户报「输入中文会马上被键入」）。三个输入框的回车统一走
+`enterPressed(input, e)`：合成期间（inputMethodComposing）只上屏、不提交。
+
+---
+
 ## 调参记录
 
 2026-09-01（第 2 轮收编后首轮反馈）：
@@ -1486,6 +1533,16 @@ dirty 这一段。真正指认凶手的是大块分配表——`768MiB × 2` 和
 - `durFast` 350 → 400（整体"太快了一点点"）
 - 调参旋钮备忘：弹性 = curveSpatial 第二个 y 值（1.21 hypr 档 / 1.40 当前 /
   1.67 M3 上限）；速度 = durFast / durNormal
+
+2026-09-11（M0–M4 工具页/提醒/笔记）：
+
+- 提醒岛 reminderW 440 × reminderH 72→88：长标题改两行换行（WordWrap +
+  maximumLineCount 2，再长才省略）后，内容 68px 才容得下（两行标题 39 +
+  副行 15 + 间距 2）
+- 笔记卡正文输入区：最小 120、上限 260（封顶内部滚动，TextArea 自带
+  Flickable）；打字逐行换高度用 Anim.EnterFast——高频重定目标不过冲，同 A/Z
+- 笔记默认收起（userHidden 默认 true）：Super+J 唤出 + 打字焦点切换，
+  Esc/点框外关页（滑回 rail）；C/Z 开窗临时让位
 
 2026-09-02（Tray 重构，第 3 轮追加）：
 
