@@ -47,8 +47,23 @@ Singleton {
         return n ? n.title : ""
     }
 
+    // 默认名「笔记 #N」：N 取现有笔记名里的最大编号 + 1（用户定）。
+    // 按存量推而不是按 count 推——删掉 #1 后再建不该出现两个「笔记 #2」
+    function _defaultTitle(list) {
+        let max = 0
+        for (let i = 0; i < list.length; i++) {
+            const m = /^笔记 #(\d+)$/.exec(String(list[i] && list[i].title || ""))
+            if (m) {
+                const v = Number(m[1])
+                if (v > max)
+                    max = v
+            }
+        }
+        return "笔记 #" + (max + 1)
+    }
+
     function add() {
-        const item = { id: _newId(), title: "", body: "", updated: Date.now() }
+        const item = { id: _newId(), title: _defaultTitle(notes), body: "", updated: Date.now() }
         notes = notes.concat([item])
         noteIds = notes.map(n => n.id)
         _bump()
@@ -150,7 +165,8 @@ Singleton {
             if (restored.length === 0) {
                 // 默认就该有一篇新建的笔记（用户定）：一篇不剩时（首次启动
                 // 或删光后重启）立一篇空白的，空态不可达
-                restored.push({ id: _newId(), title: "", body: "", updated: Date.now() })
+                restored.push({ id: _newId(), title: _defaultTitle(restored),
+                                body: "", updated: Date.now() })
             }
             notes = restored
             noteIds = restored.map(n => n.id)

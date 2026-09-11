@@ -1,18 +1,23 @@
-// NotePanel — 常驻笔记面板（qsl.md M3）
+// NotePanel — 笔记面板（qsl.md M3）
 //
-// 全壳第一种常驻形态：不走 present 开合，一直贴在左 rail 内侧（x=8、y=56，
-// 宽同 C 面板）。让位：C/Z 开着时滑回 rail、它们关掉再滑出来——用的是互斥表
-// 的**读侧**（Panels.activeIn("left")），不 claim 组：claim 的语义是「被挤掉就
-// 关窗」，对常驻面板是错的，而且常驻 claim 会把键盘栈永远顶住。
+// 常驻语义（用户定）：默认展开在左 rail 内侧（x=8、y=56，宽同 C 面板），
+// 但可以关——它不是传统面板的 open/present 开合，而是「收起 = 滑回 rail」：
+//   Super+J  唤出（隐藏时）+ 切换焦点（打字态 ↔ 静息）
+//   Esc      关闭页面（退出打字 + 收起回 rail）
+//   点框外   同 Esc（dismissAll 的 evicted 走到 closePanel）
+//   C/Z 开着 临时让位（它们关掉再滑回来，除非已被用户 Esc 关掉）
+//
+// 让位用互斥表的**读侧**（Panels.activeIn("left")），不 claim 组：claim 的
+// 语义是「被挤掉就关窗」，对这类面板是错的，而且常驻 claim 会把键盘栈顶住。
 //
 // 焦点：打字态 = 编辑框持有焦点（点击 / Super+J）。进入压 Panels 栈 + 占
 // 水波槽位（edge left，anchor 报卡片中线——焦点态才有涟漪，qsl.md 定）；
 // 退出 flush + release，临别波和键盘归还都由现有机制白送。
 //
 // 诉求上报（跟 Leftbar 的 open 绑定刻意不同）：
-//   wantsOverlay 恒 false——常驻面板不该把框窗钉在 Overlay 层；
+//   wantsOverlay 恒 false——笔记不该把框窗钉在 Overlay 层；
 //   wantsKeyboard = 打字态（点进输入框由 OnDemand 给键盘，Super+J 由 grab 给）；
-//   hitBox = 卡片矩形，常驻可点（让位时 0×0）。
+//   hitBox = 卡片矩形，可见时恒可点。
 
 import QtQuick
 import qs.Components
@@ -26,10 +31,13 @@ Item {
 
     readonly property string panelId: "qsl-note"
 
+    // 用户 Esc/点框外关掉后保持隐藏，Super+J 才唤出
+    property bool userHidden: false
     // 让位：left 组（C / Z）有人开着，我就不占地方
     readonly property bool yieldToPanel: Panels.activeIn("left") !== ""
+    readonly property bool hidden: userHidden || yieldToPanel
 
-    // 打字态（NoteCard 据输入框焦点回写；让位时本文件强制清掉）
+    // 打字态（NoteCard 据输入框焦点回写；隐藏时本文件强制清掉）
     QtObject {
         id: panelState
 
@@ -41,8 +49,8 @@ Item {
     readonly property bool wantsKeyboard: panelState.typing
     readonly property Item hitBox: hitRegion
 
-    onYieldToPanelChanged: {
-        if (root.yieldToPanel)
+    onHiddenChanged: {
+        if (root.hidden)
             exitTyping()
     }
 
@@ -61,12 +69,13 @@ Item {
         }
     }
 
-    // 点框外（dismissAll）或键盘栈被顶替 → 退出打字态，笔记本体保持常驻
+    // 点框外（dismissAll）→ 关闭页面；键盘栈被顶替 → 只退打字态（C/V 开窗
+    // 时笔记还可见，不该整页关掉）
     Connections {
         target: Panels
         function onEvicted(id) {
             if (id === root.panelId)
-                root.exitTyping()
+                root.closePanel()
         }
         function onKeyboardOwnerChanged() {
             if (panelState.typing && Panels.keyboardOwner !== root.panelId)
@@ -83,13 +92,23 @@ Item {
             noteContainer.bodyItem.releaseEditorFocus()
     }
 
-    // Super+J（M4 IPC note toggle）走这里：打字中 = 归还；否则抢占。
-    // C/Z 开着时先逐客（它们让位后笔记才可见、可聚焦）——「抢占」语义。
+    // Esc / 点框外：关闭页面 = 退出打字 + 收起回 rail（用户定）
+    function closePanel() {
+        exitTyping()
+        userHidden = true
+    }
+
+    // Super+J（M4 IPC note toggle）：唤出 + 切换焦点。
     // 笔记容器可能还在派生中（bodyItem 未建），挂个 callLater 重试闸
     property bool _pendingFocus: false
     property bool _pendingAdd: false
 
     function toggleFocus() {
+        if (hidden) {
+            userHidden = false
+            _requestFocus()
+            return
+        }
         if (panelState.typing) {
             exitTyping()
             return
@@ -102,8 +121,9 @@ Item {
         _requestFocus()
     }
 
-    // IPC add：新建一篇并聚焦标题
+    // IPC add：新建一篇并聚焦正文
     function addNote() {
+        userHidden = false
         _requestFocus()
         _pendingAdd = true
         _grabWhenReady()
@@ -122,7 +142,7 @@ Item {
     function _grabWhenReady() {
         if (!_pendingFocus && !_pendingAdd)
             return
-        if (yieldToPanel) {
+        if (root.hidden) {
             // 逐客没生效（目标已自己关了之类），放弃这次请求，别空转
             _pendingFocus = false
             _pendingAdd = false
@@ -143,7 +163,7 @@ Item {
         }
     }
 
-    // ---- 键盘：Esc 退出打字态 ----
+    // ---- 键盘 ----
     // 焦点作用域必须**包住**笔记容器：内容放在作用域外面（兄弟节点）时，
     // 编辑框一拿 activeFocus 焦点就带出了本子树，Keys.onPressed 从此不再
     // 触发——RailPage.keyScope 注释里记着 V 面板焦点饥饿的同一课，本文件
@@ -159,14 +179,37 @@ Item {
 
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape && panelState.typing) {
-                root.exitTyping()
+            const shift = event.modifiers & Qt.ShiftModifier
+            const ctrl = event.modifiers & Qt.ControlModifier
+            // Tab 一族只在打字态处理（方案见 qsl.md M3）：
+            //   Tab / Shift+Tab          标题 ↔ 正文
+            //   Ctrl+Tab / Ctrl+Shift+Tab 下/上一篇
+            //   Ctrl+N                   新建（焦点落正文）
+            if (panelState.typing && noteContainer.bodyItem) {
+                const card = noteContainer.bodyItem
+                if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                    if (ctrl) {
+                        card.cycleNote(shift || event.key === Qt.Key_Backtab ? -1 : 1)
+                    } else {
+                        card.toggleFieldFocus()
+                    }
+                    event.accepted = true
+                    return
+                }
+                if (ctrl && event.key === Qt.Key_N) {
+                    card.addNote()
+                    event.accepted = true
+                    return
+                }
+            }
+            if (event.key === Qt.Key_Escape) {
+                root.closePanel()
                 event.accepted = true
             }
         }
 
-        // ---- 常驻容器：RailContainer 白送贴 rail 几何/耳朵/派生动画 ----
-        // present = 让位条件的反相；让位即滑回 rail（同一条派生语言），
+        // ---- 容器：RailContainer 白送贴 rail 几何/耳朵/派生动画 ----
+        // present = hidden 的反相；收起即滑回 rail（同一条派生语言），
         // 回来重新派生、内容重建
         RailContainer {
             id: noteContainer
@@ -175,7 +218,7 @@ Item {
             edge: "left"
             gate: true
             naturalWidth: Size.panel.cWidth
-            present: !root.yieldToPanel
+            present: !root.hidden
             staggerMs: 0
             exitStaggerMs: 0
             // 打字逐行换高度 = 高频重定目标：过冲档会「长过头再缩回来」
@@ -195,19 +238,19 @@ Item {
         height: noteContainer.height
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
-        enabled: !root.yieldToPanel
+        enabled: !root.hidden
         onContainsMouseChanged: {
             if (containsMouse)
                 Qt.callLater(() => noteScope.forceActiveFocus())
         }
     }
 
-    // 让位时 0×0（同 RailPage inputMask 的口径）
+    // 隐藏时 0×0（同 RailPage inputMask 的口径）
     Item {
         id: hitRegion
         x: noteContainer.x
         y: noteContainer.y
-        width: root.yieldToPanel ? 0 : noteContainer.width
-        height: root.yieldToPanel ? 0 : noteContainer.height
+        width: root.hidden ? 0 : noteContainer.width
+        height: root.hidden ? 0 : noteContainer.height
     }
 }

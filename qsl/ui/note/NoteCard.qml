@@ -72,6 +72,26 @@ Item {
         bodyEdit.focus = false
     }
 
+    // Tab：标题 ↔ 正文（两格循环，正反等价）
+    function toggleFieldFocus() {
+        if (titleInput.activeFocus)
+            bodyEdit.forceActiveFocus()
+        else
+            titleInput.forceActiveFocus()
+    }
+
+    // Ctrl+Tab：笔记间循环。id 列表只随增删变（Note.noteIds），
+    // 转一圈回到自己的情况（只有一篇）由 selectNote 的等值检查吞掉
+    function cycleNote(step) {
+        const ids = Note.noteIds
+        if (ids.length === 0)
+            return
+        let i = ids.indexOf(root.sharedState.activeNoteId)
+        if (i < 0)
+            i = 0
+        root.selectNote(ids[(i + step + ids.length) % ids.length])
+    }
+
     // ---- 笔记选择 ----
     // activeNoteId 存在 sharedState（NotePanel）里：容器让位会卸载本卡，
     // 状态不能跟卡一起死

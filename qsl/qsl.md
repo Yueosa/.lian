@@ -65,8 +65,9 @@
 **已定的形态决策**：
 - 宽度同 C 面板（`Size.panel.cWidth`）。
 - 高度有上限，超了滚动（不是无限长）。
-- 常驻显示：**不走 `present` 开合**，是「一直贴在左 rail 内侧」。这是全壳第一种常驻面板形态，是 M3 的核心难点。
-- 焦点：hover 聚焦（`forceActiveFocus`，同现有 `focusTick` 思路）；Super+J 走 Panels 焦点栈抢占/归还；Esc 退出打字态。
+- 常驻语义（用户修订）：**默认展开**在左 rail 内侧，不走 present 开合；但可关闭——**Super+J = 唤出（隐藏时）+ 切换焦点（打字 ↔ 静息），Esc = 关闭页面**（退出打字 + 收起回 rail），点框外同 Esc。C/Z 开窗临时让位。
+- 焦点：hover 聚焦（`forceActiveFocus`，同现有 `focusTick` 思路）。
+- 面板内快捷键（仅打字态生效，方案 2026-09-11 定）：`Tab`/`Shift+Tab` 标题↔正文；`Ctrl+Tab`/`Ctrl+Shift+Tab` 下/上一篇；`Ctrl+N` 新建（焦点落正文）。`Ctrl+W` 删当前**未实现**——无撤销、误触丢数据。
 - 涟漪：**只在焦点态（打字/抢占）放**——进入 claim(edge "left", anchor=卡片中线) 自带进波 + 周期波，退出 release 自带临别波；静息零涟漪成本（水波约 8% CPU，常驻放波会让渲染循环常年不睡，与「空闲真的静止」硬规矩冲突）。`RailRipple.originFor` 为此补了竖边 anchor 支持。
 
 **架构硬约束**：笔记**必须并进框窗**（FrameWindow），不能独立 surface。理由见 `ui/frame/RailRipple.qml` 顶部注释——涟漪要画在 rail 所在的那棵场景图里，跨窗画不了一个像素。所以笔记和 rail 必须同一 surface。

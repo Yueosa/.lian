@@ -55,7 +55,7 @@
             { "keys": "Super+A", "desc": "应用启动器" },
             { "keys": "Super+Z", "desc": "剪贴板" },
             { "keys": "Super+X", "desc": "磁贴" },
-            { "keys": "Super+J", "desc": "笔记焦点" }
+            { "keys": "Super+J", "desc": "笔记面板" }
           ]
         },
         {
@@ -325,9 +325,9 @@
         },
         {
           "id": "ipc-note",
-          "title": "note — 常驻笔记",
+          "title": "note — 笔记",
           "items": [
-            { "keys": "note toggle", "desc": "焦点抢占/归还" },
+            { "keys": "note toggle", "desc": "唤出/焦点切换" },
             { "keys": "note focus", "desc": "抢占焦点" },
             { "keys": "note blur", "desc": "归还焦点" },
             { "keys": "note add", "desc": "新建笔记" }
