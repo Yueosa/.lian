@@ -351,50 +351,70 @@ Item {
             border.width: bodyEdit.activeFocus ? Style.border.width : 0
             border.color: Color.withAlpha(Color.primary, 0.5)
 
-            TextArea {
-                id: bodyEdit
+            // 正文超上限要能滚。QQC2 的 TextArea **自己不带滚动**：Basic 样式的
+            // TextArea.qml 只是一个 T.TextArea，里面没有 Flickable，官方文档也写
+            // 明 TextArea does not provide scrolling——要滚得由 ScrollView /
+            // Flickable 提供。第一版按「超了 TextArea 内部滚动」写，于是内容一过
+            // 上限就滚不动（用户报的「Super+J 无法滚动内容容器」）。
+            //
+            // TextArea 的宽度绑 ScrollView.width，不绑 availableWidth：后者随
+            // 竖直滚动条显隐变，而外层高度又绑 contentHeight（换行高度随宽度
+            // 变），两条串起来就是一个能自激的环。宁可让 4px 宽的滚动条浮在
+            // 文字右侧，也不冒这个险
+            ScrollView {
+                id: bodyScroll
                 anchors.fill: parent
-                anchors.leftMargin: Size.spacing.sm
-                anchors.rightMargin: Size.spacing.sm
-                anchors.topMargin: Size.spacing.sm
-                anchors.bottomMargin: Size.spacing.sm
-                wrapMode: TextArea.Wrap
-                selectByMouse: true
-                textFormat: TextEdit.PlainText
-                placeholderText: "写点什么…"
-                placeholderTextColor: Color.textMuted
-                color: Color.text
-                font.family: Size.fontSans
-                font.pixelSize: Size.fontSize.bodyMedium
-                background: null
-                padding: 0
+                anchors.margins: Size.spacing.sm
+                clip: true
 
-                // 同上：Tab 本体拦截，Ctrl+Tab 就地切笔记
-                Keys.onTabPressed: (e) => {
-                    if (e.modifiers & Qt.ControlModifier) {
-                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
-                        e.accepted = true
-                        return
-                    }
-                    titleInput.forceActiveFocus()
-                    e.accepted = true
-                }
-                Keys.onBacktabPressed: (e) => {
-                    if (e.modifiers & Qt.ControlModifier) {
-                        root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
-                        e.accepted = true
-                        return
-                    }
-                    titleInput.forceActiveFocus()
-                    e.accepted = true
+                ScrollBar.vertical: ScrollBar {
+                    policy: bodyScroll.contentHeight > bodyScroll.height
+                        ? ScrollBar.AsNeeded
+                        : ScrollBar.AlwaysOff
+                    width: 4
                 }
 
-                onTextChanged: {
-                    if (root._switching)
-                        return
-                    const n = root.activeNote
-                    if (n && bodyEdit.text !== n.body)
-                        Note.setBody(n.id, bodyEdit.text)
+                TextArea {
+                    id: bodyEdit
+                    width: bodyScroll.width
+                    wrapMode: TextArea.Wrap
+                    selectByMouse: true
+                    textFormat: TextEdit.PlainText
+                    placeholderText: "写点什么…"
+                    placeholderTextColor: Color.textMuted
+                    color: Color.text
+                    font.family: Size.fontSans
+                    font.pixelSize: Size.fontSize.bodyMedium
+                    background: null
+                    padding: 0
+
+                    // 同上：Tab 本体拦截，Ctrl+Tab 就地切笔记
+                    Keys.onTabPressed: (e) => {
+                        if (e.modifiers & Qt.ControlModifier) {
+                            root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                            e.accepted = true
+                            return
+                        }
+                        titleInput.forceActiveFocus()
+                        e.accepted = true
+                    }
+                    Keys.onBacktabPressed: (e) => {
+                        if (e.modifiers & Qt.ControlModifier) {
+                            root.cycleNote(e.modifiers & Qt.ShiftModifier ? -1 : 1)
+                            e.accepted = true
+                            return
+                        }
+                        titleInput.forceActiveFocus()
+                        e.accepted = true
+                    }
+
+                    onTextChanged: {
+                        if (root._switching)
+                            return
+                        const n = root.activeNote
+                        if (n && bodyEdit.text !== n.body)
+                            Note.setBody(n.id, bodyEdit.text)
+                    }
                 }
             }
         }
