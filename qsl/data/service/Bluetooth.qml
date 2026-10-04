@@ -353,8 +353,27 @@ Singleton {
 
     function stopScan() {
         scanRetry.stop()
+        stopRetry.stop()
         if (adapter)
             adapter.discovering = false
+        // 竞态兜底：Quickshell 0.3.1 的 stopDiscovery() 用异步缓存的 bDiscovering
+        // 做守卫（adapter.cpp：if (!bDiscovering) return）。若上面那行落在
+        // StartDiscovery 已发出、BlueZ 还没回传 Discovering=true 的窗口里，守卫会
+        // 直接吞掉这次 stop，BlueZ 的 discovery 会话永久泄漏、适配器卡死为
+        // Discovering=true。晚一拍再看，若此刻已同步成 true，就再 stop 一次补上。
+        stopRetry.restart()
+    }
+
+    // 上面竞态兜底的晚一拍补枪。正常路径下 stop 早成功，触发时 discovering 已是
+    // false，这里什么都不做，零额外开销。
+    Timer {
+        id: stopRetry
+        interval: 800
+        repeat: false
+        onTriggered: {
+            if (adapter && adapter.discovering)
+                adapter.discovering = false
+        }
     }
 
     function toggleScan() {
