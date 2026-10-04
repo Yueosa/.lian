@@ -94,7 +94,8 @@ Item {
             delegate: TodoRow {
                 required property var modelData
                 width: doneList.width
-                height: 44
+                height: implicitHeight
+                rowMinHeight: 44
                 item: modelData
                 // 已完成这儿只有「打回」和「删」，星标是主列表的事
                 showStar: false

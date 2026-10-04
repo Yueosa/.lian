@@ -23,6 +23,18 @@ Rectangle {
     property var item: null
     // 已完成列表不给星标：那儿的操作只有「打回」和「删」
     property bool showStar: true
+    // 单行内容时的行高下限（主列表 52、已完成 44）。内容换行后行高由文字
+    // 实际高度撑开——见下面的 implicitHeight
+    property int rowMinHeight: 52
+
+    // 行高随内容自适应。
+    //
+    // 以前行高由 delegate 写死（52 / 44），文字又限死一行 + elide：22 个字的
+    // 待办被截成「SuperJ有bug, 导致无法滚…」——用户报的「todo 显示不全」。
+    // 现在标题允许换行（最多 3 行），行高取内容实际高度；短内容仍由
+    // rowMinHeight 兜住，观感与改前一致
+    implicitHeight: Math.max(root.rowMinHeight,
+        contentRow.implicitHeight + Size.spacing.sm * 2)
 
     radius: Size.rounding.md
     color: Color.surfaceContainerLow
@@ -36,7 +48,12 @@ Rectangle {
     }
 
     RowLayout {
-        anchors.fill: parent
+        id: contentRow
+        // 不 anchors.fill：纵向要留出「由内容撑高」的余地（fill 会把行高钉死，
+        // implicitHeight 永远等于外部高度，换行就又被裁掉）
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: Size.spacing.md
         anchors.rightMargin: Size.spacing.md
         spacing: Size.spacing.sm
@@ -79,8 +96,12 @@ Rectangle {
                 color: root.item && root.item.done ? Color.textMuted : Color.text
                 font.pixelSize: Size.fontSize.bodyMedium
                 font.strikeout: root.item ? !!root.item.done : false
+                // 换行显示全文（最多 3 行，再多才截断）——同 NotifEntryRow 的
+                // wrap + maximumLineCount + elide 组合。行高由 root.implicitHeight
+                // 跟着长，见文件头
+                wrapMode: Text.Wrap
+                maximumLineCount: 3
                 elide: Text.ElideRight
-                maximumLineCount: 1
             }
 
             Text {

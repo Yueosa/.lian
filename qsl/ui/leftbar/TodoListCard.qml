@@ -166,7 +166,9 @@ Item {
             delegate: TodoRow {
                 required property var modelData
                 width: ListView.view ? ListView.view.width : 0
-                height: 52
+                // 行高随内容（TodoRow.implicitHeight）：长标题换行后撑开，
+                // 短标题由 rowMinHeight 兜在 52
+                height: implicitHeight
                 item: modelData
             }
 
