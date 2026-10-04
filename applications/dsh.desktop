@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=DeepSeek Harness
+GenericName=DeepSeek Harness
+Comment=dsh web 界面（本地 127.0.0.1:3080）
+Exec=/home/Sakurine/.local/bin/dsh-shell
+Icon=dsh
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=false
+Keywords=dsh;deepseek;harness;

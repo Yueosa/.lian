@@ -68,13 +68,6 @@
             "note": "yeastar.xin",
             "icon": "🌸",
             "url": "https://yeastar.xin/"
-        },
-        {
-            "id": "dsh",
-            "title": "DeepSeek Harness",
-            "note": "127.0.0.1:3080",
-            "icon": "terminal",
-            "url": "http://127.0.0.1:3080"
         }
     ],
 
@@ -99,13 +92,6 @@
             "note": "hysp → lya",
             "icon": "sensors",
             "units": ["hysp.service"]
-        },
-        {
-            "id": "dsh",
-            "title": "DeepSeek Harness",
-            "note": "127.0.0.1:3080",
-            "icon": "terminal",
-            "units": ["dsh.service"]
         }
     ]
 }

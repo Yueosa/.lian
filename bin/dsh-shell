@@ -1,0 +1,420 @@
+#!/usr/bin/env python3
+"""dsh-shell — dsh web 的桌面入口。
+
+一次点击做三件事：
+  1. 单实例。已经有一份在跑就不再拉第二份（第二次去绑 3080 会直接失败），
+     只把已经开着的界面调出来。
+  2. 拉起 `dsh --profile web --no-open`，从它的 stdout 里取带 token 的 URL，
+     用 xdg-open 打开一次。token 兑成 127.0.0.1:3080 的 cookie，之后直开地址就能进。
+  3. 托盘常驻一个图标，右键菜单只有「退出」（杀掉本进程，连带收掉 dsh 子进程）。
+     左键不挂动作：打开界面走桌面图标，托盘只负责显示在跑 + 一键收工。
+
+托盘没有用 libappindicator：它那个 Indicator 没有 activate 信号（实测
+g_signal_connect 直接报 unknown signal name），右键菜单也没法自己定义。
+所以这里用 Gio 把 org.kde.StatusNotifierItem 与 com.canonical.dbusmenu 两个接口
+自己实现出来。
+
+dsh 是本进程的子进程：本进程退出（右键菜单的「退出」）时把它一并收掉。
+"""
+
+import fcntl
+import os
+import re
+import signal
+import subprocess
+import sys
+import threading
+import time
+
+import gi
+
+gi.require_version("Gio", "2.0")
+from gi.repository import Gio, GLib
+
+HOME = os.path.expanduser("~")
+DSH = os.path.join(HOME, ".npm-global", "bin", "dsh")
+ICON = os.path.join(HOME, ".lian", "image", "dsh.svg")
+BASE_URL = "http://127.0.0.1:3080"
+
+# 锁与 URL 都放运行时目录：登出即清，不会留下跨会话的脏状态
+SLOT = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
+LOCK_PATH = os.path.join(SLOT, "dsh-shell.lock")
+URL_PATH = os.path.join(SLOT, "dsh-shell.url")
+
+WATCHER = "org.kde.StatusNotifierWatcher"
+WATCHER_PATH = "/StatusNotifierWatcher"
+ITEM_PATH = "/StatusNotifierItem"
+MENU_PATH = "/Menu"
+ITEM_NAME = "org.kde.StatusNotifierItem-%d-1" % os.getpid()
+
+
+def note(msg):
+    print("dsh-shell:", msg, file=sys.stderr, flush=True)
+
+
+# ── 界面 ────────────────────────────────────────────────────────────────────
+
+def read_url():
+    try:
+        with open(URL_PATH) as fh:
+            return fh.read().strip() or None
+    except OSError:
+        return None
+
+
+def open_url(url):
+    subprocess.Popen(["xdg-open", url],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def wait_url(seconds=10.0):
+    """等第一份实例把带 token 的 URL 写出来；超时就回退到裸地址。"""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        url = read_url()
+        if url:
+            return url
+        time.sleep(0.1)
+    return None
+
+
+def pump(proc):
+    """读 dsh 的 stdout，抓启动时打印的那行 `dsh web: <带 token 的 URL>`。
+
+    dsh 用 --no-open 起（不然它会自己弹浏览器，那正是要除掉的旧行为），
+    但它仍然会把 URL 打到 stdout，这里接过来自己开。
+    """
+    for line in proc.stdout:
+        hit = re.search(r"dsh web:\s+(https?://\S+)", line)
+        if hit and not os.path.exists(URL_PATH):
+            url = hit.group(1)
+            try:
+                with open(URL_PATH, "w") as fh:
+                    fh.write(url)
+            except OSError:
+                pass
+            note("opening " + url)
+            open_url(url)
+
+
+def reap(proc):
+    """收掉 dsh 及其整个进程组。
+
+    必须是整组：dsh 会 spawn 子进程（bash 工具、子 agent 等），只 terminate
+    父进程的话它们会变孤儿继续跑。先 SIGTERM 整组，5 秒还赖着就 SIGKILL。
+
+    （测试时踩到的现象：桩是 bash + 前台 sleep，SIGTERM 到 bash 会被延迟到
+    当前前台命令结束才处理，所以「杀了父进程」和「进程真的没了」是两件事。）
+    """
+    if proc.poll() is not None:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
+
+
+# ── 托盘：SNI ───────────────────────────────────────────────────────────────
+
+SNI_XML = """<node>
+  <interface name="org.kde.StatusNotifierItem">
+    <property name="Category" type="s" access="read"/>
+    <property name="Id" type="s" access="read"/>
+    <property name="Title" type="s" access="read"/>
+    <property name="Status" type="s" access="read"/>
+    <property name="IconName" type="s" access="read"/>
+    <property name="IconThemePath" type="s" access="read"/>
+    <property name="IconPixmap" type="a(iiay)" access="read"/>
+    <property name="AttentionIconName" type="s" access="read"/>
+    <property name="AttentionIconPixmap" type="a(iiay)" access="read"/>
+    <property name="AttentionMovieName" type="s" access="read"/>
+    <property name="OverlayIconName" type="s" access="read"/>
+    <property name="OverlayIconPixmap" type="a(iiay)" access="read"/>
+    <property name="ToolTip" type="(sa(iiay)ss)" access="read"/>
+    <property name="ItemIsMenu" type="b" access="read"/>
+    <property name="Menu" type="o" access="read"/>
+    <property name="WindowId" type="i" access="read"/>
+    <method name="Activate">
+      <arg name="x" type="i" direction="in"/>
+      <arg name="y" type="i" direction="in"/>
+    </method>
+    <method name="SecondaryActivate">
+      <arg name="x" type="i" direction="in"/>
+      <arg name="y" type="i" direction="in"/>
+    </method>
+    <method name="ContextMenu">
+      <arg name="x" type="i" direction="in"/>
+      <arg name="y" type="i" direction="in"/>
+    </method>
+    <method name="Scroll">
+      <arg name="delta" type="i" direction="in"/>
+      <arg name="orientation" type="s" direction="in"/>
+    </method>
+    <signal name="NewIcon"/>
+    <signal name="NewAttentionIcon"/>
+    <signal name="NewOverlayIcon"/>
+    <signal name="NewToolTip"/>
+    <signal name="NewStatus">
+      <arg name="status" type="s"/>
+    </signal>
+    <signal name="NewTitle"/>
+    <signal name="NewMenu"/>
+  </interface>
+</node>"""
+
+# ItemIsMenu=false + Menu 指向 dbusmenu：qsl 左键走 Activate、右键读 Menu 属性。
+SNI_PROPS = {
+    "Category": GLib.Variant("s", "ApplicationStatus"),
+    "Id": GLib.Variant("s", "dsh"),
+    "Title": GLib.Variant("s", "DeepSeek Harness"),
+    "Status": GLib.Variant("s", "Active"),
+    # 绝对路径而不是主题名：qsl 的 Icons.fromPath 对 "/" 开头的原样转 file://，
+    # 不依赖图标装没装进主题目录。
+    "IconName": GLib.Variant("s", ICON),
+    "IconThemePath": GLib.Variant("s", ""),
+    "IconPixmap": GLib.Variant("a(iiay)", []),
+    "AttentionIconName": GLib.Variant("s", ""),
+    "AttentionIconPixmap": GLib.Variant("a(iiay)", []),
+    "AttentionMovieName": GLib.Variant("s", ""),
+    "OverlayIconName": GLib.Variant("s", ""),
+    "OverlayIconPixmap": GLib.Variant("a(iiay)", []),
+    "ToolTip": GLib.Variant("(sa(iiay)ss)",
+                            ("", [], "DeepSeek Harness", "左键打开界面")),
+    # ItemIsMenu=true：这个 item 的主交互就是菜单（左键/右键都弹同一个），
+    # 因此不提供 Activate 动作——打开界面走桌面图标。
+    "ItemIsMenu": GLib.Variant("b", True),
+    "Menu": GLib.Variant("o", MENU_PATH),
+    "WindowId": GLib.Variant("i", 0),
+}
+
+
+# ── 托盘：菜单（com.canonical.dbusmenu） ────────────────────────────────────
+
+MENU_XML = """<node>
+  <interface name="com.canonical.dbusmenu">
+    <method name="GetLayout">
+      <arg name="parentId" type="i" direction="in"/>
+      <arg name="recursionDepth" type="i" direction="in"/>
+      <arg name="propertyNames" type="as" direction="in"/>
+      <arg name="revision" type="u" direction="out"/>
+      <arg name="layout" type="(ia{sv}av)" direction="out"/>
+    </method>
+    <method name="GetGroupProperties">
+      <arg name="ids" type="ai" direction="in"/>
+      <arg name="propertyNames" type="as" direction="in"/>
+      <arg name="properties" type="a(ia{sv})" direction="out"/>
+    </method>
+    <method name="GetProperty">
+      <arg name="id" type="i" direction="in"/>
+      <arg name="name" type="s" direction="in"/>
+      <arg name="value" type="v" direction="out"/>
+    </method>
+    <method name="Event">
+      <arg name="id" type="i" direction="in"/>
+      <arg name="eventId" type="s" direction="in"/>
+      <arg name="data" type="v" direction="in"/>
+      <arg name="timestamp" type="u" direction="in"/>
+    </method>
+    <method name="EventGroup">
+      <arg name="events" type="a(isvu)" direction="in"/>
+      <arg name="idErrors" type="ai" direction="out"/>
+    </method>
+    <method name="AboutToShow">
+      <arg name="id" type="i" direction="in"/>
+      <arg name="needUpdate" type="b" direction="out"/>
+    </method>
+    <method name="AboutToShowGroup">
+      <arg name="ids" type="ai" direction="in"/>
+      <arg name="updatesNeeded" type="ai" direction="out"/>
+      <arg name="idErrors" type="ai" direction="out"/>
+    </method>
+    <signal name="ItemsPropertiesUpdated">
+      <arg name="updatedProps" type="a(ia{sv})"/>
+      <arg name="removedProps" type="a(ias)"/>
+    </signal>
+    <signal name="LayoutUpdated">
+      <arg name="revision" type="u"/>
+      <arg name="parent" type="i"/>
+    </signal>
+    <property name="Version" type="u" access="read"/>
+    <property name="TextDirection" type="s" access="read"/>
+    <property name="Status" type="s" access="read"/>
+    <property name="IconThemePath" type="as" access="read"/>
+  </interface>
+</node>"""
+
+MENU_REVISION = 1
+QUIT_ID = 1
+
+MENU_ITEMS = {
+    0: {"children": [QUIT_ID], "root": True},
+    QUIT_ID: {"label": "退出"},
+}
+
+
+def menu_props(item_id):
+    item = MENU_ITEMS[item_id]
+    props = {
+        "enabled": GLib.Variant("b", True),
+        "visible": GLib.Variant("b", True),
+    }
+    # 根节点没有 label：dbusmenu 里它是容器，只有 children-display
+    if item.get("root"):
+        props["children-display"] = GLib.Variant("s", "submenu")
+    else:
+        props["label"] = GLib.Variant("s", item["label"])
+    return props
+
+
+def menu_variant(item_id, depth):
+    """把一条菜单项铸成 (ia{sv}av)。
+
+    必须用 new_tuple 显式逐层构造。写成 GLib.Variant("(ia{sv}av)", (...))
+    会遇到：PyGObject 见到嵌套的 GLib.Variant 会先 unpack 成裸 Python 值再重建，
+    于是 a{sv} 里的 v 拿到的是裸 bool，报 Expected GLib.Variant, but got bool。
+    同理 av 的元素必须是 Variant 本身（裸 tuple 会报 got tuple）。
+    """
+    kids = []
+    if depth != 0:
+        for child in MENU_ITEMS[item_id].get("children", []):
+            kids.append(menu_variant(child, depth - 1))
+    return GLib.Variant.new_tuple(
+        GLib.Variant("i", item_id),
+        GLib.Variant("a{sv}", menu_props(item_id)),
+        GLib.Variant("av", kids))
+
+
+# ── 入口 ────────────────────────────────────────────────────────────────────
+
+def main():
+    # 单实例用文件锁，不用 pid 文件：进程无论怎么死，内核都会释放锁
+    lock_fd = os.open(LOCK_PATH, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(lock_fd)
+        open_url(wait_url() or BASE_URL)
+        return 0
+
+    # start_new_session：给 dsh 一个自己的进程组，收尾时能整组发信号，
+    # 连带它 spawn 出来的子进程一起收掉（见 reap）
+    proc = subprocess.Popen([DSH, "--profile", "web", "--no-open"], cwd=HOME,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            text=True, bufsize=1, start_new_session=True)
+    threading.Thread(target=pump, args=(proc,), daemon=True).start()
+
+    loop = GLib.MainLoop()
+
+    # 收尾只负责退出主循环；真正的进程回收统一在 finally 里做（单一出口）
+    def stop(*_):
+        loop.quit()
+        return False
+
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, stop)
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, stop)
+
+    # dsh 自己崩了/退了就把壳也收掉，下次点图标干净重来
+    def watch_child():
+        if proc.poll() is None:
+            return True
+        loop.quit()
+        return False
+
+    GLib.timeout_add(1000, watch_child)
+
+    bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+    Gio.bus_own_name_on_connection(bus, ITEM_NAME,
+                                   Gio.BusNameOwnerFlags.NONE, None, None)
+
+    # get_property 回调的参数个数随 PyGObject 版本而变（有的版本带 error，有的不带），
+    # 统一用 *_ 收尾，免得版本一换就 TypeError
+    def sni_prop(_conn, _sender, _path, _iface, name, *_rest):
+        return SNI_PROPS.get(name)
+
+    # ItemIsMenu=true：左键交给 host 弹菜单，托盘不挂任何动作。
+    # 方法仍然声明（SNI 接口要求），一律 no-op。
+    def sni_call(_conn, _sender, _path, _iface, method, _params, invocation):
+        invocation.return_value(None)
+
+    def menu_prop(_conn, _sender, _path, _iface, name, *_rest):
+        return {
+            "Version": GLib.Variant("u", 3),
+            "TextDirection": GLib.Variant("s", "ltr"),
+            "Status": GLib.Variant("s", "normal"),
+            "IconThemePath": GLib.Variant("as", []),
+        }.get(name)
+
+    def menu_call(_conn, _sender, _path, _iface, method, params, invocation):
+        if method == "GetLayout":
+            parent, depth, _names = params.unpack()
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("u", MENU_REVISION),
+                menu_variant(parent, depth)))
+        elif method == "GetGroupProperties":
+            ids, _names = params.unpack()
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("a(ia{sv})",
+                             [(i, menu_props(i)) for i in ids])))
+        elif method == "GetProperty":
+            item_id, name = params.unpack()
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("v", menu_props(item_id).get(name,
+                               GLib.Variant("s", "")))))
+        elif method == "Event":
+            item_id, event_id, _data, _ts = params.unpack()
+            if event_id == "clicked" and item_id == QUIT_ID:
+                stop()
+            invocation.return_value(None)
+        elif method == "EventGroup":
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("ai", [])))
+        elif method == "AboutToShow":
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("b", False)))
+        elif method == "AboutToShowGroup":
+            invocation.return_value(GLib.Variant.new_tuple(
+                GLib.Variant("ai", []), GLib.Variant("ai", [])))
+        else:
+            invocation.return_value(None)
+
+    bus.register_object(ITEM_PATH, Gio.DBusNodeInfo.new_for_xml(SNI_XML).interfaces[0],
+                        sni_call, sni_prop, None)
+    bus.register_object(MENU_PATH, Gio.DBusNodeInfo.new_for_xml(MENU_XML).interfaces[0],
+                        menu_call, menu_prop, None)
+
+    def announce(*_):
+        try:
+            bus.call_sync(WATCHER, WATCHER_PATH, WATCHER,
+                          "RegisterStatusNotifierItem",
+                          GLib.Variant("(s)", (ITEM_NAME,)),
+                          None, Gio.DBusCallFlags.NONE, -1, None)
+            note("tray registered")
+        except GLib.Error as err:
+            note("tray register failed: %s" % err.message)
+
+    # watcher 是 qs 提供的：qs 重启后要重新登记一次，否则图标消失
+    Gio.bus_watch_name_on_connection(bus, WATCHER, Gio.BusNameWatcherFlags.NONE,
+                                     announce, None)
+
+    try:
+        loop.run()
+    finally:
+        reap(proc)
+        try:
+            os.unlink(URL_PATH)
+        except OSError:
+            pass
+        os.close(lock_fd)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
