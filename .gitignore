@@ -42,3 +42,7 @@ fcitx5/rime/custom_phrase.txt
 /gtk-3.0/settings.ini
 /gtk-4.0/settings.ini
 shell/
+
+# 我的博客文章
+/yukilog
+
