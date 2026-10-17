@@ -68,6 +68,13 @@
             "note": "yeastar.xin",
             "icon": "🌸",
             "url": "https://yeastar.xin/"
+        },
+        {
+            "id": "pokemon",
+            "title": "口袋妖怪",
+            "note": "pokemon.lian.love",
+            "icon": "pets",
+            "url": "http://pokemon.lian.love/"
         }
     ],
 
@@ -87,11 +94,11 @@
             "units": ["cliphist-watch.service", "cliphist-watch-image.service"]
         },
         {
-            "id": "hysp",
-            "title": "在线状态",
-            "note": "hysp → lya",
-            "icon": "sensors",
-            "units": ["hysp.service"]
+            "id": "pokemon",
+            "title": "口袋妖怪",
+            "note": "serve.py 8931",
+            "icon": "pets",
+            "units": ["pokemon.service"]
         }
     ]
 }
