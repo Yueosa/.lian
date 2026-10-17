@@ -46,3 +46,6 @@ shell/
 # 我的博客文章
 /yukilog
 
+# 临时目录
+tmp/
+
