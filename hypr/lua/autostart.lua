@@ -28,7 +28,9 @@
 
 local screenshotDir = "$HOME/Pictures/Screenshots"
 
-local importEnv = "WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE DISPLAY GTK_IM_MODULE QT_IM_MODULE XMODIFIERS"
+--     光标变量必须一起导入：lianwall 等由 systemd --user 拉起的 GUI
+--     进程继承的是 systemd 的环境，不是 Hyprland 的，漏掉会退回默认光标
+local importEnv = "WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE DISPLAY GTK_IM_MODULE QT_IM_MODULE XMODIFIERS XCURSOR_THEME XCURSOR_SIZE HYPRCURSOR_THEME HYPRCURSOR_SIZE"
 
 
 -- ============================================================

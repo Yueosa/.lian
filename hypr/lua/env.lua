@@ -35,14 +35,16 @@ hl.env("XMODIFIERS", "@im=fcitx")
 
 -- ============================================================
 -- 光标主题
---     XCursor 用于 XWayland 和传统应用
---     Hyprcursor 用于 Hyprland 原生渲染
---     两者设成同一主题以保持视觉一致
+--     Plana 是 Windows 光标方案转出的主题，只有 cursors/（XCursor），
+--     没有 hyprcursors/ 目录，所以 Hyprland 走 XCursor 回退路径，
+--     实际读取的是 XCURSOR_SIZE；HYPRCURSOR_* 保留是为了以后补
+--     hyprcursor 格式时不用再改这里。
+--     源文件是 32px 单档，这里设 24 会由 libxcursor 按最近邻缩放。
 -- ============================================================
 
-hl.env("XCURSOR_THEME", "BreezeX-RosePineDawn-Linux")
+hl.env("XCURSOR_THEME", "Plana")
 hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_THEME", "BreezeX-RosePineDawn-Linux")
+hl.env("HYPRCURSOR_THEME", "Plana")
 hl.env("HYPRCURSOR_SIZE", "24")
 
 
