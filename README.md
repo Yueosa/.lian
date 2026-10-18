@@ -36,7 +36,7 @@
 
 - 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party / qs / lianwall 等）
   → 由会话入口直接拉起，确保 `WAYLAND_DISPLAY` / `HYPRLAND_INSTANCE_SIGNATURE` / IM 变量完整继承
-- ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist-watch / hysp / stalk-hypr / tuxedo-tray / hypr-event-daemon）
+- ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist-watch / stalk-hypr / tuxedo-tray / hypr-event-daemon）
   → 由 `hyprland-session.target` 统一管理的 `systemd --user` 服务
 - 🔧 还有少部分系统级服务（`sddm` / `bluetooth` / `polkit` / `wpa_supplicant`）需要在用户登录前启动，配置为 `systemctl enable` 
 
@@ -55,6 +55,7 @@
 | [kanshi](#kanshi) | 多显示器自动切换（笔记本 / 外接屏）  |
 | [kitty](#kitty) | 终端模拟器配置与字体、splits 分屏、ssh 兼容说明  |
 | [GTK](#gtk) | GTK 3/4 主题覆盖（配色由 matugen 动态生成）  |
+| [光标主题](#光标主题) | Plana Xcursor 主题与 default 回退壳，尺寸档位与三处一致性  |
 | [Qt (qt6ct)](#qt6ct) | Qt 应用主题适配（palette 由 matugen 写入）  |
 | [fontconfig](#fontconfig) | 中日韩字体回退顺序覆盖  |
 | [mimeapps](#mimeapps) | XDG 默认应用关联  |
@@ -359,7 +360,46 @@ ln -sf ~/.lian/gtk-4.0 ~/.config/gtk-4.0
 ```
 
 > - 我的 `settings.ini` 里仍然使用 `Adwaita` 作为 GTK 主题/图标主题 
-> - 光标主题设置成了 `BreezeX-RosePineDawn-Linux`；你如果没装对应光标主题，会回退成系统默认光标 
+> - 光标主题是 `Plana`（Windows `.ani` 方案转出的 Xcursor 主题），不使用 `gtk-cursor-theme-name`——
+>   那两行在 Wayland 下不生效，GTK 实际读的是 gsettings `org.gnome.desktop.interface cursor-theme`，
+>   由 Hyprland 的 `cursor:sync_gsettings_theme` 在 `setcursor` 时自动写入 
+
+## | 光标主题
+
+光标主题不入库（`.gitignore` 里 `icons/`），只保证源文件归 `~/.lian` 管辖，系统目录放软链。
+
+```
+~/.lian/icons/
+├── Plana/                      主题本体，15 个 Xcursor 实体 + 137 个别名软链
+│   ├── cursor.theme
+│   ├── index.theme
+│   └── cursors/
+└── default/                    回退壳，让「default」这个名字解析到 Plana
+    ├── index.theme             Inherits=Plana
+    └── cursors -> ../Plana/cursors
+
+~/.local/share/icons/Plana   -> ~/.lian/icons/Plana
+~/.local/share/icons/default -> ~/.lian/icons/default
+```
+
+`default` 这个壳不能省。Chromium / Electron **不读 `XCURSOR_THEME`**，它的主题解析顺序是
+`LinuxUi(GTK)` → X 的 `RESOURCE_MANAGER` 里的 `Xcursor.theme` → 字面量 `"default"`。
+没有 XSETTINGS 守护进程时，XWayland 应用会一路掉到第三档；`default` 指向 Plana 之后才会拿到正确的光标。
+
+尺寸档位是 22 / 24 / 28 / 32，素材原生 32，用 32 可以完全避免缩放（libxcursor 的
+`_XcursorResizeImage` 是最近邻采样，没有插值）。三处必须一致：
+
+| 位置 | 谁读 |
+|---|---|
+| `hypr/lua/env.lua` 的 `XCURSOR_THEME` / `XCURSOR_SIZE` | Hyprland、XWayland 应用、Qt、Chromium |
+| gsettings `org.gnome.desktop.interface cursor-theme` / `cursor-size` | GTK 3/4 |
+| `hypr/lua/autostart.lua` 的 `importEnv` 白名单 | 让 `systemd --user` 拉起的 GUI 也继承 |
+
+改尺寸后要让 Hyprland 重载：`loadTheme` 在主题名和尺寸都没变时会直接早退，所以 `setcursor`
+要换个值再换回来（`setcursor Plana 25` 然后 `setcursor Plana 24`）。
+
+> X11 窗口（如固定在 XWayland 的 QQ）里的光标只能是静态的。X11 的 `Cursor` 资源是单个 pixmap，
+> 没有帧序列和 delay；Wayland 侧由合成器渲染，才会播放多帧动画。这是架构限制，不是配置问题。
 
 ## | Qt (qt6ct)
 
@@ -523,7 +563,7 @@ Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无
 
 ## | systemd/user
 
-我的 Hyprland 会话里有不少需要长期运行的组件：`fcitx5`、`lianwall`、`cliphist`、`hysp`、`stalk-hypr`，以及 `hypr-event-daemon`、`tuxedo-tray` 
+我的 Hyprland 会话里有不少需要长期运行的组件：`fcitx5`、`lianwall`、`cliphist`、`stalk-hypr`，以及 `hypr-event-daemon`、`tuxedo-tray` 
 
 早期这些东西全写在 `hyprland.conf` 的 `exec-once` 里，配置直观，但排查启动失败、重登后的残留进程、异常退出后的恢复都不太方便 
 
@@ -559,7 +599,6 @@ systemctl --user enable \
     cliphist-watch-image.service \
     wl-clip-persist.service \
     stalk-hypr.service \
-    hysp.service \
     tuxedo-tray.service \
     hypr-event-daemon.service
 ```
@@ -575,7 +614,6 @@ systemctl --user enable \
 | `cliphist-watch-image.service` | 后台监听 `wl-paste --type image`，写入 cliphist 图片历史（text/image 双路避免 MIME 抢占） |
 | `wl-clip-persist.service` | 接管 regular selection，源应用退出后剪贴板内容仍可粘贴（不动 primary） |
 | `stalk-hypr.service` | 我自己写的 Hyprland 状态记录器 |
-| `hysp.service` | 我自己写的小工具 |
 | `tuxedo-tray.service` | TUXEDO 笔记本控制中心托盘 |
 | `hypr-event-daemon.service` | 监听 Hyprland `.socket2.sock` 事件，把 active window/workspace 写到缓存 |
 
