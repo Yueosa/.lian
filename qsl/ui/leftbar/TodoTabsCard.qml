@@ -37,13 +37,13 @@ Item {
             Layout.fillWidth: true
             Text {
                 text: "待办"
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
             }
             Text {
                 text: Todo.doneCount + "/" + Todo.count
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
                 verticalAlignment: Text.AlignVCenter
             }
@@ -61,8 +61,8 @@ Item {
                 Layout.preferredHeight: 32
                 radius: Size.rounding.sm
                 color: root.sharedState.starredOnly
-                    ? Color.primaryContainer
-                    : Color.surfaceContainerHigh
+                    ? ThemeColors.primaryContainer
+                    : ThemeColors.surfaceContainerHigh
 
                 Text {
                     anchors.centerIn: parent
@@ -74,7 +74,7 @@ Item {
                     // 在 Material Symbols 里被合并成了同一个 star
                     font.variableAxes: ({ "FILL": root.sharedState.starredOnly ? 1 : 0,
                                           "opsz": 20 })
-                    color: root.sharedState.starredOnly ? Color.primaryContainerText : Color.textMuted
+                    color: root.sharedState.starredOnly ? ThemeColors.primaryContainerText : ThemeColors.textMuted
                 }
 
                 MouseArea {
@@ -87,7 +87,7 @@ Item {
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 20
-                color: Color.surfaceContainerHighest
+                color: ThemeColors.surfaceContainerHighest
             }
 
             Flickable {
@@ -131,7 +131,7 @@ Item {
                         width: 32
                         height: 32
                         radius: Size.rounding.sm
-                        color: Color.surfaceContainerHigh
+                        color: ThemeColors.surfaceContainerHigh
 
                         QslStateLayer { source: newTagMa }
 
@@ -140,7 +140,7 @@ Item {
                             text: "add"
                             font.family: Size.fontIcon
                             font.pixelSize: Size.iconSize.lg
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                         }
                         MouseArea {
                             id: newTagMa
@@ -163,9 +163,9 @@ Item {
             Layout.preferredHeight: root.creatingTag ? 36 : 0
             visible: root.creatingTag
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
             border.width: Style.border.width
-            border.color: Color.withAlpha(Color.primary, 0.5)
+            border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
 
             TextInput {
                 id: newTagInput
@@ -173,7 +173,7 @@ Item {
                 anchors.leftMargin: Size.spacing.md
                 anchors.rightMargin: Size.spacing.md
                 verticalAlignment: Text.AlignVCenter
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.bodySmall
                 font.family: Size.fontSans
                 clip: true
@@ -184,7 +184,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     visible: !newTagInput.text
                     text: "新标签名，回车确认，Esc 取消"
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font: newTagInput.font
                 }
 

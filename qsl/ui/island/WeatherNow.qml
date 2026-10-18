@@ -61,7 +61,7 @@ RowLayout {
         Layout.fillHeight: true
         Layout.preferredWidth: 1
         radius: Size.rounding.lg
-        color: Color.surfaceContainerHigh
+        color: ThemeColors.surfaceContainerHigh
 
         ColumnLayout {
             anchors.fill: parent
@@ -78,7 +78,7 @@ RowLayout {
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.labelMedium
                     font.bold: true
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
@@ -101,7 +101,7 @@ RowLayout {
                         text: "\uf021"
                         font.family: Size.fontMono
                         font.pixelSize: Size.iconSize.md
-                        color: refreshMa.containsMouse ? Color.primary : Color.textMuted
+                        color: refreshMa.containsMouse ? ThemeColors.primary : ThemeColors.textMuted
 
                         // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                         NumberAnimation {
@@ -177,7 +177,7 @@ RowLayout {
                             font.family: Size.fontMono
                             font.pixelSize: 52
                             font.weight: Font.Light
-                            color: Color.text
+                            color: ThemeColors.text
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -185,7 +185,7 @@ RowLayout {
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
-                            color: Color.text
+                            color: ThemeColors.text
                             elide: Text.ElideRight
                             width: Math.min(implicitWidth, parent.parent.width - 8)
                         }
@@ -209,7 +209,7 @@ RowLayout {
                                 text: Weather.ready ? (Math.round(Weather.todayMinC) + "°") : "--"
                                 font.family: Size.fontMono
                                 font.pixelSize: Size.fontSize.bodySmall
-                                color: Color.textMuted
+                                color: ThemeColors.textMuted
                             }
 
                             Item {
@@ -231,7 +231,7 @@ RowLayout {
                                                 ? nowRow.page.rampColor(
                                                     (dayScale.lo - nowRow.page.dailyMinC)
                                                     / nowRow.page.dailyTempSpan)
-                                                : Color.primary
+                                                : ThemeColors.primary
                                         }
                                         GradientStop {
                                             position: 1
@@ -239,7 +239,7 @@ RowLayout {
                                                 ? nowRow.page.rampColor(
                                                     (dayScale.hi - nowRow.page.dailyMinC)
                                                     / nowRow.page.dailyTempSpan)
-                                                : Color.error
+                                                : ThemeColors.error
                                         }
                                     }
                                 }
@@ -251,9 +251,9 @@ RowLayout {
                                     radius: 5
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.round(dayScale.ratio * (parent.width - width))
-                                    color: Color.text
+                                    color: ThemeColors.text
                                     border.width: 2
-                                    border.color: Color.surfaceContainerHigh
+                                    border.color: ThemeColors.surfaceContainerHigh
                                     Behavior on x {
                                         Anim {}
                                     }
@@ -265,7 +265,7 @@ RowLayout {
                                 text: Weather.ready ? (Math.round(Weather.todayMaxC) + "°") : "--"
                                 font.family: Size.fontMono
                                 font.pixelSize: Size.fontSize.bodySmall
-                                color: Color.text
+                                color: ThemeColors.text
                             }
                         }
                     }
@@ -322,14 +322,14 @@ RowLayout {
                 WeatherMetricTile {
                     readonly property int dir: Weather.pressureTrendDir
                     iconGlyph: dir === 0 ? "\u2192" : (dir > 0 ? "\u2197" : "\u2198")
-                    iconColor: dir < 0 ? Color.tertiary : Color.primary
+                    iconColor: dir < 0 ? ThemeColors.tertiary : ThemeColors.primary
                     label: "气压 3h"
                     value: Weather.ready
                         ? (Weather.pressureTrend >= 0 ? "+" : "")
                           + Weather.pressureTrend.toFixed(1)
                         : "--"
                     hint: Weather.pressureTrendText
-                    hintColor: dir < 0 ? Color.tertiary : Color.textMuted
+                    hintColor: dir < 0 ? ThemeColors.tertiary : ThemeColors.textMuted
                 }
             }
             // UV 与空气质量：weatherd 一直在抓，此前从没露过面。
@@ -345,7 +345,7 @@ RowLayout {
                     value: Weather.uvIndex
                     // WHO 分级到 11+ 封顶，超过按满格算
                     maxValue: 11
-                    stops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+                    stops: [ThemeColors.primary, ThemeColors.secondary, ThemeColors.tertiary, ThemeColors.error]
                 }
                 WeatherGaugeTile {
                     label: "PM2.5"
@@ -355,7 +355,7 @@ RowLayout {
                     dataOk: Weather.airAvailable
                     // HJ 633 的「重度污染」下限，再高已经没有区分意义
                     maxValue: 150
-                    stops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+                    stops: [ThemeColors.primary, ThemeColors.secondary, ThemeColors.tertiary, ThemeColors.error]
                 }
             }
         }

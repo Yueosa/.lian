@@ -24,7 +24,7 @@ Rectangle {
     Layout.fillWidth: true
     Layout.fillHeight: true
     radius: Size.rounding.md
-    color: Color.surfaceContainerHighest
+    color: ThemeColors.surfaceContainerHighest
     clip: true
 
     readonly property real ratio: maxValue > 0
@@ -44,14 +44,14 @@ Rectangle {
             spacing: 6
             Text {
                 text: gauge.label
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
             }
             Item { Layout.fillWidth: true }
             Text {
                 text: gauge.valueText
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.titleSmall
                 font.weight: Font.DemiBold
@@ -59,7 +59,7 @@ Rectangle {
             Text {
                 visible: gauge.hint.length > 0
                 text: gauge.hint
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
             }
@@ -81,10 +81,10 @@ Rectangle {
 
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
-                    GradientStop { position: 0.00; color: gauge.stops.length > 0 ? gauge.stops[0] : Color.primary }
-                    GradientStop { position: 0.33; color: gauge.stops.length > 1 ? gauge.stops[1] : Color.primary }
-                    GradientStop { position: 0.66; color: gauge.stops.length > 2 ? gauge.stops[2] : Color.primary }
-                    GradientStop { position: 1.00; color: gauge.stops.length > 3 ? gauge.stops[3] : Color.error }
+                    GradientStop { position: 0.00; color: gauge.stops.length > 0 ? gauge.stops[0] : ThemeColors.primary }
+                    GradientStop { position: 0.33; color: gauge.stops.length > 1 ? gauge.stops[1] : ThemeColors.primary }
+                    GradientStop { position: 0.66; color: gauge.stops.length > 2 ? gauge.stops[2] : ThemeColors.primary }
+                    GradientStop { position: 1.00; color: gauge.stops.length > 3 ? gauge.stops[3] : ThemeColors.error }
                 }
             }
 
@@ -96,9 +96,9 @@ Rectangle {
                 radius: 5
                 anchors.verticalCenter: track.verticalCenter
                 x: Math.round(gauge.ratio * (track.width - width))
-                color: Color.text
+                color: ThemeColors.text
                 border.width: 2
-                border.color: Color.surfaceContainerHighest
+                border.color: ThemeColors.surfaceContainerHighest
                 Behavior on x {
                     Anim {}
                 }

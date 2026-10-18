@@ -140,10 +140,10 @@ PopupWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Color.surfaceContainerHigh
+        color: ThemeColors.surfaceContainerHigh
         radius: Size.rounding.md
         border.width: 1
-        border.color: Color.outlineVariant
+        border.color: ThemeColors.outlineVariant
         clip: true
 
         ColumnLayout {
@@ -167,7 +167,7 @@ PopupWindow {
                         : menuStack.get(menuStack.count - 1).title
                     anchors.centerIn: parent
                     font.bold: true
-                    color: Color.primary
+                    color: ThemeColors.primary
                     font.pixelSize: Size.fontSize.titleSmall
                     width: parent.width - 60
                     horizontalAlignment: Text.AlignHCenter
@@ -184,12 +184,12 @@ PopupWindow {
                     radius: Size.rounding.sm
                     color: "transparent"
 
-                    QslStateLayer { source: backMa; tint: Color.primary; accent: true }
+                    QslStateLayer { source: backMa; tint: ThemeColors.primary; accent: true }
 
                     Text {
                         text: "arrow_back"
                         anchors.centerIn: parent
-                        color: Color.text
+                        color: ThemeColors.text
                         font.family: Size.fontIcon
                         font.pixelSize: Size.iconSize.lg
                     }
@@ -206,7 +206,7 @@ PopupWindow {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: Color.primary
+                    color: ThemeColors.primary
                     opacity: 0.2
                 }
             }
@@ -226,7 +226,7 @@ PopupWindow {
                     color: "transparent"
                     visible: root.trayKey.length > 0
 
-                    QslStateLayer { source: pinMa; tint: Color.primary; accent: true }
+                    QslStateLayer { source: pinMa; tint: ThemeColors.primary; accent: true }
 
                     RowLayout {
                         anchors.fill: parent
@@ -238,12 +238,12 @@ PopupWindow {
                             text: "push_pin"
                             font.family: Size.fontIcon
                             font.pixelSize: Size.iconSize.md
-                            color: pinMa.containsMouse ? Color.primary : Color.secondary
+                            color: pinMa.containsMouse ? ThemeColors.primary : ThemeColors.secondary
                         }
                         Text {
                             text: root.itemPinned ? "从栏上收起" : "固定到栏上"
                             Layout.fillWidth: true
-                            color: pinMa.containsMouse ? Color.primary : Color.text
+                            color: pinMa.containsMouse ? ThemeColors.primary : ThemeColors.text
                             font.pixelSize: Size.fontSize.bodyMedium
                         }
                     }
@@ -278,7 +278,7 @@ PopupWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
                     visible: root.trayKey.length > 0
-                    color: Color.outlineVariant
+                    color: ThemeColors.outlineVariant
                     opacity: 0.5
                     Layout.leftMargin: 8
                     Layout.rightMargin: 8
@@ -292,7 +292,7 @@ PopupWindow {
                 Text {
                     visible: listCol.currentModel.length === 0
                     text: (menuStack.count > 0) ? "Loading..." : "No Items"
-                    color: Color.secondary
+                    color: ThemeColors.secondary
                     font.italic: true
                     Layout.alignment: Qt.AlignHCenter
                     Layout.margins: 10
@@ -357,7 +357,7 @@ PopupWindow {
                                 QslStateLayer {
                                     source: itemMa
                                     active: !menuItem.isSeparator
-                                    tint: Color.primary
+                                    tint: ThemeColors.primary
                                     accent: true
                                 }
 
@@ -366,7 +366,7 @@ PopupWindow {
                                     anchors.centerIn: parent
                                     width: parent.width - 20
                                     height: 1
-                                    color: Color.outlineVariant
+                                    color: ThemeColors.outlineVariant
                                     opacity: 0.5
                                 }
 
@@ -401,7 +401,7 @@ PopupWindow {
                                             text: parent.glyph !== "" ? parent.glyph : "apps"
                                             font.family: Size.fontIcon
                                             font.pixelSize: Size.iconSize.md
-                                            color: itemMa.containsMouse ? Color.primary : Color.secondary
+                                            color: itemMa.containsMouse ? ThemeColors.primary : ThemeColors.secondary
                                         }
                                     }
 
@@ -409,7 +409,7 @@ PopupWindow {
                                         visible: menuItem.entry ? menuItem.entry.toggleState === 1 : false
                                         text: "check"
                                         font.family: Size.fontIcon
-                                        color: Color.primary
+                                        color: ThemeColors.primary
                                         font.pixelSize: Size.iconSize.md
                                     }
 
@@ -419,10 +419,10 @@ PopupWindow {
                                         elide: Text.ElideRight
                                         color: {
                                             if (menuItem.entry && menuItem.entry.enabled === false)
-                                                return Color.outline
+                                                return ThemeColors.outline
                                             if (itemMa.containsMouse)
-                                                return Color.primary
-                                            return Color.text
+                                                return ThemeColors.primary
+                                            return ThemeColors.text
                                         }
                                         font.pixelSize: Size.fontSize.bodyMedium
                                         font.weight: itemMa.containsMouse ? Font.DemiBold : Font.Normal
@@ -433,7 +433,7 @@ PopupWindow {
                                         text: "chevron_right"
                                         font.family: Size.fontIcon
                                         font.pixelSize: Size.iconSize.lg
-                                        color: itemMa.containsMouse ? Color.primary : Color.tertiary
+                                        color: itemMa.containsMouse ? ThemeColors.primary : ThemeColors.tertiary
                                     }
                                 }
 

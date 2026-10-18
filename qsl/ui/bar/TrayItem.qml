@@ -101,7 +101,7 @@ MouseArea {
         // iconFor 交白卷（三级都没命中）或者图片确实加载失败，才显示字形
         visible: !root.iconSource || iconImg.status === Image.Error
         text: TrayService.glyphFor(root.modelData)
-        color: Color.text
+        color: ThemeColors.text
         font.family: Size.fontIcon
         font.pixelSize: Size.iconSize.xl
     }

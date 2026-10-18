@@ -8,8 +8,8 @@
 //
 //     Rectangle {
 //         radius: 8
-//         color: Color.surfaceContainer
-//         QslStateLayer { source: ma; tint: Color.primary }
+//         color: ThemeColors.surfaceContainer
+//         QslStateLayer { source: ma; tint: ThemeColors.primary }
 //         MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true }
 //     }
 //
@@ -30,8 +30,8 @@ Rectangle {
 
     // 提供 containsMouse / pressed 的那个 MouseArea。给 null 就只看 selected。
     property Item source: null
-    // 叠加色。透明底上用 Color.primary，有底色的行上用 Color.text。
-    property color tint: Color.text
+    // 叠加色。透明底上用 ThemeColors.primary，有底色的行上用 ThemeColors.text。
+    property color tint: ThemeColors.text
     // 用强调档的透明度（更重）。透明底的按钮/芯片该开。
     property bool accent: false
     // 选中不随鼠标走，且比悬停重
@@ -48,18 +48,18 @@ Rectangle {
         if (!root.active)
             return 0
         if (root._pressed)
-            return root.accent ? Color.state.pressedAccent : Color.state.pressed
+            return root.accent ? ThemeColors.state.pressedAccent : ThemeColors.state.pressed
         if (root.selected)
-            return Color.state.selected
+            return ThemeColors.state.selected
         if (root._hovered)
-            return root.accent ? Color.state.hoverAccent : Color.state.hover
+            return root.accent ? ThemeColors.state.hoverAccent : ThemeColors.state.hover
         return 0
     }
 
     anchors.fill: parent
     // 宿主是 Rectangle 就跟它的圆角，否则调用方自己给
     radius: parent && parent.radius !== undefined ? parent.radius : 0
-    color: Color.withAlpha(root.tint, root._alpha)
+    color: ThemeColors.withAlpha(root.tint, root._alpha)
 
     // z 保持默认 0，**靠声明顺序压在内容下面**——所以它必须写在文字/图标
     // 那些兄弟节点前面。

@@ -106,9 +106,9 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 44
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
             border.width: input.activeFocus ? Style.border.width : 0
-            border.color: Color.withAlpha(Color.primary, 0.5)
+            border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
 
             TextInput {
                 id: input
@@ -116,7 +116,7 @@ Item {
                 anchors.leftMargin: Size.spacing.md
                 anchors.rightMargin: Size.spacing.md
                 verticalAlignment: Text.AlignVCenter
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.bodyLarge
                 clip: true
@@ -134,7 +134,7 @@ Item {
             text: evalResult.ok
                 ? Calc.format(evalResult.value)
                 : (input.text.length > 0 ? evalResult.error : "0")
-            color: evalResult.ok ? Color.primary : Color.textMuted
+            color: evalResult.ok ? ThemeColors.primary : ThemeColors.textMuted
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.titleMedium
             horizontalAlignment: Text.AlignRight
@@ -162,7 +162,7 @@ Item {
                     width: parent.width
                     height: parent.height
                     text: (modelData.e || "") + " = " + Calc.format(modelData.v)
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.labelSmall
                     verticalAlignment: Text.AlignVCenter
@@ -207,13 +207,13 @@ Item {
                             radius: Size.rounding.sm
                             // 「=」用强调底：全网格唯一一个「这是会提交的」
                             color: modelData.accent
-                                ? Color.primaryContainer
-                                : Color.surfaceContainerHigh
+                                ? ThemeColors.primaryContainer
+                                : ThemeColors.surfaceContainerHigh
 
                             QslStateLayer {
                                 source: kma
                                 tint: modelData.accent
-                                    ? Color.primaryContainerText : Color.text
+                                    ? ThemeColors.primaryContainerText : ThemeColors.text
                             }
 
                             Text {
@@ -223,7 +223,7 @@ Item {
                                 font.pixelSize: modelData.g
                                     ? Size.iconSize.lg : Size.fontSize.bodyLarge
                                 color: modelData.accent
-                                    ? Color.primaryContainerText : Color.text
+                                    ? ThemeColors.primaryContainerText : ThemeColors.text
                             }
 
                             MouseArea {

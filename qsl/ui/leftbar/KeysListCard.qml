@@ -48,7 +48,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 2
                 text: modelData.title || ""
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
             }
@@ -58,7 +58,7 @@ Item {
                 visible: modelData.kind === "item"
                 anchors.fill: parent
                 radius: Size.rounding.md
-                color: Color.surfaceContainerLow
+                color: ThemeColors.surfaceContainerLow
 
                 RowLayout {
                     anchors.fill: parent
@@ -72,7 +72,7 @@ Item {
                         Layout.preferredWidth: Math.min(Math.max(150, implicitWidth),
                                                         parent.width * 0.55)
                         text: modelData.keys || ""
-                        color: Color.primary
+                        color: ThemeColors.primary
                         font.pixelSize: Size.fontSize.titleSmall
                         font.family: Size.fontMono
                         font.bold: true
@@ -81,7 +81,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: modelData.desc || ""
-                        color: Color.text
+                        color: ThemeColors.text
                         font.pixelSize: Size.fontSize.bodyMedium
                         elide: Text.ElideRight
                     }
@@ -95,7 +95,7 @@ Item {
             text: Hotkeys.ready
                 ? "此分组暂无条目"
                 : "等待 hotkeys.json…"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.pixelSize: Size.fontSize.bodyMedium
         }
     }

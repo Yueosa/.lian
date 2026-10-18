@@ -34,7 +34,7 @@ Item {
         y: root.topOffset
         width: root.thickness
         height: root.height - root.topOffset
-        color: Color.background
+        color: ThemeColors.background
     }
 
     Rectangle {
@@ -43,7 +43,7 @@ Item {
         y: root.topOffset
         width: root.thickness
         height: root.height - root.topOffset
-        color: Color.background
+        color: ThemeColors.background
     }
 
     Rectangle {
@@ -52,6 +52,6 @@ Item {
         y: root.height - root.thickness
         width: root.width - root.thickness * 2
         height: root.thickness
-        color: Color.background
+        color: ThemeColors.background
     }
 }

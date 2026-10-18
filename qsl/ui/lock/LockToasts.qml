@@ -53,7 +53,7 @@ Column {
                     Text {
                         width: parent.width - 20
                         text: modelData.appName || "应用"
-                        color: Color.inversePrimary
+                        color: ThemeColors.inversePrimary
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.labelSmall
                         font.weight: Font.DemiBold

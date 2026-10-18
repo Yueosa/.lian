@@ -22,10 +22,10 @@ Rectangle {
     radius: width / 2
     color: {
         if (primary)
-            return Color.primary
+            return ThemeColors.primary
         if (active)
-            return Color.primaryContainer
-        return Color.surfaceContainerHigh
+            return ThemeColors.primaryContainer
+        return ThemeColors.surfaceContainerHigh
     }
     opacity: enabled ? 1 : 0.35
 
@@ -33,13 +33,13 @@ Rectangle {
     QslStateLayer {
         source: ma
         active: btn.enabled
-        tint: btn.primary ? Color.primaryText : Color.text
+        tint: btn.primary ? ThemeColors.primaryText : ThemeColors.text
     }
 
     Text {
         anchors.centerIn: parent
         text: btn.glyph
-        color: primary ? Color.primaryText : (active ? Color.primaryContainerText : Color.backgroundText)
+        color: primary ? ThemeColors.primaryText : (active ? ThemeColors.primaryContainerText : ThemeColors.backgroundText)
         font.family: Size.fontMono
         font.pixelSize: primary ? Size.iconSize.lg : Size.iconSize.md
     }

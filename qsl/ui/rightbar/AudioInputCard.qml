@@ -76,7 +76,7 @@ Item {
                 text: Math.round((Volume.sourceMuted ? 0 : Volume.sourceVolume) * 100)
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.bodySmall
-                color: Volume.sourceMuted ? Color.textMuted : Color.primary
+                color: Volume.sourceMuted ? ThemeColors.textMuted : ThemeColors.primary
             }
         }
 
@@ -124,7 +124,7 @@ Item {
                     text: "check"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.primary
+                    color: ThemeColors.primary
                 }
             }
         }

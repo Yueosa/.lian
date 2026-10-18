@@ -104,8 +104,8 @@ Item {
         y: (root.rowH - height) / 2
         radius: Size.rounding.full
         color: root.iconActive
-            ? Color.primary
-            : Color.primaryContainer
+            ? ThemeColors.primary
+            : ThemeColors.primaryContainer
         Behavior on color { CAnim {} }
 
         Text {
@@ -114,7 +114,7 @@ Item {
             text: root.icon
             font.family: root.iconFamily
             font.pixelSize: root.iconSize
-            color: root.iconActive ? Color.primaryText : Color.primaryContainerText
+            color: root.iconActive ? ThemeColors.primaryText : ThemeColors.primaryContainerText
             Behavior on color { CAnim {} }
         }
 
@@ -168,7 +168,7 @@ Item {
             text: root.title
             font.family: root.titleMono ? Size.fontMono : Size.fontSans
             font.pixelSize: Size.fontSize.bodySmall
-            color: root.titleAccent ? Color.primary : Color.text
+            color: root.titleAccent ? ThemeColors.primary : ThemeColors.text
             elide: Text.ElideRight
         }
 
@@ -177,7 +177,7 @@ Item {
             visible: root.subtitle !== ""
             text: root.subtitle
             font.pixelSize: Size.fontSize.labelSmall
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             elide: Text.ElideRight
         }
 

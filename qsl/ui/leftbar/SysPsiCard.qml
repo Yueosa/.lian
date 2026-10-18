@@ -16,8 +16,8 @@ Item {
     anchors.fill: parent
     implicitHeight: psiCard.height + 32   // 上下各 16 留白
 
-    readonly property color cpuColor: Color.primary
-    readonly property color memColor: Color.secondary
+    readonly property color cpuColor: ThemeColors.primary
+    readonly property color memColor: ThemeColors.secondary
 
     // 压力（PSI）取代 Load：0–100 的百分比，直接读作
     // 「过去 10 秒有多少时间被卡住」，且 CPU / IO / 内存分得清。
@@ -45,7 +45,7 @@ Item {
         readonly property bool expanded:
             Sysmon.psiAvailable && worstPeak >= 1
         readonly property color severity:
-            worstPeak >= 10 ? Color.error : Color.primary
+            worstPeak >= 10 ? ThemeColors.error : ThemeColors.primary
 
         // 空闲时收成窄条：三个 0.0 加三条平线不值一整行。
         // 展开态 58 是给「当前值 + 峰值」两行数字留的高度
@@ -55,11 +55,11 @@ Item {
         }
 
         radius: Size.rounding.lg
-        color: Color.surfaceContainerHigh
+        color: ThemeColors.surfaceContainerHigh
         border.width: Style.border.width
         border.color: psiCard.expanded
-            ? Color.withAlpha(psiCard.severity, 0.45)
-            : Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+            ? ThemeColors.withAlpha(psiCard.severity, 0.45)
+            : ThemeColors.withAlpha(ThemeColors.outlineVariant, Style.border.opacity)
 
         RowLayout {
             anchors.fill: parent
@@ -69,7 +69,7 @@ Item {
 
             Text {
                 text: Sysmon.psiAvailable ? "PSI" : "Load"
-                color: psiCard.expanded ? psiCard.severity : Color.textMuted
+                color: psiCard.expanded ? psiCard.severity : ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
             }
             // 空闲态靠它把「无阻塞」推到右边；展开后必须让位，
@@ -80,7 +80,7 @@ Item {
             Text {
                 visible: Sysmon.psiAvailable && !psiCard.expanded
                 text: "无阻塞"
-                color: Color.withAlpha(Color.textMuted, 0.75)
+                color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.75)
                 font.pixelSize: Size.fontSize.labelMedium
             }
 
@@ -88,7 +88,7 @@ Item {
             Text {
                 visible: !Sysmon.psiAvailable
                 text: Sysmon.load1.toFixed(2)
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
                 font.family: Size.fontMono
@@ -104,7 +104,7 @@ Item {
                         hist: Sysmon.psiCpuHistory, peak: Sysmon.psiCpuPeak
                     },
                     {
-                        label: "IO", v: Sysmon.psiIo, c: Color.tertiary,
+                        label: "IO", v: Sysmon.psiIo, c: ThemeColors.tertiary,
                         hist: Sysmon.psiIoHistory, peak: Sysmon.psiIoPeak
                     },
                     {
@@ -132,7 +132,7 @@ Item {
 
                         Text {
                             text: grp.modelData.label
-                            color: Color.withAlpha(Color.textMuted, 0.8)
+                            color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.8)
                             font.pixelSize: Size.fontSize.labelSmall
                         }
                         Sparkline {
@@ -150,16 +150,16 @@ Item {
                             maxValue: 0
                             minSpan: 5
                             lineColor: grp.modelData.peak >= 10
-                                ? Color.error : grp.modelData.c
+                                ? ThemeColors.error : grp.modelData.c
                             lineWidth: 1.2
                             cornerRadius: Size.rounding.sm
-                            backgroundColor: Color.withAlpha(Color.background, 0.45)
+                            backgroundColor: ThemeColors.withAlpha(ThemeColors.background, 0.45)
                         }
                         Text {
                             // 超过 10% 说明真的在卡，标红
                             text: grp.modelData.v.toFixed(1)
                             color: grp.modelData.v >= 10
-                                ? Color.error : grp.modelData.c
+                                ? ThemeColors.error : grp.modelData.c
                             font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
                             font.family: Size.fontMono
@@ -174,7 +174,7 @@ Item {
                         opacity: (grp.modelData.peak >= 1
                             && grp.modelData.peak > grp.modelData.v + 0.5) ? 1 : 0
                         text: "峰" + grp.modelData.peak.toFixed(1)
-                        color: Color.withAlpha(Color.textMuted, 0.75)
+                        color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.75)
                         font.pixelSize: Size.fontSize.labelSmall
                         font.family: Size.fontMono
                         Behavior on opacity { Anim { type: Anim.EffectsSlow } }

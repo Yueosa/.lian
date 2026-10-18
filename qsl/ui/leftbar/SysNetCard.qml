@@ -33,7 +33,7 @@ Item {
 
             Text {
                 text: "网络"
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
             }
@@ -42,7 +42,7 @@ Item {
                 text: (Sysmon.netIface.length > 0 ? Sysmon.netIface + " · " : "")
                     + "↓" + Sysmon.formatBytes(Sysmon.netDownBps)
                     + " ↑" + Sysmon.formatBytes(Sysmon.netUpBps)
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelSmall
                 font.family: Size.fontMono
             }
@@ -56,13 +56,13 @@ Item {
                 anchors.fill: parent
                 values: Sysmon.netDownHistory
                 overrideMax: Sysmon.netPeak
-                lineColor: Color.primary
+                lineColor: ThemeColors.primary
             }
             Sparkline {
                 anchors.fill: parent
                 values: Sysmon.netUpHistory
                 overrideMax: Sysmon.netPeak
-                lineColor: Color.tertiary
+                lineColor: ThemeColors.tertiary
                 fillOpacity: 0.10
                 opacity: 0.7
             }

@@ -68,7 +68,7 @@ Singleton {
     // 这里原先还有一份挂在 linkPath 上，只为「软链变了就 version += 1」，从不读它
     // 的内容。但 FileView 不管你读不读，它总把整个文件载进内存，而且跟随符号链接。
     // 换成视频壁纸后 current 指向一个 700MB 的 mp4，于是：700MB 进 QByteArray
-    // （jemalloc 装进 768MiB 大块），再翻一倍成字符串（1536MiB）——Color.qml 里还有
+    // （jemalloc 装进 768MiB 大块），再翻一倍成字符串（1536MiB）——ThemeColors.qml 里还有
     // 一份同样的写法，两份合起来 4.5GB。这些块用完就释放了，但 jemalloc 把页留在
     // dirty 缓存里不还给系统（stats 里 allocated 10MB / resident 4.23GB），所以
     // RSS 一启动就常驻 4.4GB，看着像泄漏，其实是一次性读进来的死重。

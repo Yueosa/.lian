@@ -257,15 +257,15 @@ FocusScope {
         implicitHeight: 36
         radius: Size.rounding.md
         color: active
-            ? Color.primaryContainer
-            : Color.surfaceContainerHigh
+            ? ThemeColors.primaryContainer
+            : ThemeColors.surfaceContainerHigh
 
         Text {
             anchors.centerIn: parent
             text: button.icon
             font.family: Size.fontMono
             font.pixelSize: Size.iconSize.lg
-            color: button.active ? Color.primaryContainerText : Color.backgroundText
+            color: button.active ? ThemeColors.primaryContainerText : ThemeColors.backgroundText
         }
 
         MouseArea {
@@ -395,7 +395,7 @@ FocusScope {
                     Layout.fillWidth: true
                     text: (root.focusedItem ? (root.focusedItem.filename || "") : "—")
                         + (root.focusedItem && root.focusedItem.is_current ? " · 已应用" : "")
-                    color: Color.backgroundText
+                    color: ThemeColors.backgroundText
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.titleSmall
                     font.bold: true
@@ -406,7 +406,7 @@ FocusScope {
                     text: Lianwall.modeLabel + "模式 · " + (Lianwall.engine || "--")
                         + " · 本页 " + root.reel.length
                         + " · 锁定 " + Lianwall.lockedCount
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
@@ -521,14 +521,14 @@ FocusScope {
                     Rectangle {
                         anchors.fill: parent
                         radius: Size.rounding.lg
-                        color: Color.background
+                        color: ThemeColors.background
 
                         Rectangle {
                             id: face
                             anchors.fill: parent
                             anchors.margins: 3
                             radius: Size.rounding.md
-                            color: Color.surfaceContainerHigh
+                            color: ThemeColors.surfaceContainerHigh
 
                             Image {
                                 id: thumbImg
@@ -563,7 +563,7 @@ FocusScope {
                                 text: modelData.is_video ? "\uf03d" : "\uf03e"
                                 font.family: Size.fontMono
                                 font.pixelSize: 22
-                                color: Color.textMuted
+                                color: ThemeColors.textMuted
                             }
 
                             Rectangle {
@@ -573,13 +573,13 @@ FocusScope {
                                 width: curLabel.implicitWidth + 12
                                 height: 18
                                 radius: 9
-                                color: Color.primary
+                                color: ThemeColors.primary
                                 visible: !!modelData.is_current
                                 Text {
                                     id: curLabel
                                     anchors.centerIn: parent
                                     text: "当前"
-                                    color: Color.primaryText
+                                    color: ThemeColors.primaryText
                                     font.pixelSize: Size.fontSize.labelSmall
                                 }
                             }
@@ -607,7 +607,7 @@ FocusScope {
                 opacity: stagger.shown(1) ? 1 : 0
                 Behavior on opacity { Anim { type: Anim.EffectsSlow } }
                 text: Lianwall.error.length > 0 ? Lianwall.error : "暂无壁纸"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodyLarge
             }

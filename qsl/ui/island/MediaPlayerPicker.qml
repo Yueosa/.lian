@@ -42,7 +42,7 @@ Item {
         anchors.top: parent.top
         height: parent.height
         radius: Size.rounding.full
-        color: Color.surfaceContainerHigh
+        color: ThemeColors.surfaceContainerHigh
 
         Behavior on color {
             CAnim {}
@@ -51,7 +51,7 @@ Item {
         // 展开时保持强调态：「这一列是开着的」不随鼠标走
         QslStateLayer {
             source: playerChipMa
-            tint: Color.primary
+            tint: ThemeColors.primary
             accent: true
             selected: playerPicker.expanded
         }
@@ -64,21 +64,21 @@ Item {
 
             Text {
                 text: Media.activeIdentityIcon
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.sm
             }
             Text {
                 Layout.fillWidth: true
                 text: Media.activeIdentity
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
                 elide: Text.ElideRight
             }
             Text {
                 text: playerPicker.expanded ? "\uf077" : "\uf078"
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.xs
             }
@@ -111,8 +111,8 @@ Item {
                 radius: Size.rounding.sm
                 // 底色必须是不透明的：这一列浮在歌词上面，半透明会透字
                 color: modelData === Media.active
-                    ? Color.primary
-                    : Color.surfaceContainerHigh
+                    ? ThemeColors.primary
+                    : ThemeColors.surfaceContainerHigh
 
                 // 当前项已经是实心 primary，再叠一层只会把上面的字糊掉
                 QslStateLayer {
@@ -125,7 +125,7 @@ Item {
                     anchors.leftMargin: 10
                     anchors.rightMargin: 10
                     text: Media.getIdentityIcon(modelData) + "  " + Media.getIdentity(modelData)
-                    color: modelData === Media.active ? Color.primaryText : Color.backgroundText
+                    color: modelData === Media.active ? ThemeColors.primaryText : ThemeColors.backgroundText
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.labelSmall
                     font.bold: modelData === Media.active

@@ -32,7 +32,7 @@ Rectangle {
         text: root.icon
         font.family: Size.fontIcon
         font.pixelSize: root.iconSize
-        color: root.busy ? Color.primary : Color.textMuted
+        color: root.busy ? ThemeColors.primary : ThemeColors.textMuted
 
         // 装饰性/刷新动画，不走令牌（plan.md 白名单）
         RotationAnimator on rotation {

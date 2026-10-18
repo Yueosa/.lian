@@ -16,7 +16,7 @@ Item {
 
     property string title: ""
     // 标题配色：默认正文色，给分节留个上色口（updates 用它区分 AUR / 官方）
-    property color titleColor: Color.text
+    property color titleColor: ThemeColors.text
     // 纯说明文字（"3 个" / "扫描中…"）
     property string note: ""
     // 可点动作（"扫描"），带 actionIcon 时图标在前
@@ -51,7 +51,7 @@ Item {
             visible: root.note !== ""
             text: root.note
             font.pixelSize: Size.fontSize.labelSmall
-            color: Color.textMuted
+            color: ThemeColors.textMuted
         }
 
         // 文字动作：图标 + 标签，整块可点
@@ -66,7 +66,7 @@ Item {
             QslStateLayer {
                 source: actionMa
                 active: root.actionEnabled
-                tint: Color.primary
+                tint: ThemeColors.primary
                 accent: true
             }
 
@@ -80,7 +80,7 @@ Item {
                     text: root.actionIcon
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.sm
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                     RotationAnimator on rotation {
@@ -95,7 +95,7 @@ Item {
                 Text {
                     text: root.action
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                 }
             }
 

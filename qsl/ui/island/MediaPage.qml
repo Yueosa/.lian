@@ -89,14 +89,14 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "\uf001"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.family: Size.fontMono
             font.pixelSize: 48
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "没有媒体播放器"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.titleMedium
         }
@@ -128,7 +128,7 @@ Item {
                 Layout.preferredWidth: 232
                 Layout.preferredHeight: 232
                 radius: Size.rounding.xl
-                color: Color.surfaceContainerHighest
+                color: ThemeColors.surfaceContainerHighest
 
                 scale: Media.playing ? 1.0 : 0.95
                 Behavior on scale {
@@ -165,7 +165,7 @@ Item {
                     anchors.centerIn: parent
                     visible: !Media.trackArtUrl.length
                     text: Media.activeIdentityIcon
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: 56
                 }
@@ -174,7 +174,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.trackTitle
-                color: Color.backgroundText
+                color: ThemeColors.backgroundText
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
@@ -183,7 +183,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.trackArtist
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
                 elide: Text.ElideRight
@@ -210,14 +210,14 @@ Item {
                 Layout.fillWidth: true
                 Text {
                     text: Media.formatTime(root.seekPos)
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.labelSmall
                 }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: Media.formatTime(root.trackLength)
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.labelSmall
                 }

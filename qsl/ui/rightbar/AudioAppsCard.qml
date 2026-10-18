@@ -123,7 +123,7 @@ Item {
                     text: Math.round((row.muted ? 0 : row.vol) * 100)
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.bodySmall
-                    color: row.muted ? Color.textMuted : Color.primary
+                    color: row.muted ? ThemeColors.textMuted : ThemeColors.primary
                 }
             }
         }

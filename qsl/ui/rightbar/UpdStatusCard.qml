@@ -49,7 +49,7 @@ Item {
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.headlineSmall
                     font.bold: true
-                    color: Updates.totalCount > 0 ? Color.primary : Color.textMuted
+                    color: Updates.totalCount > 0 ? ThemeColors.primary : ThemeColors.textMuted
                 }
 
                 Text {
@@ -63,7 +63,7 @@ Item {
                         return parts.join(" · ")
                     }
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     elide: Text.ElideRight
                 }
             }
@@ -94,7 +94,7 @@ Item {
             visible: Updates.lastAppliedCount > 0
             text: "上次升级 " + Updates.lastAppliedCount + " 个包 · " + Updates.lastAppliedAgo
             font.pixelSize: Size.fontSize.labelSmall
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             elide: Text.ElideRight
         }
 
@@ -103,7 +103,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Updates.loading ? 3 : 0
             radius: 2
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             clip: true
             opacity: Updates.loading ? 1 : 0
             Behavior on Layout.preferredHeight {
@@ -115,7 +115,7 @@ Item {
                 width: parent.width * 0.35
                 height: parent.height
                 radius: 2
-                color: Color.primary
+                color: ThemeColors.primary
                 visible: Updates.loading
 
                 // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -138,7 +138,7 @@ Item {
             visible: !Updates.ok && !Updates.loading && Updates.errorAgo !== ""
             Layout.preferredHeight: visible ? 34 : 0
             radius: Size.rounding.sm
-            color: Color.errorContainer
+            color: ThemeColors.errorContainer
             clip: true
 
             RowLayout {
@@ -151,12 +151,12 @@ Item {
                     text: "error"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                 }
                 Text {
                     Layout.fillWidth: true
                     text: "检查失败 · " + Updates.errorAgo
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                     font.pixelSize: Size.fontSize.labelMedium
                     elide: Text.ElideRight
                 }

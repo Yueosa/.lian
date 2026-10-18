@@ -225,12 +225,12 @@ Item {
                     text: "add"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.lg
-                    color: Color.primary
+                    color: ThemeColors.primary
                 }
 
                 QslStateLayer {
                     source: addMa
-                    tint: Color.primary
+                    tint: ThemeColors.primary
                 }
 
                 MouseArea {
@@ -254,13 +254,13 @@ Item {
                     text: "delete"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: delMa.containsMouse ? Color.error : Color.textMuted
+                    color: delMa.containsMouse ? ThemeColors.error : ThemeColors.textMuted
                     Behavior on color { CAnim {} }
                 }
 
                 QslStateLayer {
                     source: delMa
-                    tint: Color.error
+                    tint: ThemeColors.error
                 }
 
                 MouseArea {
@@ -279,16 +279,16 @@ Item {
             Layout.preferredHeight: 36
             visible: root.activeNote !== null
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
             border.width: titleInput.activeFocus ? Style.border.width : 0
-            border.color: Color.withAlpha(Color.primary, 0.5)
+            border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
 
             TextInput {
                 id: titleInput
                 anchors.fill: parent
                 anchors.leftMargin: Size.spacing.md
                 anchors.rightMargin: Size.spacing.md
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
@@ -333,7 +333,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     visible: !titleInput.text && titleInput.activeFocus
                     text: "标题"
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font: titleInput.font
                 }
             }
@@ -347,9 +347,9 @@ Item {
                 : 0
             visible: root.activeNote !== null
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
             border.width: bodyEdit.activeFocus ? Style.border.width : 0
-            border.color: Color.withAlpha(Color.primary, 0.5)
+            border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
 
             // 正文超上限要能滚。QQC2 的 TextArea **自己不带滚动**：Basic 样式的
             // TextArea.qml 只是一个 T.TextArea，里面没有 Flickable，官方文档也写
@@ -381,8 +381,8 @@ Item {
                     selectByMouse: true
                     textFormat: TextEdit.PlainText
                     placeholderText: "写点什么…"
-                    placeholderTextColor: Color.textMuted
-                    color: Color.text
+                    placeholderTextColor: ThemeColors.textMuted
+                    color: ThemeColors.text
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodyMedium
                     background: null
@@ -424,7 +424,7 @@ Item {
             Layout.fillWidth: true
             Layout.topMargin: Size.spacing.xs
             text: "Tab 标题/正文 · Ctrl+N 新建 · Ctrl+Tab 切笔记(Shift 反向)"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.labelSmall
             horizontalAlignment: Text.AlignHCenter

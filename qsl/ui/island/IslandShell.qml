@@ -139,7 +139,7 @@ Item {
                 anchors.top: body.top
                 width: root.earRadius
                 height: root.earRadius
-                fillColor: Color.background
+                fillColor: ThemeColors.background
             }
 
             EarCanvas {
@@ -148,7 +148,7 @@ Item {
                 width: root.earRadius
                 height: root.earRadius
                 mirror: true
-                fillColor: Color.background
+                fillColor: ThemeColors.background
             }
 
             Item {
@@ -228,7 +228,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: body.radius
-                    color: Color.background
+                    color: ThemeColors.background
 
                     Rectangle {
                         anchors.top: parent.top

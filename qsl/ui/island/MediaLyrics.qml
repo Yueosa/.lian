@@ -89,7 +89,7 @@ ColumnLayout {
                     text: modelData.text || ""
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
-                    color: parent.isCurrent ? Color.primary : Color.textMuted
+                    color: parent.isCurrent ? ThemeColors.primary : ThemeColors.textMuted
                     font.family: Size.fontSans
                     font.pixelSize: 26
                     font.weight: Font.DemiBold
@@ -118,8 +118,8 @@ ColumnLayout {
             anchors.right: parent.right
             height: 44
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Color.background }
-                GradientStop { position: 1.0; color: Color.withAlpha(Color.background, 0) }
+                GradientStop { position: 0.0; color: ThemeColors.background }
+                GradientStop { position: 1.0; color: ThemeColors.withAlpha(ThemeColors.background, 0) }
             }
         }
         Rectangle {
@@ -128,8 +128,8 @@ ColumnLayout {
             anchors.right: parent.right
             height: 36
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Color.withAlpha(Color.background, 0) }
-                GradientStop { position: 1.0; color: Color.background }
+                GradientStop { position: 0.0; color: ThemeColors.withAlpha(ThemeColors.background, 0) }
+                GradientStop { position: 1.0; color: ThemeColors.background }
             }
         }
 
@@ -137,7 +137,7 @@ ColumnLayout {
             anchors.centerIn: parent
             visible: Lyrics.loading && Lyrics.lines.length === 0
             text: "搜寻歌词…"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.pixelSize: Size.fontSize.labelLarge
         }
     }
@@ -173,7 +173,7 @@ ColumnLayout {
                         return 3 + (vals[index] || 0) * (cavaStrip.height - 3)
                     }
                     radius: 3
-                    color: Color.withAlpha(Color.primary, 0.85)
+                    color: ThemeColors.withAlpha(ThemeColors.primary, 0.85)
 
                     Behavior on height {
                         NumberAnimation { duration: 60; easing.type: Easing.OutQuad }

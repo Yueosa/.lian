@@ -30,9 +30,9 @@ Item {
     // 筛选/排序结果缓存，避免每次绑定重算 50 项
     property var displayProcesses: []
 
-    readonly property color cpuColor: Color.primary
-    readonly property color memColor: Color.secondary
-    readonly property color pidColor: Color.tertiary
+    readonly property color cpuColor: ThemeColors.primary
+    readonly property color memColor: ThemeColors.secondary
+    readonly property color pidColor: ThemeColors.tertiary
 
     function rebuildProcesses() {
         const src = Sysmon.processes || []
@@ -110,7 +110,7 @@ Item {
             Layout.fillWidth: true
             Text {
                 text: "进程"
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
             }
@@ -131,7 +131,7 @@ Item {
                     QslStateLayer {
                         source: fMa
                         selected: parent.selected
-                        tint: parent.selected ? Color.primary : Color.text
+                        tint: parent.selected ? ThemeColors.primary : ThemeColors.text
                         accent: parent.selected
                     }
                     Text {
@@ -139,7 +139,7 @@ Item {
                         anchors.centerIn: parent
                         text: modelData.label
                         font.pixelSize: Size.fontSize.bodySmall
-                        color: selected ? Color.primary : Color.textMuted
+                        color: selected ? ThemeColors.primary : ThemeColors.textMuted
                     }
                     MouseArea {
                         id: fMa
@@ -159,7 +159,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: "名称"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelMedium
             }
             Text {
@@ -219,9 +219,9 @@ Item {
                 width: ListView.view ? ListView.view.width : 0
                 height: 44
                 radius: Size.rounding.md
-                color: Color.surfaceContainerLow
+                color: ThemeColors.surfaceContainerLow
 
-                QslStateLayer { source: rowMa; tint: Color.primary; accent: true }
+                QslStateLayer { source: rowMa; tint: ThemeColors.primary; accent: true }
 
                 readonly property int pid: Number(modelData.pid) || 0
                 readonly property int uid: (modelData.uid !== undefined) ? Number(modelData.uid) : 1000
@@ -237,14 +237,14 @@ Item {
                         Layout.fillWidth: true
                         text: modelData.name || "?"
                         elide: Text.ElideRight
-                        color: Color.text
+                        color: ThemeColors.text
                         font.pixelSize: Size.fontSize.bodyMedium
                     }
                     Text {
                         Layout.preferredWidth: 56
                         horizontalAlignment: Text.AlignRight
                         text: row.cpu.toFixed(1) + "%"
-                        color: row.cpu > 20 ? Color.error : root.cpuColor
+                        color: row.cpu > 20 ? ThemeColors.error : root.cpuColor
                         font.pixelSize: Size.fontSize.labelMedium
                         font.family: Size.fontMono
                         font.bold: true
@@ -253,7 +253,7 @@ Item {
                         Layout.preferredWidth: 60
                         horizontalAlignment: Text.AlignRight
                         text: Sysmon.formatMemKB(row.memKb)
-                        color: row.memKb > 1048576 ? Color.error : root.memColor
+                        color: row.memKb > 1048576 ? ThemeColors.error : root.memColor
                         font.pixelSize: Size.fontSize.labelMedium
                         font.family: Size.fontMono
                         font.bold: true
@@ -288,7 +288,7 @@ Item {
                 anchors.centerIn: parent
                 visible: procList.count === 0
                 text: Sysmon.daemonOk ? "暂无进程数据" : "等待 sysmond…"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodyMedium
             }
         }
@@ -303,9 +303,9 @@ Item {
         width: 148
         height: menuCol.implicitHeight + 12
         radius: Size.rounding.md
-        color: Color.surfaceContainerHighest
+        color: ThemeColors.surfaceContainerHighest
         border.width: 1
-        border.color: Color.outlineVariant
+        border.color: ThemeColors.outlineVariant
 
         Column {
             id: menuCol
@@ -328,7 +328,7 @@ Item {
                     anchors.left: parent.left
                     anchors.leftMargin: 12
                     text: "结束进程"
-                    color: Color.text
+                    color: ThemeColors.text
                     font.pixelSize: Size.fontSize.labelLarge
                 }
                 MouseArea {
@@ -353,7 +353,7 @@ Item {
                 QslStateLayer {
                     source: killMa
                     active: root.menuUid >= 1000
-                    tint: Color.error
+                    tint: ThemeColors.error
                     accent: true
                 }
                 Text {
@@ -361,7 +361,7 @@ Item {
                     anchors.left: parent.left
                     anchors.leftMargin: 12
                     text: "强制结束"
-                    color: Color.error
+                    color: ThemeColors.error
                     font.pixelSize: Size.fontSize.labelLarge
                 }
                 MouseArea {

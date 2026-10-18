@@ -53,7 +53,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: Color.background
+        color: ThemeColors.background
     }
 
     RowLayout {
@@ -65,7 +65,7 @@ Item {
 
         Text {
             text: ""
-            color: Color.primary
+            color: ThemeColors.primary
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.labelLarge
             Layout.alignment: Qt.AlignVCenter
@@ -73,7 +73,7 @@ Item {
 
         Text {
             text: root.activeTitle
-            color: Color.primary
+            color: ThemeColors.primary
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.bodyMedium
             Layout.maximumWidth: root.titleMax

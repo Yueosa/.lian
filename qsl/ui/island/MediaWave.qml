@@ -121,7 +121,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         height: waveRoot.trackH
         radius: waveRoot.trackH / 2
-        color: Color.surfaceContainerHighest
+        color: ThemeColors.surfaceContainerHighest
     }
 
     Canvas {
@@ -209,7 +209,7 @@ Item {
             ctx.lineTo(w, centerY - trackH / 2)
             ctx.lineTo(w, centerY + trackH / 2)
             ctx.closePath()
-            ctx.fillStyle = String(Color.primary)
+            ctx.fillStyle = String(ThemeColors.primary)
             ctx.fill()
         }
     }

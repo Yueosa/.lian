@@ -7,7 +7,7 @@
     "JSON 不支持注释，所以说明写在 _note 里（同 asset/hotkeys.json 的规矩）。",
     "写错类型或写了非法枚举值会静默退回默认值，不会把 shell 弄挂。",
     "",
-    "UI 代码永不直接读 Config，只读 Size/Color；这里的值由它们转发。",
+    "UI 代码永不直接读 Config，只读 Size/ThemeColors；这里的值由它们转发。",
     "所以 spacing / rounding / fontSize 这类细粒度令牌不在这里，它们是",
     "Size.qml 里的字面常量（理由见 plan.md 第 5 轮边界）。"
   ],

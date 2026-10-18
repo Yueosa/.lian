@@ -147,13 +147,13 @@ Item {
                     text: "↓" + Sysmon.formatBytes(Sysmon.netDownBps)
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.primary
+                    color: ThemeColors.primary
                 }
                 Text {
                     text: "↑" + Sysmon.formatBytes(Sysmon.netUpBps)
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.tertiary
+                    color: ThemeColors.tertiary
                 }
             }
 
@@ -175,12 +175,12 @@ Item {
                 && !Network.ethernetConnected
             radius: Size.rounding.full
             // 静息就带底色——这条只在需要登录时长出来，本身就是在喊人点它
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             Behavior on color { CAnim {} }
 
             QslStateLayer {
                 source: portalMa
-                tint: Color.primaryContainerText
+                tint: ThemeColors.primaryContainerText
                 accent: true
             }
 
@@ -189,7 +189,7 @@ Item {
                 text: "打开网络门户"
                 font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
-                color: Color.primaryContainerText
+                color: ThemeColors.primaryContainerText
             }
             MouseArea {
                 id: portalMa
@@ -205,7 +205,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Network.wifiScanning ? 3 : 0
             radius: 2
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             clip: true
             opacity: Network.wifiScanning ? 1 : 0
             Behavior on Layout.preferredHeight {
@@ -217,7 +217,7 @@ Item {
                 width: parent.width * 0.35
                 height: parent.height
                 radius: 2
-                color: Color.primary
+                color: ThemeColors.primary
                 visible: Network.wifiScanning
 
                 // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -240,7 +240,7 @@ Item {
             visible: Network.lastError !== ""
             Layout.preferredHeight: visible ? 34 : 0
             radius: Size.rounding.sm
-            color: Color.errorContainer
+            color: ThemeColors.errorContainer
             clip: true
 
             RowLayout {
@@ -253,12 +253,12 @@ Item {
                     text: "error"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Network.lastError
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                     font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }

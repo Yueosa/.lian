@@ -160,8 +160,8 @@ Item {
                     sourceComponent: Rectangle {
                         radius: Size.rounding.md
                         color: rowItem.isCurrent
-                            ? Color.primary
-                            : Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+                            ? ThemeColors.primary
+                            : ThemeColors.withAlpha(ThemeColors.surfaceContainerHighest, 0.35)
 
                         Behavior on color {
                             enabled: rowItem.s ? rowItem.s.animEnabled : false
@@ -191,7 +191,7 @@ Item {
                             // img tag 就是它）。预览一律按字面画
                             textFormat: Text.PlainText
                             text: rowItem.row.entries[0].preview || ""
-                            color: rowItem.isCurrent ? Color.primaryText : Color.text
+                            color: rowItem.isCurrent ? ThemeColors.primaryText : ThemeColors.text
                             font.pixelSize: Size.fontSize.bodyMedium
                             font.family: Size.fontSans
 
@@ -211,7 +211,7 @@ Item {
                             text: "close"
                             font.family: Size.fontIcon
                             font.pixelSize: Size.iconSize.md
-                            color: rowItem.isCurrent ? Color.primaryText : Color.textMuted
+                            color: rowItem.isCurrent ? ThemeColors.primaryText : ThemeColors.textMuted
 
                             MouseArea {
                                 anchors.fill: parent
@@ -249,7 +249,7 @@ Item {
                                 width: rowItem.s ? rowItem.s.imageCellW : 156
                                 height: rowItem.s ? rowItem.s.imageCellH : 112
                                 radius: Size.rounding.md
-                                color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+                                color: ThemeColors.withAlpha(ThemeColors.surfaceContainerHighest, 0.35)
 
                                 opacity: cell.fading ? 0 : 1
                                 Behavior on opacity {
@@ -299,7 +299,7 @@ Item {
                                     text: "\uf03e"
                                     font.family: Size.fontMono
                                     font.pixelSize: Size.iconSize.xl
-                                    color: Color.textMuted
+                                    color: ThemeColors.textMuted
                                 }
 
                                 Rectangle {
@@ -307,7 +307,7 @@ Item {
                                     color: "transparent"
                                     radius: cell.radius
                                     border.width: 3
-                                    border.color: Color.primary
+                                    border.color: ThemeColors.primary
                                     opacity: cell.isCurrent ? 1 : 0
 
                                     Behavior on opacity {
@@ -333,7 +333,7 @@ Item {
                                     width: 22
                                     height: 22
                                     radius: Size.rounding.full
-                                    color: Color.withAlpha(Color.surface, 0.72)
+                                    color: ThemeColors.withAlpha(ThemeColors.surface, 0.72)
                                     visible: cellHover.containsMouse
 
                                     Text {
@@ -341,7 +341,7 @@ Item {
                                         text: "close"
                                         font.family: Size.fontIcon
                                         font.pixelSize: Size.iconSize.sm
-                                        color: Color.text
+                                        color: ThemeColors.text
                                     }
 
                                     MouseArea {
@@ -374,16 +374,16 @@ Item {
             text: "content_paste"
             font.family: Size.fontIcon
             font.pixelSize: Size.iconSize.lg
-            color: Color.textMuted
+            color: ThemeColors.textMuted
         }
 
         TextInput {
             id: input
             Layout.fillWidth: true
-            color: Color.text
+            color: ThemeColors.text
             font.pixelSize: Size.fontSize.bodyLarge
-            selectionColor: Color.primary
-            selectedTextColor: Color.primaryText
+            selectionColor: ThemeColors.primary
+            selectedTextColor: ThemeColors.primaryText
             clip: true
 
             // 焦点要自己抢：容器内容装在 RailContainer 的 Loader 里，而 Loader
@@ -405,7 +405,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "搜索剪贴板..."
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.titleMedium
                 visible: input.text.length === 0
             }
@@ -444,7 +444,7 @@ Item {
 
         Text {
             text: Clipboard.filtered.length + " 条"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.pixelSize: Size.fontSize.labelSmall
             visible: Clipboard.filtered.length > 0
         }

@@ -21,7 +21,7 @@ Canvas {
     property var values: []
     property real maxValue: 100
     property real minSpan: 1
-    property color lineColor: Color.primary
+    property color lineColor: ThemeColors.primary
     property real lineWidth: 1.5
     // 曲线下方的淡色填充，帮助在深色背景上看清趋势
     property bool fillArea: true

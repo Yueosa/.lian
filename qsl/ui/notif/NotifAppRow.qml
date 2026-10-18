@@ -89,7 +89,7 @@ Item {
         height: appRow.height - 4
         y: 2
         radius: Size.rounding.lg
-        color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+        color: ThemeColors.withAlpha(ThemeColors.surfaceContainerHighest, 0.35)
 
         QslStateLayer { source: appMa }
 
@@ -101,7 +101,7 @@ Item {
             anchors.leftMargin: Size.spacing.md
             anchors.verticalCenter: parent.verticalCenter
             radius: Size.rounding.md
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             clip: true
 
             Image {
@@ -124,7 +124,7 @@ Item {
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
-                color: Color.primary
+                color: ThemeColors.primary
             }
         }
 
@@ -136,12 +136,12 @@ Item {
             width: countLabel.implicitWidth + Size.spacing.md
             height: 24
             radius: Size.rounding.full
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             Text {
                 id: countLabel
                 anchors.centerIn: parent
                 text: appRow.group.count + " 条"
-                color: Color.primaryContainerText
+                color: ThemeColors.primaryContainerText
                 font.pixelSize: Size.fontSize.labelSmall
                 font.bold: true
             }
@@ -158,7 +158,7 @@ Item {
             Text {
                 width: parent.width
                 text: appRow.group.name
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
                 elide: Text.ElideRight
@@ -167,7 +167,7 @@ Item {
             Text {
                 width: parent.width
                 text: appRow.group.preview
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
                 elide: Text.ElideRight
                 maximumLineCount: 1

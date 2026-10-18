@@ -59,13 +59,13 @@ Item {
                 text: "已完成 " + root.doneItems.length
                 font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true
-                color: Color.text
+                color: ThemeColors.text
                 Layout.alignment: Qt.AlignVCenter
             }
             Item { Layout.fillWidth: true }
             Text {
                 text: "清空"
-                color: clearMa.containsMouse ? Color.error : Color.textMuted
+                color: clearMa.containsMouse ? ThemeColors.error : ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelSmall
                 Layout.alignment: Qt.AlignVCenter
                 MouseArea {
@@ -105,7 +105,7 @@ Item {
                 anchors.centerIn: parent
                 visible: doneList.count === 0
                 text: "暂无已完成"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelLarge
             }
         }

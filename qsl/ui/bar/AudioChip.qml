@@ -22,7 +22,7 @@ Rectangle {
     implicitWidth: expanded ? Math.ceil(layout.implicitWidth) + 14 : 28
     radius: height / 2
     clip: true
-    color: Color.withAlpha(Color.text, 0.08)
+    color: ThemeColors.withAlpha(ThemeColors.text, 0.08)
 
     Behavior on implicitWidth {
         Anim { type: Anim.SpatialFast }
@@ -44,8 +44,8 @@ Rectangle {
             font.pixelSize: Size.iconSize.md
             Layout.alignment: Qt.AlignVCenter
             color: (Volume.sinkMuted || Volume.sinkVolume <= 0)
-                ? Color.error
-                : Color.primary
+                ? ThemeColors.error
+                : ThemeColors.primary
             text: {
                 if (Volume.isHeadphone)
                     return "headphones"
@@ -63,7 +63,7 @@ Rectangle {
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.labelMedium
             font.bold: true
-            color: Color.text
+            color: ThemeColors.text
             Layout.alignment: Qt.AlignVCenter
             opacity: root.expanded ? 1 : 0
             Layout.preferredWidth: root.expanded ? sinkLabel.implicitWidth : 0
@@ -82,8 +82,8 @@ Rectangle {
             font.pixelSize: Size.iconSize.md
             Layout.alignment: Qt.AlignVCenter
             color: (Volume.sourceMuted || Volume.sourceVolume <= 0)
-                ? Color.error
-                : Color.secondary
+                ? ThemeColors.error
+                : ThemeColors.secondary
             text: Volume.sourceMuted ? "mic_off" : "mic"
             opacity: root.expanded ? 1 : 0
             Layout.preferredWidth: (root.expanded && Volume.hasSource)
@@ -103,7 +103,7 @@ Rectangle {
             font.family: Size.fontMono
             font.pixelSize: Size.fontSize.labelMedium
             font.bold: true
-            color: Color.text
+            color: ThemeColors.text
             Layout.alignment: Qt.AlignVCenter
             opacity: root.expanded ? 1 : 0
             Layout.preferredWidth: (root.expanded && Volume.hasSource)

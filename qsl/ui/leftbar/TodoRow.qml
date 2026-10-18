@@ -37,7 +37,7 @@ Rectangle {
         contentRow.implicitHeight + Size.spacing.sm * 2)
 
     radius: Size.rounding.md
-    color: Color.surfaceContainerLow
+    color: ThemeColors.surfaceContainerLow
 
     QslStateLayer { source: hoverMa }
 
@@ -63,9 +63,9 @@ Rectangle {
             width: 24
             height: 24
             radius: Size.rounding.xs
-            color: root.item && root.item.done ? Color.primary : "transparent"
+            color: root.item && root.item.done ? ThemeColors.primary : "transparent"
             border.width: root.item && root.item.done ? 0 : 2
-            border.color: Color.outlineVariant
+            border.color: ThemeColors.outlineVariant
             Layout.alignment: Qt.AlignVCenter
 
             Text {
@@ -75,7 +75,7 @@ Rectangle {
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.lg
                 font.variableAxes: ({ "opsz": 20 })
-                color: Color.surfaceContainerLow
+                color: ThemeColors.surfaceContainerLow
             }
 
             MouseArea {
@@ -93,7 +93,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 text: root.item ? (root.item.text || "") : ""
-                color: root.item && root.item.done ? Color.textMuted : Color.text
+                color: root.item && root.item.done ? ThemeColors.textMuted : ThemeColors.text
                 font.pixelSize: Size.fontSize.bodyMedium
                 font.strikeout: root.item ? !!root.item.done : false
                 // 换行显示全文（最多 3 行，再多才截断）——同 NotifEntryRow 的
@@ -113,7 +113,7 @@ Rectangle {
                     const p = "T" + root.item.priority
                     return t.length > 0 ? t + " · " + p : p
                 }
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.labelSmall
             }
         }
@@ -135,7 +135,7 @@ Rectangle {
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.xxl
                 font.variableAxes: ({ "FILL": root.item && root.item.starred ? 1 : 0 })
-                color: root.item && root.item.starred ? Color.primary : Color.textMuted
+                color: root.item && root.item.starred ? ThemeColors.primary : ThemeColors.textMuted
             }
             MouseArea {
                 anchors.fill: parent
@@ -160,7 +160,7 @@ Rectangle {
                 text: "delete"
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.xxl
-                color: Color.error
+                color: ThemeColors.error
             }
             MouseArea {
                 anchors.fill: parent

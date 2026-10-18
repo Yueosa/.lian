@@ -74,11 +74,11 @@ Item {
             Layout.fillWidth: true
             height: 44
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
             border.width: inputField.activeFocus ? 2 : Style.border.width
             border.color: inputField.activeFocus
-                ? Color.primary
-                : Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+                ? ThemeColors.primary
+                : ThemeColors.withAlpha(ThemeColors.outlineVariant, Style.border.opacity)
 
             RowLayout {
                 anchors.fill: parent
@@ -92,7 +92,7 @@ Item {
                     Layout.preferredHeight: 28
                     Layout.alignment: Qt.AlignVCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: Color.text
+                    color: ThemeColors.text
                     font.pixelSize: Size.fontSize.bodyMedium
                     font.family: Size.fontSans
                     clip: true
@@ -103,7 +103,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         visible: !inputField.text && !inputField.activeFocus
                         text: "添加新待办…"
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                         font: inputField.font
                     }
 
@@ -130,12 +130,12 @@ Item {
                             width: 28; height: 24
                             radius: Size.rounding.xs
                             color: selected
-                                ? Color.primaryContainer
+                                ? ThemeColors.primaryContainer
                                 : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                color: selected ? Color.primaryContainerText : Color.textMuted
+                                color: selected ? ThemeColors.primaryContainerText : ThemeColors.textMuted
                                 font.pixelSize: Size.fontSize.labelSmall
                                 font.bold: selected
                             }
@@ -183,7 +183,7 @@ Item {
                         return "「" + root._tag + "」暂无待办"
                     return root.doneItems.length > 0 ? "都做完了" : "无待办事项"
                 }
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodyMedium
             }
         }

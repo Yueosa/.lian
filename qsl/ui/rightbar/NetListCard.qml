@@ -130,7 +130,7 @@ Item {
                         return "未找到 Wi‑Fi 设备"
                     return Network.wifiScanning ? "正在扫描…" : "附近没有网络"
                 }
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
             }
 
@@ -183,8 +183,8 @@ Item {
                             y: 13 - height
                             radius: 1
                             color: index < Network.signalBars(row.network)
-                                ? Color.primary
-                                : Color.withAlpha(Color.text, 0.18)
+                                ? ThemeColors.primary
+                                : ThemeColors.withAlpha(ThemeColors.text, 0.18)
                             Behavior on color { CAnim {} }
                         }
                     }
@@ -195,7 +195,7 @@ Item {
                     text: "lock"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                 }
 
                 Text {
@@ -203,7 +203,7 @@ Item {
                     text: "sync"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.primary
+                    color: ThemeColors.primary
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                     RotationAnimator on rotation {
@@ -223,14 +223,14 @@ Item {
                     color: "transparent"
 
                     // 破坏性操作，叠加色换成 error
-                    QslStateLayer { source: forgetMa; tint: Color.error; accent: true }
+                    QslStateLayer { source: forgetMa; tint: ThemeColors.error; accent: true }
 
                     Text {
                         id: forgetLbl
                         anchors.centerIn: parent
                         text: "忘记"
                         font.pixelSize: Size.fontSize.labelSmall
-                        color: Color.error
+                        color: ThemeColors.error
                     }
                     MouseArea {
                         id: forgetMa
@@ -255,11 +255,11 @@ Item {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
                             radius: Size.rounding.md
-                            color: Color.withAlpha(Color.surface, 0.9)
+                            color: ThemeColors.withAlpha(ThemeColors.surface, 0.9)
                             border.width: passInput.activeFocus ? 2 : 1
                             border.color: passInput.activeFocus
-                                ? Color.primary
-                                : Color.outlineVariant
+                                ? ThemeColors.primary
+                                : ThemeColors.outlineVariant
                             Behavior on border.color { CAnim {} }
 
                             TextInput {
@@ -269,9 +269,9 @@ Item {
                                 anchors.rightMargin: 12
                                 verticalAlignment: TextInput.AlignVCenter
                                 echoMode: TextInput.Password
-                                color: Color.text
-                                selectedTextColor: Color.primaryText
-                                selectionColor: Color.primary
+                                color: ThemeColors.text
+                                selectedTextColor: ThemeColors.primaryText
+                                selectionColor: ThemeColors.primary
                                 font.pixelSize: Size.fontSize.bodySmall
                                 clip: true
                                 inputMethodHints: Qt.ImhSensitiveData
@@ -283,7 +283,7 @@ Item {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
                                     text: Network.passwordHint || "密码"
-                                    color: Color.outline
+                                    color: ThemeColors.outline
                                     font.pixelSize: Size.fontSize.bodySmall
                                     visible: !passInput.text && !passInput.activeFocus
                                 }
@@ -298,7 +298,7 @@ Item {
                             QslActionChip {
                                 visible: Network.isKnown(row.network)
                                 text: "忘记"
-                                accent: Color.error
+                                accent: ThemeColors.error
                                 onClicked: {
                                     Network.forgetNetwork(row.network)
                                     root.sharedState.forgetTarget = null
@@ -334,7 +334,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: "忘记此网络？"
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                             font.pixelSize: Size.fontSize.labelSmall
                         }
                         QslActionChip {
@@ -343,7 +343,7 @@ Item {
                         }
                         QslActionChip {
                             text: "忘记"
-                            accent: Color.error
+                            accent: ThemeColors.error
                             filled: true
                             onClicked: {
                                 Network.forgetNetwork(row.network)

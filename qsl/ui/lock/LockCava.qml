@@ -37,8 +37,8 @@ Canvas {
         const n = 30
         const gap = 3
         const barW = Math.max(2, (w - gap * (n - 1)) / n)
-        const c0 = String(Color.primary)
-        const c1 = String(Color.inversePrimary)
+        const c0 = String(ThemeColors.primary)
+        const c1 = String(ThemeColors.inversePrimary)
         for (let i = 0; i < n; i++) {
             const v = Math.max(0, Math.min(1, Number(vals[i]) || 0))
             const bh = Math.max(4, v * h)

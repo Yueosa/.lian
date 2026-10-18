@@ -60,7 +60,7 @@ Item {
         width: (parent.width - parent.spacing) / 2
         height: 32
         radius: Size.rounding.md
-        color: accent ? Color.primaryContainer : Color.surfaceContainerHighest
+        color: accent ? ThemeColors.primaryContainer : ThemeColors.surfaceContainerHighest
 
         Row {
             anchors.centerIn: parent
@@ -69,14 +69,14 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.glyph
-                color: parent.parent.accent ? Color.primaryContainerText : Color.textMuted
+                color: parent.parent.accent ? ThemeColors.primaryContainerText : ThemeColors.textMuted
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.sm
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.text
-                color: parent.parent.accent ? Color.primaryContainerText : Color.textMuted
+                color: parent.parent.accent ? ThemeColors.primaryContainerText : ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
                 font.bold: parent.parent.accent
@@ -128,13 +128,13 @@ Item {
         implicitWidth: pillText.implicitWidth + 16
         implicitHeight: 20
         radius: height / 2
-        color: accent ? Color.primaryContainer : Color.surfaceContainerHighest
+        color: accent ? ThemeColors.primaryContainer : ThemeColors.surfaceContainerHighest
 
         Text {
             id: pillText
             anchors.centerIn: parent
             text: parent.text
-            color: parent.accent ? Color.primaryContainerText : Color.textMuted
+            color: parent.accent ? ThemeColors.primaryContainerText : ThemeColors.textMuted
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.labelSmall
         }
@@ -172,7 +172,7 @@ Item {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 3
                     radius: Size.rounding.lg
-                    color: Color.surfaceContainerHigh
+                    color: ThemeColors.surfaceContainerHigh
                     opacity: stagger.shown(0) ? 1 : 0
                     transform: Translate {
                         y: stagger.shown(0) ? 0 : 12
@@ -200,13 +200,13 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: width / 2
-                                color: Color.surfaceContainerHighest
+                                color: ThemeColors.surfaceContainerHighest
                                 visible: avatarImg.status !== Image.Ready
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: root.avatarLetter
-                                    color: Color.primary
+                                    color: ThemeColors.primary
                                     font.family: Size.fontSans
                                     font.pixelSize: Size.fontSize.headlineSmall
                                     font.bold: true
@@ -249,7 +249,7 @@ Item {
                                 Text {
                                     id: hostText
                                     text: root.hostname
-                                    color: Color.backgroundText
+                                    color: ThemeColors.backgroundText
                                     font.family: Size.fontMono
                                     font.pixelSize: Size.fontSize.titleMedium
                                     font.bold: true
@@ -257,7 +257,7 @@ Item {
                                 Text {
                                     anchors.baseline: hostText.baseline
                                     text: root.greetText
-                                    color: Color.textMuted
+                                    color: ThemeColors.textMuted
                                     font.family: Size.fontSans
                                     font.pixelSize: Size.fontSize.labelSmall
                                 }
@@ -269,7 +269,7 @@ Item {
                             Text {
                                 width: parent.width
                                 text: "Arch · Hyprland · Wayland"
-                                color: Color.withAlpha(Color.textMuted, 0.8)
+                                color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.8)
                                 font.family: Size.fontSans
                                 font.pixelSize: Size.fontSize.labelSmall
                                 elide: Text.ElideRight
@@ -299,10 +299,10 @@ Item {
                         height: 28
                         radius: height / 2
                         color: root.restartArmed
-                            ? Color.withAlpha(Color.error, 0.9)
+                            ? ThemeColors.withAlpha(ThemeColors.error, 0.9)
                             : "transparent"
                         border.width: root.restartArmed ? 0 : 1
-                        border.color: Color.withAlpha(Color.outlineVariant, 0.6)
+                        border.color: ThemeColors.withAlpha(ThemeColors.outlineVariant, 0.6)
 
                         Behavior on width {
                             Anim { type: Anim.SpatialFast }
@@ -320,7 +320,7 @@ Item {
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             text: root.restartArmed ? "确认重启" : "\uf021"
-                            color: root.restartArmed ? Color.primaryText : Color.textMuted
+                            color: root.restartArmed ? ThemeColors.primaryText : ThemeColors.textMuted
                             font.family: root.restartArmed ? Size.fontSans : Size.fontMono
                             font.pixelSize: Size.fontSize.bodySmall
                         }
@@ -350,7 +350,7 @@ Item {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 2
                     radius: Size.rounding.lg
-                    color: Color.surfaceContainerHigh
+                    color: ThemeColors.surfaceContainerHigh
                     opacity: stagger.shown(1) ? 1 : 0
                     transform: Translate {
                         y: stagger.shown(1) ? 0 : 12
@@ -365,7 +365,7 @@ Item {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: Time.hours + ":" + Time.minutes
-                            color: Color.backgroundText
+                            color: ThemeColors.backgroundText
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.displaySmall
                             font.weight: Font.Black
@@ -379,7 +379,7 @@ Item {
                                 const wd = ["日", "一", "二", "三", "四", "五", "六"][t.getDay()]
                                 return Qt.formatDateTime(t, "M月d日") + " 周" + wd
                             }
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.labelSmall
                         }
@@ -397,7 +397,7 @@ Item {
                 Layout.preferredHeight: 66
                 Layout.maximumHeight: 66
                 radius: Size.rounding.lg
-                color: Color.surfaceContainerHigh
+                color: ThemeColors.surfaceContainerHigh
                 opacity: stagger.shown(2) ? 1 : 0
                 transform: Translate {
                     y: stagger.shown(2) ? 0 : 12
@@ -421,7 +421,7 @@ Item {
                     anchors.leftMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     text: Weather.ready ? Weather.tempText : "--"
-                    color: Color.backgroundText
+                    color: ThemeColors.backgroundText
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.headlineMedium
                     font.weight: Font.Black
@@ -434,7 +434,7 @@ Item {
                     anchors.rightMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
                     text: Weather.ready ? (Weather.weatherText || "") : "天气加载中…"
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
@@ -477,7 +477,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Size.rounding.lg
-                color: Color.surfaceContainerHigh
+                color: ThemeColors.surfaceContainerHigh
                 opacity: stagger.shown(3) ? 1 : 0
                 transform: Translate {
                     y: stagger.shown(3) ? 0 : 12
@@ -494,7 +494,7 @@ Item {
                         Layout.fillWidth: true
                         Text {
                             text: "待办"
-                            color: Color.backgroundText
+                            color: ThemeColors.backgroundText
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
@@ -504,7 +504,7 @@ Item {
                             text: Todo.count > 0
                                 ? Todo.doneCount + " / " + Todo.count
                                 : "空"
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.bodySmall
                         }
@@ -514,7 +514,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 4
                         radius: 2
-                        color: Color.surfaceContainerHighest
+                        color: ThemeColors.surfaceContainerHighest
                         visible: Todo.count > 0
 
                         Rectangle {
@@ -522,7 +522,7 @@ Item {
                                 ? Todo.doneCount / Todo.count : 0)
                             height: parent.height
                             radius: parent.radius
-                            color: Color.primary
+                            color: ThemeColors.primary
                             Behavior on width {
                                 Anim {}
                             }
@@ -557,9 +557,9 @@ Item {
                                 height: 6
                                 radius: 3
                                 color: modelData.starred
-                                    ? Color.error
-                                    : (modelData.priority <= 0 ? Color.primary
-                                                               : Color.withAlpha(Color.textMuted, 0.5))
+                                    ? ThemeColors.error
+                                    : (modelData.priority <= 0 ? ThemeColors.primary
+                                                               : ThemeColors.withAlpha(ThemeColors.textMuted, 0.5))
                             }
                             Text {
                                 anchors.left: pri.right
@@ -568,7 +568,7 @@ Item {
                                 anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.text || ""
-                                color: Color.text
+                                color: ThemeColors.text
                                 font.family: Size.fontSans
                                 font.pixelSize: Size.fontSize.bodySmall
                                 elide: Text.ElideRight
@@ -581,13 +581,13 @@ Item {
                                 width: tagLabel.implicitWidth + 12
                                 height: 18
                                 radius: height / 2
-                                color: Color.withAlpha(Color.secondary, 0.16)
+                                color: ThemeColors.withAlpha(ThemeColors.secondary, 0.16)
                                 visible: !!(modelData.tag)
                                 Text {
                                     id: tagLabel
                                     anchors.centerIn: parent
                                     text: modelData.tag || ""
-                                    color: Color.secondary
+                                    color: ThemeColors.secondary
                                     font.family: Size.fontSans
                                     font.pixelSize: Size.fontSize.labelSmall
                                 }
@@ -598,7 +598,7 @@ Item {
                             anchors.centerIn: parent
                             visible: root.pendingTodos.length === 0
                             text: Todo.count > 0 ? "全部完成" : "没有待办"
-                            color: Todo.count > 0 ? Color.primary : Color.textMuted
+                            color: Todo.count > 0 ? ThemeColors.primary : ThemeColors.textMuted
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.bodySmall
                         }

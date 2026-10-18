@@ -25,7 +25,7 @@ Rectangle {
     Layout.fillWidth: true
     Layout.fillHeight: true
     radius: hourly ? Size.rounding.lg : 0
-    color: hourly ? Color.surfaceContainerHigh : "transparent"
+    color: hourly ? ThemeColors.surfaceContainerHigh : "transparent"
     clip: true
 
     opacity: shown ? 1 : 0
@@ -63,7 +63,7 @@ Rectangle {
             Behavior on opacity { Anim { type: Anim.Effects } }
 
             Connections {
-                target: Color
+                target: ThemeColors
                 function onPrimaryChanged() { forecast.repaintHourly() }
             }
 
@@ -76,7 +76,7 @@ Rectangle {
                 const ctx = getContext("2d")
                 ctx.clearRect(0, 0, width, height)
                 if (!data || data.length === 0) {
-                    ctx.fillStyle = Color.textMuted
+                    ctx.fillStyle = ThemeColors.textMuted
                     ctx.font = "14px '" + Size.fontSans + "'"
                     ctx.textAlign = "center"
                     ctx.fillText("暂无小时预报", width / 2, height / 2)
@@ -131,7 +131,7 @@ Rectangle {
                 // 到 precipTop 为止：底下那条降水带必须保持统一底色，
                 // 否则同样概率的柱子压在夜色上和白天上会呈现两种深浅。
                 ctx.save()
-                ctx.fillStyle = Color.withAlpha(Color.background, 0.38)
+                ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.background, 0.38)
                 for (let n = 0; n < points.length; n++) {
                     if (points[n].data.day)
                         continue
@@ -149,7 +149,7 @@ Rectangle {
                 // 光有深浅两块底色，看到的人只会问「为什么一半深一半浅」。
                 // 在交界处画线并标出日出 / 日落，那块底色才成为信息。
                 ctx.save()
-                ctx.strokeStyle = Color.withAlpha(Color.textMuted, 0.55)
+                ctx.strokeStyle = ThemeColors.withAlpha(ThemeColors.textMuted, 0.55)
                 ctx.lineWidth = 1
                 ctx.setLineDash([3, 3])
                 ctx.textAlign = "center"
@@ -161,7 +161,7 @@ Rectangle {
                     ctx.moveTo(bx, 13)
                     ctx.lineTo(bx, precipTop)
                     ctx.stroke()
-                    ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.95)
+                    ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.textMuted, 0.95)
                     ctx.font = "10px '" + Size.fontSans + "'"
                     ctx.fillText(points[m].data.day ? "日出" : "日落", bx, 10)
                 }
@@ -172,7 +172,7 @@ Rectangle {
                 // 只有图标的话，「30% 飘点雨」和「96% 下大雨」长得一模一样。
                 ctx.save()
                 // 独立底槽：让降水带自成一条泳道，柱子才不会被读成背景色块
-                ctx.fillStyle = Color.withAlpha(Color.background, 0.55)
+                ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.background, 0.55)
                 ctx.fillRect(0, precipTop, width, precipH)
 
                 const barW = Math.max(3, Math.min(14, stepX * 0.46))
@@ -184,18 +184,18 @@ Rectangle {
                     const h = Math.max(2, (pop / 100) * precipH)
                     // 1mm 以上就按最深画，再大在这个尺度上看不出差别
                     const alpha = 0.45 + Math.min(1, mm) * 0.55
-                    ctx.fillStyle = Color.withAlpha(Color.secondary, alpha)
+                    ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.secondary, alpha)
                     ctx.fillRect(points[b].x - barW / 2, precipBottom - h, barW, h)
                 }
                 // 泳道标签。没有它，这排柱子就是一排看不懂的方块
-                ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.75)
+                ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.textMuted, 0.75)
                 ctx.font = "10px '" + Size.fontSans + "'"
                 ctx.textAlign = "left"
                 ctx.fillText("降水", 2, precipBottom - 8)
 
                 // 概率数字。柱高已经编码了概率，但「看着挺高」答不了
                 // 「到底是 66% 还是 96%」——要不要带伞是靠后者决定的
-                ctx.fillStyle = Color.withAlpha(Color.textMuted, 0.9)
+                ctx.fillStyle = ThemeColors.withAlpha(ThemeColors.textMuted, 0.9)
                 ctx.font = "10px '" + Size.fontMono + "'"
                 ctx.textAlign = "center"
                 for (let q = 0; q < points.length; q++) {
@@ -206,7 +206,7 @@ Rectangle {
                 }
 
                 // 降水带基线，给柱子一个落脚点
-                ctx.strokeStyle = Color.withAlpha(Color.outlineVariant, 0.5)
+                ctx.strokeStyle = ThemeColors.withAlpha(ThemeColors.outlineVariant, 0.5)
                 ctx.lineWidth = 1
                 ctx.beginPath()
                 ctx.moveTo(0, precipBottom + 0.5)
@@ -216,7 +216,7 @@ Rectangle {
 
                 // 节点 → 降水带 垂直虚线（同一 paint，无额外 Item）
                 ctx.save()
-                ctx.strokeStyle = Color.withAlpha(Color.textMuted, 0.45)
+                ctx.strokeStyle = ThemeColors.withAlpha(ThemeColors.textMuted, 0.45)
                 ctx.lineWidth = 1.25
                 ctx.setLineDash([4, 5])
                 for (let g = 0; g < points.length; g++) {
@@ -251,10 +251,10 @@ Rectangle {
                     const dotColor = forecast.page
                         ? forecast.page.rampColor(
                             (pt.data.temp - minTemp) / (maxTemp - minTemp))
-                        : Color.primary
+                        : ThemeColors.primary
                     ctx.beginPath()
                     ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
-                    ctx.fillStyle = Color.surfaceContainerHigh
+                    ctx.fillStyle = ThemeColors.surfaceContainerHigh
                     ctx.fill()
                     ctx.lineWidth = 2
                     ctx.strokeStyle = dotColor
@@ -268,11 +268,11 @@ Rectangle {
                     else
                         ctx.textAlign = "center"
 
-                    ctx.fillStyle = Color.backgroundText
+                    ctx.fillStyle = ThemeColors.backgroundText
                     ctx.font = "bold 13px '" + Size.fontMono + "'"
                     ctx.fillText(pt.data.temp + "°", pt.x, pt.y - 14)
 
-                    ctx.fillStyle = Color.textMuted
+                    ctx.fillStyle = ThemeColors.textMuted
                     ctx.font = "12px '" + Size.fontSans + "'"
                     ctx.fillText(pt.data.time, pt.x, timeY)
                 }
@@ -311,7 +311,7 @@ Rectangle {
                         Text {
                             Layout.preferredWidth: 58
                             text: modelData.day
-                            color: index === 0 ? Color.primary : Color.textMuted
+                            color: index === 0 ? ThemeColors.primary : ThemeColors.textMuted
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.bodyMedium
                             font.bold: index === 0
@@ -329,7 +329,7 @@ Rectangle {
                         Text {
                             Layout.preferredWidth: 38
                             text: modelData.minTemp
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.bodyMedium
                             horizontalAlignment: Text.AlignRight
@@ -346,7 +346,7 @@ Rectangle {
                                 width: parent.width
                                 height: 3
                                 radius: 1.5
-                                color: Color.withAlpha(Color.textMuted, 0.2)
+                                color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.2)
                             }
                             // 条的左右端各取自己那档温度的颜色。位置说的是
                             // 「这天在这周里偏冷还是偏热」，颜色把同一件事再说一遍，
@@ -369,12 +369,12 @@ Rectangle {
                                     GradientStop {
                                         position: 0
                                         color: forecast.page
-                                            ? forecast.page.rampColor(tempBar.loR) : Color.primary
+                                            ? forecast.page.rampColor(tempBar.loR) : ThemeColors.primary
                                     }
                                     GradientStop {
                                         position: 1
                                         color: forecast.page
-                                            ? forecast.page.rampColor(tempBar.hiR) : Color.error
+                                            ? forecast.page.rampColor(tempBar.hiR) : ThemeColors.error
                                     }
                                 }
                             }
@@ -383,7 +383,7 @@ Rectangle {
                         Text {
                             Layout.preferredWidth: 38
                             text: modelData.maxTemp
-                            color: Color.text
+                            color: ThemeColors.text
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.titleSmall
                             font.bold: true
@@ -397,7 +397,7 @@ Rectangle {
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         height: 1
-                        color: Color.withAlpha(Color.textMuted, 0.1)
+                        color: ThemeColors.withAlpha(ThemeColors.textMuted, 0.1)
                     }
                 }
             }

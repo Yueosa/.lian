@@ -102,14 +102,14 @@ Item {
                         text: ver.fromVer
                         font.family: Size.fontMono
                         font.pixelSize: Size.fontSize.labelSmall
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                     }
                     Text {
                         visible: ver.fromVer !== "" && ver.toVer !== ""
                         text: " → "
                         font.family: Size.fontMono
                         font.pixelSize: Size.fontSize.labelSmall
-                        color: Color.outline
+                        color: ThemeColors.outline
                     }
                     Text {
                         visible: text !== ""
@@ -137,14 +137,14 @@ Item {
         PkgSection {
             Layout.fillWidth: true
             title: "AUR"
-            accent: Color.tertiary
+            accent: ThemeColors.tertiary
             rowModel: Updates.aurRows
         }
 
         PkgSection {
             Layout.fillWidth: true
             title: "官方仓库"
-            accent: Color.primary
+            accent: ThemeColors.primary
             rowModel: Updates.officialRows
         }
 
@@ -155,7 +155,7 @@ Item {
                 && Updates.officialRows.count === 0
             horizontalAlignment: Text.AlignHCenter
             text: Updates.ok ? "暂无可用更新" : "检查失败，点上面的检查重试"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.pixelSize: Size.fontSize.bodySmall
         }
     }

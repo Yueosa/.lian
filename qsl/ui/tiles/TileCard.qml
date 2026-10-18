@@ -106,7 +106,7 @@ Item {
         text: "Tab"
         font.family: Size.fontMono
         font.pixelSize: Size.fontSize.labelSmall
-        color: Color.textMuted
+        color: ThemeColors.textMuted
         opacity: 0.6
     }
 
@@ -157,17 +157,17 @@ Item {
 
                 // 「开着」是持久状态，用底色表达；悬停另外叠一层
                 color: tile.on
-                    ? Color.primaryContainer
-                    : Color.withAlpha(Color.text, 0.04)
+                    ? ThemeColors.primaryContainer
+                    : ThemeColors.withAlpha(ThemeColors.text, 0.04)
 
                 border.width: tile.selected ? 2 : 0
-                border.color: Color.withAlpha(Color.primary, 0.7)
+                border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.7)
 
                 Behavior on color { CAnim {} }
 
                 QslStateLayer {
                     source: ma
-                    tint: tile.on ? Color.primaryContainerText : Color.text
+                    tint: tile.on ? ThemeColors.primaryContainerText : ThemeColors.text
                 }
 
                 Column {
@@ -186,7 +186,7 @@ Item {
                         font.family: ligature ? Size.fontIcon : "Noto Color Emoji"
                         font.pixelSize: ligature ? 24 : 22
                         color: ligature
-                            ? (tile.on ? Color.primaryContainerText : Color.text)
+                            ? (tile.on ? ThemeColors.primaryContainerText : ThemeColors.text)
                             : "#000000"
                         Behavior on color { CAnim {} }
                     }
@@ -198,7 +198,7 @@ Item {
                             ? tile.modelData.title : ""
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.bodySmall
-                        color: tile.on ? Color.primaryContainerText : Color.text
+                        color: tile.on ? ThemeColors.primaryContainerText : ThemeColors.text
                         elide: Text.ElideRight
                     }
 
@@ -214,7 +214,7 @@ Item {
                                 ? tile.modelData.note : "")
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.labelSmall
-                        color: tile.on ? Color.primary : Color.textMuted
+                        color: tile.on ? ThemeColors.primary : ThemeColors.textMuted
                         elide: Text.ElideRight
                     }
                 }
@@ -247,7 +247,7 @@ Item {
             : "tiles.json 里这个区是空的"
         font.family: Size.fontSans
         font.pixelSize: Size.fontSize.bodySmall
-        color: Color.textMuted
+        color: ThemeColors.textMuted
     }
 
     // systemctl 报错（单元名写错、服务自己起不来）浮在卡底，不然点了没反应
@@ -261,7 +261,7 @@ Item {
         text: Systemd.lastError
         font.family: Size.fontSans
         font.pixelSize: Size.fontSize.labelSmall
-        color: Color.error
+        color: ThemeColors.error
         elide: Text.ElideRight
     }
 }

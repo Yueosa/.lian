@@ -38,7 +38,7 @@ Item {
             Layout.fillWidth: true
             Text {
                 text: "工具"
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleMedium
                 font.bold: true
             }

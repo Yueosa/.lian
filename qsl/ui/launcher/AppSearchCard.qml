@@ -39,16 +39,16 @@ Item {
             text: "search"
             font.family: Size.fontIcon
             font.pixelSize: Size.iconSize.lg
-            color: Color.textMuted
+            color: ThemeColors.textMuted
         }
 
         TextInput {
             id: input
             Layout.fillWidth: true
-            color: Color.text
+            color: ThemeColors.text
             font.pixelSize: Size.fontSize.bodyLarge
-            selectionColor: Color.primary
-            selectedTextColor: Color.primaryText
+            selectionColor: ThemeColors.primary
+            selectedTextColor: ThemeColors.primaryText
             clip: true
 
             // 焦点：声明 focus **不够**，必须自己抢一次。
@@ -81,7 +81,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "搜索应用..."
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.titleMedium
                 visible: input.text.length === 0
             }
@@ -96,7 +96,7 @@ Item {
 
         Text {
             text: root.sharedState.count + " 个"
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             font.pixelSize: Size.fontSize.labelSmall
             visible: root.sharedState.count > 0
         }
@@ -105,7 +105,7 @@ Item {
             text: "close"
             font.family: Size.fontIcon
             font.pixelSize: Size.iconSize.sm
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             visible: input.text.length > 0
 
             MouseArea {

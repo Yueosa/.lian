@@ -15,8 +15,8 @@ Rectangle {
     property string value: "--"
     // 分级词（如 UV「很高」、空气「良」）——数值本身不说明严重程度
     property string hint: ""
-    property color hintColor: Color.textMuted
-    property color iconColor: Color.primary
+    property color hintColor: ThemeColors.textMuted
+    property color iconColor: ThemeColors.primary
     // 图标旋转角（风向箭头用），0 为不转
     property real iconRotation: 0
     // 0–1：卡片自身按比例填充；负值关闭。
@@ -26,7 +26,7 @@ Rectangle {
     Layout.fillWidth: true
     Layout.fillHeight: true
     radius: Size.rounding.md
-    color: Color.surfaceContainerHighest
+    color: ThemeColors.surfaceContainerHighest
     clip: true
 
     // 一个 Rectangle，无渐变无 shader，不额外占显存
@@ -39,7 +39,7 @@ Rectangle {
         // 父级的 clip 只裁矩形边界、裁不掉圆角，所以填充块必须自带圆角，
         // 否则方角会从卡片的圆角处支出来。窄填充时按半宽收敛成胶囊。
         radius: Math.min(tile.radius, width / 2)
-        color: Color.withAlpha(tile.iconColor, 0.16)
+        color: ThemeColors.withAlpha(tile.iconColor, 0.16)
         Behavior on width {
             Anim {}
         }
@@ -74,7 +74,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 text: tile.label
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
                 elide: Text.ElideRight
@@ -85,7 +85,7 @@ Rectangle {
 
                 Text {
                     text: tile.value
-                    color: Color.text
+                    color: ThemeColors.text
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.titleSmall
                     font.weight: Font.DemiBold

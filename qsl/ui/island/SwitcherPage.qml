@@ -112,7 +112,7 @@ FocusScope {
         anchors.centerIn: parent
         visible: groups.length === 0
         text: "没有可切换的窗口"
-        color: Color.textMuted
+        color: ThemeColors.textMuted
         font.family: Size.fontSans
         font.pixelSize: Size.fontSize.titleLarge
     }
@@ -176,8 +176,8 @@ FocusScope {
                 Layout.alignment: Qt.AlignHCenter
                 text: "工作区 " + HyprService.workspaceLabel(groupCol.modelData.ws)
                 color: groupCol.groupFocused
-                    ? Color.backgroundText
-                    : Color.textMuted
+                    ? ThemeColors.backgroundText
+                    : ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
                 font.bold: groupCol.groupFocused
@@ -229,12 +229,12 @@ FocusScope {
                         anchors.fill: parent
                         radius: Size.rounding.md
                         color: card.focused
-                            ? Color.primaryContainer
-                            : Color.surfaceContainerHigh
+                            ? ThemeColors.primaryContainer
+                            : ThemeColors.surfaceContainerHigh
                         border.width: card.focused ? 2 : 1
                         border.color: card.focused
-                            ? Color.primary
-                            : Color.outlineVariant
+                            ? ThemeColors.primary
+                            : ThemeColors.outlineVariant
                     }
 
                     Item {
@@ -333,8 +333,8 @@ FocusScope {
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.labelSmall
                         color: card.focused
-                            ? Color.backgroundText
-                            : Color.textMuted
+                            ? ThemeColors.backgroundText
+                            : ThemeColors.textMuted
                     }
 
                     MouseArea {

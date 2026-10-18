@@ -113,7 +113,7 @@ Item {
         preferredHighlightEnd: height - (root.sharedState ? root.sharedState.itemHeight : 56)
         highlightMoveDuration: Size.anim.durFast
         highlight: Rectangle {
-            color: Color.primary
+            color: ThemeColors.primary
             radius: Size.rounding.md
         }
 
@@ -218,7 +218,7 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             radius: Size.rounding.xs
-                            color: Color.withAlpha(Color.text, 0.08)
+                            color: ThemeColors.withAlpha(ThemeColors.text, 0.08)
                             visible: iconRoot.forceFontFallback
                                 || appImage.status !== Image.Ready
                         }
@@ -274,7 +274,7 @@ Item {
                             text: appRow.app.materialGlyph || "apps"
                             font.family: Size.fontIcon
                             font.pixelSize: Size.iconSize.xl
-                            color: appRow.current ? Color.primaryText : Color.text
+                            color: appRow.current ? ThemeColors.primaryText : ThemeColors.text
                         }
                     }
 
@@ -287,7 +287,7 @@ Item {
                         text: appRow.s.styledName(appRow.app.name || "", appRow.s.query)
                         textFormat: Text.StyledText
                         elide: Text.ElideRight
-                        color: appRow.current ? Color.primaryText : Color.text
+                        color: appRow.current ? ThemeColors.primaryText : ThemeColors.text
                         font.pixelSize: Size.fontSize.titleLarge
                     }
                 }

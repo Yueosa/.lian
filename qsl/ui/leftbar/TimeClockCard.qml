@@ -126,7 +126,7 @@ Item {
                 anchors.fill: parent
                 antialiasing: true
                 ShapePath {
-                    strokeColor: Color.withAlpha(Color.textMuted, 0.20)
+                    strokeColor: ThemeColors.withAlpha(ThemeColors.textMuted, 0.20)
                     strokeWidth: 8
                     fillColor: "transparent"
                     capStyle: ShapePath.FlatCap
@@ -146,7 +146,7 @@ Item {
                 anchors.fill: parent
                 antialiasing: true
                 ShapePath {
-                    strokeColor: Color.primary
+                    strokeColor: ThemeColors.primary
                     strokeWidth: 8
                     fillColor: "transparent"
                     capStyle: ShapePath.RoundCap
@@ -172,14 +172,14 @@ Item {
                     font.family: Size.fontSans
                     font.pixelSize: 38
                     font.weight: Font.Light
-                    color: Color.text
+                    color: ThemeColors.text
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Math.floor(clockBox.progress * 100) + "% of today"
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     opacity: 0.7
                 }
             }
@@ -194,7 +194,7 @@ Item {
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.displayMedium
                 font.weight: Font.Medium
-                color: Color.primary
+                color: ThemeColors.primary
             }
             ColumnLayout {
                 spacing: 0
@@ -204,7 +204,7 @@ Item {
                         : ""
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodySmall
-                    color: Color.text
+                    color: ThemeColors.text
                 }
                 Text {
                     text: root.now
@@ -212,7 +212,7 @@ Item {
                         : ""
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodySmall
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                 }
             }
         }
@@ -225,7 +225,7 @@ Item {
             text: root.subline(root.now)
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.bodySmall
-            color: Color.textMuted
+            color: ThemeColors.textMuted
             opacity: 0.85
         }
 
@@ -234,8 +234,8 @@ Item {
             // 固定高度：一言是 XHR 异步加载，高度随内容变会让整卡突然长高
             Layout.preferredHeight: 88
             radius: Size.rounding.lg
-            color: Color.surfaceContainerLow
-            border.color: Color.withAlpha(Color.outlineVariant, Style.border.opacity)
+            color: ThemeColors.surfaceContainerLow
+            border.color: ThemeColors.withAlpha(ThemeColors.outlineVariant, Style.border.opacity)
             border.width: Style.border.width
             // 实色卡面，对齐 Hub 层次（内容内层 surface，非容器背景）
 
@@ -254,7 +254,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodySmall
-                    color: Color.text
+                    color: ThemeColors.text
                     lineHeight: 1.4
                     elide: Text.ElideRight
                     maximumLineCount: 2
@@ -266,7 +266,7 @@ Item {
                     horizontalAlignment: Text.AlignRight
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.labelSmall
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     opacity: 0.85
                 }
             }

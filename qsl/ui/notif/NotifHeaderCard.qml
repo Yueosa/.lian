@@ -41,7 +41,7 @@ Item {
             radius: Size.rounding.full
             color: "transparent"
 
-            QslStateLayer { source: backMa; tint: Color.primary; accent: true }
+            QslStateLayer { source: backMa; tint: ThemeColors.primary; accent: true }
 
             Behavior on Layout.preferredWidth {
                 Anim { type: Anim.SpatialFast }
@@ -52,7 +52,7 @@ Item {
                 text: "\uf060"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.md
-                color: Color.text
+                color: ThemeColors.text
             }
             MouseArea {
                 id: backMa
@@ -65,7 +65,7 @@ Item {
 
         Text {
             text: root.sharedState.currentApp === "" ? "通知中心" : root.sharedState.currentAppName
-            color: Color.text
+            color: ThemeColors.text
             font.pixelSize: Size.fontSize.titleMedium
             font.bold: true
             elide: Text.ElideRight
@@ -78,14 +78,14 @@ Item {
             radius: Size.rounding.full
             color: "transparent"
 
-            QslStateLayer { source: dndMa; tint: Color.primary; accent: true }
+            QslStateLayer { source: dndMa; tint: ThemeColors.primary; accent: true }
 
             Text {
                 anchors.centerIn: parent
                 text: Notification.dndEnabled ? "\uf1f6" : "\uf0f3"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.md
-                color: Notification.dndEnabled ? Color.secondary : Color.text
+                color: Notification.dndEnabled ? ThemeColors.secondary : ThemeColors.text
             }
             MouseArea {
                 id: dndMa
@@ -103,14 +103,14 @@ Item {
             color: "transparent"
 
             // 破坏性操作，叠加色换成 error
-            QslStateLayer { source: clearMa; tint: Color.error; accent: true }
+            QslStateLayer { source: clearMa; tint: ThemeColors.error; accent: true }
 
             Text {
                 anchors.centerIn: parent
                 text: "\uf1f8"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.md
-                color: Notification.hasNotifications ? Color.error : Color.textMuted
+                color: Notification.hasNotifications ? ThemeColors.error : ThemeColors.textMuted
                 opacity: Notification.hasNotifications ? 1 : 0.4
             }
             MouseArea {

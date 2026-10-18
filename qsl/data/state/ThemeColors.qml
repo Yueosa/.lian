@@ -1,8 +1,12 @@
 pragma Singleton
 
 // ============================================================
-// 配色方案 — Color
+// 配色方案 — ThemeColors
 // ============================================================
+// 原名 Color。Qt 6.12 起 QtQuick 自带一个 Color 单例，会在 import
+// QtQuick 后遮掉同名的本地单例，导致原来的 primary 等绑定恒为 undefined
+// （日志表现为大量 "Unable to assign [undefined] to QColor"）。
+// 本地 import 放在 QtQuick 之后也无法覆盖，只能改名。
 // 只吃 matugen 产物：~/.cache/quickshell_colors.json，50 个 M3 角色全部暴露。
 // 换壁纸或改 Config.theme.* 时逐色 CAnim 渐变，避免整表闪切。
 //

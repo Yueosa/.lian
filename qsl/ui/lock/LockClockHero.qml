@@ -118,7 +118,7 @@ Column {
                         Text {
                             visible: (modelData.tag || "").length > 0 || modelData.starred
                             text: (modelData.starred ? "★ 重要  " : "") + (modelData.tag || "")
-                            color: modelData.starred ? Color.inversePrimary : clockHero.inkFaint
+                            color: modelData.starred ? ThemeColors.inversePrimary : clockHero.inkFaint
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.bodySmall
                         }

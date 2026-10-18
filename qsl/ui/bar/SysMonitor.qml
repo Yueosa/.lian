@@ -41,7 +41,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: Color.background
+        color: ThemeColors.background
         radius: height / 2
     }
 
@@ -59,7 +59,7 @@ Item {
             spacing: 4
             Text {
                 text: "memory"
-                color: Color.secondary
+                color: ThemeColors.secondary
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.md
             }
@@ -67,7 +67,7 @@ Item {
                 text: Sysmon.ready
                     ? (Sysmon.ramUsedGB.toFixed(1) + "G")
                     : "—G"
-                color: Color.backgroundText
+                color: ThemeColors.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.labelMedium
@@ -81,7 +81,7 @@ Item {
                 visible: !root.expanded && Sysmon.memHistory.length > 1
                 values: Sysmon.memHistory
                 maxValue: 100
-                lineColor: Color.secondary
+                lineColor: ThemeColors.secondary
                 lineWidth: 1.2
                 // 栏上只有 14px 高，内存又长期平稳，带填充会糊成一个方块
                 fillArea: false
@@ -96,13 +96,13 @@ Item {
 
             Text {
                 text: "speed"
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.md
             }
             Text {
                 text: Math.round(Sysmon.cpuPercent) + "%"
-                color: Color.backgroundText
+                color: ThemeColors.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.labelMedium
@@ -118,13 +118,13 @@ Item {
             // 与 SystemPage 一致：Outlined 无 graphics_card 字形
             Text {
                 text: "developer_board"
-                color: Color.tertiary
+                color: ThemeColors.tertiary
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.md
             }
             Text {
                 text: Math.round(Sysmon.gpuPercent) + "%"
-                color: Color.backgroundText
+                color: ThemeColors.backgroundText
                 font.family: Size.fontMono
                 font.bold: true
                 font.pixelSize: Size.fontSize.labelMedium

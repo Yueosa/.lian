@@ -165,7 +165,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
             radius: Size.rounding.sm
-            color: Color.surfaceContainerHigh
+            color: ThemeColors.surfaceContainerHigh
 
             RowLayout {
                 anchors.fill: parent
@@ -176,7 +176,7 @@ Item {
                 TextInput {
                     id: titleInput
                     Layout.fillWidth: true
-                    color: Color.text
+                    color: ThemeColors.text
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.bodySmall
                     clip: true
@@ -190,7 +190,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         visible: !titleInput.text
                         text: "做什么"
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                         font: titleInput.font
                     }
                 }
@@ -198,7 +198,7 @@ Item {
                 TextInput {
                     id: timeInput
                     Layout.preferredWidth: 56
-                    color: Color.text
+                    color: ThemeColors.text
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.bodySmall
                     horizontalAlignment: Text.AlignHCenter
@@ -214,7 +214,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         visible: !timeInput.text
                         text: "HH:MM"
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                         font: timeInput.font
                     }
                 }
@@ -223,7 +223,7 @@ Item {
                     id: dateInput
                     Layout.preferredWidth: 100
                     visible: root.dateMode
-                    color: Color.text
+                    color: ThemeColors.text
                     font.family: Size.fontMono
                     font.pixelSize: Size.fontSize.bodySmall
                     horizontalAlignment: Text.AlignHCenter
@@ -239,7 +239,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         visible: !dateInput.text
                         text: "YYYY-MM-DD"
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                         font: dateInput.font
                     }
                 }
@@ -257,12 +257,12 @@ Item {
                         text: root.editing ? "check" : "add"
                         font.family: Size.fontIcon
                         font.pixelSize: Size.iconSize.lg
-                        color: Color.primary
+                        color: ThemeColors.primary
                     }
 
                     QslStateLayer {
                         source: submitMa
-                        tint: Color.primary
+                        tint: ThemeColors.primary
                     }
 
                     MouseArea {
@@ -309,7 +309,7 @@ Item {
             Layout.fillWidth: true
             visible: root.formError.length > 0
             text: root.formError
-            color: Color.error
+            color: ThemeColors.error
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.labelSmall
             wrapMode: Text.WordWrap
@@ -327,7 +327,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: "还没有提醒"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
             }
@@ -344,9 +344,9 @@ Item {
                     radius: Size.rounding.md
                     // 编辑中的行亮一档：表单正在改的就是它
                     color: rowRoot.editing
-                        ? Color.surfaceContainerHigh : Color.surfaceContainerLow
+                        ? ThemeColors.surfaceContainerHigh : ThemeColors.surfaceContainerLow
                     border.width: rowRoot.editing ? 1 : 0
-                    border.color: Color.withAlpha(Color.primary, 0.5)
+                    border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
 
                     readonly property bool editing:
                         root.editingId === modelData.id
@@ -376,7 +376,7 @@ Item {
                         Text {
                             Layout.preferredWidth: 110
                             text: root.timeLabel(modelData)
-                            color: Color.primary
+                            color: ThemeColors.primary
                             font.family: Size.fontMono
                             font.pixelSize: Size.fontSize.bodyMedium
                             elide: Text.ElideRight
@@ -386,7 +386,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: (modelData && modelData.title) ? modelData.title : ""
-                            color: Color.text
+                            color: ThemeColors.text
                             font.family: Size.fontSans
                             font.pixelSize: Size.fontSize.bodyMedium
                             elide: Text.ElideRight
@@ -403,13 +403,13 @@ Item {
                                 text: "delete"
                                 font.family: Size.fontIcon
                                 font.pixelSize: Size.iconSize.md
-                                color: delMa.containsMouse ? Color.error : Color.textMuted
+                                color: delMa.containsMouse ? ThemeColors.error : ThemeColors.textMuted
                                 Behavior on color { CAnim {} }
                             }
 
                             QslStateLayer {
                                 source: delMa
-                                tint: Color.error
+                                tint: ThemeColors.error
                             }
 
                             MouseArea {

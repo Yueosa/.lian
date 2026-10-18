@@ -14,8 +14,8 @@ Rectangle {
 
     property string text: ""
     property string icon: ""
-    // 强调色：破坏性操作传 Color.error
-    property color accent: Color.primary
+    // 强调色：破坏性操作传 ThemeColors.error
+    property color accent: ThemeColors.primary
     // 主操作实底，次操作只在悬停时上底
     property bool filled: false
     property bool enabled: true
@@ -29,7 +29,7 @@ Rectangle {
     // 主操作静息就带底色，次操作静息透明——两者的悬停/按下反馈由状态层统一
     // 叠在上面，所以这里只管"静息长什么样"
     color: root.filled
-        ? Color.withAlpha(root.accent, root.enabled ? Color.state.selected : 0.12)
+        ? ThemeColors.withAlpha(root.accent, root.enabled ? ThemeColors.state.selected : 0.12)
         : "transparent"
     Behavior on color { CAnim {} }
 

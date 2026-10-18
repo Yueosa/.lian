@@ -27,13 +27,13 @@ Item {
         width: parent.width
         height: 8
         radius: height / 2
-        color: Color.withAlpha(Color.text, 0.12)
+        color: ThemeColors.withAlpha(ThemeColors.text, 0.12)
 
         Rectangle {
             height: parent.height
             width: parent.width * root.shown
             radius: parent.radius
-            color: Color.primary
+            color: ThemeColors.primary
         }
     }
 
@@ -42,7 +42,7 @@ Item {
         width: 4
         height: 22
         radius: 2
-        color: Color.text
+        color: ThemeColors.text
         anchors.verticalCenter: parent.verticalCenter
         x: Math.max(0, Math.min(parent.width - width, parent.width * root.shown - width / 2))
     }
@@ -55,7 +55,7 @@ Item {
         text: root.icon
         font.family: Size.fontIcon
         font.pixelSize: 18
-        color: root.shown > 0.85 ? Color.primaryText : Color.textMuted
+        color: root.shown > 0.85 ? ThemeColors.primaryText : ThemeColors.textMuted
         z: 1
     }
 

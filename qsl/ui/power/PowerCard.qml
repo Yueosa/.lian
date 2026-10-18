@@ -85,9 +85,9 @@ Item {
                     anchors.fill: parent
                     radius: width / 2
                     visible: !cell.isAvatar
-                    color: cell.isArmed ? Color.error : "transparent"
+                    color: cell.isArmed ? ThemeColors.error : "transparent"
                     border.width: cell.selected ? 2 : 0
-                    border.color: Color.primary
+                    border.color: ThemeColors.primary
                     Behavior on color { CAnim {} }
 
                     // 待确认态已是实心红，不再叠。键盘选中和鼠标悬停都要出反馈：
@@ -95,7 +95,7 @@ Item {
                     QslStateLayer {
                         source: ma
                         active: !cell.isArmed
-                        tint: Color.primary
+                        tint: ThemeColors.primary
                         accent: true
                         selected: cell.selected
                     }
@@ -107,7 +107,7 @@ Item {
                     text: cell.modelData.icon
                     font.family: Size.fontIcon
                     font.pixelSize: 22
-                    color: cell.isArmed ? Color.errorText : Color.text
+                    color: cell.isArmed ? ThemeColors.errorText : ThemeColors.text
                     Behavior on color { CAnim {} }
                 }
 
@@ -115,15 +115,15 @@ Item {
                     visible: cell.isAvatar
                     anchors.fill: parent
                     radius: width / 2
-                    color: Color.surfaceContainerHighest
+                    color: ThemeColors.surfaceContainerHighest
                     border.width: cell.selected ? 2 : 0
-                    border.color: Color.primary
+                    border.color: ThemeColors.primary
 
                     Text {
                         anchors.centerIn: parent
                         visible: avatarImg.status !== Image.Ready
                         text: root.s ? root.s.avatarLetter : "?"
-                        color: Color.primary
+                        color: ThemeColors.primary
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.titleLarge
                         font.bold: true
@@ -162,7 +162,7 @@ Item {
                     radius: width / 2
                     color: "transparent"
                     border.width: 2
-                    border.color: Color.primary
+                    border.color: ThemeColors.primary
                 }
 
                 MouseArea {

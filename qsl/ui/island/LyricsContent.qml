@@ -144,14 +144,14 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: width / 2
-            color: Color.surfaceContainerHighest
+            color: ThemeColors.surfaceContainerHighest
             visible: !lyricsRoot.artUrl.length || coverImg.status !== Image.Ready
 
             Text {
                 anchors.centerIn: parent
                 visible: !lyricsRoot.artUrl.length
                 text: "\uf001"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.sm
             }
@@ -242,7 +242,7 @@ Item {
                 ctx.beginPath()
                 ctx.lineCap = "round"
                 ctx.lineWidth = 2.5
-                ctx.strokeStyle = String(Color.primary)
+                ctx.strokeStyle = String(ThemeColors.primary)
                 for (let i = 0; i < 6; i++) {
                     const val = Math.min(1, s[i] || 0)
                     const h = Math.max(3, val * height)
@@ -393,7 +393,7 @@ Item {
                     x: row.scrollDistance > 0 ? 0 : Math.max(0, (row.width - implicitWidth) / 2)
                     text: modelData.text || ""
                     textFormat: Text.PlainText
-                    color: row.isCurrent ? Color.primary : Color.textMuted
+                    color: row.isCurrent ? ThemeColors.primary : ThemeColors.textMuted
                     font.family: Size.fontSans
                     font.pixelSize: Size.fontSize.titleSmall
                     font.weight: Font.Bold

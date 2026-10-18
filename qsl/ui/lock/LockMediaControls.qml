@@ -40,7 +40,7 @@ Column {
             width: 56
             height: 56
             radius: 12
-            color: Color.withAlpha(Color.primary, 0.45)
+            color: ThemeColors.withAlpha(ThemeColors.primary, 0.45)
             clip: true
 
             Image {
@@ -193,7 +193,7 @@ Column {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 text: controls.volIcon
-                color: Volume.sinkMuted ? Color.error : controls.inkDim
+                color: Volume.sinkMuted ? ThemeColors.error : controls.inkDim
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.xl
                 MouseArea {
@@ -271,7 +271,7 @@ Column {
         Text {
             anchors.centerIn: parent
             text: btn.glyph
-            color: btn.active ? Color.inversePrimary : controls.ink
+            color: btn.active ? ThemeColors.inversePrimary : controls.ink
             font.family: Size.fontIcon
             font.pixelSize: btn.primary ? 24 : 20
         }

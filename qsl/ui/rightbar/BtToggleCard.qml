@@ -87,7 +87,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Bluetooth.discovering ? 3 : 0
             radius: 2
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             clip: true
             opacity: Bluetooth.discovering ? 1 : 0
             Behavior on Layout.preferredHeight {
@@ -99,7 +99,7 @@ Item {
                 width: parent.width * 0.35
                 height: parent.height
                 radius: 2
-                color: Color.primary
+                color: ThemeColors.primary
                 visible: Bluetooth.discovering
 
                 // 装饰性/刷新动画，不走令牌（plan.md 白名单）
@@ -122,7 +122,7 @@ Item {
             visible: Bluetooth.lastError !== ""
             Layout.preferredHeight: visible ? 34 : 0
             radius: Size.rounding.sm
-            color: Color.errorContainer
+            color: ThemeColors.errorContainer
             clip: true
 
             RowLayout {
@@ -135,12 +135,12 @@ Item {
                     text: "error"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                 }
                 Text {
                     Layout.fillWidth: true
                     text: Bluetooth.lastError
-                    color: Color.errorContainerText
+                    color: ThemeColors.errorContainerText
                     font.pixelSize: Size.fontSize.bodySmall
                     elide: Text.ElideRight
                 }

@@ -26,8 +26,8 @@ Item {
         id: dial
         property real value: 0
         property real innerValue: 0
-        property color ringColor: Color.primary
-        property color innerColor: Color.tertiary
+        property color ringColor: ThemeColors.primary
+        property color innerColor: ThemeColors.tertiary
         property string center: ""
         property string label: ""
 
@@ -42,7 +42,7 @@ Item {
 
             // 外环轨道 + 值
             ShapePath {
-                strokeColor: Color.withAlpha(dial.ringColor, 0.16)
+                strokeColor: ThemeColors.withAlpha(dial.ringColor, 0.16)
                 strokeWidth: 8
                 fillColor: "transparent"
                 capStyle: ShapePath.FlatCap
@@ -70,7 +70,7 @@ Item {
 
             // 内环轨道 + 值
             ShapePath {
-                strokeColor: Color.withAlpha(dial.innerColor, 0.15)
+                strokeColor: ThemeColors.withAlpha(dial.innerColor, 0.15)
                 strokeWidth: 4
                 fillColor: "transparent"
                 capStyle: ShapePath.FlatCap
@@ -102,7 +102,7 @@ Item {
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.titleLarge
                 font.bold: true
-                color: Color.text
+                color: ThemeColors.text
             }
         }
 
@@ -112,7 +112,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: dial.label
             font.pixelSize: Size.fontSize.labelSmall
-            color: Color.textMuted
+            color: ThemeColors.textMuted
         }
     }
 
@@ -127,8 +127,8 @@ Item {
         GaugeDial {
             value: Sysmon.cpuPercent / 100
             innerValue: root.tempNorm(Sysmon.cpuTemp)
-            ringColor: Color.primary
-            innerColor: Color.tertiary
+            ringColor: ThemeColors.primary
+            innerColor: ThemeColors.tertiary
             center: Math.round(Sysmon.cpuPercent) + "%"
             label: "CPU " + Math.round(Sysmon.cpuTemp) + "°C"
         }
@@ -136,8 +136,8 @@ Item {
         GaugeDial {
             value: Sysmon.gpuPercent / 100
             innerValue: root.tempNorm(Sysmon.gpuTemp)
-            ringColor: Color.secondary
-            innerColor: Color.tertiary
+            ringColor: ThemeColors.secondary
+            innerColor: ThemeColors.tertiary
             center: Math.round(Sysmon.gpuPercent) + "%"
             label: "GPU " + Math.round(Sysmon.gpuTemp) + "°C"
             visible: Sysmon.gpuAvailable
@@ -146,8 +146,8 @@ Item {
         GaugeDial {
             value: Sysmon.ramTotalGB > 0 ? Sysmon.ramAppGB / Sysmon.ramTotalGB : 0
             innerValue: Sysmon.ramTotalGB > 0 ? Sysmon.ramCacheGB / Sysmon.ramTotalGB : 0
-            ringColor: Color.tertiary
-            innerColor: Color.primary
+            ringColor: ThemeColors.tertiary
+            innerColor: ThemeColors.primary
             center: Sysmon.ramAppGB.toFixed(1) + "G"
             label: "使用 " + Sysmon.ramAppGB.toFixed(1) + "G · 缓存 " + Sysmon.ramCacheGB.toFixed(1) + "G"
         }

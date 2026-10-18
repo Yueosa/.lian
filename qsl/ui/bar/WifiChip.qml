@@ -23,8 +23,8 @@ Rectangle {
     radius: height / 2
     clip: true
     color: (Network.ethernetConnected || Network.wifiConnected)
-        ? Color.primaryContainer
-        : Color.withAlpha(Color.text, 0.08)
+        ? ThemeColors.primaryContainer
+        : ThemeColors.withAlpha(ThemeColors.text, 0.08)
 
     Behavior on implicitWidth {
         Anim { type: Anim.SpatialFast }
@@ -43,8 +43,8 @@ Rectangle {
             font.pixelSize: Size.iconSize.lg
             Layout.alignment: Qt.AlignVCenter
             color: (Network.ethernetConnected || Network.wifiConnected)
-                ? Color.primaryContainerText
-                : Color.textMuted
+                ? ThemeColors.primaryContainerText
+                : ThemeColors.textMuted
             text: Network.chipIcon
         }
 
@@ -54,8 +54,8 @@ Rectangle {
         font.bold: true
         font.pixelSize: Size.fontSize.labelMedium
         color: (Network.ethernetConnected || Network.wifiConnected)
-            ? Color.primaryContainerText
-            : Color.text
+            ? ThemeColors.primaryContainerText
+            : ThemeColors.text
             Layout.alignment: Qt.AlignVCenter
             // 收起时占宽 0，展开用真实字宽（封顶），保证胶囊包住文字
             opacity: root.expanded ? 1 : 0

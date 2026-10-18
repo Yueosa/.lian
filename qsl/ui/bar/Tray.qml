@@ -58,7 +58,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: Color.background
+        color: ThemeColors.background
         radius: height / 2
     }
 

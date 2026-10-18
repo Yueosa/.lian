@@ -30,7 +30,7 @@ Item {
             font.family: Size.fontIcon
             font.pixelSize: Size.iconSize.xxl
             font.variableAxes: ({ "opsz": Size.iconSize.xxl, "FILL": 1 })
-            color: Color.primary
+            color: ThemeColors.primary
         }
 
         // 标题
@@ -42,7 +42,7 @@ Item {
             Text {
                 width: parent.width
                 text: root.item ? (root.item.title || "提醒") : ""
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodyMedium
                 font.bold: true
@@ -55,7 +55,7 @@ Item {
             Text {
                 width: parent.width
                 text: root.item ? "点击关闭" : ""
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
             }
@@ -71,7 +71,7 @@ Item {
                 anchors.right: parent.right
                 text: (root.item && root.item.mode === "daily" ? "每天 " : "")
                     + (root.item ? root.item.at : "")
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.bodyMedium
             }
@@ -80,7 +80,7 @@ Item {
                 anchors.right: parent.right
                 visible: Island.reminderCount > 1
                 text: "还有 " + (Island.reminderCount - 1) + " 条"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelSmall
             }

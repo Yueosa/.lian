@@ -122,7 +122,7 @@ Item {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: Bluetooth.discovering ? "正在扫描…" : "附近没有设备"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
             }
 
@@ -167,7 +167,7 @@ Item {
                     text: "sync"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.primary
+                    color: ThemeColors.primary
 
                     // 装饰性/刷新动画，不走令牌（plan.md 白名单）
                     RotationAnimator on rotation {
@@ -203,7 +203,7 @@ Item {
                 QslActionChip {
                     visible: !root.isNearby && !row.busy
                     text: "忘记"
-                    accent: Color.error
+                    accent: ThemeColors.error
                     onClicked: {
                         root.sharedState.forgetTarget =
                             row.askingForget ? null : row.device
@@ -220,7 +220,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: "忘记此设备？"
-                            color: Color.textMuted
+                            color: ThemeColors.textMuted
                             font.pixelSize: Size.fontSize.labelSmall
                         }
                         QslActionChip {
@@ -229,7 +229,7 @@ Item {
                         }
                         QslActionChip {
                             text: "忘记"
-                            accent: Color.error
+                            accent: ThemeColors.error
                             filled: true
                             onClicked: {
                                 Bluetooth.forgetDevice(row.device)

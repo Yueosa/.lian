@@ -42,7 +42,7 @@ Item {
         color: Qt.rgba(1, 1, 1, 0.08)
         border.width: 1.5
         border.color: pwdWrap.failed
-            ? Color.error
+            ? ThemeColors.error
             : (pwdInput.activeFocus
                 ? Qt.rgba(1, 1, 1, 0.7)
                 : Qt.rgba(1, 1, 1, 0.22))
@@ -59,7 +59,7 @@ Item {
                 text: "lock"
                 font.family: Size.fontIcon
                 font.pixelSize: Size.iconSize.xl
-                color: pwdWrap.failed ? Color.error : pwdWrap.inkFaint
+                color: pwdWrap.failed ? ThemeColors.error : pwdWrap.inkFaint
             }
 
             TextInput {
@@ -91,7 +91,7 @@ Item {
                     visible: !pwdInput.text
                     text: pwdWrap.unlocking ? "验证中…"
                         : (pwdWrap.failed ? "密码错误" : "输入密码")
-                    color: pwdWrap.failed ? Color.error : pwdWrap.inkFaint
+                    color: pwdWrap.failed ? ThemeColors.error : pwdWrap.inkFaint
                     font: pwdInput.font
                 }
             }

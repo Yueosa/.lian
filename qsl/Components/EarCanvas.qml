@@ -13,7 +13,7 @@ Canvas {
     // 兼容旧用法：mirror=false→TopLeft（岛左耳），true→TopRight（岛右耳）
     property bool mirror: false
     property int corner: mirror ? EarCanvas.TopRight : EarCanvas.TopLeft
-    property color fillColor: Color.background
+    property color fillColor: ThemeColors.background
 
     onFillColorChanged: requestPaint()
     onCornerChanged: requestPaint()
@@ -62,7 +62,7 @@ Canvas {
     }
 
     Connections {
-        target: Color
+        target: ThemeColors
         function onBackgroundChanged() { root.requestPaint() }
     }
 

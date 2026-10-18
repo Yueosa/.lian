@@ -78,7 +78,7 @@ Item {
     // 只有主屏那份画波（面板只在主屏）
     required property bool keyOwner
 
-    property color waveColor: Color.background
+    property color waveColor: ThemeColors.background
 
     // ---- 移动波 ----
     // 波峰高出框内沿多少。
@@ -694,7 +694,7 @@ Item {
                     // 靠近路径两端时收势，读成"波散进豁口里"。
                     //
                     // 压的是**几何**，不是 opacity。两个理由：
-                    // 1. waveColor 是不透明的 Color.background，半透明的深色带子
+                    // 1. waveColor 是不透明的 ThemeColors.background，半透明的深色带子
                     //    叠在壁纸/应用窗口上是个鬼影，不是"变薄"
                     // 2. opacity < 1 会让 Qt 有机会把这个 item 渲到离屏纹理再合成，
                     //    而纹理原点要对齐整数像素——正好是"一像素位移"的来源

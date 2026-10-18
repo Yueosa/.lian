@@ -20,7 +20,7 @@
 视觉灵魂（非 gooey blur）：
 
 - 顶栏贴边 **左右耳朵**（Canvas 四分之一圆凹角）
-- 实色底（`Color.background`）+ 尺寸 / 圆角 morph
+- 实色底（`ThemeColors.background`）+ 尺寸 / 圆角 morph
 - 无 `DropShadow`（岛体不加阴影）
 
 ### 三级岛（Hub）

@@ -60,7 +60,7 @@ Item {
         y: 0
         width: Math.max(200, leftHolder.implicitWidth + root.sideMargin * 2)
         height: root.segHeight
-        color: Color.background
+        color: ThemeColors.background
         bottomRightRadius: 22
         clip: true
 
@@ -85,7 +85,7 @@ Item {
         y: 0
         width: Math.max(200, rightHolder.implicitWidth + root.sideMargin * 2)
         height: root.segHeight
-        color: Color.background
+        color: ThemeColors.background
         bottomLeftRadius: 22
         clip: true
 

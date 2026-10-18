@@ -18,8 +18,8 @@ Rectangle {
     width: 280
     height: searchCol.implicitHeight + 16
     radius: Size.rounding.md
-    color: Color.surfaceContainerHighest
-    border.color: Color.outlineVariant
+    color: ThemeColors.surfaceContainerHighest
+    border.color: ThemeColors.outlineVariant
     border.width: 1
 
     // 页面点地名时调这个
@@ -48,7 +48,7 @@ Rectangle {
             width: parent.width
             height: 32
             radius: Size.rounding.sm
-            color: Color.surfaceContainerLow
+            color: ThemeColors.surfaceContainerLow
 
             // 一个区能横跨十几公里、落在不同预报网格里，
             // 与其在同名候选里猜，不如直接把坐标喂进去（daemon 会反查地名）
@@ -57,7 +57,7 @@ Rectangle {
                 anchors.margins: 8
                 visible: searchInput.text.length === 0
                 text: "地名，或 25.02, 102.75"
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelMedium
                 verticalAlignment: Text.AlignVCenter
@@ -68,7 +68,7 @@ Rectangle {
                 id: searchInput
                 anchors.fill: parent
                 anchors.margins: 8
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
                 clip: true
@@ -102,11 +102,11 @@ Rectangle {
                 width: searchCol.width
                 height: 28
                 radius: Size.rounding.sm
-                color: Color.surfaceContainerLow
+                color: ThemeColors.surfaceContainerLow
 
                 QslStateLayer {
                     source: geoMa
-                    tint: Color.primary
+                    tint: ThemeColors.primary
                     accent: true
                 }
 
@@ -114,7 +114,7 @@ Rectangle {
                     anchors.fill: parent
                     anchors.margins: 6
                     text: modelData.label || modelData.name || ""
-                    color: Color.text
+                    color: ThemeColors.text
                     font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
                 }
@@ -131,7 +131,7 @@ Rectangle {
 
         Text {
             text: "恢复 IP 定位"
-            color: Color.primary
+            color: ThemeColors.primary
             font.pixelSize: Size.fontSize.labelSmall
             MouseArea {
                 anchors.fill: parent

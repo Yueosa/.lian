@@ -34,7 +34,7 @@ RowLayout {
         Rectangle {
             width: 96
             height: 34
-            color: bar.hourly ? Color.primary : Color.surfaceContainerHighest
+            color: bar.hourly ? ThemeColors.primary : ThemeColors.surfaceContainerHighest
             topLeftRadius: 17
             bottomLeftRadius: 17
             topRightRadius: bar.hourly ? 17 : 6
@@ -47,7 +47,7 @@ RowLayout {
                 font.family: Size.fontSans
                 font.bold: true
                 font.pixelSize: Size.fontSize.labelMedium
-                color: bar.hourly ? Color.primaryText : Color.textMuted
+                color: bar.hourly ? ThemeColors.primaryText : ThemeColors.textMuted
             }
             MouseArea {
                 anchors.fill: parent
@@ -58,7 +58,7 @@ RowLayout {
         Rectangle {
             width: 96
             height: 34
-            color: !bar.hourly ? Color.primary : Color.surfaceContainerHighest
+            color: !bar.hourly ? ThemeColors.primary : ThemeColors.surfaceContainerHighest
             topRightRadius: 17
             bottomRightRadius: 17
             topLeftRadius: !bar.hourly ? 17 : 6
@@ -71,7 +71,7 @@ RowLayout {
                 font.family: Size.fontSans
                 font.bold: true
                 font.pixelSize: Size.fontSize.labelMedium
-                color: !bar.hourly ? Color.primaryText : Color.textMuted
+                color: !bar.hourly ? ThemeColors.primaryText : ThemeColors.textMuted
             }
             MouseArea { anchors.fill: parent; onClicked: bar.pick(false) }
         }
@@ -88,9 +88,9 @@ RowLayout {
         Layout.preferredHeight: 34
         Layout.preferredWidth: nowcastRow.implicitWidth + 24
         radius: 17
-        color: Color.withAlpha(Color.secondary, 0.16)
+        color: ThemeColors.withAlpha(ThemeColors.secondary, 0.16)
         border.width: 1
-        border.color: Color.withAlpha(Color.secondary, 0.45)
+        border.color: ThemeColors.withAlpha(ThemeColors.secondary, 0.45)
 
         RowLayout {
             id: nowcastRow
@@ -101,13 +101,13 @@ RowLayout {
                 text: "\uf73d"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.md
-                color: Color.secondary
+                color: ThemeColors.secondary
             }
             Text {
                 text: Weather.rainSoonText
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
-                color: Color.text
+                color: ThemeColors.text
             }
             // 8 根小柱 = 未来 2 小时逐 15 分钟的降水概率
             Row {
@@ -120,7 +120,7 @@ RowLayout {
                         width: 3
                         height: 14
                         radius: 1.5
-                        color: Color.withAlpha(Color.secondary, 0.22)
+                        color: ThemeColors.withAlpha(ThemeColors.secondary, 0.22)
                         Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
@@ -128,7 +128,7 @@ RowLayout {
                             height: Math.max(
                                 2,
                                 parent.height * Math.min(1, (Number(modelData.pop) || 0) / 100))
-                            color: Color.secondary
+                            color: ThemeColors.secondary
                         }
                     }
                 }

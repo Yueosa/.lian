@@ -49,7 +49,7 @@ Item {
 
     // 冷 → 热的四段色标。与 UV / PM2.5 刻度条共用同一套，
     // 于是「颜色越靠后 = 程度越强」在整页里是同一条规则。
-    readonly property var rampStops: [Color.primary, Color.secondary, Color.tertiary, Color.error]
+    readonly property var rampStops: [ThemeColors.primary, ThemeColors.secondary, ThemeColors.tertiary, ThemeColors.error]
 
     // 取色标上任意位置的颜色。纯算术，不建对象、不开缓冲；
     // 调用点是 7 日条（14 次/刷新）和 Canvas 渐变（1 次/重绘），量可以忽略。

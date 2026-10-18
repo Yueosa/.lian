@@ -286,7 +286,7 @@ Item {
             // 背景：贴 rail 侧直边，外侧两角圆角（底边的下两角见 _railSideR）
             Rectangle {
                 anchors.fill: parent
-                color: Color.background
+                color: ThemeColors.background
                 topLeftRadius: root.edge === "left" ? 0 : root._weldR
                 topRightRadius: root.edge === "right" ? 0 : root._weldRR
                 bottomLeftRadius: root.edge === "left"

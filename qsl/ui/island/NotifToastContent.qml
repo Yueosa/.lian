@@ -38,23 +38,23 @@ Item {
                 // IslandEvent：desktopEntry = quickshell-island-event.<severity>.<category>
                 readonly property color accent: {
                     if (!isIslandEvent)
-                        return Color.primary
+                        return ThemeColors.primary
                     const parts = desktopEntry.split(".")
                     const sev = parts.length >= 2 ? parts[1] : ""
                     const cat = parts.length >= 3 ? parts[2] : ""
                     if (sev === "critical")
-                        return Color.error
+                        return ThemeColors.error
                     if (sev === "high")
-                        return Color.tertiary
+                        return ThemeColors.tertiary
                     if (cat === "connection" || cat === "power")
-                        return Color.secondary
-                    return Color.primary
+                        return ThemeColors.secondary
+                    return ThemeColors.primary
                 }
 
-                readonly property color titleColor: isIslandEvent ? accent : Color.backgroundText
+                readonly property color titleColor: isIslandEvent ? accent : ThemeColors.backgroundText
                 readonly property color bodyColor: isIslandEvent
-                    ? Color.withAlpha(accent, 0.88)
-                    : Color.textMuted
+                    ? ThemeColors.withAlpha(accent, 0.88)
+                    : ThemeColors.textMuted
 
                 // icon:xxx / image://icon/xxx / 无路径裸名 → 主题图标
                 // 绝对路径 / file:// / 其它 image:// → 文件或句柄
@@ -103,7 +103,7 @@ Item {
                         Layout.preferredWidth: 40
                         Layout.preferredHeight: 40
                         radius: Size.rounding.md
-                        color: Color.background
+                        color: ThemeColors.background
                         clip: true
 
                         Image {

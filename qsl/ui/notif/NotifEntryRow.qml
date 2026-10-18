@@ -147,7 +147,7 @@ Item {
         width: parent.width
         height: row.height
         radius: Size.rounding.lg
-        color: Color.withAlpha(Color.surfaceContainerHighest, 0.35)
+        color: ThemeColors.withAlpha(ThemeColors.surfaceContainerHighest, 0.35)
 
         // 展开的那条一直亮着，且比悬停重一档——原来两者同色，
         // 鼠标划过去时分不清哪条是展开的
@@ -167,7 +167,7 @@ Item {
             anchors.top: row.expanded ? parent.top : undefined
             anchors.topMargin: Size.spacing.md
             radius: Size.rounding.md
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
             clip: true
 
             Image {
@@ -188,7 +188,7 @@ Item {
                 text: "\uf0f3"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.lg
-                color: Color.primary
+                color: ThemeColors.primary
             }
         }
 
@@ -209,7 +209,7 @@ Item {
                 text: "\uf078"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.xs
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 // 必须用 opacity 而非 visible：Row 的隐式宽度会跳过不可见子项，
                 // 一旦 visible 绑到 canExpand 就成环——
                 // actions.width → textCol.width → bodyText.truncated → canExpand。
@@ -226,7 +226,7 @@ Item {
                 text: "\uf00d"
                 font.family: Size.fontMono
                 font.pixelSize: Size.iconSize.sm
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 opacity: row.shared.clearing ? 0.3 : 1
                 MouseArea {
                     anchors.fill: parent
@@ -255,14 +255,14 @@ Item {
                 Text {
                     width: parent.width - timeLabel.width - parent.spacing
                     text: row.entry.appName || "系统"
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.pixelSize: Size.fontSize.labelSmall
                     elide: Text.ElideRight
                 }
                 Text {
                     id: timeLabel
                     text: row.relativeTime(row.entry.receivedAt)
-                    color: Color.textMuted
+                    color: ThemeColors.textMuted
                     font.pixelSize: Size.fontSize.labelSmall
                 }
             }
@@ -270,7 +270,7 @@ Item {
                 id: summaryText
                 width: parent.width
                 text: row.entry.summary || "(无标题)"
-                color: Color.text
+                color: ThemeColors.text
                 font.pixelSize: Size.fontSize.titleSmall
                 font.bold: true
                 elide: row.expanded ? Text.ElideNone : Text.ElideRight
@@ -281,7 +281,7 @@ Item {
                 id: bodyText
                 width: parent.width
                 text: row.entry.body || ""
-                color: Color.textMuted
+                color: ThemeColors.textMuted
                 font.pixelSize: Size.fontSize.bodySmall
                 // 展开态刻意不用 elide：elide 需要先知道 height 才能决定截断量，
                 // 而这里 height 又绑到 implicitHeight，两者会互相拉成环。

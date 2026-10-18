@@ -29,7 +29,7 @@ Rectangle {
         source: ma
         active: root.enabled
         selected: root.selected
-        tint: root.selected ? Color.primary : Color.text
+        tint: root.selected ? ThemeColors.primary : ThemeColors.text
         accent: root.selected
     }
 
@@ -43,7 +43,7 @@ Rectangle {
             text: root.icon
             font.family: Size.fontIcon
             font.pixelSize: Size.iconSize.sm
-            color: root.selected ? Color.primary : Color.textMuted
+            color: root.selected ? ThemeColors.primary : ThemeColors.textMuted
             anchors.verticalCenter: parent.verticalCenter
         }
         Text {
@@ -51,7 +51,7 @@ Rectangle {
             font.family: Size.fontSans
             font.pixelSize: Size.fontSize.bodySmall
             font.bold: root.selected
-            color: root.selected ? Color.primary : Color.textMuted
+            color: root.selected ? ThemeColors.primary : ThemeColors.textMuted
             anchors.verticalCenter: parent.verticalCenter
         }
     }

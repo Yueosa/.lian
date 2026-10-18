@@ -18,7 +18,7 @@ Rectangle {
     id: root
 
     radius: Size.rounding.lg
-    color: Color.surfaceContainerHigh
+    color: ThemeColors.surfaceContainerHigh
 
     readonly property var monthNames: [
         "一月", "二月", "三月", "四月", "五月", "六月",
@@ -49,28 +49,28 @@ Rectangle {
         if (!day || !day.inMonth)
             return "transparent"
         if (day.isToday)
-            return Color.primary
+            return ThemeColors.primary
         if (day.isWorkday)
-            return Color.withAlpha(Color.secondary, 0.22)
+            return ThemeColors.withAlpha(ThemeColors.secondary, 0.22)
         if (day.isHoliday)
-            return Color.withAlpha(Color.tertiary, 0.22)
+            return ThemeColors.withAlpha(ThemeColors.tertiary, 0.22)
         return "transparent"
     }
 
     function dayColor(day) {
         if (!day)
-            return Color.textMuted
+            return ThemeColors.textMuted
         if (day.isToday)
-            return Color.primaryText
+            return ThemeColors.primaryText
         if (!day.inMonth)
-            return Color.withAlpha(Color.textMuted, 0.35)
+            return ThemeColors.withAlpha(ThemeColors.textMuted, 0.35)
         if (day.isWorkday)
-            return Color.secondary
+            return ThemeColors.secondary
         if (day.isHoliday)
-            return Color.tertiary
+            return ThemeColors.tertiary
         if (day.isWeekend)
-            return Color.error
-        return Color.backgroundText
+            return ThemeColors.error
+        return ThemeColors.backgroundText
     }
 
     // 节气 / 节日用空心圆标记。数字改主色行不通——主色和周末的红太近，
@@ -98,10 +98,10 @@ Rectangle {
         if (!day)
             return "transparent"
         if (day.isToday)
-            return Color.primaryText
+            return ThemeColors.primaryText
         if (day.isWorkday)
-            return Color.secondary
-        return Color.tertiary
+            return ThemeColors.secondary
+        return ThemeColors.tertiary
     }
 
     readonly property bool onCurrentMonth: {
@@ -120,14 +120,14 @@ Rectangle {
         Layout.preferredWidth: 36
         Layout.preferredHeight: 36
         radius: width / 2
-        color: Color.surfaceContainerHighest
+        color: ThemeColors.surfaceContainerHighest
         opacity: root.animating ? 0.5 : 1
         Behavior on color { CAnim {} }
 
         QslStateLayer {
             source: navMa
             active: !root.animating
-            tint: Color.primary
+            tint: ThemeColors.primary
             accent: true
         }
 
@@ -138,7 +138,7 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             text: nav.glyph
-            color: Color.primary
+            color: ThemeColors.primary
             font.family: Size.fontMono
             font.pixelSize: Size.iconSize.md
         }
@@ -345,7 +345,7 @@ Rectangle {
                         radius: width / 2
                         color: root.cellCircle(cell.dayData)
                         border.width: root.cellOutline(cell.dayData)
-                        border.color: Color.withAlpha(Color.primary, 0.5)
+                        border.color: ThemeColors.withAlpha(ThemeColors.primary, 0.5)
                     }
 
                     Text {
@@ -368,13 +368,13 @@ Rectangle {
                         text: cell.subText
                         color: {
                             if (cell.dayData.isToday)
-                                return Color.primaryText
+                                return ThemeColors.primaryText
                             if (!cell.dayData.inMonth)
-                                return Color.withAlpha(Color.textMuted, 0.3)
+                                return ThemeColors.withAlpha(ThemeColors.textMuted, 0.3)
                             // 节日用强调色把自己从一片农历小字里拎出来
                             return cell.festival.length > 0
-                                ? Color.tertiary
-                                : Color.withAlpha(Color.textMuted, 0.75)
+                                ? ThemeColors.tertiary
+                                : ThemeColors.withAlpha(ThemeColors.textMuted, 0.75)
                         }
                         font.family: Size.fontSans
                         font.pixelSize: 9
@@ -424,7 +424,7 @@ Rectangle {
                     Text {
                         id: monthText
                         text: root.monthLabel
-                        color: Color.backgroundText
+                        color: ThemeColors.backgroundText
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.headlineSmall
                         font.bold: true
@@ -432,7 +432,7 @@ Rectangle {
                     Text {
                         anchors.baseline: monthText.baseline
                         text: root.centerYear > 0 ? String(root.centerYear) : ""
-                        color: Color.textMuted
+                        color: ThemeColors.textMuted
                         font.family: Size.fontMono
                         font.pixelSize: Size.fontSize.bodyMedium
                     }
@@ -479,7 +479,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: modelData.t
-                        color: modelData.weekend ? Color.error : Color.textMuted
+                        color: modelData.weekend ? ThemeColors.error : ThemeColors.textMuted
                         font.family: Size.fontSans
                         font.pixelSize: Size.fontSize.titleSmall
                         font.bold: true
@@ -492,7 +492,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Color.surfaceContainerHighest
+            color: ThemeColors.surfaceContainerHighest
         }
 
         Item {
@@ -515,7 +515,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Color.surfaceContainerHighest
+            color: ThemeColors.surfaceContainerHighest
         }
 
         // 今日条：格子里塞不下的完整信息落在这儿。假期倒数是纯派生值，
@@ -539,7 +539,7 @@ Rectangle {
                     return Qt.formatDateTime(t, "M月d日") + " 周" + wd
                         + (l.length > 0 ? " · 农历" + l : "")
                 }
-                color: Color.text
+                color: ThemeColors.text
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.bodySmall
             }
@@ -556,7 +556,7 @@ Rectangle {
                         return nh.name + "假期中"
                     return "距 " + nh.name + " " + nh.daysAway + " 天"
                 }
-                color: Color.primary
+                color: ThemeColors.primary
                 font.family: Size.fontSans
                 font.pixelSize: Size.fontSize.labelMedium
                 font.bold: true

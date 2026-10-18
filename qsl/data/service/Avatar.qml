@@ -13,7 +13,7 @@ pragma Singleton
 //
 // 想让它可配置的话，得先把 Config 挪进服务层：Config 自己就在读盘上的配置文件，
 // 按本项目的定义（跟外部世界打交道的都是服务）它本来就该在 service 里，
-// 那样 Size/Color 读 Config 就是 state → service 的正方向。
+// 那样 Size/ThemeColors 读 Config 就是 state → service 的正方向。
 // ============================================================
 
 import QtQuick

@@ -31,7 +31,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: Color.background
+        color: ThemeColors.background
     }
 
     RowLayout {
@@ -43,12 +43,12 @@ Item {
             Layout.preferredWidth: 18
             Layout.preferredHeight: 18
             radius: Size.rounding.md
-            color: Color.primaryContainer
+            color: ThemeColors.primaryContainer
 
             Text {
                 anchors.centerIn: parent
                 text: HyprService.workspaceLabel(HyprService.focusedWorkspace)
-                color: Color.primaryContainerText
+                color: ThemeColors.primaryContainerText
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.labelSmall
                 font.bold: true
@@ -87,10 +87,10 @@ Item {
                     height: 8
                     radius: height / 2
                     color: delegateRoot.active
-                        ? Color.primary
+                        ? ThemeColors.primary
                         : (delegateRoot.hasWindows
-                            ? Color.text
-                            : (delegateRoot.isHovered ? Color.outlineVariant : Color.surfaceContainerHighest))
+                            ? ThemeColors.text
+                            : (delegateRoot.isHovered ? ThemeColors.outlineVariant : ThemeColors.surfaceContainerHighest))
                     Behavior on color {
                         CAnim {}
                     }

@@ -89,7 +89,7 @@ Item {
                 text: Math.round((Volume.sinkMuted ? 0 : Volume.sinkVolume) * 100)
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.bodySmall
-                color: Volume.sinkMuted ? Color.textMuted : Color.primary
+                color: Volume.sinkMuted ? ThemeColors.textMuted : ThemeColors.primary
             }
         }
 
@@ -99,7 +99,7 @@ Item {
             text: "未找到输出设备"
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: Size.fontSize.labelMedium
-            color: Color.textMuted
+            color: ThemeColors.textMuted
         }
 
         // ---- 输出设备：点行切默认 ----
@@ -146,7 +146,7 @@ Item {
                     text: "check"
                     font.family: Size.fontIcon
                     font.pixelSize: Size.iconSize.md
-                    color: Color.primary
+                    color: ThemeColors.primary
                 }
             }
         }

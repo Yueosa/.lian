@@ -29,19 +29,19 @@ Item {
             Text {
                 text: "磁盘"
                 font.pixelSize: Size.fontSize.labelMedium
-                color: Color.text
+                color: ThemeColors.text
                 Layout.preferredWidth: 44
             }
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 6
                 radius: 3
-                color: Color.withAlpha(Color.text, 0.08)
+                color: ThemeColors.withAlpha(ThemeColors.text, 0.08)
                 Rectangle {
                     width: parent.width * Math.max(0, Math.min(1, Sysmon.diskPercent / 100))
                     height: parent.height
                     radius: 3
-                    color: Color.secondary
+                    color: ThemeColors.secondary
                 }
             }
             Text {
@@ -50,7 +50,7 @@ Item {
                     + Math.round(Sysmon.diskTotalGB) + "G"
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.labelSmall
-                color: Color.textMuted
+                color: ThemeColors.textMuted
             }
         }
 
@@ -60,27 +60,27 @@ Item {
             Text {
                 text: "Swap"
                 font.pixelSize: Size.fontSize.labelMedium
-                color: Color.text
+                color: ThemeColors.text
                 Layout.preferredWidth: 44
             }
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 6
                 radius: 3
-                color: Color.withAlpha(Color.text, 0.08)
+                color: ThemeColors.withAlpha(ThemeColors.text, 0.08)
                 Rectangle {
                     width: parent.width * (Sysmon.swapTotalGB > 0
                         ? Math.max(0, Math.min(1, Sysmon.swapUsedGB / Sysmon.swapTotalGB)) : 0)
                     height: parent.height
                     radius: 3
-                    color: Color.primary
+                    color: ThemeColors.primary
                 }
             }
             Text {
                 text: Sysmon.swapUsedGB.toFixed(1) + "/" + Sysmon.swapTotalGB.toFixed(0) + "G"
                 font.family: Size.fontMono
                 font.pixelSize: Size.fontSize.labelSmall
-                color: Color.textMuted
+                color: ThemeColors.textMuted
             }
         }
     }
