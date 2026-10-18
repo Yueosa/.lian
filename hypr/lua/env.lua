@@ -39,13 +39,17 @@ hl.env("XMODIFIERS", "@im=fcitx")
 --     没有 hyprcursors/ 目录，所以 Hyprland 走 XCursor 回退路径，
 --     实际读取的是 XCURSOR_SIZE；HYPRCURSOR_* 保留是为了以后补
 --     hyprcursor 格式时不用再改这里。
---     源文件是 32px 单档，这里设 24 会由 libxcursor 按最近邻缩放。
+--     素材原生 32px，主题已补出 22/24/28/32 四档，这里统一用 32
+--     （原生档），避免任何缩放。
+--     三处必须一致：XCURSOR_SIZE / HYPRCURSOR_SIZE（本文件）、
+--     gsettings org.gnome.desktop.interface cursor-size（GTK 系）、
+--     以及 Chromium/Electron（读 XCURSOR_SIZE）。
 -- ============================================================
 
 hl.env("XCURSOR_THEME", "Plana")
-hl.env("XCURSOR_SIZE", "24")
+hl.env("XCURSOR_SIZE", "32")
 hl.env("HYPRCURSOR_THEME", "Plana")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_SIZE", "32")
 
 
 -- ============================================================
