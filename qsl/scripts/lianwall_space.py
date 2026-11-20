@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # lianwall_space.py — space --json + 缩略图路径
-# 优先：~/.cache/Lian/LianWall/thumbnails/{md5}_*.jpg
+# 优先读取新版 lianwall 缓存，兼容旧版 Lian/LianWall MD5 缓存
 # 图片无缓存：thumb=原路径 + thumb_orig=true（UI 强制小 sourceSize）
 # 视频无缓存：thumb=""（占位，不解码视频）
 
@@ -23,6 +23,23 @@ def is_video(path: str) -> bool:
 def find_thumb(thumb_dir: str, path: str) -> str:
     if not path or not os.path.isdir(thumb_dir):
         return ""
+    # 与 lianwall-gui ThumbnailResponse::cacheFilename 保持一致。
+    try:
+        stat = os.stat(path)
+        identity = (os.path.realpath(path).encode("utf-8") + b"\0"
+                    + f"{stat.st_size}:{stat.st_mtime_ns // 1_000_000}:"
+                      f"{stat.st_ctime_ns // 1_000_000}".encode("ascii"))
+        prefix = "v2_" + hashlib.sha256(identity).hexdigest() + "_"
+        for size in ("720x720", "640x360", "320x320", "1920x1080"):
+            candidate = os.path.join(thumb_dir, prefix + size + ".jpg")
+            if os.path.isfile(candidate):
+                return candidate
+        for name in sorted(os.listdir(thumb_dir)):
+            if name.startswith(prefix) and name.endswith(".jpg"):
+                return os.path.join(thumb_dir, name)
+    except OSError:
+        pass
+
     digest = hashlib.md5(path.encode("utf-8")).hexdigest()
     # 精确常见尺寸，再扫同 hash 前缀
     for suf in ("_720x720.jpg", "_320x320.jpg", "_720p.jpg", "_180p.jpg"):
@@ -40,7 +57,9 @@ def find_thumb(thumb_dir: str, path: str) -> str:
 
 def main() -> int:
     home = os.environ.get("HOME", "")
-    thumb_dir = os.path.join(home, ".cache", "Lian", "LianWall", "thumbnails")
+    cache = os.environ.get("XDG_CACHE_HOME") or os.path.join(home, ".cache")
+    thumb_dirs = [os.path.join(cache, "lianwall", "thumbnails"),
+                  os.path.join(cache, "Lian", "LianWall", "thumbnails")]
     try:
         raw = subprocess.check_output(["lianwall", "space", "--json"], text=True)
         data = json.loads(raw)
@@ -57,7 +76,11 @@ def main() -> int:
         if not isinstance(it, dict):
             continue
         path = str(it.get("path") or "")
-        thumb = find_thumb(thumb_dir, path)
+        thumb = ""
+        for thumb_dir in thumb_dirs:
+            thumb = find_thumb(thumb_dir, path)
+            if thumb:
+                break
         thumb_orig = False
         if not thumb and path and not is_video(path) and os.path.isfile(path):
             # 仅静态图允许回退原图（由 UI sourceSize 限制解码）

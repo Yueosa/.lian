@@ -37,7 +37,6 @@ appWindowRule("tuxedo-control-center-floating", "^(tuxedo-control-center)$", {
 
 appWindowRule("lianwall-gui-floating", "^(lianwall-gui)$", {
     float = true,
-    size = "720 900",
     center = true,
 })
 
