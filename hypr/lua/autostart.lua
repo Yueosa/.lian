@@ -11,12 +11,12 @@
 --         后台守护进程：崩溃自动重启，不受 Hyprland reload 影响
 --         本文件通过 systemctl start/stop 控制 target 的启停
 --         所有 PartOf 该 target 的服务会同步启停
---         例：fcitx5, cliphist, lianwall, hysp, stalk-hypr, hypr-event-daemon
+--         例：fcitx5, cliphist, lianwall, mihomo
 --
 --       Layer 3 — Hyprland exec 层（hyprland.start 事件）
 --         GUI 应用：需要 Wayland 环境，跟随 Hyprland 同生共死
 --         一次性命令（mkdir, setcursor）也放在这里
---         例：qs, kanshi, mihomo-party, lya, tuxedo-tray
+--         例：qs, kanshi, mihomo-party, tuxedo-control-center
 --
 
 
@@ -60,16 +60,6 @@ hl.on("hyprland.start", function()
 
     -- 5. Layer 3 GUI 应用
     hl.exec_cmd("kanshi")                               -- 多显示器自动配置
-    -- lya 是 StatusNotifier 托盘：必须等 qs 的 StatusNotifierWatcher 就绪。
-    -- 跟 qs 同帧 exec 会 race，注册失败就退出；终端手动开时 watcher 早在，所以看起来「只有开机不行」。
-    hl.exec_cmd(
-        "bash -c 'for i in $(seq 1 50); do "
-            .. "busctl --user get-property org.kde.StatusNotifierWatcher "
-            .. "/StatusNotifierWatcher org.kde.StatusNotifierWatcher "
-            .. "IsStatusNotifierHostRegistered >/dev/null 2>&1 && break; "
-            .. "sleep 0.2; done; "
-            .. "exec /home/Sakurine/.local/bin/lya'"
-    )
     hl.exec_cmd("tuxedo-control-center --tray")         -- TUXEDO 硬件控制托盘
 end)
 

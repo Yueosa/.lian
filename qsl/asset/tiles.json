@@ -35,13 +35,6 @@
             "url": "http://proxy.lian.love/"
         },
         {
-            "id": "lya",
-            "title": "lya Agent",
-            "note": "lya.lian.love",
-            "icon": "smart_toy",
-            "url": "http://lya.lian.love/"
-        },
-        {
             "id": "gmail",
             "title": "Gmail",
             "note": "mail.google.com",

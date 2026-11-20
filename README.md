@@ -16,7 +16,7 @@
 
 这个仓库本质上是 **我自己用的 dotfiles 备份**，不是为了让任何人都能开箱即用而发布的
 
-我的环境里有大量自己编写的脚本、自己写的小软件 (`lian` / `lianwall` / `hysp` / `stalk_hypr` ...)，以及自己一套配置哲学 如果你对其中某一部分的配置感兴趣，**欢迎学习他的配置思路**，但不建议直接 copy 
+我的环境里有大量自己编写的脚本、自己写的小软件（例如 `lianwall`），以及自己一套配置哲学 如果你对其中某一部分的配置感兴趣，**欢迎学习他的配置思路**，但不建议直接 copy
 配置是个人化的：抄别人的配色、抄别人的快捷键、抄别人的脚本，最后只会让你不知道为什么这台机器是这样运作的 
 
 > 我希望你看完之后能写出自己的配置，而不是把这份仓库 clone 到 `~/.config` 直接用 
@@ -36,7 +36,7 @@
 
 - 🖥️ **必须继承 Wayland session 环境的 GUI 服务**（kanshi / polkit-gnome / mihomo-party / qs / lianwall 等）
   → 由会话入口直接拉起，确保 `WAYLAND_DISPLAY` / `HYPRLAND_INSTANCE_SIGNATURE` / IM 变量完整继承
-- ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist-watch / stalk-hypr / tuxedo-tray / hypr-event-daemon）
+- ⚙️ **跟随会话生命周期的常驻服务**（fcitx5 / cliphist / lianwall / mihomo）
   → 由 `hyprland-session.target` 统一管理的 `systemd --user` 服务
 - 🔧 还有少部分系统级服务（`sddm` / `bluetooth` / `polkit` / `wpa_supplicant`）需要在用户登录前启动，配置为 `systemctl enable` 
 
@@ -510,7 +510,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 * `qt5/6-wayland`: 让基于 qt 框架的应用能跑在 wayland 上
 * `polkit-gnome`: 当你执行需要 sudo 权限的 gui 应用时跳出弹窗
 
-配置入口是 [hypr/hyprland.lua](hypr/hyprland.lua)，子模块在 [hypr/lua/](hypr/lua/)（`binds` / `appearance` / `autostart` / `rules` …）。有疑问可以直接把 Lua 丢给 AI；`lianwall` / `hysp` 等是我自己写的，在 [Github](https://github.com/Yueosa) 能找到。
+配置入口是 [hypr/hyprland.lua](hypr/hyprland.lua)，子模块在 [hypr/lua/](hypr/lua/)（`binds` / `appearance` / `autostart` / `rules` …）。有疑问可以直接把 Lua 丢给 AI；`lianwall` 是我自己写的，在 [Github](https://github.com/Yueosa) 能找到。
 
 #### 桌面快捷键（与 qsl 协作）
 
@@ -563,7 +563,7 @@ Scrolling 是 Hyprland 新增的一种布局模式，窗口排列在一条 **无
 
 ## | systemd/user
 
-我的 Hyprland 会话里有不少需要长期运行的组件：`fcitx5`、`lianwall`、`cliphist`、`stalk-hypr`，以及 `hypr-event-daemon`、`tuxedo-tray` 
+我的 Hyprland 会话里有不少需要长期运行的组件：`fcitx5`、`lianwall`、`cliphist`、`mihomo` 和本地 Pokémon 服务。TUXEDO 托盘由 Hyprland 直接启动
 
 早期这些东西全写在 `hyprland.conf` 的 `exec-once` 里，配置直观，但排查启动失败、重登后的残留进程、异常退出后的恢复都不太方便 
 
@@ -597,11 +597,10 @@ systemctl --user enable \
     lianwall.service \
     cliphist-watch.service \
     cliphist-watch-image.service \
-    wl-clip-persist.service \
-    stalk-hypr.service \
-    tuxedo-tray.service \
-    hypr-event-daemon.service
+    wl-clip-persist.service
 ```
+
+如果使用本地代理和 Pokémon 服务，可另行启用 `mihomo.service` 和 `pokemon.service`。
 
 ##### 各 service 简介
 
@@ -613,15 +612,12 @@ systemctl --user enable \
 | `cliphist-watch.service` | 后台监听 `wl-paste --type text`，写入 cliphist 文本历史；剪贴板 UI 从这里读 |
 | `cliphist-watch-image.service` | 后台监听 `wl-paste --type image`，写入 cliphist 图片历史（text/image 双路避免 MIME 抢占） |
 | `wl-clip-persist.service` | 接管 regular selection，源应用退出后剪贴板内容仍可粘贴（不动 primary） |
-| `stalk-hypr.service` | 我自己写的 Hyprland 状态记录器 |
-| `tuxedo-tray.service` | TUXEDO 笔记本控制中心托盘 |
-| `hypr-event-daemon.service` | 监听 Hyprland `.socket2.sock` 事件，把 active window/workspace 写到缓存 |
 
 ##### 管理命令
 
 ```bash
 systemctl --user status hyprland-session.target
-systemctl --user status fcitx5 lianwall hypr-event-daemon
+systemctl --user status fcitx5 lianwall cliphist-watch
 systemctl --user restart fcitx5
 journalctl --user -u lianwall -b
 ```
@@ -680,8 +676,7 @@ ln -sf ~/.lian/nvim ~/.config/nvim
 │           ├──  whichkey.lua    # 中文分组
 │           ├──  comment.lua
 │           ├──  autopairs.lua
-│           ├──  git.lua         # vim-fugitive + gitsigns
-│           └──  wakatime.lua
+│           └──  git.lua         # vim-fugitive + gitsigns
 └──  sakurine                 # 自研配色，不是第三方主题包
     ├──  autoload
     └──  colors
@@ -704,7 +699,7 @@ ln -sf ~/.lian/nvim ~/.config/nvim
 | 模糊搜索 | `telescope.nvim` |
 | Git | `vim-fugitive`（`:Git`）、`gitsigns.nvim` |
 | 阅读 | `vim-illuminate`、`indent-blankline.nvim`、`rainbow-delimiters.nvim` |
-| 体验 | `which-key.nvim`、`Comment.nvim`、`nvim-autopairs`、`vim-wakatime` |
+| 体验 | `which-key.nvim`、`Comment.nvim`、`nvim-autopairs` |
 | 依赖 | `plenary.nvim`、`nvim-web-devicons` |
 
 系统依赖：
