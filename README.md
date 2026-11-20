@@ -600,7 +600,7 @@ systemctl --user enable \
     wl-clip-persist.service
 ```
 
-如果使用本地代理和 Pokémon 服务，可另行启用 `mihomo.service` 和 `pokemon.service`。
+如果使用本地代理，可另行启用 `mihomo.service`。
 
 ##### 各 service 简介
 

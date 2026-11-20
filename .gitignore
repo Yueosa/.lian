@@ -52,3 +52,6 @@ shell/
 # 临时目录
 tmp/
 
+
+# 本地 Pokémon 服务
+/systemd/user/pokemon.service
